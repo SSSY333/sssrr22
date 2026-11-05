@@ -3486,6 +3486,7 @@ const store = {
 };
 me.design = clamp(parseInt(store.get('bjw.design') ?? '', 10) || 0, 0, DESIGNS.length - 1);
 $('#nick').value = store.get('bjw.nick') || '';
+const THUMBS = [];
 function renderThumbs() {
   const box = $('#designs');
   let r;
@@ -3517,6 +3518,7 @@ function renderThumbs() {
       const img = document.createElement('img');
       img.alt = '';
       img.src = r.domElement.toDataURL('image/png');
+      THUMBS[i] = img.src;
       b.appendChild(img);
       sc.remove(P.g);
     }
@@ -3581,6 +3583,75 @@ Object.entries(SPOTS).forEach(([k, s]) => {
   $('#tpPanel').appendChild(b);
 });
 $('#act').addEventListener('click', doAction);
+
+/* ---------- 캐릭터 바꾸기 ---------- */
+function openCharSheet() {
+  const box = $('#charPick'); box.replaceChildren();
+  DESIGNS.forEach((_d, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'design'; b.setAttribute('role', 'radio');
+    b.setAttribute('aria-label', `캐릭터 ${i + 1}`);
+    b.setAttribute('aria-checked', i === me.design ? 'true' : 'false');
+    if (i === me.design) b.classList.add('on');
+    if (THUMBS[i]) { const img = document.createElement('img'); img.alt = ''; img.src = THUMBS[i]; b.appendChild(img); }
+    b.addEventListener('click', () => { changeCharacter(i); closeCharSheet(); });
+    box.appendChild(b);
+  });
+  $('#charSheet').hidden = false; mode.modal = true; keys.clear();
+}
+function closeCharSheet() { $('#charSheet').hidden = true; mode.modal = false; refreshContext(false); }
+function changeCharacter(i) {
+  if (!me.A || i === me.design) return;
+  const old = me.A;
+  me.design = i;
+  store.set('bjw.design', String(i));
+  const A = makeAvatar(i, me.name, true);
+  Object.assign(A, { x: old.x, z: old.z, y: old.y, ry: old.ry, vx: 0, vz: 0 });
+  if (old.seat) placeOnSeat(A, old.seat);
+  if (old.P.holding) setHolding(A.P, true);
+  disposeAvatar(old);
+  me.A = A;
+  syncAvatar(A);
+  A.P.hopT = 0.5;
+  sendPresence(true);
+  mySay(pick(['짜잔! ✨', '변신 완료!', '어때요? 😎']));
+}
+$('#char').addEventListener('click', openCharSheet);
+document.querySelector('.char-cancel').addEventListener('click', closeCharSheet);
+$('#charSheet').addEventListener('click', (e) => { if (e.target === $('#charSheet')) closeCharSheet(); });
+
+/* ---------- 사진 찍기 (스크린샷) ---------- */
+let shotPending = null;
+let downloadsCap;
+function takePhoto() {
+  const flash = $('#flash');
+  flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+  audio.pop(0.8, 1.9);
+  shotPending = async (blob) => {
+    if (!blob) return;
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const filename = `보장원_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.png`;
+    const url = URL.createObjectURL(blob);
+    $('#shotImg').src = url;
+    $('#shotSheet').hidden = false; mode.modal = true; keys.clear();
+    $('#shotInfo').textContent = '';
+    const save = $('#shotSave');
+    save.onclick = async () => {
+      try {
+        if (downloadsCap === undefined) downloadsCap = window.claude?.use ? await window.claude.use('downloads') : null;
+        if (downloadsCap) { await downloadsCap.save({ filename, data: blob }); $('#shotInfo').textContent = '사진을 저장했어요 📸'; }
+        else { const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); $('#shotInfo').textContent = '사진을 저장했어요 📸'; }
+      } catch (e) {
+        $('#shotInfo').textContent = e?.code === 'declined' ? '저장을 취소했어요.' : '여기서는 저장할 수 없어요. 사진을 길게 눌러(또는 오른쪽 클릭) 저장해 주세요.';
+      }
+    };
+  };
+}
+function closeShot() { $('#shotSheet').hidden = true; mode.modal = false; const u = $('#shotImg').src; if (u.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(u), 1000); refreshContext(false); }
+$('#shot').addEventListener('click', takePhoto);
+document.querySelector('.shot-close').addEventListener('click', closeShot);
+$('#shotSheet').addEventListener('click', (e) => { if (e.target === $('#shotSheet')) closeShot(); });
 $('#talk').addEventListener('click', () => {
   const open = $('#phrases').hidden;
   $('#phrases').hidden = !open;
@@ -4677,6 +4748,7 @@ function frame() {
   }
 
   if (composer) composer.render(); else renderer.render(scene, camera);
+  if (shotPending) { const cb = shotPending; shotPending = null; renderer.domElement.toBlob(cb, 'image/png'); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -4685,6 +4757,7 @@ requestAnimationFrame(frame);
 window.__office = {
   board, openNotes, addNote,
   stations, desks,
+  changeCharacter, takePhoto,
   camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
   setHour(h) { TOD.override = h; applyTimeOfDay(); },
   renderAudio, tracks: () => Object.keys(TRACKS), musicZone,

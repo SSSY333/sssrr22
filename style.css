@@ -393,3 +393,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
   cursor: pointer;
 }
 #talk[aria-expanded="true"] { background: #ffe7a8; }
+
+/* 사진 찍기 */
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 14; }
+#flash.go { animation: flash 0.45s ease-out; }
+@keyframes flash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+.shot-img { width: 100%; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 4px 16px rgba(20, 10, 30, 0.25); max-height: 55dvh; object-fit: contain; background: #222; }
+@media (prefers-reduced-motion: reduce) { #flash.go { animation: none; } }
+
+/* 좁은 화면: 위쪽 버튼 4개 + 이름표가 겹치지 않게 */
+@media (max-width: 480px) {
+  #topbtns { gap: 5px; right: max(10px, env(safe-area-inset-right)); }
+  #topbtns button { width: 36px; height: 36px; font-size: 16px; }
+  #brand { left: max(10px, env(safe-area-inset-left)); padding: 6px 10px; gap: 6px; font-size: 12.5px; }
+  #brand small { font-size: 11px; }
+}

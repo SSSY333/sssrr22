@@ -44,7 +44,9 @@
     <span class="dot"></span> 보장원 <small id="online">👥 1명</small> <small id="clock"></small>
   </header>
   <div id="topbtns" class="hud hidden">
+    <button id="char" type="button" aria-label="캐릭터 바꾸기">👕</button>
     <button id="tp" type="button" aria-label="장소 이동">🧭</button>
+    <button id="shot" type="button" aria-label="사진 찍기">📷</button>
     <button id="music" type="button" aria-label="배경음악 켜기/끄기" aria-pressed="true">🎵</button>
   </div>
   <div id="tpPanel" class="hidden" role="menu" aria-label="장소 이동"></div>
@@ -82,6 +84,29 @@
         <button type="button" class="sheet-go note-go">📌 붙이기</button>
       </div>
       <div id="noteList" class="note-list"></div>
+    </div>
+  </div>
+
+  <!-- 캐릭터 바꾸기 -->
+  <div id="charSheet" class="sheet-wrap" hidden>
+    <div class="sheet note-sheet" role="dialog" aria-modal="true" aria-labelledby="charTitle">
+      <h2 id="charTitle">👕 캐릭터 바꾸기</h2>
+      <div id="charPick" class="designs" role="radiogroup" aria-label="캐릭터 선택"></div>
+      <div class="sheet-btns"><button type="button" class="sheet-cancel char-cancel">닫기</button></div>
+    </div>
+  </div>
+
+  <!-- 사진 찍기 -->
+  <div id="flash" aria-hidden="true"></div>
+  <div id="shotSheet" class="sheet-wrap" hidden>
+    <div class="sheet note-sheet" role="dialog" aria-modal="true" aria-labelledby="shotTitle">
+      <h2 id="shotTitle">📷 찰칵!</h2>
+      <img id="shotImg" class="shot-img" alt="방금 찍은 사진" />
+      <p class="sheet-note" id="shotInfo" aria-live="polite"></p>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel shot-close">닫기</button>
+        <button type="button" class="sheet-go" id="shotSave">💾 사진 저장</button>
+      </div>
     </div>
   </div>
 
