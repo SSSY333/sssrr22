@@ -1362,7 +1362,7 @@ function buildInterior() {
   makePlant(g, 2.4, -1.0, 1.2);
   makePlant(g, -19, -1, 1.4);
   // 대기 공간 (스캔 소파 · 암체어 · 커피테이블)
-  if (!addModel(g, 'sofa_02_2k', 0.85, -14.5, 0, -1.3, 0)) {
+  if (!addModel(g, 'sofa_02_2k', 0.85, -14.5, 0, -1.0, Math.PI)) {
     addBox(g, 3, 0.45, 0.7, std(0x6aa7a0), -14.5, 0.225, -1.2);
     addBox(g, 3, 0.5, 0.15, std(0x5c958e), -14.5, 0.7, -1.5);
   }
@@ -1371,10 +1371,11 @@ function buildInterior() {
   blob(g, -11.6, 0, -2.4, 1.2, 1.2);
   addModel(g, 'coffee_table_round_01_2k', 0.45, -13.8, 0, -2.9, 0);
   addModel(g, 'food_apple_01_1k', 0.08, -13.7, 0.45, -2.85, 0);
-  colBox(-14.5, -1.25, 3.0, 1.0);
+  colBox(-14.5, -1.0, 2.2, 1.0);
   colCircle(-11.6, -2.4, 0.5);
   colCircle(-13.8, -2.9, 0.45);
-  for (const x of [-15.35, -14.5, -13.65]) addSeat('sofa', x, -1.2, 0, { h: 0.46, ex: x, ez: -2.05 });
+  for (const x of [-15.05, -14.5, -13.95]) addSeat('sofa', x, -1.12, Math.PI, { h: 0.47, ex: x, ez: -2.0 });
+  addSeat('sofa', -11.6 + Math.sin(-1.9) * 0.06, -2.4 + Math.cos(-1.9) * 0.06, -1.9, { h: 0.47, ex: -11.6 + Math.sin(-1.9) * 0.9, ez: -2.4 + Math.cos(-1.9) * 0.9 });
 
   /* ---------- 업무 공간 ---------- */
   for (const px of [-14.5, -6.5]) for (const pz of [-10, -17, -24]) makePod(px, pz);
@@ -1743,6 +1744,7 @@ const mode = { inside: false, playing: false };
 let tween = null;
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 function flyTo(pos, target, dur = 2) {
+  if (tween) { const r = tween.res; tween = null; r(); }
   return new Promise((res) => {
     tween = { fp: camera.position.clone(), ft: controls.target.clone(), tp: pos.clone(), tt: target.clone(), t: 0, dur, res };
   });
@@ -1760,8 +1762,20 @@ const isInsideXZ = (x, z) => x > -20 && x < 20 && z < 0 && z > -30;
    물리: 원(플레이어) vs 박스/원 충돌, 바닥 높이
    ========================================================================= */
 const PR = 0.28;
+function overlaps(p) {
+  for (const c of colliders) {
+    const dx = p.x - c.x, dz = p.z - c.z;
+    if (c.t === 'c') { const m = c.r + PR - 0.01; if (dx * dx + dz * dz < m * m) return true; continue; }
+    const R = c.hw + c.hd + PR;
+    if (Math.abs(dx) > R || Math.abs(dz) > R) continue;
+    const lx = dx * c.c - dz * c.s, lz = dx * c.s + dz * c.c;
+    const ex = lx - clamp(lx, -c.hw, c.hw), ez = lz - clamp(lz, -c.hd, c.hd);
+    if (ex * ex + ez * ez < (PR - 0.01) ** 2) return true;
+  }
+  return false;
+}
 function resolveCollisions(p) {
-  for (let it = 0; it < 4; it++) {
+  for (let it = 0; it < 8; it++) {
     let moved = false;
     for (const c of colliders) {
       const dx = p.x - c.x, dz = p.z - c.z;
@@ -1902,6 +1916,19 @@ function nearestFreeSeat() {
   }
   return best;
 }
+// 앉으면 그 자리에 어울리는 시점으로
+function seatCamera(seat) {
+  const fx = Math.sin(seat.ry), fz = Math.cos(seat.ry);
+  let d = 2.9, h = 1.0, side = 0.3;
+  const yOff = seat.kind === 'bed' ? 0.75 : seat.kind === 'pp' ? 1.15 : 0.95;
+  if (seat.kind === 'desk') { d = -2.0; h = 1.0; side = 0.9; }
+  else if (seat.kind === 'pp') { d = -2.4; h = 1.0; side = 0.9; }
+  else if (seat.kind === 'bed') { d = 2.4; h = 1.8; side = 0.4; }
+  const tgt = new THREE.Vector3(seat.x, 0.155 + yOff, seat.z);
+  const pos = new THREE.Vector3(seat.x + fx * d + fz * side, tgt.y + h, seat.z + fz * d - fx * side);
+  pos.x = clamp(pos.x, -19.4, 19.4); pos.y = clamp(pos.y, 0.8, 4.5); pos.z = clamp(pos.z, -29.4, -0.6);
+  flyTo(pos, tgt, 0.8);
+}
 function doAction() {
   if (!me.A || !mode.playing) return;
   if (me.A.seat) { leaveSeat(me.A); sendPresence(true); refreshContext(true); return; }
@@ -1909,6 +1936,7 @@ function doAction() {
   if (s) {
     me.target = null; me.auto = null;
     placeOnSeat(me.A, s);
+    seatCamera(s);
     sendPresence(true);
     refreshContext(true);
   }
@@ -1960,7 +1988,8 @@ function updatePlayer(dt) {
   const before = { x: A.x, z: A.z };
   const p = { x: A.x + A.vx * dt, z: A.z + A.vz * dt };
   resolveCollisions(p);
-  A.x = p.x; A.z = p.z;
+  // 그래도 겹치면(좁은 틈) 움직이지 않음 → 벽·가구 관통 불가
+  if (!overlaps(p)) { A.x = p.x; A.z = p.z; } else { A.vx *= 0.3; A.vz *= 0.3; }
   // 막혔으면 클릭 목적지 포기 (벽에 비비지 않도록)
   if (me.target && sp > 0.5 && Math.hypot(A.x - before.x, A.z - before.z) < sp * dt * 0.15) me.target = null;
   A.y += (groundY(A.x, A.z) - A.y) * Math.min(1, dt * 14);
@@ -2187,14 +2216,15 @@ async function enterGame() {
   seats.forEach((s) => seatById.set(s.id, s));
   syncAvatar(me.A);
   updateOnline();
-  await cameraBehind(2.4);
+  mode.playing = true;
+  // 회사로 걸어 들어가기 (아무 키나 누르거나 행동하면 바로 조작)
+  me.auto = [{ x: 0, z: 1.2 }, { x: 0, z: -4.2 }];
+  cameraBehind(1.8);
   ['#brand', '#topbtns', '#actions'].forEach((s) => $(s).classList.remove('hidden'));
   if (isTouch) $('#joy').classList.remove('hidden');
   $('#hint').textContent = isTouch ? '왼쪽 핸들로 이동 · 친구를 탭하면 콕 찌르기 👉' : '방향키·WASD 이동 · Shift 달리기 · E 행동 · 드래그로 시점 · 친구 클릭은 콕!';
   $('#hint').classList.remove('hidden');
   setTimeout(() => $('#hint').classList.add('hidden'), 7000);
-  // 회사로 걸어 들어가기 (아무 키나 누르면 바로 조작)
-  me.auto = [{ x: 0, z: 1.2 }, { x: 0, z: -4.2 }];
   controls.enabled = true;
   mode.playing = true;
   sendPresence(true);
@@ -2564,4 +2594,8 @@ function frame() {
 requestAnimationFrame(frame);
 
 // 디버그/스크린샷용
-window.__office = { camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, step: (dt) => updatePlayer(dt), groundY, isInsideXZ };
+window.__office = {
+  camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ,
+  step: (dt) => updatePlayer(dt),
+  pokeFirst() { const R = [...remotes.values()][0]; if (!R) return 'no remote'; poke(R); return 'poked ' + R.name; },
+};
