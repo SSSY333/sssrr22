@@ -22,7 +22,6 @@
 - **광화문 거리 걷기**: 인도와 중앙 광장, 횡단보도로만 건널 수 있어요 (건너는 중엔 차가 멈춤).
 - **맞은편 맛집 거리**: 칼국수 · 빵집 · 떡볶이 · 카페 · 디저트 · 고깃집 · 브런치 · 피자 · 국밥 · 젤라토 가게 10곳. 줄무늬 차양, 불 켜진 간판과 진열창, 오늘의 메뉴 입간판, 줄조명. 테라스 의자(28석)에 앉으면 '맛있겠다! 😋' 같은 대사 버튼이 떠요.
 - **업무공간**: 의자에 앉아 타자 치며 일하기 (24석).
-- **로비**: 암체어에 앉기.
 - **휴게실**: 원형 쇼파에 둘러앉기(10석), 빈백, **탁구 치기**(양쪽 2명).
 - **수면실**: 침대 4개에 눕기, 리클라이너, 빈백.
 - 하는 일마다 그에 맞는 **대사 버튼**이 떠요. 무작위가 아니라 내가 고른 대사가 말풍선으로 나와요.
@@ -42,7 +41,7 @@ claude.ai 아티팩트로 열면 `room` 기능으로 같은 페이지를 연 사
 
 | 종류 | 사용한 에셋 (Poly Haven, CC0) |
 | --- | --- |
-| 3D 스캔/모델 | potted_plant_01·02·04, desk_lamp_arm_01, throw_pillows_01, modern_ceiling_lamp_01, rubber_duck_toy, food_apple_01, concrete_cat_statue, alarm_clock_01, ceramic_vase_01, Ottoman_01, coffee_table_round_01, modern_arm_chair_01 |
+| 3D 스캔/모델 | potted_plant_01·02·04, desk_lamp_arm_01, throw_pillows_01, modern_ceiling_lamp_01, rubber_duck_toy, food_apple_01, concrete_cat_statue, alarm_clock_01, ceramic_vase_01, Ottoman_01 |
 | PBR 텍스처 | asphalt_02, pavement_02, large_floor_tiles_02, concrete_floor_02, herringbone_parquet, red_brick_03, oak_veneer_01, walnut_veneer, velour_velvet, rough_linen, rough_wood, large_sandstone_blocks, grey_roof_tiles |
 | HDRI 조명 | sunset, apartment (Poly Haven HDRI를 512px EXR로 줄인 `@pmndrs/assets` 버전, CC0) |
 

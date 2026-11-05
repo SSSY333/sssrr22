@@ -77,7 +77,7 @@ const PBR_SETS = {
 const MODEL_LIST = [
   'potted_plant_01_1k', 'potted_plant_02_1k', 'potted_plant_04_2k', 'desk_lamp_arm_01_1k', 'throw_pillows_01_1k',
   'modern_ceiling_lamp_01_2k', 'rubber_duck_toy_1k', 'food_apple_01_1k', 'concrete_cat_statue_1k', 'alarm_clock_01_2k',
-  'ceramic_vase_01_1k', 'Ottoman_01_2k', 'coffee_table_round_01_2k', 'modern_arm_chair_01_1k',
+  'ceramic_vase_01_1k', 'Ottoman_01_2k',
 ];
 const pbrTex = {};
 const models = {};
@@ -1530,7 +1530,7 @@ function buildInterior() {
   const CEIL = GF - 0.15;
   // 바닥
   addPlane(g, 22.5, 6, pbr('large_floor_tiles_02', 22.5 / 2.4, 6 / 2.4, { color: 0xf3ece2, env: 1.2 }), -8.75, 0.005, -3);
-  addPlane(g, 22.5, 24, pbr('concrete_floor_02', 22.5 / 4, 24 / 4, { color: 0xc9ccd2, rough: 0.8, env: 1.2 }), -8.75, 0.005, -18);
+  addPlane(g, 22.5, 24, pbr('concrete_floor_02', 22.5 / 4, 24 / 4, { color: 0xf2f3f6, rough: 0.75, env: 1.5 }), -8.75, 0.005, -18);
   addPlane(g, 17.5, 16, pbr('herringbone_parquet', 17.5 / 2.2, 16 / 2.2, { color: 0xfff1e2 }), 11.25, 0.005, -8);
   addPlane(g, 17.5, 14, pbr('herringbone_parquet', 17.5 / 2.2, 14 / 2.2, { color: 0xb89a86 }), 11.25, 0.005, -23);
 
@@ -1568,14 +1568,6 @@ function buildInterior() {
   makePlant(g, -2.4, -1.0, 1.2);
   makePlant(g, 2.4, -1.0, 1.2);
   makePlant(g, -19, -1, 1.4);
-  // 대기 공간 (스캔 암체어 · 커피테이블)
-  addModel(g, 'modern_arm_chair_01_1k', 0.85, -11.6, 0, -2.4, -1.9);
-  blob(g, -11.6, 0, -2.4, 1.2, 1.2);
-  addModel(g, 'coffee_table_round_01_2k', 0.45, -13.8, 0, -2.9, 0);
-  addModel(g, 'food_apple_01_1k', 0.08, -13.7, 0.45, -2.85, 0);
-  colCircle(-11.6, -2.4, 0.5);
-  colCircle(-13.8, -2.9, 0.45);
-  addSeat('sofa', -11.6 + Math.sin(-1.9) * 0.06, -2.4 + Math.cos(-1.9) * 0.06, -1.9, { h: 0.47, ex: -11.6 + Math.sin(-1.9) * 0.9, ez: -2.4 + Math.cos(-1.9) * 0.9 });
 
   /* ---------- 업무 공간 ---------- */
   for (const px of [-14.5, -6.5]) for (const pz of [-10, -17, -24]) makePod(px, pz);
@@ -1589,13 +1581,15 @@ function buildInterior() {
   makePlant(g, -19, -29, 1.4);
   makePlant(g, -19, -6.6, 1.1);
   // 업무 조명
-  zones.workLights = [
-    new THREE.PointLight(0xffd7a8, 30, 16, 1.6),
-    new THREE.PointLight(0xffd7a8, 30, 16, 1.6),
-  ];
-  zones.workLights[0].position.set(-10, 4.2, -11);
-  zones.workLights[1].position.set(-10, 4.2, -23);
+  // 업무공간 조명 (밝고 따뜻하게: 천장 4곳)
+  zones.workLights = [[-14.5, -10.5], [-6.5, -10.5], [-14.5, -22.5], [-6.5, -22.5]].map(([x, z]) => {
+    const l = new THREE.PointLight(0xffe2bd, 42, 18, 1.4);
+    l.position.set(x, 4.3, z);
+    return l;
+  });
   g.add(...zones.workLights);
+  // 천장 조명 패널 (빛이 나는 면)
+  for (const x of [-14.5, -6.5]) for (const z of [-13.5, -20.5]) addBox(g, 3.2, 0.03, 1.2, glow(0xfff4e2), x, GF - 0.17, z);
   const lobbyLight = new THREE.PointLight(0xffcf9a, 20, 13, 1.6);
   lobbyLight.position.set(-4, 4.2, -2.5);
   g.add(lobbyLight);
@@ -2022,7 +2016,6 @@ function groundY(x, z) {
    ========================================================================= */
 const SEAT_INFO = {
   desk: { label: '💻 앉아서 일하기', pose: 'sit', state: 'type', ph: 'work' },
-  sofa: { label: '💺 암체어에 앉기', pose: 'sit', state: 'sit', ph: 'lobby' },
   lounge: { label: '🛋️ 둘러앉기', pose: 'sit', state: 'sit', ph: 'lounge' },
   bean: { label: '🫘 빈백에 앉기', pose: 'sit', state: 'sit', ph: 'lounge' },
   pp: { label: '🏓 탁구 치기', pose: 'stand', state: 'pp', ph: 'pingpong' },
