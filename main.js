@@ -3280,6 +3280,8 @@ function doAction() {
   if (me.A.seat) { leaveSeat(me.A); sendPresence(true); refreshContext(true); return; }
   if (nearBoard(me.A)) { openNotes(); return; }
   const stn = nearestStation(me.A, me.A.P.holding);
+  const buddy = stn ? null : nearestRemote(me.A);
+  if (buddy) { poke(buddy); return; }
   if (stn) {
     me.target = null; me.auto = null;
     const r = stn.kind === 'printer' ? (Math.random() < 0.5 ? 'ok' : Math.random() < 0.5 ? 'jam' : 'run') : '';
@@ -3549,6 +3551,7 @@ const ndc = new THREE.Vector2();
 const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hitPt = new THREE.Vector3();
 let downXY = null;
+const _tapV = new THREE.Vector3();
 renderer.domElement.addEventListener('pointerdown', (e) => { downXY = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (!downXY || !mode.playing) return;
@@ -3562,6 +3565,18 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     const R = [...remotes.values()].find((r) => r.A.P === hit.object.userData.person);
     if (R) { poke(R); return; }
   }
+  // 캐릭터를 정확히 못 눌러도, 화면에서 가까우면 콕 찌르기
+  {
+    const rect = renderer.domElement.getBoundingClientRect();
+    let best = null, bd = 46;
+    for (const R of remotes.values()) {
+      const v = _tapV.set(R.A.x, R.A.y + 0.85, R.A.z).project(camera);
+      if (v.z > 1) continue;
+      const d = Math.hypot((v.x + 1) / 2 * rect.width + rect.left - e.clientX, (1 - v.y) / 2 * rect.height + rect.top - e.clientY);
+      if (d < bd) { bd = d; best = R; }
+    }
+    if (best) { poke(best); return; }
+  }
   if (board.mesh && raycaster.intersectObject(board.mesh, false)[0] && Math.hypot(me.A.x - BOARD.x, me.A.z - BOARD.z) < 8) { openNotes(); return; }
   plane.constant = -me.A.y;
   if (raycaster.ray.intersectPlane(plane, hitPt) && hitPt.distanceTo(camera.position) < 40) {
@@ -3569,6 +3584,11 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     me.auto = null;
   }
 });
+function nearestRemote(A, max = 1.8) {
+  let best = null, bd = max;
+  for (const R of remotes.values()) { const d = Math.hypot(R.A.x - A.x, R.A.z - A.z); if (d < bd) { bd = d; best = R; } }
+  return best;
+}
 function poke(R) {
   pokeN++;
   lastPoke = { to: R.peer, n: pokeN };
@@ -3875,7 +3895,8 @@ function refreshContext(force) {
   const cat = A.seat ? null : nearestCat(A);
   const catFirst = cat && (!s || Math.hypot(A.x - cat.x, A.z - cat.z) < Math.hypot(A.x - s.ex, A.z - s.ez));
   const stn = nearestStation(A, A.P.holding);
-  const label = A.seat ? '🚶 일어나기' : nearBoard(A) ? '📝 메모 붙이기' : stn ? stationLabel(stn) : catFirst ? '🐱 쓰다듬기' : s ? SEAT_INFO[s.kind].label : '';
+  const buddy = A.seat || stn || nearBoard(A) ? null : nearestRemote(A);
+  const label = A.seat ? '🚶 일어나기' : nearBoard(A) ? '📝 메모 붙이기' : stn ? stationLabel(stn) : buddy ? `👉 ${buddy.name} 콕 찌르기` : catFirst ? '🐱 쓰다듬기' : s ? SEAT_INFO[s.kind].label : '';
   const act = $('#act');
   if (act.textContent !== label) act.textContent = label;
   act.hidden = !label;
@@ -4833,7 +4854,7 @@ function frame() {
     controls.target.add(camDelta);
     camera.position.add(camDelta);
     controls.minDistance = 1.6;
-    controls.maxDistance = mode.inside ? 7 : 16;
+    controls.maxDistance += ((mode.inside ? 7 : 16) - controls.maxDistance) * Math.min(1, dt * 2.5);
     controls.maxPolarAngle = Math.PI * 0.49;
   }
   controls.update();
@@ -4841,11 +4862,17 @@ function frame() {
     const p = camera.position;
     if (inVent(me.A.x, me.A.z)) {
       p.x = clamp(p.x, VENT.x0 + 0.2, VENT.x1 - 0.2); p.y = clamp(p.y, 0.6, VENT.ceil - 0.15); p.z = clamp(p.z, VENT.z0 + 0.2, VENT.z1 - 0.2);
-    } else if (mode.inside) {
-      p.x = clamp(p.x, -19.6, 19.6); p.y = clamp(p.y, 0.6, 4.6); p.z = clamp(p.z, -29.6, -0.4);
     } else {
-      p.y = Math.max(p.y, me.A.y + 0.5);
-      if (p.x > -20.6 && p.x < 20.6 && p.z < 0.45 && p.z > -31) p.z = 0.45;
+      // 문 근처에서는 카메라가 유리문 안팎을 자연스럽게 따라가요 (순간이동 방지)
+      const nearDoor = Math.abs(me.A.x) < 3.2 && me.A.z > -4.5 && me.A.z < 4.5;
+      if (mode.inside) {
+        p.x = clamp(p.x, -19.6, 19.6); p.y = clamp(p.y, 0.6, 4.6);
+        p.z = nearDoor ? clamp(p.z, -29.6, 7) : clamp(p.z, -29.6, -0.4);
+      } else {
+        p.y = Math.max(p.y, me.A.y + 0.5);
+        if (!nearDoor && p.x > -20.6 && p.x < 20.6 && p.z < 0.45 && p.z > -31) p.z = 0.45;
+        if (nearDoor) p.y = Math.min(p.y, 4.6);
+      }
     }
   }
 
