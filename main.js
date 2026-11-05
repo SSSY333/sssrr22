@@ -3233,7 +3233,7 @@ function doAction() {
     petCat(cat, true);
     lastPet = { c: cat.i, n: ++petN };
     sendPresence(true);
-    setTimeout(() => mySay(pick(['귀여워 😻', '골골송 들린다~', '말랑말랑 🐾', '착하다 착해', '냐옹~'])), 600);
+    setTimeout(() => mySay(pick(['귀여워 😻', '말랑말랑 🐾', '착하다 착해', '냐옹~'])), 600);
     return;
   }
   if (s) {
@@ -3573,6 +3573,12 @@ Object.entries(SPOTS).forEach(([k, s]) => {
   $('#tpPanel').appendChild(b);
 });
 $('#act').addEventListener('click', doAction);
+$('#talk').addEventListener('click', () => {
+  const open = $('#phrases').hidden;
+  $('#phrases').hidden = !open;
+  $('#talk').setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('#talk').textContent = open ? '💬 대화 닫기' : '💬 대화하기';
+});
 
 // 불만창고 입력: 내용은 어디에도 저장·전송되지 않고, 버튼을 누르는 즉시 지워져요
 const ventUI = { wrap: $('#vent'), text: document.querySelector('.vent-text'), kind: '' };
@@ -4223,18 +4229,19 @@ function runStation(A, st, r, local) {
     if (local) setTimeout(() => mySay(pick(st.food === 'apple' ? ['아삭아삭 🍎', '사과 달다!', '비타민 충전~'] : ['냠냠 😋', '바삭바삭!', '하나만 더…', '당 충전 완료!'])), 300);
   } else if (st.kind === 'bin') {
     setHolding(P, false); playSfx('thunk', A);
-    if (local) { mySay(pick(['잘 마셨다~', '분리수거 완료 ♻️', '컵 버렸어요'])); sendPresence(true); }
+    if (local) { mySay(pick(['잘 마셨다~', '분리수거 완료 ♻️'])); sendPresence(true); }
   } else if (st.kind === 'printer') {
     const pr = printers[st.pi];
     st.busyUntil = performance.now() + (r === 'run' ? 4500 : 3000);
     startAct(P, 'print', r === 'ok' ? 2.6 : 1.4); playSfx('print', A, r);
+    if (r === 'run') P.shakeT = 3.6;
     printerAnim(pr, r);
-    if (local) setTimeout(() => mySay(r === 'ok' ? pick(['출력 완료!', '오 빠르다', '서류 챙겼어요 📄']) : r === 'jam' ? pick(['종이 걸림!! 😱', '또 걸렸어…', '왜 나한테만!']) : pick(['멈춰!!! 😵', '종이가 날아다녀요!', '누가 100장 눌렀어?!'])), r === 'ok' ? 2400 : 1000);
+    if (local) setTimeout(() => mySay(r === 'ok' ? pick(['출력 완료!', '오 빠르다', '서류 챙겼어요 📄']) : r === 'jam' ? pick(['종이 걸림!! 😱', '왜 빈종이가 나와....', '왜 나한테만!']) : pick(['멈춰!!! 😵', '종이가 날아다녀요!', '누가 100장 눌렀어?!'])), r === 'ok' ? 2400 : 1000);
   } else if (st.kind === 'shredder') {
     st.busyUntil = performance.now() + 2400;
     startAct(P, 'print', 1.2); playSfx('shred', A);
     shredAnim();
-    if (local) setTimeout(() => mySay(pick(['갈갈갈~', '증거 인멸 완료 🤫', '속이 다 시원하네', '잘 가라 보고서야'])), 1400);
+    if (local) setTimeout(() => mySay(pick(['갈갈갈~', '증거 인멸 완료 🤫', '속이 다 시원하네', '잘 가라 보고서야', '아 봉투 비워야겠다'])), 1400);
   }
 }
 const PAPER_GEO = new THREE.PlaneGeometry(0.21, 0.29);
@@ -4452,6 +4459,15 @@ function updatePerson(P, t, dt) {
     else if (P.state === 'eat') { aR.rotation.x = -2.25 + Math.abs(Math.sin(ph * 7.5)) * 0.35; aR.rotation.z = -0.25; hp.rotation.x = 0.1 + Math.abs(Math.sin(ph * 7.5)) * 0.08; bob += Math.abs(Math.sin(ph * 7.5)) * 0.012; }
     else if (P.state === 'sip') { aR.rotation.x = -2.35; aR.rotation.z = -0.3; hp.rotation.x = -0.2; }
     else if (P.holding && P.state !== 'type') { aR.rotation.x = -1.05; aR.rotation.z = 0.12; }
+  }
+  if (P.shakeT > 0) {
+    // 프린터 폭주: 살짝 통통 뛰며 부르르
+    P.shakeT -= dt;
+    P.body.rotation.z = Math.sin(t * 42) * 0.06;
+    bob += Math.abs(Math.sin(t * 9)) * 0.035;
+    aL.rotation.x = -1.6 + Math.sin(t * 30) * 0.2; aR.rotation.x = -1.6 + Math.sin(t * 30 + 1.5) * 0.2;
+    aL.rotation.z = -0.45; aR.rotation.z = 0.45;
+    if (P.shakeT <= 0) P.body.rotation.z = 0;
   }
   if (P.rantT > 0) {
     // 마구 화내기: 빨간 얼굴, 💢, 김 모락, 부들부들, 욕 말풍선(가려짐)

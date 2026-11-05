@@ -379,3 +379,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 .note-tx { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
 .note-del { border: 0; background: #f1e2df; color: #8a3b3b; border-radius: 8px; padding: 6px 10px; font: 700 12px var(--font); cursor: pointer; }
 
+
+/* 대화하기 (대사 목록 접기/펴기) */
+#talk {
+  pointer-events: auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: 800 14px var(--font);
+  color: var(--ink);
+  background: rgba(255, 250, 242, 0.96);
+  box-shadow: 0 4px 14px rgba(20, 10, 30, 0.25);
+  cursor: pointer;
+}
+#talk[aria-expanded="true"] { background: #ffe7a8; }
