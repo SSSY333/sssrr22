@@ -740,7 +740,7 @@ loop = function (ts) {
     if (_sysT > 1) {
       _sysT = 0; ferryUpdate(); apptTick(); hiddenCheck(); if (S.rel.flags.met) caseCheckTriggers();
       const vp = qGet('v_photo'); if (qIsOpen(vp) && vp.day === S.day && S.min >= 17 * 60 && curPlace() === 'lighthouse') { qSet('v_photo', { state: 'COMPLETED' }); if (!S.frames.includes('lighthouse')) S.frames.push('lighthouse'); toast('📸 사진작가가 고마워하며 「등대」 프레임을 줬어요'); }
-      const cat = G.pets.find(p => p.vid === 'cheese'); if (cat && !(fmDef() && !S.rel.flags.met)) cat.visible = !(S.cases.cat && S.cases.cat.step !== 'solved');
+      const cat = G.pets.find(p => p.vid === 'cheese'); if (cat && S.cases.cat && S.cases.cat.step !== 'solved') cat.visible = false;
       for (const a of [...G.villagers, ...G.pets]) if (a.hold > 0) a.hold--;
     }
   }

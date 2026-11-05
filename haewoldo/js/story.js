@@ -393,16 +393,17 @@ function petUpdate(a, dt) {
     else { a.pose = 'stand'; let sp; if (V.pen) sp = [rand(V.pen[0], V.pen[2]), rand(V.pen[1], V.pen[3])]; else { const p = P_(pick(V.spots)); sp = [p[0] + rand(-2, 2), p[1] + rand(-2, 2)]; } a.walkTo(sp[0], sp[1]); a.wait = rand(3, 8); }
   }
 }
+function josa(w, a, b) { const c = w.charCodeAt(w.length - 1); return w + ((c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? a : b); }
 async function petTalk(a) {
-  const al = a.pet, cat = al.kind === 'cat';
+  const al = a.pet, cat = al.kind === 'cat', pony = al.kind === 'pony';
   a.stop(); a.pose = 'sit'; a.lookAt(G.player);
   Sound.sfx(cat ? 'meow' : 'woof'); burst(a, 'heart', 2);
   await say('narr', '', `${pony ? '🐴' : cat ? '🐱' : '🐶'} ${al.name}: ${pick(PETS[a.vid].lines)}`);
   const opts = ['쓰다듬는다', (S.inv.snack || 0) > 0 ? '간식을 준다 🦴' : '간식이 없다…', '그냥 둔다'];
   const c = await choose(opts);
-  if (c === 0) { await say('narr', '', cat ? `${al.name}이(가) 눈을 가늘게 뜨고 골골거린다. 몇 걸음 졸졸 따라온다.` : `${al.name}이(가) 꼬리를 붕붕 흔든다. 신이 나서 따라온다!`); a.follow = rand(6, 11); }
-  else if (c === 1 && S.inv.snack > 0) { S.inv.snack--; burst(a, 'heart', 5); await say('narr', '', `${al.name}이(가) 간식을 냠냠 먹고 행복해한다. 한참 따라올 것 같다!`); a.follow = 30; S.rel.daily.pets[a.vid] = true; if (G.det.visible && dist(G.det, G.player) < 4 && S.rel.flags.met) { await say('det', 'smile', `${al.name}가 당신을 엄청 좋아하네요. 저보다 더.`); addAff(1); } }
-  else await say('narr', '', `${al.name}은(는) 하품을 하고 제 갈 길을 간다.`);
+  if (c === 0) { await say('narr', '', cat ? `${josa(al.name, '이', '가')} 눈을 가늘게 뜨고 골골거린다. 몇 걸음 졸졸 따라온다.` : `${josa(al.name, '이', '가')} 꼬리를 붕붕 흔든다. 신이 나서 따라온다!`); a.follow = rand(6, 11); }
+  else if (c === 1 && S.inv.snack > 0) { S.inv.snack--; burst(a, 'heart', 5); await say('narr', '', `${josa(al.name, '이', '가')} 간식을 냠냠 먹고 행복해한다. 한참 따라올 것 같다!`); a.follow = 30; S.rel.daily.pets[a.vid] = true; if (G.det.visible && dist(G.det, G.player) < 4 && S.rel.flags.met) { await say('det', 'smile', `${josa(al.name, '이', '가')} 당신을 엄청 좋아하네요. 저보다 더.`); addAff(1); } }
+  else await say('narr', '', `${josa(al.name, '은', '는')} 하품을 하고 제 갈 길을 간다.`);
 }
 
 /* ---------------- 상호작용 ---------------- */
