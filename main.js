@@ -1680,6 +1680,29 @@ function textPlane(parent, text, w, h, x, y, z, ry, o = {}) {
   return m;
 }
 
+// 공간 이름 명패 (나무 판 + 금색 테두리)
+function plaque(parent, text, x, y, z, ry = 0, o = {}) {
+  const h = o.h ?? 0.42, w = o.w ?? h * (1.6 + [...text].length * 0.62);
+  const g = new THREE.Group();
+  g.position.set(x, y, z); g.rotation.y = ry;
+  parent.add(g);
+  const tex = canvasTex(512, Math.round(512 * h / w), (c, cw, ch) => {
+    const grd = c.createLinearGradient(0, 0, 0, ch); grd.addColorStop(0, '#74472c'); grd.addColorStop(1, '#4b2b1a');
+    c.fillStyle = grd; c.fillRect(0, 0, cw, ch);
+    c.strokeStyle = 'rgba(30,15,8,.25)'; c.lineWidth = 2;
+    for (let i = 0; i < 9; i++) { const yy = rand(6, ch - 6); c.beginPath(); c.moveTo(0, yy); c.bezierCurveTo(cw * 0.3, yy + rand(-5, 5), cw * 0.7, yy + rand(-5, 5), cw, yy); c.stroke(); }
+    c.strokeStyle = '#d8b46a'; c.lineWidth = 5; roundRect(c, 12, 12, cw - 24, ch - 24, 10); c.stroke();
+    c.fillStyle = '#e9cf8c';
+    for (const sx of [30, cw - 30]) { c.beginPath(); c.arc(sx, ch / 2, 7, 0, 7); c.fill(); }
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = `800 ${Math.round(ch * 0.5)}px ${FONT}`;
+    c.fillStyle = 'rgba(0,0,0,.35)'; c.fillText(text, cw / 2 + 2, ch / 2 + 6);
+    c.fillStyle = '#fbecd0'; c.fillText(text, cw / 2, ch / 2 + 3);
+  });
+  addBox(g, w + 0.04, h + 0.04, 0.035, std(0x3e2516, { roughness: 0.6 }), 0, 0, 0);
+  addWallPlane(g, w, h, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0.05 }), 0, 0, 0.019);
+  return g;
+}
 function buildInterior() {
   const g = interior;
   const CEIL = GF - 0.15;
@@ -1894,7 +1917,7 @@ function buildInterior() {
   ];
   makePlant(g, 19.2, -1.0, 1.3);
   // 네온사인
-  textPlane(g, '다 같이 쉬어가요 ☕', 6, 1.0, 11.5, 3.0, -15.86, 0, { color: '#ffe3c4', glow: '#ff7b54', size: 120 });
+  plaque(g, '휴게실', 11.5, 2.9, -15.9, 0, { h: 0.6 });
 
   /* ---------- 수면실 ---------- */
   const wood = pbr('oak_veneer_01', 1, 1, { color: 0xc08a5c, rough: 0.6, fallback: 0xb07a4a });
@@ -1906,7 +1929,7 @@ function buildInterior() {
   const fw = addWallPlane(g, 15.4, CEIL - 1.1, frost, 12.3, 1.1 + (CEIL - 1.1) / 2, -16);
   fw.renderOrder = 1;
   addBox(g, 2.1, CEIL - 2.6, 0.12, wood, 3.55, 2.6 + (CEIL - 2.6) / 2, -16);
-  textPlane(g, '쉿! 꿀잠 존 💤', 1.9, 0.5, 3.55, 3.1, -15.93, 0, { color: '#fff1d6', size: 110 });
+  plaque(g, '수면실', 3.55, 3.15, -15.9, 0);
   // x=2.5 칸막이
   addBox(g, 0.12, 1.1, 14, wood, 2.5, 0.55, -23);
   const fw2 = addWallPlane(g, 14, CEIL - 1.1, frost, 2.5, 1.1 + (CEIL - 1.1) / 2, -23, Math.PI / 2);
@@ -2277,7 +2300,7 @@ function buildVentRoom() {
   const curtain = new THREE.MeshStandardMaterial({ color: 0xf6a5c0, roughness: 0.6, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false, emissive: 0x8a3050, emissiveIntensity: 0.3 });
   for (let i = 0; i < 12; i++) addBox(g, 0.02, 2.3, 0.035, curtain, x1, 1.2, -4.35 - i * 0.1).renderOrder = 2;
   // 바깥 네온 간판
-  textPlane(g, '불만창고 ✨', 2.6, 0.62, x1 + 0.09, 3.1, -3.0, Math.PI / 2, { color: '#ffe3f0', glow: '#ff5fa2', size: 120 });
+  plaque(g, '불만창고', x1 + 0.095, 2.9, -3.0, Math.PI / 2);
   // 낮은 별빛 천장
   addPlane(g, W, Dp, new THREE.MeshBasicMaterial({ color: 0x3a2346, side: THREE.DoubleSide }), cx, ceil, cz).rotation.x = Math.PI / 2;
   {
@@ -2332,7 +2355,7 @@ function buildVentRoom() {
   makeBear(fp, -0.75, 1.5, 0.1, 0.28, 0, 0xe6b98a);
   makeBear(fp, 0.75, 1.5, 0.1, 0.24, 0, 0xc99a6a);
   for (const x of [-0.3, 0.3]) { addCyl(fp, 0.04, 0.16, std(0xfff4e2), x, 1.58, 0.15); addSph(fp, 0.03, glow(0xffc070), x, 1.69, 0.15); }
-  textPlane(fp, '다 태워버려! 🔥', 1.4, 0.36, 0, 2.3, 0.16, 0, { color: '#ffe8c8', glow: '#ff7b3d', size: 110 });
+  textPlane(fp, '다 태워버려!', 1.4, 0.36, 0, 2.3, 0.16, 0, { color: '#ffe8c8', glow: '#ff7b3d', size: 110 });
   colBox(x0 + 0.42, -3.0, 0.8, 2.3);
 
   /* 큰 곰인형 (안아 줄 수 있어요) */
@@ -4174,6 +4197,7 @@ function buildWorkExtras() {
   glassWall(MX0, MZ1, -13.3, MZ1);   // 정면 (문은 오른쪽 끝)
   glassWall(MX1, MZ1, MX1, MZ0);     // 옆면
   addBox(g, 1.8, CEIL - 2.4, 0.08, alu, -12.4, 2.4 + (CEIL - 2.4) / 2, MZ1);
+  plaque(g, '회의실', -12.4, 2.8, MZ1 + 0.06, 0);
   addPlane(g, MX1 - MX0, MZ1 - MZ0, fabric(0x6f7a8a, 1), (MX0 + MX1) / 2, 0.009, (MZ0 + MZ1) / 2);
   const TX = -15.7, TZ = -26.75;
   addBox(g, 4.2, 0.06, 1.3, pbr('walnut_veneer', 2, 1, { rough: 0.4, fallback: 0x7b4a2c }), TX, 0.74, TZ);
@@ -4224,7 +4248,7 @@ function buildWorkExtras() {
   const cmLight = addBox(cm, 0.02, 0.05, 0.05, glow(0x60ff8a), 0.22, 0.47, 0.12);
   addCyl(cm, 0.04, 0.09, std(0xffffff, { roughness: 0.2 }), 0.22, 0.045, 0);
   for (let i = 0; i < 5; i++) addCyl(g, 0.045, 0.1, std(0xffffff, { roughness: 0.2 }), kx + 0.05, 1.0 + i * 0.002, -9.25 + (i % 2) * 0.1);
-  textPlane(g, '탕비실 ☕🍪', 1.6, 0.42, kx - 0.32, 2.45, kcz, Math.PI / 2, { color: '#fff1d6', glow: '#ff9a5a', size: 120 });
+  plaque(g, '탕비실', kx - 0.3, 2.45, kcz, Math.PI / 2);
   // 간식 바구니
   const basket = new THREE.Group(); basket.position.set(kx + 0.05, 0.95, -10.4); g.add(basket);
   addMesh(basket, new THREE.CylinderGeometry(0.22, 0.17, 0.14, 20, 1, true), pbr('rough_wood', 1, 1, { color: 0xd8b27a, side: THREE.DoubleSide }), 0, 0.07, 0);
