@@ -117,7 +117,7 @@ function pbr(name, rx = 1, ry = 1, o = {}) {
   const m = new THREE.MeshStandardMaterial({ color: o.color ?? 0xffffff, roughness: o.rough ?? 1, metalness: o.metal ?? 0, side: o.side ?? THREE.FrontSide });
   if (!T) { if (o.fallback) m.color.set(o.fallback); return m; }
   if (T.diff && !o.noMap) m.map = tiled(T.diff, rx, ry);
-  if (T.nor) { m.normalMap = tiled(T.nor, rx, ry); const ns = o.normalScale ?? 1; m.normalScale.set(ns, ns); }
+  if (T.nor && m.map) { m.normalMap = tiled(T.nor, rx, ry); const ns = o.normalScale ?? 1; m.normalScale.set(ns, ns); }
   if (T.arm) { const a = tiled(T.arm, rx, ry); m.roughnessMap = a; m.aoMap = a; m.aoMapIntensity = 0.7; }
   if (o.env !== undefined) m.envMapIntensity = o.env;
   return m;
@@ -174,8 +174,7 @@ const fabricCache = new Map();
 function fabric(color, rough = 0.92) {
   const key = color + '|' + rough;
   if (!fabricCache.has(key)) {
-    const m = new THREE.MeshStandardMaterial({ color, roughness: rough, normalMap: fabricNor });
-    if (fabricNor) m.normalScale.set(0.8, 0.8);
+    const m = new THREE.MeshStandardMaterial({ color, roughness: rough });
     fabricCache.set(key, m);
   }
   return fabricCache.get(key);
@@ -2027,8 +2026,8 @@ function stripeTex(col, base) {
 function makeCat(i) {
   const coat = CAT_COATS[i % CAT_COATS.length];
   const g = new THREE.Group();
-  const fur = new THREE.MeshStandardMaterial({ color: coat.stripe ? 0xffffff : coat.base, map: coat.stripe ? stripeTex(coat.stripe, coat.base) : null, roughness: 0.95, normalMap: fabricNor });
-  if (fabricNor) fur.normalScale.set(0.6, 0.6);
+  const fur = new THREE.MeshStandardMaterial({ color: coat.stripe ? 0xffffff : coat.base, map: coat.stripe ? stripeTex(coat.stripe, coat.base) : null, roughness: 0.95, normalMap: coat.stripe ? fabricNor : null });
+  if (fabricNor && coat.stripe) fur.normalScale.set(0.6, 0.6);
   const furPlain = std(coat.base, { roughness: 0.95 });
   const belly = std(coat.belly, { roughness: 0.95 });
   const pink = std(0xf2a0a8, { roughness: 0.6 });
@@ -4748,7 +4747,15 @@ function frame() {
   }
 
   if (composer) composer.render(); else renderer.render(scene, camera);
-  if (shotPending) { const cb = shotPending; shotPending = null; renderer.domElement.toBlob(cb, 'image/png'); }
+  if (shotPending) {
+    const cb = shotPending; shotPending = null;
+    const url = renderer.domElement.toDataURL('image/png'); // 같은 프레임 안에서 바로 읽어요
+    try {
+      const bin = atob(url.split(',')[1]), u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      cb(new Blob([u8], { type: 'image/png' }));
+    } catch (e) { cb(null); }
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
