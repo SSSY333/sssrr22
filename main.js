@@ -4891,7 +4891,7 @@ requestAnimationFrame(frame);
 window.__office = {
   board, openNotes, addNote,
   stations, desks,
-  changeCharacter, takePhoto,
+  changeCharacter, takePhoto, onPeers, renderer, remotes,
   camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
   setHour(h) { TOD.override = h; applyTimeOfDay(); },
   renderAudio, tracks: () => Object.keys(TRACKS), musicZone,
