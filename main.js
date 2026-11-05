@@ -414,37 +414,42 @@ function facade(cols, floors, o = {}) {
     emi: canvasTex(cols * cw, floors * ch, draw(true)),
   };
 }
+const NIGHT_MATS = []; // 밤이 되면 더 환해지는 창문들 { m, base }
 function facadeMat(cols, floors, o = {}) {
   const f = facade(cols, floors, o);
-  return new THREE.MeshStandardMaterial({
+  const m = new THREE.MeshStandardMaterial({
     map: f.map, emissiveMap: f.emi, emissive: 0xffd9a8, emissiveIntensity: o.emi ?? 0.42,
     roughness: o.rough ?? 0.12, metalness: o.metal ?? 0.6, envMap, envMapIntensity: 1.1,
   });
+  NIGHT_MATS.push({ m, base: m.emissiveIntensity });
+  return m;
 }
 
 /* =========================================================================
    하늘 / 빛
    ========================================================================= */
 const SUN_DIR = new THREE.Vector3(90, 40, 70).normalize();
+let skyMat;
 {
   const sky = new THREE.Mesh(
     new THREE.SphereGeometry(1200, 32, 16),
-    new THREE.ShaderMaterial({
+    skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false, toneMapped: false,
       uniforms: {
         cTop: { value: new THREE.Color(0x2c3a6e) },
         cMid: { value: new THREE.Color(0xc98a9c) },
         cLow: { value: new THREE.Color(0xf6b07e) },
         sunDir: { value: new THREE.Vector3(0.73, 0.1, 0.57).normalize() },
+        glow: { value: 1 },
       },
       vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-      fragmentShader: `uniform vec3 cTop,cMid,cLow,sunDir; varying vec3 vDir;
+      fragmentShader: `uniform vec3 cTop,cMid,cLow,sunDir; uniform float glow; varying vec3 vDir;
         void main(){
           float h = vDir.y;
           vec3 c = mix(cLow, cMid, smoothstep(-0.02, 0.2, h));
           c = mix(c, cTop, smoothstep(0.2, 0.75, h));
           float s = max(dot(normalize(vDir), sunDir), 0.0);
-          c += vec3(1.0,0.62,0.32)*pow(s,60.0)*1.2 + vec3(1.0,0.66,0.4)*pow(s,6.0)*0.25;
+          c += (vec3(1.0,0.62,0.32)*pow(s,60.0)*1.2 + vec3(1.0,0.66,0.4)*pow(s,6.0)*0.25) * glow;
           gl_FragColor = vec4(c,1.0);
           #include <colorspace_fragment>
         }`,
@@ -453,6 +458,7 @@ const SUN_DIR = new THREE.Vector3(90, 40, 70).normalize();
   scene.add(sky);
 }
 
+const LAMP_MAT = new THREE.MeshBasicMaterial({ color: 0xffd08a, toneMapped: false });
 const hemi = new THREE.HemisphereLight(0xffdcc0, 0x5b4636, 0.45);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffb27a, 2.6);
@@ -463,6 +469,95 @@ Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, n
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.04;
 scene.add(sun);
+
+/* =========================================================================
+   실제 시간 반영: 서울 시각에 맞춰 낮 · 노을 · 밤
+   ========================================================================= */
+const C = (h) => new THREE.Color(h);
+const TOD_KEYS = (() => {
+  const night = { top: C(0x060a1c), mid: C(0x121a36), low: C(0x262848), fog: C(0x171a2e), sun: C(0x9fb4ff), sunI: 0.22, elev: 38, hemiS: C(0x5a68a8), hemiG: C(0x15121a), hemiI: 0.2, env: 0.1, exp: 1.0, win: 1.7, lamp: 1, stars: 1, glow: 0, moon: 1 };
+  const dawn = { top: C(0x45599a), mid: C(0xe6a3a6), low: C(0xffc38e), fog: C(0xe9b7a0), sun: C(0xffb07a), sunI: 1.6, elev: 8, hemiS: C(0xffd2c0), hemiG: C(0x5b4a44), hemiI: 0.42, env: 0.42, exp: 1.04, win: 0.6, lamp: 0.5, stars: 0.15, glow: 1, moon: 0.2 };
+  const day = { top: C(0x3d7fd6), mid: C(0x9ccaf0), low: C(0xdcecf6), fog: C(0xcfe2ef), sun: C(0xfff3e2), sunI: 3.1, elev: 50, hemiS: C(0xcfe6ff), hemiG: C(0x8a7a68), hemiI: 0.75, env: 1.0, exp: 0.95, win: 0.18, lamp: 0, stars: 0, glow: 0.45, moon: 0 };
+  const dusk = { top: C(0x2c3a6e), mid: C(0xc98a9c), low: C(0xf6b07e), fog: C(0xf0a982), sun: C(0xffb27a), sunI: 2.6, elev: 19, hemiS: C(0xffdcc0), hemiG: C(0x5b4636), hemiI: 0.45, env: 0.6, exp: 1.05, win: 1.0, lamp: 0.55, stars: 0, glow: 1, moon: 0 };
+  const twi = { top: C(0x161c48), mid: C(0x4e4272), low: C(0xa8707a), fog: C(0x5a4a66), sun: C(0xff8a6a), sunI: 0.55, elev: 3, hemiS: C(0x9a8ac0), hemiG: C(0x2a2230), hemiI: 0.36, env: 0.3, exp: 1.1, win: 1.45, lamp: 1, stars: 0.45, glow: 0.6, moon: 0.5 };
+  return [[0, night], [5, night], [6.5, dawn], [9, day], [16, day], [18, dusk], [19.5, twi], [21, night], [24, night]];
+})();
+const TOD = { hour: 18, env: 0.6, envK: 1, lamp: 0.55, override: null, label: '' };
+const nightLights = [];
+let starsSky, moon;
+{
+  // 밤하늘 별
+  const n = 900, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const u = Math.random() * Math.PI * 2, v = Math.acos(rand(0.05, 1)), r = 1000;
+    pos[i * 3] = Math.sin(v) * Math.cos(u) * r; pos[i * 3 + 1] = Math.cos(v) * r; pos[i * 3 + 2] = Math.sin(v) * Math.sin(u) * r;
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  starsSky = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false, toneMapped: false }));
+  starsSky.renderOrder = -1;
+  scene.add(starsSky);
+  // 달
+  const mt = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const gr = x.createRadialGradient(64, 64, 10, 64, 64, 64); gr.addColorStop(0, 'rgba(255,250,235,1)'); gr.addColorStop(0.32, 'rgba(255,246,220,1)'); gr.addColorStop(0.36, 'rgba(220,225,255,.35)'); gr.addColorStop(1, 'rgba(200,210,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: mt, transparent: true, opacity: 0, fog: false, depthWrite: false, toneMapped: false }));
+  moon.scale.set(90, 90, 1);
+  moon.position.set(-420, 520, 520);
+  scene.add(moon);
+}
+function seoulHour() {
+  if (TOD.override !== null) return TOD.override;
+  try {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+    return Number(p.hour) + Number(p.minute) / 60;
+  } catch (e) {
+    const d = new Date();
+    return d.getHours() + d.getMinutes() / 60;
+  }
+}
+const _c = new THREE.Color();
+function applyTimeOfDay() {
+  const h = seoulHour();
+  TOD.hour = h;
+  let i = 0;
+  while (i < TOD_KEYS.length - 2 && h >= TOD_KEYS[i + 1][0]) i++;
+  const [h0, a] = TOD_KEYS[i], [h1, b] = TOD_KEYS[i + 1];
+  const k = clamp((h - h0) / (h1 - h0), 0, 1);
+  const L = (x, y) => x + (y - x) * k;
+  const LC = (x, y, out) => out.copy(x).lerp(y, k);
+  LC(a.top, b.top, skyMat.uniforms.cTop.value);
+  LC(a.mid, b.mid, skyMat.uniforms.cMid.value);
+  LC(a.low, b.low, skyMat.uniforms.cLow.value);
+  skyMat.uniforms.glow.value = L(a.glow, b.glow);
+  LC(a.fog, b.fog, scene.fog.color);
+  scene.background.copy(scene.fog.color);
+  // 해(낮) / 달빛(밤) 방향
+  const elev = THREE.MathUtils.degToRad(L(a.elev, b.elev));
+  const az = h > 12 || h < 4 ? 0.66 : -0.35; // 오후엔 서쪽(+x), 아침엔 동쪽
+  const dir = new THREE.Vector3(Math.cos(elev) * Math.cos(az), Math.sin(elev), Math.cos(elev) * Math.sin(az) + 0.55).normalize();
+  sun.position.copy(dir).multiplyScalar(160);
+  skyMat.uniforms.sunDir.value.set(dir.x, Math.max(0.02, dir.y * 0.4), dir.z).normalize();
+  LC(a.sun, b.sun, sun.color);
+  sun.intensity = L(a.sunI, b.sunI);
+  LC(a.hemiS, b.hemiS, hemi.color);
+  LC(a.hemiG, b.hemiG, hemi.groundColor);
+  hemi.intensity = L(a.hemiI, b.hemiI);
+  TOD.env = L(a.env, b.env);
+  TOD.envK = clamp(TOD.env / 0.6, 0.3, 1.4);
+  if (!mode?.inside) scene.environmentIntensity = TOD.env;
+  else scene.environmentIntensity = 0.5 * (0.6 + 0.4 * TOD.envK);
+  renderer.toneMappingExposure = L(a.exp, b.exp);
+  const win = L(a.win, b.win);
+  for (const { m, base } of NIGHT_MATS) m.emissiveIntensity = base * win;
+  TOD.lamp = L(a.lamp, b.lamp);
+  LAMP_MAT.color.copy(_c.set(0x4a4540)).lerp(new THREE.Color(0xffd08a), clamp(0.15 + TOD.lamp, 0, 1));
+  for (const l of nightLights) l.intensity = l.userData.max * TOD.lamp;
+  starsSky.material.opacity = L(a.stars, b.stars) * 0.9;
+  moon.material.opacity = L(a.moon, b.moon);
+  const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
+  const icon = h >= 21 || h < 5 ? '🌙' : h < 7 ? '🌅' : h < 17 ? '☀️' : h < 19.5 ? '🌇' : '🌆';
+  TOD.label = `${icon} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  const el = document.getElementById('clock');
+  if (el) el.textContent = TOD.label;
+}
 
 /* =========================================================================
    거리 (광화문 / 세종대로)
@@ -580,13 +675,21 @@ function buildStreet() {
   const lamps = [];
   for (let x = -96; x <= 140; x += 18) { lamps.push([x + 4.5, 4.6, 0]); lamps.push([x + 4.5, 25.6, Math.PI]); }
   const poleIM = new THREE.InstancedMesh(CYL, std(0x2c2c33, { metalness: 0.6, roughness: 0.4 }), lamps.length);
-  const headIM = new THREE.InstancedMesh(SPH, glow(0xffd08a), lamps.length);
+  const headIM = new THREE.InstancedMesh(SPH, LAMP_MAT, lamps.length);
   lamps.forEach(([x, z], i) => {
     colCircle(x, z, 0.18);
     poleIM.setMatrixAt(i, m4.compose(p.set(x, 3.2, z), q.identity(), s.set(0.08, 6.2, 0.08)));
     headIM.setMatrixAt(i, m4.compose(p.set(x, 6.4, z), q.identity(), s.set(0.32, 0.22, 0.32)));
   });
   poleIM.castShadow = true;
+  // 밤에 켜지는 가로등 불빛
+  for (const [x, z] of LOW ? [[-12, 3.6], [12, 3.6], [0, 27]] : [[-34, 3.6], [-12, 3.6], [12, 3.6], [34, 3.6], [-20, 15], [20, 15]]) {
+    const l = new THREE.PointLight(0xffc47a, 0, 20, 1.5);
+    l.position.set(x, 5.8, z);
+    l.userData.max = 26;
+    g.add(l);
+    nightLights.push(l);
+  }
   g.add(poleIM, headIM);
 
   // 떨어진 은행잎
@@ -824,7 +927,9 @@ function facadeFront(shop) {
     if (!emi) { c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(0, 0, w, 6); }
     void emiCells;
   };
-  return new THREE.MeshStandardMaterial({ map: canvasTex(W, H, draw(false)), emissiveMap: canvasTex(W, H, draw(true)), emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.85 });
+  const fm = new THREE.MeshStandardMaterial({ map: canvasTex(W, H, draw(false)), emissiveMap: canvasTex(W, H, draw(true)), emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.85 });
+  NIGHT_MATS.push({ m: fm, base: 0.55 });
+  return fm;
 }
 function buildFoodStreet() {
   const g = street;
@@ -1847,6 +1952,203 @@ function buildInterior() {
 }
 
 /* =========================================================================
+   길고양이 — 시계로 계산되는 일정이라 모든 접속자에게 같은 곳에 보여요
+   ========================================================================= */
+const CAT_COATS = [
+  { name: '치즈', base: 0xe9a35a, stripe: '#c9772f', belly: 0xfbecd6, eye: 0x9ac23c },
+  { name: '고등어', base: 0x8a8a86, stripe: '#4a4a48', belly: 0xe8e4da, eye: 0xc8b23a },
+  { name: '까망', base: 0x26221f, belly: 0x26221f, socks: 0xf4efe6, eye: 0xd8b02a },
+  { name: '하양', base: 0xf6f2ea, belly: 0xffffff, eye: 0x6fb2e0 },
+  { name: '삼색', base: 0xf6f0e4, belly: 0xffffff, patches: [0xd98a3a, 0x2a2420], eye: 0xb8a03a },
+  { name: '턱시도', base: 0x1f1c1a, belly: 0xf6f2ea, socks: 0xf6f2ea, eye: 0x8fc23c },
+  { name: '갈색 줄무늬', base: 0xa0764e, stripe: '#5e3f25', belly: 0xf0dcc0, eye: 0x9ac23c },
+];
+// 영역(길 위 1차원 경로): [x0, x1, z]
+const CAT_ROUTES = [[-40, -6, 1.2], [6, 40, 1.4], [-34, 8, 13.4], [14, 52, 16.6], [-62, -24, 28.7], [-18, 20, 28.7], [24, 62, 28.7]];
+const cats = [];
+function hash(a, b) { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+function stripeTex(col, base) {
+  return canvasTex(128, 64, (c, w, h) => {
+    c.fillStyle = '#' + new THREE.Color(base).getHexString(); c.fillRect(0, 0, w, h);
+    c.strokeStyle = col; c.lineCap = 'round';
+    for (let x = 6; x < w; x += 14) { c.lineWidth = rand(4, 7); c.beginPath(); c.moveTo(x, 0); c.quadraticCurveTo(x + rand(-6, 6), h / 2, x + rand(-4, 4), h * 0.78); c.stroke(); }
+  });
+}
+function makeCat(i) {
+  const coat = CAT_COATS[i % CAT_COATS.length];
+  const g = new THREE.Group();
+  const fur = new THREE.MeshStandardMaterial({ color: coat.stripe ? 0xffffff : coat.base, map: coat.stripe ? stripeTex(coat.stripe, coat.base) : null, roughness: 0.95, normalMap: fabricNor });
+  if (fabricNor) fur.normalScale.set(0.6, 0.6);
+  const furPlain = std(coat.base, { roughness: 0.95 });
+  const belly = std(coat.belly, { roughness: 0.95 });
+  const pink = std(0xf2a0a8, { roughness: 0.6 });
+  // 몸통 피벗(엉덩이 기준) → 앉기·웅크리기
+  const hip = new THREE.Group(); hip.position.set(0, 0.16, -0.12); g.add(hip);
+  const body = new THREE.Group(); body.position.set(0, 0.04, 0.12); hip.add(body);
+  const torso = addMesh(body, new THREE.CapsuleGeometry(0.1, 0.24, 6, 14), fur, 0, 0, 0, 1, 0.92, 1, { rx: Math.PI / 2 });
+  addMesh(body, SPH, belly, 0, -0.04, 0.08, 0.075, 0.07, 0.1);
+  if (coat.patches) coat.patches.forEach((pc, k) => addMesh(body, SPH, std(pc, { roughness: 0.95 }), (k ? -0.05 : 0.04), 0.06, k ? -0.07 : 0.05, 0.075, 0.05, 0.09));
+  // 머리
+  const head = new THREE.Group(); head.position.set(0, 0.1, 0.2); body.add(head);
+  addMesh(head, SPH, furPlain, 0, 0, 0, 0.105, 0.095, 0.095);
+  if (coat.stripe) addMesh(head, SPH, fur, 0, 0.02, -0.01, 0.1, 0.085, 0.09);
+  addMesh(head, SPH, belly, 0, -0.03, 0.07, 0.055, 0.038, 0.04);
+  addMesh(head, SPH, pink, 0, -0.008, 0.096, 0.012, 0.009, 0.008);
+  for (const sx of [-1, 1]) {
+    const ear = addMesh(head, new THREE.ConeGeometry(0.04, 0.075, 4), furPlain, sx * 0.058, 0.085, -0.005, 1, 1, 0.55, { rz: -sx * 0.25, ry: Math.PI / 4 });
+    void ear;
+    addMesh(head, new THREE.ConeGeometry(0.024, 0.05, 4), pink, sx * 0.056, 0.08, 0.006, 1, 1, 0.4, { rz: -sx * 0.25, ry: Math.PI / 4 });
+    for (const wy of [-0.02, -0.035]) addBox(head, 0.09, 0.0018, 0.0018, std(0xf4f4f0), sx * 0.075, wy, 0.075, { rz: sx * (wy + 0.03) * 6, ry: -sx * 0.25 });
+  }
+  const eyesOpen = new THREE.Group(), eyesShut = new THREE.Group();
+  head.add(eyesOpen, eyesShut);
+  const irisM = new THREE.MeshPhysicalMaterial({ color: coat.eye, roughness: 0.1, clearcoat: 1 });
+  for (const sx of [-1, 1]) {
+    addMesh(eyesOpen, SPH, irisM, sx * 0.04, 0.018, 0.078, 0.022, 0.024, 0.014);
+    addMesh(eyesOpen, SPH, std(0x0d0a08), sx * 0.04, 0.018, 0.09, 0.007, 0.019, 0.006);
+    addMesh(eyesOpen, SPH, SHINE_MAT, sx * 0.04 + 0.007, 0.028, 0.094, 0.005, 0.005, 0.004);
+    const arc = addMesh(eyesShut, GEO.arc, MOUTH_MAT, sx * 0.04, 0.018, 0.088, 0.5, 0.35, 0.4);
+    arc.rotation.z = Math.PI;
+  }
+  eyesShut.visible = false;
+  // 다리 (어깨/엉덩이 피벗)
+  const legs = [];
+  for (const [lx, lz, front] of [[-0.05, 0.13, 1], [0.05, 0.13, 1], [-0.055, -0.11, 0], [0.055, -0.11, 0]]) {
+    const piv = new THREE.Group(); piv.position.set(lx, -0.02, lz); body.add(piv);
+    addMesh(piv, new THREE.CapsuleGeometry(0.026, 0.1, 3, 8), furPlain, 0, -0.07, 0);
+    addMesh(piv, SPH, coat.socks ? std(coat.socks) : furPlain, 0, -0.13, 0.008, 0.03, 0.022, 0.036);
+    piv.userData.front = front;
+    legs.push(piv);
+  }
+  // 꼬리 (관절 사슬)
+  const tail = [];
+  let parent = body;
+  const tailGeo = new THREE.CapsuleGeometry(0.022, 0.05, 3, 8);
+  for (let k = 0; k < 6; k++) {
+    const piv = new THREE.Group();
+    piv.position.set(0, k ? 0.068 : 0.03, k ? 0 : -0.2);
+    if (!k) piv.rotation.x = -2.2;
+    parent.add(piv);
+    addMesh(piv, tailGeo, k % 2 && coat.stripe ? fur : furPlain, 0, 0.034, 0, 1 - k * 0.06, 1, 1 - k * 0.06);
+    tail.push(piv);
+    parent = piv;
+  }
+  g.traverse((m) => { if (m.isMesh) { m.castShadow = !LOW; m.userData.cat = i; } });
+  const sh = blob(g, 0, 0.0, 0, 0.5, 0.65);
+  sh.castShadow = false;
+  street.add(g);
+  const r = CAT_ROUTES[i % CAT_ROUTES.length];
+  const C = { i, g, hip, body, head, legs, tail, eyesOpen, eyesShut, route: r, x: (r[0] + r[1]) / 2, z: r[2], ry: 0, mode: 'walk', petT: 0, phase: rand(0, 10), walkPh: 0, hearts: [] };
+  cats.push(C);
+  return C;
+}
+const CAT_BLOCK = 28; // 초
+function catPlan(C, T) {
+  // 각 블록 시작점은 해시로 정해진 경로 위 한 점, 걷는 블록이면 다음 점까지 이동
+  const [x0, x1] = C.route;
+  const b = Math.floor(T / CAT_BLOCK), f = T / CAT_BLOCK - b;
+  const P = (n) => x0 + 1 + hash(C.i + 11, n) * (x1 - x0 - 2);
+  const r = hash(C.i + 101, b);
+  const pa = P(b), pb = P(b + 1);
+  if (r < 0.5) {
+    const dist = Math.abs(pb - pa), dur = Math.min(0.9, dist / 0.45 / CAT_BLOCK);
+    if (f < dur) return { x: pa + (pb - pa) * (f / dur), mode: 'walk', dir: Math.sign(pb - pa) };
+    return { x: pb, mode: 'sit', dir: Math.sign(pb - pa) };
+  }
+  // 쉬는 블록은 이전 블록 끝점(=P(b))에서: 웅크리기 / 그루밍 / 잠
+  return { x: pa, mode: r < 0.67 ? 'loaf' : r < 0.84 ? 'groom' : 'sleep', dir: hash(C.i + 7, b) < 0.5 ? 1 : -1 };
+}
+function buildCats() { for (let i = 0; i < CAT_ROUTES.length; i++) makeCat(i); }
+function nearestCat(A, max = 1.25) {
+  let best = null, bd = max;
+  for (const C of cats) { const d = Math.hypot(A.x - C.x, A.z - C.z); if (d < bd) { bd = d; best = C; } }
+  return best;
+}
+const HEART_TEX = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.font = '48px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('💕', 32, 36); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+function petCat(C, local) {
+  C.petT = 4.5;
+  if (local) audio.purr();
+  for (let k = 0; k < 3; k++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: HEART_TEX, transparent: true, depthWrite: false }));
+    sp.scale.set(0.16, 0.16, 1);
+    sp.userData = { t: -k * 0.45, x: rand(-0.12, 0.12) };
+    sp.visible = false;
+    C.g.add(sp);
+    C.hearts.push(sp);
+  }
+}
+const SERVER_T0 = 1730000000; // 기준 시각(초) — 모두 같은 일정을 보도록
+function updateCats(t, dt) {
+  const T = Date.now() / 1000 - SERVER_T0;
+  for (const C of cats) {
+    const plan = catPlan(C, T);
+    const ph = t + C.phase;
+    let mode = plan.mode;
+    if (C.petT > 0) { C.petT -= dt; mode = mode === 'walk' || mode === 'sit' ? 'pet-sit' : 'pet-' + mode; }
+    else {
+      const k = Math.min(1, dt * 3);
+      C.x += (plan.x - C.x) * k;
+    }
+    const z = C.route[2] + Math.sin(C.x * 0.6 + C.i) * 0.35;
+    C.z += (z - C.z) * Math.min(1, dt * 3);
+    const wantR = plan.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+    let dr = wantR - C.ry; dr = Math.atan2(Math.sin(dr), Math.cos(dr));
+    C.ry += dr * Math.min(1, dt * 4);
+    C.g.position.set(C.x, 0.152, C.z);
+    C.g.rotation.y = C.ry + (mode === 'walk' ? Math.sin(C.x * 0.6 + C.i) * 0.25 : 0);
+    // 자세
+    const base = mode.replace('pet-', '');
+    const sitting = base === 'sit' || base === 'groom';
+    const low = base === 'loaf' || base === 'sleep';
+    C.hip.rotation.x += ((sitting ? -0.75 : 0) - C.hip.rotation.x) * Math.min(1, dt * 6);
+    C.hip.position.y += ((low ? 0.08 : 0.16) - C.hip.position.y) * Math.min(1, dt * 6);
+    const sleepy = base === 'sleep' || mode.startsWith('pet');
+    C.eyesOpen.visible = !sleepy; C.eyesShut.visible = sleepy;
+    if (mode === 'walk') {
+      C.walkPh += dt * 9;
+      C.legs.forEach((l, k) => { l.rotation.x = Math.sin(C.walkPh + (k === 0 || k === 3 ? 0 : Math.PI)) * 0.55; l.scale.y = 1; });
+    } else {
+      C.legs.forEach((l) => {
+        const front = l.userData.front;
+        l.rotation.x = sitting ? (front ? 0.75 : -0.8) : 0;
+        l.scale.y = low ? 0.25 : sitting && front ? 1.55 : 1;
+      });
+    }
+    // 머리
+    if (base === 'groom') {
+      const fl = C.legs[1];
+      fl.rotation.x = 0.75 - 1.9; fl.scale.y = 1.2;
+      C.head.rotation.set(0.55 + Math.sin(ph * 7) * 0.12, -0.35, 0.15);
+    } else if (base === 'sleep') C.head.rotation.set(0.35, 0.6, 0.35);
+    else if (mode.startsWith('pet')) C.head.rotation.set(-0.35 + Math.sin(ph * 2) * 0.08, Math.sin(ph * 1.5) * 0.25, 0.25);
+    else C.head.rotation.set(Math.sin(ph * 0.7) * 0.08, Math.sin(ph * 0.4) * 0.45, 0);
+    C.head.position.y = sitting ? 0.13 : 0.1;
+    // 꼬리
+    C.tail.forEach((s, k) => {
+      if (!k) { s.rotation.x = mode === 'walk' ? -0.55 : low ? -1.6 : -1.75; s.rotation.z = 0; return; }
+      const sway = Math.sin(ph * (mode.startsWith('pet') ? 2 : 3) - k * 0.7) * (low ? 0.12 : 0.25);
+      s.rotation.x = mode === 'walk' ? (k > 3 ? 0.35 : 0.05) : 0.1;
+      s.rotation.z = low ? 0.35 + sway * 0.3 : sway;
+    });
+    // 숨쉬기
+    C.body.scale.y = 1 + Math.sin(ph * (base === 'sleep' ? 1.6 : 2.6)) * 0.02;
+    // 하트
+    for (let k = C.hearts.length - 1; k >= 0; k--) {
+      const sp = C.hearts[k];
+      sp.userData.t += dt;
+      const u = sp.userData.t;
+      sp.visible = u > 0;
+      if (u > 0) { sp.position.set(sp.userData.x + Math.sin(u * 4) * 0.04, 0.45 + u * 0.45, 0); sp.material.opacity = clamp(1.6 - u, 0, 1); }
+      if (u > 1.6 || (C.petT <= 0 && u > 0)) { if (u > 1.6) { C.g.remove(sp); sp.material.dispose(); C.hearts.splice(k, 1); } }
+    }
+    if (C.petT > 0 && C.hearts.length < 2 && Math.random() < dt * 2) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: HEART_TEX, transparent: true, depthWrite: false }));
+      sp.scale.set(0.16, 0.16, 1); sp.userData = { t: 0, x: rand(-0.12, 0.12) }; C.g.add(sp); C.hearts.push(sp);
+    }
+  }
+}
+
+/* =========================================================================
    불만창고 — 로비 구석의 은밀하고 반짝이는 스트레스 해소 공간
    (x -19.65 ~ -13.2, z -0.35 ~ -5.8 · 입구는 동쪽 벽 z -4.3 ~ -5.5)
    ========================================================================= */
@@ -1913,9 +2215,11 @@ function buildVentRoom() {
   const paper = new THREE.MeshStandardMaterial({ map: tiled(wallpaperTex(), 2, 1.5), roughness: 0.9 });
   const trim = pbr('walnut_veneer', 2, 1, { rough: 0.5, fallback: 0x7b4a2c });
   // 벽 (안쪽 유리도 가려서 은밀하게)
-  const wall = (w, d, x, z) => { addBox(g, w, H, d, paper, x, H / 2, z); addBox(g, w + 0.02, 0.14, d + 0.02, trim, x, 0.07, z); colBox(x, z, w, d); };
-  wall(W, 0.15, cx, z1);                       // 앞(유리 쪽)
-  wall(0.15, Dp, x0, cz);                      // 왼쪽(유리 쪽)
+  const wall = (w, d, x, z, mat = paper) => { addMesh(g, BOX, mat, x, H / 2, z, w, H, d); addBox(g, w + 0.02, 0.14, d + 0.02, trim, x, 0.07, z); colBox(x, z, w, d); };
+  // 유리 쪽 면은 평범한 벽으로 — 밖에서는 안이 보이지 않아요
+  const plain = std(0xd8cfc4, { roughness: 0.9 });
+  wall(W, 0.15, cx, z1, [paper, paper, paper, paper, plain, paper]);   // 앞(유리 쪽)
+  wall(0.15, Dp, x0, cz, [paper, plain, paper, paper, paper, paper]);  // 왼쪽(유리 쪽)
   wall(W + 0.15, 0.15, cx, z0);                // 업무공간 쪽
   wall(0.15, z1 - -4.3, x1, (z1 + -4.3) / 2);  // 입구 옆 벽
   wall(0.15, -5.5 - z0, x1, (-5.5 + z0) / 2);
@@ -2256,6 +2560,19 @@ const audio = {
     const gn = ctx.createGain(); gn.gain.setValueAtTime(0.001, t); gn.gain.exponentialRampToValueAtTime(0.35, t + 0.08); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
     src.connect(bp); bp.connect(gn); gn.connect(this.fx); src.start(t, rand(0, 1), 1);
   },
+  purr() {
+    if (!this.on) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = this.noise; src.loop = true;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
+    const am = ctx.createGain(); am.gain.value = 0;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 24;
+    const lg = ctx.createGain(); lg.gain.value = 0.5;
+    lfo.connect(lg); lg.connect(am.gain);
+    const out = ctx.createGain(); out.gain.setValueAtTime(0.001, t); out.gain.exponentialRampToValueAtTime(0.7, t + 0.4); out.gain.setValueAtTime(0.7, t + 3.2); out.gain.exponentialRampToValueAtTime(0.001, t + 4.2);
+    src.connect(lp); lp.connect(am); am.connect(out); out.connect(this.fx);
+    src.start(t); lfo.start(t); src.stop(t + 4.3); lfo.stop(t + 4.3);
+  },
   pop() {
     if (!this.on) return;
     const ctx = this.ctx, t = ctx.currentTime;
@@ -2281,7 +2598,7 @@ function setInside(v) {
   if (mode.inside === v) return;
   mode.inside = v;
   scene.environment = (v ? envIn : envOut) || envOut;
-  scene.environmentIntensity = v ? 0.5 : 0.6;
+  scene.environmentIntensity = v ? 0.5 * (0.6 + 0.4 * TOD.envK) : TOD.env;
   audio.setMix();
 }
 const isInsideXZ = (x, z) => x > -20 && x < 20 && z < 0 && z > -30;
@@ -2408,7 +2725,7 @@ const me = { A: null, name: '', design: 0, target: null, auto: null, run: false 
 const keys = new Set();
 const joy = { x: 0, y: 0, active: false };
 let sayN = 0, pokeN = 0;
-let lastSay = null, lastPoke = null, lastFx = null, fxN = 0;
+let lastSay = null, lastPoke = null, lastFx = null, fxN = 0, lastPet = null, petN = 0;
 const SPOTS = {
   street: { x: 0, z: 3.4, ry: Math.PI, label: '🏙️ 광화문 거리' },
   lobby: { x: 0, z: -4.2, ry: Math.PI, label: '🚪 로비' },
@@ -2475,6 +2792,18 @@ function doAction() {
   if (!me.A || !mode.playing) return;
   if (me.A.seat) { leaveSeat(me.A); sendPresence(true); refreshContext(true); return; }
   const s = nearestFreeSeat();
+  const cat = nearestCat(me.A);
+  if (cat && (!s || Math.hypot(me.A.x - cat.x, me.A.z - cat.z) < Math.hypot(me.A.x - s.ex, me.A.z - s.ez))) {
+    // 고양이 쓰다듬기
+    me.target = null; me.auto = null;
+    me.A.ry = Math.atan2(cat.x - me.A.x, cat.z - me.A.z);
+    me.petT = 3.6; me.petCat = cat.i;
+    petCat(cat, true);
+    lastPet = { c: cat.i, n: ++petN };
+    sendPresence(true);
+    setTimeout(() => mySay(pick(['귀여워 😻', '골골송 들린다~', '말랑말랑 🐾', '착하다 착해', '냐옹~'])), 600);
+    return;
+  }
   if (s) {
     me.target = null; me.auto = null;
     placeOnSeat(me.A, s);
@@ -2542,7 +2871,8 @@ function updatePlayer(dt) {
     A.ry += d * Math.min(1, dt * 12);
   }
   A.moving = sp > 0.25;
-  A.P.state = A.moving ? 'walk' : 'idle';
+  if (me.petT > 0) { me.petT -= dt; if (A.moving) me.petT = 0; }
+  A.P.state = A.moving ? 'walk' : me.petT > 0 ? 'pet' : 'idle';
   A.P.walkRate = clamp(sp / 2.5, 0.6, 1.8);
   setInside(isInsideXZ(A.x, A.z));
 }
@@ -2575,6 +2905,7 @@ function flushPresence(dt) {
   if (lastSay) data.say = lastSay;
   if (lastPoke) data.poke = lastPoke;
   if (lastFx) data.fx = lastFx;
+  if (lastPet) data.pet = lastPet;
   room.presence(data).catch(() => {});
 }
 const cleanText = (t, n) => String(t ?? '').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, n);
@@ -2589,7 +2920,7 @@ function applyRemote(peer) {
   if (!R) {
     const A = makeAvatar(design, name, false);
     A.P.g.traverse((m) => { if (m.isMesh) clickables.push(m); });
-    R = { A, design, name, peer: peer.peer, tx: num(pr.x, -110, 165), tz: num(pr.z, -30, 32), tr: num(pr.r, -10, 10), sayN: pr.say?.n, pokeN: pr.poke?.n, fxN: pr.fx?.n };
+    R = { A, design, name, peer: peer.peer, tx: num(pr.x, -110, 165), tz: num(pr.z, -30, 32), tr: num(pr.r, -10, 10), sayN: pr.say?.n, pokeN: pr.poke?.n, fxN: pr.fx?.n, petN: pr.pet?.n };
     A.x = R.tx; A.z = R.tz; A.ry = R.tr; A.y = groundY(A.x, A.z);
     remotes.set(peer.peer, R);
   }
@@ -2604,6 +2935,12 @@ function applyRemote(peer) {
     if (t) say(R.A.P, t, 3.4, POKE_FROM.includes(t) || POKE_TO.includes(t) ? 'poke' : 'normal');
   }
   // 나를 찔렀나?
+  // 고양이 쓰다듬기
+  if (pr.pet && pr.pet.n !== R.petN) {
+    R.petN = pr.pet.n;
+    const C = cats[pr.pet.c];
+    if (C) { petCat(C, false); R.petUntil = performance.now() + 3600; R.petCatI = C.i; }
+  }
   // 불만창고 효과 (내용 없이 동작만 전달됨)
   if (pr.fx && pr.fx.n !== R.fxN) {
     R.fxN = pr.fx.n;
@@ -2638,7 +2975,7 @@ function updateRemotes(dt) {
     else { const k = Math.min(1, dt * 8); A.x += dx * k; A.z += dz * k; }
     const sp = d * 8;
     A.moving = sp > 0.35;
-    A.P.state = A.moving ? 'walk' : 'idle';
+    A.P.state = A.moving ? 'walk' : R.petUntil > performance.now() ? 'pet' : 'idle';
     A.P.walkRate = clamp(sp / 2.5, 0.6, 1.8);
     let dr = R.tr - A.ry; dr = Math.atan2(Math.sin(dr), Math.cos(dr));
     A.ry += dr * Math.min(1, dt * 10);
@@ -2901,7 +3238,9 @@ function refreshContext(force) {
   if (!me.A) return;
   const A = me.A;
   const s = A.seat ? null : nearestFreeSeat();
-  const label = A.seat ? '🚶 일어나기' : s ? SEAT_INFO[s.kind].label : '';
+  const cat = A.seat ? null : nearestCat(A);
+  const catFirst = cat && (!s || Math.hypot(A.x - cat.x, A.z - cat.z) < Math.hypot(A.x - s.ex, A.z - s.ez));
+  const label = A.seat ? '🚶 일어나기' : catFirst ? '🐱 쓰다듬기' : s ? SEAT_INFO[s.kind].label : '';
   const act = $('#act');
   if (act.textContent !== label) act.textContent = label;
   act.hidden = !label;
@@ -2941,6 +3280,7 @@ buildStreet();
 buildTraffic();
 buildNeighbors();
 buildFoodStreet();
+buildCats();
 buildGate();
 buildTower();
 buildInterior();
@@ -2973,6 +3313,8 @@ controls.autoRotateSpeed = 0.35;
 renderThumbs();
 $('#enter').disabled = false;
 $('#enter').textContent = '회사로 들어가기';
+applyTimeOfDay();
+setInterval(applyTimeOfDay, 15000);
 
 /* =========================================================================
    애니메이션
@@ -2987,6 +3329,7 @@ function updatePerson(P, t, dt) {
   }
   aR.rotation.z = 0.16; aL.rotation.z = -0.16;
   hp.rotation.z = 0;
+  if (P.pose === 'stand' && P.rantT <= 0) P.body.rotation.x = P.state === 'pet' ? 0.38 : 0;
   let bob = 0;
   switch (P.state) {
     case 'type':
@@ -3009,6 +3352,12 @@ function updatePerson(P, t, dt) {
       break;
     }
     case 'pp':
+      break;
+    case 'pet':
+      aR.rotation.x = -0.75 + Math.sin(ph * 5) * 0.28;
+      aL.rotation.x = -0.5;
+      P.legs.forEach((l) => { l.hip.rotation.x = -0.35; l.knee.rotation.x = 0.55; });
+      hp.rotation.x = 0.4; hp.rotation.y = Math.sin(ph * 1.2) * 0.12;
       break;
     case 'write':
       aL.rotation.x = -1.0; aL.rotation.z = -0.3;
@@ -3224,6 +3573,7 @@ function frame() {
   updateBubbles(dt);
   updateLeaves(t, dt);
   updateVent(t, dt);
+  updateCats(t, dt);
   stars.mat.opacity = 0.75 + Math.sin(t * 2) * 0.2;
   blinkers.forEach((b) => { b.visible = Math.sin(t * 3) > 0; });
   ctxT += dt;
@@ -3236,7 +3586,9 @@ requestAnimationFrame(frame);
 
 // 디버그/스크린샷용
 window.__office = {
-  camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent,
+  camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
+  setHour(h) { TOD.override = h; applyTimeOfDay(); },
+  look(p, t) { return flyTo(new THREE.Vector3(...p), new THREE.Vector3(...t), 0.05); },
   step: (dt) => updatePlayer(dt),
   pokeFirst() { const R = [...remotes.values()][0]; if (!R) return 'no remote'; poke(R); return 'poked ' + R.name; },
 };
