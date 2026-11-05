@@ -61,7 +61,7 @@ claude.ai 아티팩트로 열면 `room` 기능으로 같은 페이지를 연 사
 | PBR 텍스처 | asphalt_02, pavement_02, large_floor_tiles_02, concrete_floor_02, herringbone_parquet, red_brick_03, oak_veneer_01, walnut_veneer, velour_velvet, rough_linen, rough_wood, large_sandstone_blocks, grey_roof_tiles |
 | HDRI 조명 | sunset, apartment (Poly Haven HDRI를 512px EXR로 줄인 `@pmndrs/assets` 버전, CC0) |
 
-캐릭터는 귀여운 2등신 비율로 코드에서 직접 만들고(반짝이는 눈, 볼터치, 깜빡임, 비니·안경·곰돌이 후드·캡·헤드폰), 옷에는 스캔 린넨 노멀맵을 입혔어요.
+캐릭터는 귀여운 2등신 비율로 코드에서 직접 만들고(반짝이는 눈, 볼터치, 깜빡임 · 노란 비니 / 안경 긴 머리 / 갈색 짧은 머리 / 검은 머리 정장 / 헤드폰), 옷에는 스캔 린넨 노멀맵을 입혔어요.
 
 ## 배경음악 (브라우저가 직접 연주 · 파일 0 KB)
 장소와 시간에 따라 곡이 바뀌고, 옮겨 갈 때 자연스럽게 크로스페이드돼요. 오른쪽 위 🎵 버튼으로 음악을 켜고 꺼요.

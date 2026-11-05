@@ -1138,8 +1138,11 @@ const GEO = {
   shin: new THREE.CapsuleGeometry(0.078, 0.12, 4, 12),
   head: new THREE.SphereGeometry(0.27, 40, 28),
   hairTop: new THREE.SphereGeometry(0.287, 40, 16, 0, Math.PI * 2, 0, Math.PI * 0.5),
-  hairBack: new THREE.SphereGeometry(0.284, 32, 12, Math.PI * 0.82, Math.PI * 1.36, Math.PI * 0.45, Math.PI * 0.33),
-  hood: new THREE.SphereGeometry(0.32, 36, 18, Math.PI * 0.75, Math.PI * 1.5, 0, Math.PI * 0.72),
+  hairBack: new THREE.SphereGeometry(0.284, 40, 12, Math.PI - 0.14, Math.PI + 0.28, Math.PI * 0.44, Math.PI * 0.34),
+  fringe: new THREE.SphereGeometry(0.293, 32, 6, Math.PI / 2 - 0.85, 1.7, Math.PI * 0.2, Math.PI * 0.2),
+  hood: new THREE.SphereGeometry(0.318, 48, 24, Math.PI / 2 + 0.78, Math.PI * 2 - 1.56, 0, Math.PI * 0.8),
+  hatTop: new THREE.SphereGeometry(0.306, 40, 14, 0, Math.PI * 2, 0, Math.PI * 0.5),
+  brim: new THREE.CircleGeometry(0.19, 28, 0, Math.PI),
   bangs: new THREE.SphereGeometry(1, 24, 12),
   hand: new THREE.SphereGeometry(0.064, 14, 10),
   eye: new THREE.SphereGeometry(0.046, 18, 14),
@@ -1155,8 +1158,8 @@ const GEO = {
 const DESIGNS = [
   { skin: 0xf6d3b8, shirt: 0xf08a4b, pants: 0x4a3a5a, hair: 0x5a3a28, shoe: 0xf2efe8, acc: 'beanie', accColor: 0xf2c14e },
   { skin: 0xefc3a2, shirt: 0x7cc6b4, pants: 0x2f3542, hair: 0x17120f, shoe: 0x2a2522, acc: 'glasses', long: true },
-  { skin: 0xf8ddc8, shirt: 0xc89b6d, pants: 0x6b5a4a, hair: 0x6b4630, shoe: 0x8a4b34, acc: 'bear', accColor: 0xb07e55 },
-  { skin: 0xe2ad8a, shirt: 0x6a9be0, pants: 0xe8e2d6, hair: 0x241a15, shoe: 0x3a4a6a, acc: 'cap', accColor: 0xe06b7a },
+  { skin: 0xf8ddc8, shirt: 0xc89b6d, pants: 0x6b5a4a, hair: 0x6b4630, shoe: 0x8a4b34, acc: 'none' },
+  { skin: 0xe2ad8a, shirt: 0x2c3446, pants: 0x2c3446, hair: 0x15110f, shoe: 0x141210, acc: 'suit' },
   { skin: 0xf6dcc4, shirt: 0xb49ad8, pants: 0x2c3e66, hair: 0xc08a5a, shoe: 0xf2efe8, acc: 'phones', accColor: 0xf4efe6, long: true },
 ];
 const skinCache = new Map();
@@ -1197,28 +1200,22 @@ function makeFace(hp, cy) {
 function makeHair(hp, cy, mH, long) {
   addMesh(hp, GEO.hairTop, mH, 0, cy + 0.005, -0.012, 1, 1, 1, { rx: -0.22 });
   addMesh(hp, GEO.hairBack, mH, 0, cy, -0.005, 1, long ? 1.6 : 1, 1);
-  addMesh(hp, GEO.bangs, mH, 0, cy + 0.17, 0.17, 0.23, 0.085, 0.12, { rx: -0.5 });
+  addMesh(hp, GEO.fringe, mH, 0, cy, 0, 1, 1, 1, { rx: -0.08 });
   if (long) for (const sx of [-1, 1]) addMesh(hp, GEO.bangs, mH, sx * 0.21, cy - 0.12, -0.04, 0.09, 0.2, 0.13);
 }
 function makeAccessory(hp, cy, d) {
   const m = d.accColor !== undefined ? fabric(d.accColor, 0.85) : null;
   if (d.acc === 'beanie') {
-    addMesh(hp, GEO.hairTop, m, 0, cy + 0.03, -0.01, 1.05, 0.95, 1.05, { rx: -0.3 });
-    addSph(hp, 0.07, m, 0, cy + 0.32, -0.06);
+    // 눈썹 위까지 내려쓴 니트 비니 + 접힌 단 + 방울
+    addMesh(hp, GEO.hatTop, m, 0, cy + 0.07, -0.01, 1.0, 1.0, 1.0, { rx: -0.14 });
+    addMesh(hp, new THREE.TorusGeometry(0.3, 0.036, 12, 56), m, 0, cy + 0.075, -0.01, 1, 1, 1, { rx: Math.PI / 2 - 0.14 });
+    addSph(hp, 0.075, m, 0, cy + 0.39, -0.05);
   } else if (d.acc === 'glasses') {
     const gm = std(0x2a2522, { roughness: 0.3, metalness: 0.3 });
     for (const sx of [-1, 1]) onFace(hp, GEO.ring, gm, sx * 0.095, cy + 0.005, 0.262, cy);
     addBox(hp, 0.06, 0.012, 0.012, gm, 0, cy + 0.01, 0.272);
-  } else if (d.acc === 'bear') {
-    addMesh(hp, GEO.hood, m, 0, cy + 0.0, -0.02, 1, 1, 1, { rx: -0.35 });
-    for (const sx of [-1, 1]) {
-      addSph(hp, 0.085, m, sx * 0.2, cy + 0.24, -0.04);
-      addSph(hp, 0.045, std(0xf2c6a8), sx * 0.2, cy + 0.25, 0.02);
-    }
-  } else if (d.acc === 'cap') {
-    addMesh(hp, GEO.hairTop, m, 0, cy + 0.03, 0, 1.03, 0.9, 1.03, { rx: -0.15 });
-    addMesh(hp, CYL, m, 0, cy + 0.14, 0.27, 0.2, 0.025, 0.16, { rx: 0.12 });
-    addSph(hp, 0.03, m, 0, cy + 0.3, 0);
+  } else if (d.acc === 'suit') {
+    // 셔츠 깃 + 넥타이는 몸통(makePerson)에서
   } else if (d.acc === 'phones') {
     const pm = std(d.accColor, { roughness: 0.4 });
     addMesh(hp, GEO.band, pm, 0, cy + 0.02, -0.01, 1, 1, 1);
@@ -1260,14 +1257,25 @@ function makePerson(designIdx = 0, o = {}) {
   const mK = skinMat(d.skin);
   const mH = std(d.hair, { roughness: 0.55 });
   const torso = addMesh(body, GEO.torso, mS, 0, HIP + 0.2, 0, 1.06, 1, 0.92);
+  if (d.acc === 'suit') {
+    const white = std(0xf6f4ef, { roughness: 0.6 });
+    const vee = new THREE.Mesh(new THREE.CircleGeometry(0.085, 3), white);
+    vee.position.set(0, HIP + 0.33, 0.186); vee.rotation.z = -Math.PI / 2; vee.scale.set(1.5, 0.9, 1);
+    body.add(vee);
+    for (const sx of [-1, 1]) addBox(body, 0.07, 0.028, 0.02, white, sx * 0.045, HIP + 0.39, 0.175, { rz: sx * 0.45 });
+    addBox(body, 0.04, 0.03, 0.012, std(0xb0313a, { roughness: 0.5 }), 0, HIP + 0.37, 0.19);
+    addMesh(body, new THREE.CylinderGeometry(0.012, 0.03, 0.15, 4), std(0xb0313a, { roughness: 0.5 }), 0, HIP + 0.28, 0.192, 1, 1, 0.4);
+    for (const sx of [-1, 1]) addBox(body, 0.05, 0.22, 0.015, std(0x222936, { roughness: 0.7 }), sx * 0.085, HIP + 0.27, 0.178, { rz: -sx * 0.32 });
+    for (const y of [0.19, 0.12]) addSph(body, 0.012, std(0x0e0e10), 0.02, HIP + y, 0.19);
+  }
   const headPivot = new THREE.Group();
   headPivot.position.y = 1.04;
   headPivot.userData.skin = mK;
   body.add(headPivot);
   const CY = 0.27;
   addMesh(headPivot, GEO.head, mK, 0, CY, 0, 1, 0.96, 0.98);
-  if (d.acc !== 'bear') makeHair(headPivot, CY, mH, d.long);
-  else addMesh(headPivot, GEO.bangs, mH, 0, CY + 0.17, 0.17, 0.23, 0.085, 0.12, { rx: -0.5 });
+  if (d.acc === 'beanie') addMesh(headPivot, GEO.hairBack, mH, 0, CY, -0.005);
+  else makeHair(headPivot, CY, mH, d.long);
   makeAccessory(headPivot, CY, d);
   const face = makeFace(headPivot, CY);
   // 화난 얼굴 (임금님 귀는 당나귀 귀)
@@ -4681,6 +4689,19 @@ window.__office = {
   setHour(h) { TOD.override = h; applyTimeOfDay(); },
   renderAudio, tracks: () => Object.keys(TRACKS), musicZone,
   look(p, t) { return flyTo(new THREE.Vector3(...p), new THREE.Vector3(...t), 0.05); },
+  headShot(i, ang, elev = 0.05, size = 360) {
+    const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    r.setSize(size, size); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping;
+    const sc = new THREE.Scene(); sc.background = new THREE.Color(0xd8d0c8);
+    sc.add(new THREE.HemisphereLight(0xfff4e8, 0x8a7060, 2.0));
+    const dl = new THREE.DirectionalLight(0xffffff, 2.0); dl.position.set(1.5, 3, 3); sc.add(dl);
+    const P = makePerson(i, { cast: false }); P.blob.visible = false; sc.add(P.g);
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.05, 20);
+    cam.position.set(Math.sin(ang) * 1.6, 1.31 + elev * 2, Math.cos(ang) * 1.6); cam.lookAt(0, 1.3, 0);
+    r.render(sc, cam);
+    const url = r.domElement.toDataURL('image/png'); r.dispose(); r.forceContextLoss?.();
+    return url;
+  },
   step: (dt) => updatePlayer(dt),
   pokeFirst() { const R = [...remotes.values()][0]; if (!R) return 'no remote'; poke(R); return 'poked ' + R.name; },
 };
