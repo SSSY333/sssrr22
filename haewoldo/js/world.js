@@ -2,8 +2,9 @@
 /* =========================================================
  *  해월도 지도 v3 — 큰 섬(128×128) · 무인도 · 건물 내부, 장소, 길찾기
  * ========================================================= */
-const T = { WATER: 0, SAND: 1, GRASS: 2, PATH: 3, WOOD: 4, FLOWER: 5, HILL: 6, ROCK: 7, POND: 8, FLOOR: 9, TILEF: 10, MAT: 11 };
-const TILE_NAMES = ['water', 'sand', 'grass', 'path', 'wood', 'flower', 'hill', 'rock', 'pond', 'floor', 'tilefloor', 'mat'];
+const T = { WATER: 0, SAND: 1, GRASS: 2, PATH: 3, WOOD: 4, FLOWER: 5, HILL: 6, ROCK: 7, POND: 8, FLOOR: 9, TILEF: 10, MAT: 11, ALLEY: 12, BOARD: 13 };
+const isRoadT = (t) => t === T.PATH || t === T.ALLEY || t === T.BOARD || t === T.WOOD;
+const TILE_NAMES = ['water', 'sand', 'grass', 'path', 'wood', 'flower', 'hill', 'rock', 'pond', 'floor', 'tilefloor', 'mat', 'alley', 'board'];
 
 const MAPS = {};
 let M = null;
@@ -37,13 +38,14 @@ const BUILDINGS = [
   { id: 'home', name: '내 집', x: 66, y: 70, w: 2, h: 2, wallH: 18, roofH: 12, wall: '#f3dad2', base: '#d7b2a6', roof: '#e08a6e', sign: 'heart', doorT: 0.55, windows: [['L', 0.08, 0.22], ['R', 0.35, 0.3]] },
   { id: 'houseA', name: '이웃집', x: 58, y: 70, w: 2, h: 2, wallH: 17, roofH: 11, wall: '#eef0e4', base: '#c8cbb4', roof: '#6f9a5a', doorT: 0.55, windows: [['L', 0.08, 0.22], ['R', 0.35, 0.3]] },
   { id: 'houseB', name: '이웃집', x: 73, y: 70, w: 2, h: 2, wallH: 17, roofH: 11, wall: '#f3ead6', base: '#d6c6a0', roof: '#c9884a', doorT: 0.55, windows: [['L', 0.08, 0.22], ['R', 0.35, 0.3]] },
+  { id: 'furniture', name: '해월 가구점', x: 42, y: 69, w: 3, h: 3, wallH: 20, roofH: 12, wall: '#f3e7d6', base: '#c9a87e', roof: '#8a5a3a', sign: 'chair', awning: '#c99a64', windows: [['L', 0.62, 0.2], ['R', 0.15, 0.25], ['R', 0.58, 0.25]] },
   { id: 'houseC', name: '이웃집', x: 79, y: 59, w: 2, h: 3, wallH: 17, roofH: 11, wall: '#e8eef5', base: '#b9c6d6', roof: '#5a7aa8', doorT: 0.55, windows: [['L', 0.08, 0.22], ['R', 0.35, 0.3]] },
 ];
-const ENTERABLE = ['school', 'clinic', 'hall', 'sataek', 'cafe', 'police', 'super', 'sashimi', 'home', 'storage', 'clothes', 'salon'];
+const ENTERABLE = ['school', 'clinic', 'hall', 'sataek', 'cafe', 'police', 'super', 'sashimi', 'home', 'storage', 'clothes', 'salon', 'furniture'];
 
 const PLACE_DEFS = {
   fishing: { name: '부두 낚시터' }, pier: { name: '동쪽 포구' }, rocks: { name: '갯바위 낚시터' }, cafe: { name: '카페 쉼터' }, police: { name: '파출소' },
-  plaza: { name: '마을 광장' }, clothes: { name: '해월 옷가게' }, salon: { name: '미용실 해바라기' }, super: { name: '마을 슈퍼' }, sashimi: { name: '해월 횟집' }, school: { name: '해월초등학교' }, clinic: { name: '보건지소' },
+  plaza: { name: '마을 광장' }, furniture: { name: '해월 가구점' }, booth: { name: '네컷사진 부스' }, dock: { name: '여객선 선착장' }, promenade: { name: '해안 산책로' }, clothes: { name: '해월 옷가게' }, salon: { name: '미용실 해바라기' }, super: { name: '마을 슈퍼' }, sashimi: { name: '해월 횟집' }, school: { name: '해월초등학교' }, clinic: { name: '보건지소' },
   hall: { name: '마을회관' }, sataek: { name: '경찰 사택' }, observatory: { name: '오름 전망대' }, hill: { name: '해월 오름' }, home: { name: '내 집' },
   storage: { name: '해녀창고' }, lighthouse: { name: '등대' }, pavilion: { name: '동백숲 정자' }, forest: { name: '동백숲' }, orchard: { name: '마을 귤밭' },
   farm: { name: '귤 농장 마을' }, ranch: { name: '조랑말 목장' }, windmill: { name: '풍차 언덕' }, field: { name: '꽃밭 들판' }, beach: { name: '해수욕장' }, coast: { name: '해안 산책로' },
@@ -116,16 +118,20 @@ function buildIsland() {
 
   // 길
   hline(62, WX + 4, EX); vline(62, 17, SY - 8);
-  hline(52, 41, 81); hline(72, 41, 81); for (const x of [46, 56, 70, 78]) vline(x, 52, 72); vline(41, 52, 72); vline(81, 52, 72);
+  hline(52, 41, 81); hline(72, 41, 81); for (const x of [46, 56, 70, 78]) vline(x, 52, 72, T.ALLEY); vline(41, 52, 72, T.ALLEY); vline(81, 52, 72, T.ALLEY);
+  // 큰길은 두 칸 폭 (마을 중심), 골목은 한 칸
+  hline(63, 41, EX - 1); hline(53, 41, 81); hline(73, 41, 81); vline(63, 17, SY - 8);
+  hline(56, 57, 59, T.ALLEY);                       // 막다른 골목
   vline(46, 38, 52); vline(78, 38, 52); hline(38, 84, 96); vline(96, 38, 62); vline(24, 38, 62);
-  vline(52, 70, 72);
+  vline(52, 70, 72, T.ALLEY); vline(43, 72, 73);
   hline(38, 24, 84); vline(28, 36, 38); vline(84, 36, 38); vline(41, 35, 38);
   vline(34, 62, 96); hline(96, 34, 44);
-  { let py = CE[44] - 8; for (let x = 44; x <= 88; x++) { const ny = CE[x] - 8; vline(x, py, ny); py = ny; } vline(62, SY - 8, CE[62] - 8); vline(46, 72, CE[46] - 8); vline(78, 72, CE[78] - 8); vline(44, 96, CE[44] - 8);
+  { let py = CE[44] - 8; for (let x = 44; x <= 88; x++) { const ny = CE[x] - 8; vline(x, py, ny, T.BOARD); py = ny; } vline(62, SY - 8, CE[62] - 8); vline(46, 72, CE[46] - 8); vline(78, 72, CE[78] - 8); vline(44, 96, CE[44] - 8);
     const pe = CE[88] - 8; hline(pe, 88, lx - 1); vline(lx - 1, ly + 2, pe); }
   vline(lx - 1, 63, ly + 2); hline(ly + 2, lx - 1, lx + 1);
   // 포구 (나무 데크)
-  hline(62, EX + 1, EX + 6, T.WOOD); for (let y = 61; y <= 63; y++) hline(y, EX + 3, EX + 6, T.WOOD);
+  hline(62, EX + 1, EX + 6, T.WOOD); hline(63, EX, EX + 2, T.WOOD); for (let y = 61; y <= 63; y++) hline(y, EX + 3, EX + 6, T.WOOD);
+  for (let y = 64; y <= 65; y++) hline(y, EX + 5, EX + 7, T.WOOD);   // 여객선 선착장
   // 연못
   for (let y = 88; y <= 91; y++) for (let x = 38; x <= 41; x++) if (Math.hypot(x - 39.5, y - 89.5) < 2.3) set(x, y, T.POND);
   // 꽃 (마을 · 숲 · 들판)
@@ -149,7 +155,16 @@ function buildIsland() {
   }
   const B = (id) => m.buildings.find(b => b.id === id);
   B('sataek').doorTile = [44, 52]; B('super').doorTile = [73, 62]; B('salon').doorTile = [76, 62]; B('home').doorTile = [67, 72]; B('houseA').doorTile = [59, 72]; B('houseB').doorTile = [74, 72]; B('lighthouse').doorTile = [lx + 1, ly + 2];
-  B('farmhouse').doorTile = [41, 35];
+  B('farmhouse').doorTile = [41, 35]; B('furniture').doorTile = [43, 72];
+  // 길 모서리 다듬기: 두 방향이 길로 막힌 안쪽 모서리를 둥글게 채움 (큰길만)
+  { const isMain = (x, y) => { const t = tileAt(x, y, m); return t === T.PATH; };
+    const add = [];
+    for (let y = 40; y <= 100; y++) for (let x = 20; x <= 100; x++) {
+      const t = tileAt(x, y, m); if (t !== T.GRASS && t !== T.FLOWER) continue; if (m.block[y * W + x]) continue;
+      const L = isMain(x - 1, y), Rr = isMain(x + 1, y), U = isMain(x, y - 1), D = isMain(x, y + 1);
+      if ((L && U && isMain(x - 1, y - 1)) || (Rr && D && isMain(x + 1, y + 1)) || (L && D && isMain(x - 1, y + 1)) || (Rr && U && isMain(x + 1, y - 1))) add.push([x, y]);
+    }
+    for (const [x, y] of add) set(x, y, T.PATH); }
 
   // 벤치
   m.benches = {
@@ -187,6 +202,20 @@ function buildIsland() {
   // 목장 (울타리)
   for (let x = 74; x <= 92; x++) for (let y = 24; y <= 36; y++) { const border = x === 74 || x === 92 || y === 24 || y === 36; if (border && !(x === 84 && y === 36)) obj(m, 'fence', x, y); }
   obj(m, 'hay', 86, 27); obj(m, 'hay', 88, 30); obj(m, 'hay', 77, 33);
+  // v6: 네컷사진 부스 · 횡단보도 · 매표소 · 장식 (길을 막지 않게)
+  obj(m, 'booth', 54, 60); obj(m, 'crosswalk', 53, 52, { solid: false, flat: true }); obj(m, 'crosswalk', 53, 53, { solid: false, flat: true });
+  obj(m, 'ticket', EX - 1, 61); obj(m, 'signpost', 52, 54);
+  obj(m, 'furnDisplay', 45, 71);
+  const decorOk = (x, y) => { const t = tileAt(x, y, m); if (t !== T.GRASS && t !== T.FLOWER) return false; if (m.block[y * W + x]) return false;
+    for (const b of m.buildings) if (Math.abs(b.doorTile[0] - x) <= 1 && Math.abs(b.doorTile[1] - y) <= 1) return false;
+    return !m.objects.some(o => o.x === x && o.y === y); };
+  const deco = (kind, pts, extra) => { for (const [x, y] of pts) if (decorOk(x, y)) obj(m, kind, x, y, Object.assign({}, extra)); };
+  deco('flowerbed', [[48, 58], [53, 58], [61, 58], [68, 58], [71, 58], [76, 58], [47, 69], [61, 69], [69, 69], [76, 69], [64, 48], [70, 48]]);
+  deco('bush', [[42, 58], [48, 56], [60, 56], [67, 56], [74, 56], [80, 56], [42, 66], [58, 66], [64, 67], [74, 66], [80, 68], [55, 48], [69, 50], [77, 50], [57, 75], [65, 76], [73, 76]]);
+  deco('lowfence', [[64, 69], [65, 68], [68, 69], [69, 68], [57, 68], [60, 68], [72, 68], [75, 68]]);
+  deco('stone', [[44, 57], [59, 57], [66, 57], [77, 57], [44, 67], [60, 67], [72, 67], [79, 70], [52, 75], [70, 75]], { solid: false });
+  deco('pot', [[56, 58], [63, 58], [66, 66], [44, 63]]);
+  deco('stone', [[EX - 15, 63], [EX - 11, 64], [EX - 5, 64]], { solid: false });
   // 마을버스 정류장
   const stops = { busVillage: [61, 63], busHarbor: [EX - 3, 61], busBeach: [64, CE[64] - 9], busFarm: [30, 39], busRanch: [85, 39], busHill: [61, 18], busRocks: [WX + 5, 61], busForest: [33, 72], busLight: [lx - 2, ly + 1] };
   for (const [k, [x, y]] of Object.entries(stops)) { land(x, y); obj(m, 'busstop', x, y, { stop: k }); }
@@ -207,6 +236,7 @@ function buildIsland() {
     rocks: TST((x, y) => x <= WX + 4 && y >= 57 && y <= 67), lighthouse: C([lx + 2, ly + 3], 4), windmill: TST((x, y) => Math.hypot(x - lx + 1.5, y - 79) < 7),
     observatory: C([63.5, 15], 3), hill: TST((x, y) => Math.hypot(x - 62.5, (y - 20.5) * 1.1) < 9.5), pavilion: C([36, 85], 2.5), forest: TST((x, y) => x >= 18 && x <= 47 && y >= 70 && y <= 100),
     farm: TST((x, y) => x >= 18 && x <= 47 && y >= 24 && y <= 40), ranch: TST((x, y) => x >= 73 && x <= 93 && y >= 22 && y <= 40), field: TST((x, y) => x >= 40 && x <= 50 && y >= 42 && y <= 50),
+    booth: C([54.5, 61.5], 1.1), dock: TST((x, y) => x >= EX + 4.5 && y >= 63.5 && y < 66), furniture: C([43.5, 72.8], 1.4), promenade: TST((x, y) => tileAt(Math.floor(x), Math.floor(y), MAPS.island) === T.BOARD),
     cafe: C([51.5, 63.5], 2.4), police: C([65.5, 62.8], 1.6), plaza: C([62.5, 62.5], 1.8), super: C([73.5, 62.8], 1.3), clothes: C([58.5, 62.8], 1.3), salon: C([76.5, 62.8], 1.3), sashimi: C([EX - 12.5, 62.8], 1.6),
     school: C([51, 53], 2.6), clinic: C([67.5, 53], 1.8), hall: C([73.5, 53], 2), sataek: C([44.5, 52.8], 1.3), home: C([67.5, 72.8], 1.6), storage: C([EX - 6.5, 62.8], 1.6),
     orchard: TST((x, y) => x >= 48 && x <= 54.99 && y >= 64 && y <= 69.99),
@@ -215,7 +245,7 @@ function buildIsland() {
   };
   for (const k of Object.keys(pl)) pl[k].name = PLACE_DEFS[k].name;
   m.places = pl;
-  m.order = ['fishing', 'pier', 'rocks', 'lighthouse', 'windmill', 'observatory', 'hill', 'pavilion', 'cafe', 'police', 'super', 'clothes', 'salon', 'sashimi', 'plaza', 'school', 'clinic', 'hall', 'sataek', 'home', 'storage', 'orchard', 'farm', 'ranch', 'field', 'forest', 'beach', 'coast'];
+  m.order = ['dock', 'fishing', 'booth', 'furniture', 'pier', 'rocks', 'lighthouse', 'windmill', 'observatory', 'hill', 'pavilion', 'cafe', 'police', 'super', 'clothes', 'salon', 'sashimi', 'plaza', 'school', 'clinic', 'hall', 'sataek', 'home', 'storage', 'orchard', 'farm', 'ranch', 'field', 'forest', 'beach', 'promenade', 'coast'];
 
   // 이름 붙은 좌표
   Object.assign(POI, {
@@ -226,7 +256,18 @@ function buildIsland() {
     lighthouse: [lx + 2.5, ly + 4.5], lighthouseDoor: [lx + 1.5, ly + 2.5], windmill: [lx - 1.5, 79.5], hill: [62.5, 18.5], observatory: [63.5, 15.5],
     forest: [34.5, 80.5], pavilion: [35.5, 85.5], pond: [37.5, 87.5], farm: [28.5, 38.5], farmIn: [28.5, 33.5], farmhouse: [41.5, 36.5], ranch: [84.5, 38.5], ranchIn: [84.5, 31.5], field: [45.5, 46.5],
     cafeBench: [53.5, 62.5], plazaBench: [60.5, 65.5],
+    furnitureDoor: [43.5, 72.5], booth: [54.5, 61.5], dockGate: [EX + 6.5, 64.5], ferryDock: [EX + 6.5, 63.5], ticket: [EX - 0.5, 62.5],
+    schoolYard: [54.5, 50.5], schoolWall: [47.5, 50.5], crosswalk: [53.5, 54.5], alley: [56.5, 57.5], alleyEnd: [58.5, 56.5],
+    promenade: [50.5, CE[50] - 7.5], stoneWall: [47.5, 66.5], digSpot: [lx - 4.5, 84.5],
   });
+  for (const k of ['schoolYard', 'schoolWall', 'crosswalk', 'alley', 'alleyEnd', 'promenade', 'stoneWall', 'digSpot', 'booth', 'dockGate']) POI[k] = nearestWalkable(POI[k][0], POI[k][1], m);
+  // 숨겨진 장소 입구 (발견 전에는 보이지 않음)
+  m.portals = [
+    { id: 'h_forest', x: 27, y: 93, to: [5.5, 9.5] }, { id: 'h_cave', x: WX + 1, y: 58, to: [3.5, 6.5] },
+    { id: 'h_view', x: lx + 4, y: ly + 1, to: [3.5, 7.5] }, { id: 'h_cellar', x: 38, y: 35, to: [3.5, 4.5] },
+  ];
+  for (const p of m.portals) { const [x, y] = nearestWalkable(p.x + 0.5, p.y + 0.5, m); p.x = Math.floor(x); p.y = Math.floor(y); }
+  m.ferry = { dock: [EX + 9, 65] };
   m.spawn = { doctor: [66.5, 52.5], teacher: [50.5, 52.5], traveler: [EX + 4.5, 62.5], cafe: [51.5, 62.5], haenyeo: [EX - 6.5, 62.5] };
   m.boatSpot = POI.boatSpot;
   m.stops = Object.fromEntries(Object.entries(stops).map(([k, [x, y]]) => [k, [x + 0.5, y + 1.5]]));
@@ -250,6 +291,63 @@ function buildIslet() {
   plantTrees(m, rng(777), 7, null, (x, y) => (y === 9 && x < 8) || (x >= 11 && x <= 14 && y >= 5 && y <= 8));
   m.spawn = { dock: [5.5, 9.5] };
   m.boatSpot = [3.5, 9.5];
+  m.portals = [{ id: 'h_secret', x: 17, y: 6, to: [2.5, 5.5] }];
+  for (const p of m.portals) { const [x, y] = nearestWalkable(p.x + 0.5, p.y + 0.5, m); p.x = Math.floor(x); p.y = Math.floor(y); }
+}
+/* v6: 숨겨진 장소 (발견하면 지도에 등록) */
+const HIDDEN_DEFS = {
+  h_forest: { name: '숲속 오래된 정자', from: 'island', icon: '⛩️' },
+  h_cave: { name: '썰물 동굴', from: 'island', icon: '🕳️' },
+  h_secret: { name: '무인도 비밀 해변', from: 'islet', icon: '🏝️' },
+  h_view: { name: '등대 뒤편 전망대', from: 'island', icon: '🔭' },
+  h_cellar: { name: '오래된 귤 저장고', from: 'island', icon: '🍊' },
+};
+function buildHidden() {
+  const mk = (id, W, H, fill, o = {}) => { const m = makeMap(id, W, H, Object.assign({ name: HIDDEN_DEFS[id].name, hidden: true, places: {}, order: [] }, o)); m.tiles.fill(fill); return m; };
+  const setT = (m, x, y, t) => { if (inMap(x, y, m)) m.tiles[y * m.W + x] = t; };
+  { // 숲속 오래된 정자
+    const m = mk('h_forest', 12, 12, T.GRASS);
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if (x === 0 || y === 0 || x === 11) { if (!(x === 5 && y === 11)) obj(m, 'tree', x, y, { v: (x + y) % 4 }); }
+    for (let y = 4; y <= 11; y++) setT(m, 5, y, T.ALLEY); for (let x = 3; x <= 8; x++) setT(m, x, 4, T.ALLEY);
+    for (let y = 1; y <= 3; y++) for (let x = 8; x <= 10; x++) if (Math.hypot(x - 9, y - 2) < 1.6) setT(m, x, y, T.POND);
+    for (const [x, y] of [[2, 7], [3, 9], [8, 8], [9, 6], [2, 2], [7, 10]]) setT(m, x, y, T.FLOWER);
+    obj(m, 'pavilion', 5, 2); obj(m, 'stone', 3, 6, { solid: false }); obj(m, 'stone', 8, 5, { solid: false }); obj(m, 'bush', 9, 9); obj(m, 'bush', 1, 9);
+    m.benches = { h_forest: { name: '오래된 정자 마루', place: 'h_forest', seats: [[4, 3], [6, 3]], stand: [[4, 4], [6, 4]] } };
+    for (const s of m.benches.h_forest.seats) obj(m, 'bench', s[0], s[1], { bench: 'h_forest' });
+    m.exitTile = [5, 11]; m.spawn = { in: [5.5, 10.5] }; m.dig = [2.5, 4.5];
+  }
+  { // 썰물 동굴
+    const m = mk('h_cave', 10, 10, T.WATER, { dark: true });
+    for (let y = 1; y < 9; y++) for (let x = 1; x < 9; x++) if (Math.hypot(x - 4.5, y - 4.5) < 4) setT(m, x, y, T.SAND);
+    for (let y = 1; y < 9; y++) for (let x = 1; x < 9; x++) if (tileAt(x, y, m) === T.SAND && Math.hypot(x - 4.5, y - 4.5) > 3.1) setT(m, x, y, T.ROCK);
+    for (const [x, y] of [[2, 3], [7, 3], [6, 7], [2, 6]]) obj(m, 'rocks', x, y);
+    obj(m, 'glowShell', 4, 3, { solid: false }); obj(m, 'glowShell', 6, 5, { solid: false });
+    m.exitTile = [3, 7]; setT(m, 3, 7, T.ROCK); setT(m, 3, 8, T.ROCK); m.spawn = { in: [3.5, 6.5] }; m.dig = [5.5, 3.5];
+  }
+  { // 무인도 비밀 해변
+    const m = mk('h_secret', 14, 10, T.WATER);
+    for (let y = 0; y < 10; y++) for (let x = 0; x < 14; x++) { const r = Math.hypot((x - 6.5) / 1.4, y - 4.5); if (r < 4.6) setT(m, x, y, r < 2.4 ? T.GRASS : T.SAND); }
+    for (const [x, y] of [[4, 2], [9, 3], [6, 6]]) obj(m, 'palm', x, y);
+    obj(m, 'parasol', 8, 6, { season: 'summer' }); obj(m, 'glowShell', 10, 5, { solid: false });
+    m.benches = { h_secret: { name: '비밀 해변 통나무', place: 'h_secret', seats: [[6, 3], [7, 3]], stand: [[6, 4], [7, 4]] } };
+    for (const s of m.benches.h_secret.seats) obj(m, 'bench', s[0], s[1], { bench: 'h_secret' });
+    m.exitTile = [2, 5]; m.spawn = { in: [3.5, 5.5] }; m.dig = [9.5, 6.5];
+  }
+  { // 등대 뒤편 전망대
+    const m = mk('h_view', 10, 9, T.WATER);
+    for (let y = 1; y < 9; y++) for (let x = 0; x < 9; x++) if (Math.hypot(x - 4, (y - 5) * 1.2) < 4.4) setT(m, x, y, T.HILL);
+    for (let x = 1; x <= 7; x++) if (tileAt(x, 2, m) === T.HILL) obj(m, 'lowfence', x, 2);
+    obj(m, 'telescope', 6, 4); obj(m, 'flowerbed', 1, 6);
+    m.benches = { h_view: { name: '숨은 전망대 벤치', place: 'h_view', seats: [[3, 3], [4, 3]], stand: [[3, 4], [4, 4]] } };
+    for (const s of m.benches.h_view.seats) obj(m, 'bench', s[0], s[1], { bench: 'h_view' });
+    m.exitTile = [3, 8]; setT(m, 3, 8, T.HILL); m.spawn = { in: [3.5, 7.5] }; m.dig = [6.5, 6.5];
+  }
+  { // 오래된 귤 저장고 (실내)
+    const m = makeMap('h_cellar', 7, 6, { name: HIDDEN_DEFS.h_cellar.name, interior: true, hidden: true, owner: null, wall: '#b9a88a', wall2: '#6a4a30', places: {}, order: [] });
+    m.tiles.fill(T.MAT); m.exit = [3, 5]; m.exitTile = [3, 5]; m.spawn = { in: [3.5, 4.5] }; m.visit = [];
+    setFurniture(m, [['crate', 0, 0], ['crate', 1, 0], ['crate', 5, 0], ['shelf', 3, 0], ['crate', 6, 1], ['crate', 0, 2], ['lamp', 6, 3]]);
+    m.dig = [4.5, 2.5];
+  }
 }
 
 /* ---------------- 건물 내부 (벽을 따라 가지런히) ---------------- */
@@ -275,6 +373,8 @@ const INTERIORS = {
     furn: [['rack', 1, 0, 0, 'clothes'], ['rack', 2, 0], ['mirror', 4, 0, 0, 'clothes'], ['mannequin', 6, 0], ['mannequin', 0, 2, 1], ['plant', 6, 3], ['rug', 3, 3]], visit: [[2.5, 2.5], [5.5, 2.5]] },
   salon: { name: '미용실 해바라기', W: 7, H: 6, floor: T.TILEF, wall: '#f4f0ff', wall2: '#8a6fc9', exit: [3, 5],
     furn: [['mirror', 1, 0], ['salonChair', 1, 1, 0, 'salon'], ['mirror', 4, 0], ['salonChair', 4, 1, 0, 'salon'], ['shelf', 6, 0], ['plant', 0, 4], ['sofa', 6, 3, 1]], visit: [[5.5, 4.5], [2.5, 3.5]] },
+  furniture: { name: '해월 가구점', W: 8, H: 7, floor: T.FLOOR, wall: '#f3e7d6', wall2: '#8a5a3a', exit: [3, 6],
+    furn: [['counter', 1, 0, 0, 'furnShop'], ['register', 2, 0, 0, 'furnShop'], ['shelf', 4, 0], ['lamp', 6, 0], ['plant', 7, 0], ['sofa2', 0, 2, 3], ['bedS', 6, 2, 0], ['tableR', 3, 3], ['chair', 2, 3, 1], ['chair', 4, 3, 3], ['rug', 3, 4]], visit: [[1.5, 5.5], [5.5, 5.5]] },
   sataek: { name: '경찰 사택', W: 7, H: 6, floor: T.FLOOR, wall: '#e4ddd0', wall2: '#2e3d66', exit: [3, 5],
     furn: [['bed', 0, 1, 0, 'detBed'], ['photo', 1, 0, 0, null, 5], ['desk', 3, 0], ['shelf', 5, 0], ['plant', 6, 0], ['rug', 3, 3]] },
 };
@@ -293,21 +393,26 @@ function buildInterior(id) {
 function setFurniture(m, list) {
   m.objects = m.objects.filter(o => o.kind !== 'furn'); m.block.fill(0);
   for (const f of list) {
-    const [k, x, y, flip, act, minStage] = f;
+    const isArr = Array.isArray(f);
+    const k = isArr ? f[0] : f.k, x = isArr ? f[1] : f.x, y = isArr ? f[2] : f.y;
+    const rot = ((isArr ? f[3] : f.rot) | 0) & 3, act = isArr ? f[4] : f.act, minStage = isArr ? f[5] : 0;
     if (!FURN[k] || !inMap(x, y, m)) continue;
-    const o = { kind: 'furn', k, x, y, flip: !!flip, act: act || null, minStage: minStage || 0, solid: !FURN[k].flat };
+    const F = FURN[k], [fw, fh] = typeof furnFoot === 'function' ? furnFoot(k, rot) : [1, 1];
+    const o = { kind: 'furn', k, x, y, rot, fw, fh, flip: rot & 1, act: act || null, minStage: minStage || 0, solid: !F.flat && !F.wall, id: isArr ? null : f.id };
     m.objects.push(o);
-    if (o.solid) m.block[y * m.W + x] = 1;
+    if (o.solid) for (let yy = y; yy < y + fh; yy++) for (let xx = x; xx < x + fw; xx++) if (inMap(xx, yy, m)) m.block[yy * m.W + xx] = 1;
   }
-  m.block[m.exit[1] * m.W + m.exit[0]] = 0;
+  if (m.exit) m.block[m.exit[1] * m.W + m.exit[0]] = 0;
 }
 function buildWorld() {
   for (const k of Object.keys(MAPS)) delete MAPS[k];
   buildIsland(); buildIslet();
   for (const id of Object.keys(INTERIORS)) buildInterior(id);
+  buildHidden();
   M = MAPS.island;
 }
 function placeAt(x, y, m = M) {
+  if (m.hidden) return m.id;
   if (m.interior) return 'in_' + m.owner;
   for (const k of m.order) {
     const p = m.places[k];
@@ -317,7 +422,8 @@ function placeAt(x, y, m = M) {
 }
 function placeName(k) {
   if (!k) return '';
-  if (k.startsWith('in_')) return INTERIORS[k.slice(3)].name;
+  if (k.startsWith('in_')) return (INTERIORS[k.slice(3)] || { name: '' }).name;
+  if (HIDDEN_DEFS[k]) return HIDDEN_DEFS[k].name;
   return (PLACE_DEFS[k] || ISLET_PLACES[k] || { name: '' }).name;
 }
 
@@ -356,7 +462,7 @@ function findPath(sx, sy, tx, ty, opts = {}) {
       if (dx && dy && (!ok(cx + dx, cy) || !ok(cx, cy + dy))) continue;
       const ni = ny * W + nx; if (closed[ni]) continue;
       const t = m.tiles[ni];
-      const ng = g[cur] + cost * (t === T.PATH || t === T.WOOD ? 0.9 : 1);
+      const ng = g[cur] + cost * (isRoadT(t) ? 0.9 : 1);
       if (ng < g[ni]) { g[ni] = ng; came[ni] = cur; push(ng + h(nx, ny), ni); }
     }
   }

@@ -230,13 +230,16 @@ function buildingSprite(b, night) {
 }
 function objSprite(o) {
   const se = season();
-  if (o.kind === 'furn') return furnSprite(o.k, o.flip);
-  const key = o.kind + (o.v || 0) + (['tree', 'palm', 'orange'].includes(o.kind) ? se : '');
+  if (o.kind === 'furn') return furnSprite(o.k, o.rot != null ? o.rot : (o.flip ? 1 : 0));
+  if (o.kind === 'prop') return R.objSpr['prop' + o.v] || (R.objSpr['prop' + o.v] = sprProp(o.v));
+  if (o.kind === 'portal') return R.objSpr['portal' + o.v] || (R.objSpr['portal' + o.v] = sprPortal(o.v));
+  const key = o.kind + (o.v || 0) + (['tree', 'palm', 'orange', 'flowerbed', 'bush'].includes(o.kind) ? se : '');
   if (R.objSpr[key]) return R.objSpr[key];
   const mk = {
     tree: () => sprTree('tree', o.v || 0, se), palm: () => sprTree('palm', 0, se), orange: () => sprTree('orange', 0, se),
     wall: sprWall, bench: sprBench, lamp: sprLamp, parasol: sprParasol, telescope: sprTelescope, hare: sprHareubang, board: sprBoard,
     fence: sprFence, hay: sprHay, windmill: sprWindmill, busstop: sprBusStop,
+    booth: sprBooth, crosswalk: sprCrosswalk, ticket: sprTicket, signpost: sprSignpost, flowerbed: sprFlowerbed, bush: sprBush, lowfence: sprLowFence, stone: sprStone, glowShell: sprGlowShell, furnDisplay: sprFurnDisplay, clue: sprClue, dig: sprDig,
     crates: sprCrates, boat: sprBoat, pot: sprPot, rocks: sprRocks, snowman: sprSnowman, pavilion: sprPavilion, tankOut: sprTankOut, lantern: sprLantern, stall: sprStall,
   }[o.kind];
   return (R.objSpr[key] = mk ? mk() : sprPot());
@@ -313,15 +316,21 @@ function render(dt) {
     list.push({ d: key, f: () => blit(g, spr.c, spr.x, spr.y) });
     solids.push({ x: b.x, y: b.y, w: b.w, h: b.h, key, sx0: iso(b.x, b.y + b.h)[0], sx1: iso(b.x + b.w, b.y)[0] });
   }
-  const objs = G.tempObjs.length && m.id === 'island' ? m.objects.concat(G.tempObjs) : m.objects;
+  const temps = G.tempObjs.filter(o => (o.map || 'island') === m.id);
+  const objs = temps.length ? m.objects.concat(temps) : m.objects;
+  if (!m.interior && typeof drawFerry === 'function') drawFerry(g, list, inView);
   for (const o of objs) {
     if (o.water) continue;
+    if (o.hide && o.hide()) continue;
     if (o.season && o.season !== se) continue;
     if (o.minStage && (!S || S.rel.stage < o.minStage)) continue;
     const sp = objSprite(o), [sx, sy] = iso(o.x + 0.5, o.y + 0.5); if (!inView(sx, sy)) continue;
-    const key = o.x + o.y + (o.kind === 'furn' && FURN[o.k].flat ? 0.2 : 2);
-    list.push({ d: key, f: () => blit(g, sp.c, sx - sp.ax, sy - sp.ay) });
-    if (o.kind !== 'bench' && !(o.kind === 'furn' && FURN[o.k].flat)) solids.push({ x: o.x, y: o.y, w: 1, h: 1, key, sx0: sx - sp.ax, sx1: sx - sp.ax + sp.c.width });
+    const fw = o.fw || 1, fh = o.fh || 1, flat = o.flat || (o.kind === 'furn' && FURN[o.k].flat), wallI = o.kind === 'furn' && FURN[o.k].wall;
+    const key = wallI ? o.x + o.y + 0.1 : o.x + o.y + (fw - 1) + (fh - 1) + (flat ? 0.2 : 2);
+    o._key = key;
+    const ghost = G.decor && G.decor.drag && G.decor.drag.o === o;
+    list.push({ d: ghost ? 999 : key, f: () => { if (ghost) g.globalAlpha = 0.55; blit(g, sp.c, sx - sp.ax, sy - sp.ay); g.globalAlpha = 1; } });
+    if (o.kind !== 'bench' && !flat && !wallI) solids.push({ x: o.x, y: o.y, w: fw, h: fh, key, sx0: sx - sp.ax, sx1: sx - sp.ax + sp.c.width });
     if ((o.light && lit) || (o.kind === 'furn' && FURN[o.k].light)) lights.push([sx, sy - (o.kind === 'furn' ? 24 : 30)]);
   }
   for (const a of G.actors) {
@@ -329,8 +338,9 @@ function render(dt) {
     const [sx, sy] = iso(a.x, a.y); if (!inView(sx, sy)) continue;
     let d = a.x + a.y;
     if (a.seat) { const s = m.benches[a.seat.bench].seats[a.seat.idx]; d = s[0] + s[1] + 2.05; }
+    else if (a.seatFurn) d = (a.seatFurn._key || a.seatFurn.x + a.seatFurn.y + 2) + (a.seatFurn.front ? 0.05 : -0.05);
     else if (a.carried) d = G.det.x + G.det.y + 0.05;
-    else for (const s of solids) {
+    else if (!a.seatFurn) for (const s of solids) {
       if (sx + 8 < s.sx0 || sx - 8 > s.sx1) continue;
       if (Math.abs(a.x - (s.x + s.w / 2)) > 6 || Math.abs(a.y - (s.y + s.h / 2)) > 6) continue;
       if (a.x >= s.x + s.w || a.y >= s.y + s.h) d = Math.max(d, s.key + 0.01);
@@ -354,6 +364,7 @@ function render(dt) {
   // 날씨 · 낮밤
   const wz = S ? S.weather : 'sunny';
   if (!m.interior && wz !== 'sunny') { g.globalCompositeOperation = 'multiply'; g.fillStyle = wz === 'rain' || wz === 'storm' ? '#b4bccf' : wz === 'snow' ? '#e4e8f0' : '#dde1ea'; g.fillRect(0, 0, R.view.width, R.view.height); g.globalCompositeOperation = 'source-over'; }
+  if (m.dark) { g.globalCompositeOperation = 'multiply'; g.fillStyle = '#5a6488'; g.fillRect(0, 0, R.view.width, R.view.height); g.globalCompositeOperation = 'source-over'; }
   if (dl.mul) { g.globalCompositeOperation = 'multiply'; g.fillStyle = m.interior ? mixHex('#ffffff', '#ffd9b0', Math.min(1, dl.night)) : dl.mul; g.fillRect(0, 0, R.view.width, R.view.height); g.globalCompositeOperation = 'source-over'; }
   if (dl.night > 0.2 || m.interior) {
     g.globalCompositeOperation = 'lighter'; g.globalAlpha = m.interior ? 0.35 : Math.min(1, dl.night * 1.2);
@@ -395,6 +406,7 @@ function render(dt) {
       if (a.bubble) drawBubble(g, X, Y - 18 * D, a.bubble.text);
       if (a.emote) { g.font = `${15 * D}px sans-serif`; g.fillText(a.emote.icon, X + 14 * D, Y - 16 * D - Math.sin(G.t * 6) * 2 * D); }
     }
+    if (typeof drawWorldMarkers === 'function') drawWorldMarkers(g);
     for (const f of G.floats) {
       if (f.map && f.map !== m.id) continue;
       const [sx, sy] = iso(f.x, f.y); const X = SX(sx), Y = SY(sy - 40 - (1.6 - f.t) * 14);
@@ -641,16 +653,28 @@ function compTile(m, x, y, f) {
   const v = Math.floor(hash2(x, y, 2) * 8);
   const wat = (xx, yy) => tileAt(xx, yy, m) === T.WATER;
   const e1 = wat(x + 1, y) ? 1 : 0, e2 = wat(x, y + 1) ? 1 : 0, wp = t === T.WOOD && (wat(x + 1, y + 1) || e2) ? 1 : 0;
-  const key = t + '_' + v + '_' + e1 + e2 + wp + se;
+  const isR = t === T.PATH || t === T.ALLEY || t === T.BOARD;
+  const gr = (xx, yy) => { const tt = tileAt(xx, yy, m); return tt === T.GRASS || tt === T.FLOWER || tt === T.HILL; };
+  const tm = isR ? (gr(x - 1, y) ? 1 : 0) | (gr(x, y - 1) ? 2 : 0) | (gr(x + 1, y) ? 4 : 0) | (gr(x, y + 1) ? 8 : 0) : 0;
+  const key = t + '_' + v + '_' + e1 + e2 + wp + se + '_' + tm;
   let c = _tileC.get(key);
   if (!c) {
     c = mkCanvas(32, 24); const g = c.getContext('2d');
     g.drawImage(makeTile(TILE_NAMES[t], v, 0, se), 0, 0);
-    const edgeCol = t === T.WOOD ? '#6e4a30' : t === T.SAND || t === T.PATH ? '#cfae72' : t === T.ROCK ? '#3b3e46' : '#9b7049';
+    const edgeCol = t === T.WOOD || t === T.BOARD ? '#6e4a30' : t === T.SAND || t === T.PATH || t === T.ALLEY ? '#cfae72' : t === T.ROCK ? '#3b3e46' : '#9b7049';
     const edgeH = t === T.WOOD ? 3 : 5;
     if (e1) for (let X = 16; X < 32; X++) { const ye = 16 - Math.floor((X - 16) / 2); g.fillStyle = edgeCol; g.fillRect(X, ye - 1, 1, edgeH); g.fillStyle = shade(edgeCol, 0.8); g.fillRect(X, ye + edgeH - 2, 1, 1); }
     if (e2) for (let X = 0; X < 16; X++) { const ye = 8 + Math.floor(X / 2); g.fillStyle = shade(edgeCol, 1.1); g.fillRect(X, ye, 1, edgeH); g.fillStyle = shade(edgeCol, 0.8); g.fillRect(X, ye + edgeH - 1, 1, 1); }
     if (wp) { g.fillStyle = '#5a3a24'; g.fillRect(15, 15, 2, 6); }
+    if (tm) { // 잔디와 길 사이 부드러운 전환 (가장자리에 풀 가닥)
+      const SG = SEASON_GRASS[se] || SEASON_GRASS.summer, gc = SG[0], gd = SG[1];
+      for (let px = 0; px < 32; px++) for (let py = 0; py < 16; py++) {
+        if (!inDiamond(px, py)) continue; const [u, vv] = tileUV(px, py); const n = hash2(px + v * 7, py, 9);
+        const near = ((tm & 1) && u < 0.16) || ((tm & 2) && vv < 0.16) || ((tm & 4) && u > 0.84) || ((tm & 8) && vv > 0.84);
+        const near2 = ((tm & 1) && u < 0.07) || ((tm & 2) && vv < 0.07) || ((tm & 4) && u > 0.93) || ((tm & 8) && vv > 0.93);
+        if (near2 || (near && n < 0.45)) { g.fillStyle = n < 0.2 ? gd : gc; g.fillRect(px, py, 1, 1); }
+      }
+    }
     _tileC.set(key, c);
   }
   return c;
@@ -685,7 +709,7 @@ function buildBigMap() {
   const c = mkCanvas(W, H), g = c.getContext('2d');
   g.fillStyle = season() === 'winter' ? '#5f9fd0' : '#7fc4e8'; g.fillRect(0, 0, W, H);
   const se = season();
-  const cols = { [T.SAND]: '#f1dca6', [T.GRASS]: se === 'winter' ? '#eef3f7' : se === 'autumn' ? '#c9bd6a' : se === 'spring' ? '#a8dc78' : '#8ccb64', [T.PATH]: '#fff6e0', [T.WOOD]: '#b37e50', [T.FLOWER]: se === 'spring' ? '#f2d84a' : se === 'winter' ? '#d9404f' : '#c9a0e8', [T.HILL]: se === 'winter' ? '#e4ecf2' : '#6fb04f', [T.ROCK]: '#5b5f69', [T.POND]: '#4c9db4' };
+  const cols = { [T.SAND]: '#f1dca6', [T.GRASS]: se === 'winter' ? '#eef3f7' : se === 'autumn' ? '#c9bd6a' : se === 'spring' ? '#a8dc78' : '#8ccb64', [T.PATH]: '#fff6e0', [T.ALLEY]: '#efe2c8', [T.BOARD]: '#d9b98a', [T.WOOD]: '#b37e50', [T.FLOWER]: se === 'spring' ? '#f2d84a' : se === 'winter' ? '#d9404f' : '#c9a0e8', [T.HILL]: se === 'winter' ? '#e4ecf2' : '#6fb04f', [T.ROCK]: '#5b5f69', [T.POND]: '#4c9db4' };
   for (let y = 0; y < m.H; y++) for (let x = 0; x < m.W; x++) {
     const t = m.tiles[y * m.W + x]; if (t === T.WATER) continue;
     g.fillStyle = cols[t] || '#8ccb64';

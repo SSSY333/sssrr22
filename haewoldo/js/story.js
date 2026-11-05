@@ -174,7 +174,7 @@ function detUpdate(dt) {
     d.pose = 'stand';
     const needIsland = !['home', 'sick'].includes(plan.k);
     if (needIsland && (d.map !== 'island' || !d.visible)) { const h = d.map === 'in_home' ? P_('homeDoor') : d.map === 'in_sataek' ? P_('sataekDoor') : detHomeDoor(); d.map = 'island'; d.x = h[0]; d.y = h[1]; d.visible = true; }
-    if (plan.k === 'sick') { d.map = 'in_sataek'; d.x = 2.5; d.y = 2.5; d.visible = true; d.face = 'f'; d.left = true; }
+    if (plan.k === 'sick') { d.map = S.rel.flags.married ? 'in_home' : 'in_sataek'; [d.x, d.y] = nearestWalkable(2.5, 2.5, MAPS[d.map]); d.visible = true; d.face = 'f'; d.left = true; }
   }
   d.wait -= dt;
   const goto = (x, y) => { if (Math.hypot(d.x - x, d.y - y) > 0.3 && !d.path.length) d.walkTo(x, y); };
