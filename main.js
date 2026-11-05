@@ -1358,8 +1358,16 @@ function bubbleTex(text, style) {
   const g = c.getContext('2d');
   const fs = 44;
   g.font = `700 ${fs}px ${FONT}`;
-  const tw = Math.ceil(g.measureText(text).width);
-  const pad = 30, bh = 82, tail = 20;
+  // 긴 말은 두 줄로
+  let lines = [text];
+  if (g.measureText(text).width > 400) {
+    const ch = [...text], mid = Math.floor(ch.length / 2);
+    let cut = mid;
+    for (let d = 0; d < mid; d++) { if (ch[mid + d] === ' ') { cut = mid + d; break; } if (ch[mid - d] === ' ') { cut = mid - d; break; } }
+    lines = [ch.slice(0, cut).join('').trim(), ch.slice(cut).join('').trim()];
+  }
+  const tw = Math.ceil(Math.max(...lines.map((l) => g.measureText(l).width)));
+  const pad = 30, bh = lines.length > 1 ? 136 : 82, tail = 20;
   c.width = tw + pad * 2 + 8; c.height = bh + tail + 8;
   const bg = style === 'sleep' ? '#d9e3ff' : style === 'poke' ? '#ffe7a8' : style === 'angry' ? '#e53935' : '#fffaf2';
   g.fillStyle = 'rgba(40,20,20,0.25)';
@@ -1371,7 +1379,7 @@ function bubbleTex(text, style) {
   g.fillStyle = style === 'angry' ? '#ffffff' : '#2b2230';
   g.font = `${style === 'angry' ? 900 : 700} ${fs}px ${FONT}`;
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(text, (c.width - 6) / 2, bh / 2 + 5);
+  lines.forEach((l, i) => g.fillText(l, (c.width - 6) / 2, bh / 2 + 5 + (i - (lines.length - 1) / 2) * 52));
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   const res = { tex: t, aspect: c.width / c.height };
@@ -1595,9 +1603,6 @@ function makeDesk(key) {
   const slots = [new THREE.Group(), new THREE.Group()];
   slots[0].position.set(0.56, 0.76, -0.2); slots[1].position.set(0.42, 0.76, 0.12);
   slots.forEach((sl) => g.add(sl));
-  const deco = Math.random();
-  if (deco < 0.35) slots[0].add(deskItem('plant'));
-  else if (deco < 0.55) slots[0].add(deskItem('duck'));
   if (Math.random() < 0.5) addBox(g, 0.22, rand(0.02, 0.08), 0.3, std(0xf8f4ec), -0.45, 0.78, -0.15, { ry: rand(-0.3, 0.3) });
   // 의자
   const chair = new THREE.Group();
@@ -3198,6 +3203,7 @@ function seatCamera(seat) {
     flyTo(p2, tgt2, 0.8);
     return;
   }
+  if (camera.aspect < 0.8) side *= 0.25;
   const tgt = new THREE.Vector3(seat.x, 0.155 + yOff, seat.z);
   const pos = new THREE.Vector3(seat.x + fx * d + fz * side, tgt.y + h, seat.z + fz * d - fx * side);
   if (isInsideXZ(seat.x, seat.z)) { pos.x = clamp(pos.x, -19.4, 19.4); pos.y = clamp(pos.y, 0.8, 4.5); pos.z = clamp(pos.z, -29.4, -0.6); }
@@ -3615,8 +3621,7 @@ function submitVent() {
 }
 $('#act2').addEventListener('click', () => {
   const k = $('#act2').dataset.k;
-  if (k === 'decor') openDecor();
-  else if (k === 'sip') { startAct(me.A.P, 'sip', 1.2); playSfx('sip', me.A); lastFx = { k: 'sip', n: ++fxN }; sendPresence(true); if (Math.random() < 0.5) setTimeout(() => mySay(pick(['캬~ 좋다', '후루룩 ☕', '살 것 같다'])), 700); }
+  if (k === 'sip') { startAct(me.A.P, 'sip', 1.2); playSfx('sip', me.A); lastFx = { k: 'sip', n: ++fxN }; sendPresence(true); if (Math.random() < 0.5) setTimeout(() => mySay(pick(['캬~ 좋다', '후루룩 ☕', '살 것 같다'])), 700); }
   else openVent(k);
 });
 document.querySelector('.sheet-go').addEventListener('click', submitVent);
@@ -3687,9 +3692,9 @@ function refreshContext(force) {
   const act = $('#act');
   if (act.textContent !== label) act.textContent = label;
   act.hidden = !label;
-  const k2 = A.seat?.kind === 'write' ? 'burn' : A.seat?.kind === 'rant' ? 'rant' : A.seat?.kind === 'desk' ? 'decor' : A.P.holding ? 'sip' : '';
+  const k2 = A.seat?.kind === 'write' ? 'burn' : A.seat?.kind === 'rant' ? 'rant' : A.P.holding ? 'sip' : '';
   const act2 = $('#act2');
-  if (act2.dataset.k !== k2) { act2.dataset.k = k2; act2.textContent = { burn: '✍️ 스트레스 적기', rant: '🗯️ 마구 외치기', decor: '🎨 책상 꾸미기', sip: '☕ 한 모금' }[k2] || ''; }
+  if (act2.dataset.k !== k2) { act2.dataset.k = k2; act2.textContent = { burn: '✍️ 스트레스 적기', rant: '🗯️ 마구 외치기', sip: '☕ 한 모금' }[k2] || ''; }
   act2.hidden = !k2 || mode.modal;
   const k = phraseKey();
   if (!force && k === ctxKey) return;
@@ -3818,7 +3823,6 @@ async function initBoardData() {
       drawBoard();
       renderNoteList();
     }, () => { clearTimeout(timer); if (!board.notes.length) board.status = 'offline'; drawBoard(); });
-    db.collection('desks').onSnapshot((snap) => ingestDesks(snap.docs), () => {});
   } catch (e) {
     board.status = 'local';
     drawBoard();
@@ -3979,7 +3983,6 @@ function deskItem(kind) {
   }
   return g;
 }
-const deskDecor = { claims: new Map(), docs: [], local: null };
 function plateTex(text) {
   return canvasTex(256, 64, (c, w, h) => {
     c.fillStyle = '#7a4e33'; roundRect(c, 0, 0, w, h, 10); c.fill();
@@ -4009,37 +4012,6 @@ function applyDecor(key, d) {
     D.plate.visible = true;
   } else D.plate.visible = false;
 }
-function sanitizeDecor(o, owner) {
-  const items = DECOR_ITEMS.map((x) => x[0]);
-  return {
-    owner, desk: typeof o.desk === 'string' && desks.has(o.desk) ? o.desk : null,
-    l: items.includes(o.l) ? o.l : 'none', r: items.includes(o.r) ? o.r : 'none',
-    scr: SCREENS.some((s) => s[0] === o.scr) ? o.scr : 'code',
-    mug: Number.isInteger(o.mug) && o.mug >= 0 && o.mug < MUG_COLORS.length ? o.mug : 0,
-    chair: Number.isInteger(o.chair) && o.chair >= 0 && o.chair < CHAIR_COLORS.length ? o.chair : 0,
-    plate: !!o.plate, nick: cleanText(o.nick, 10), t: Number(o.t) || 0,
-  };
-}
-function rebuildClaims(list) {
-  const claims = new Map();
-  for (const d of list) {
-    if (!d.desk) continue;
-    const cur = claims.get(d.desk);
-    if (!cur || d.t < cur.t) claims.set(d.desk, d);
-  }
-  const before = deskDecor.claims;
-  deskDecor.claims = claims;
-  for (const key of new Set([...before.keys(), ...claims.keys()])) {
-    if (deskUI.key === key && deskUI.open) continue;
-    if (before.get(key) !== claims.get(key)) applyDecor(key, claims.get(key) || null);
-  }
-}
-function ingestDesks(docs) {
-  deskDecor.docs = docs.map((d) => sanitizeDecor(d.data() || {}, d.id));
-  rebuildClaims(deskDecor.docs);
-}
-const myDecor = () => deskDecor.docs.find((d) => d.owner === (board.uid || 'local'));
-
 /* ---------- 효과음 (톤 위주 · 고음 잡음 없음) ---------- */
 function toneAM(ctx, out, t, dur, type, f, amHz, depth, lpf, v) {
   const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t);
@@ -4331,98 +4303,6 @@ function updateWorkExtras(t, dt) {
   }
 }
 
-/* ---------- 책상 꾸미기 UI ---------- */
-const deskUI = { open: false, key: null, draft: null };
-function chipRow(container, label, options, getV, setV) {
-  const wrap = document.createElement('div'); wrap.className = 'deco-row';
-  const h = document.createElement('p'); h.className = 'note-h'; h.textContent = label; wrap.appendChild(h);
-  const row = document.createElement('div'); row.className = 'deco-chips'; row.setAttribute('role', 'radiogroup'); row.setAttribute('aria-label', label);
-  options.forEach(([v, text, swatch]) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'deco-chip'; b.setAttribute('role', 'radio');
-    if (swatch !== undefined) { b.classList.add('swatch'); b.style.background = swatch === null ? 'repeating-linear-gradient(45deg,#eee,#eee 4px,#fff 4px,#fff 8px)' : '#' + new THREE.Color(swatch).getHexString(); b.setAttribute('aria-label', text); }
-    else b.textContent = text;
-    b.dataset.v = String(v);
-    b.addEventListener('click', () => { setV(v); sync(); preview(); });
-    row.appendChild(b);
-  });
-  const sync = () => row.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', b.dataset.v === String(getV()) ? 'true' : 'false'));
-  sync();
-  wrap.appendChild(row); container.appendChild(wrap);
-}
-function preview() { if (deskUI.key) applyDecor(deskUI.key, { ...deskUI.draft, nick: me.name }); }
-function openDecor() {
-  const seat = me.A?.seat;
-  if (!seat?.deskKey) return;
-  const key = seat.deskKey;
-  const claim = deskDecor.claims.get(key);
-  const mine = myDecor();
-  const myId = board.uid || 'local';
-  const takenByOther = claim && claim.owner !== myId;
-  deskUI.open = true; deskUI.key = key;
-  deskUI.draft = claim && !takenByOther ? { ...claim } : mine ? { ...mine, desk: key } : { l: 'plant', r: 'none', scr: 'code', mug: 1, chair: 0, plate: true };
-  const box = $('#decoBody'); box.replaceChildren();
-  const info = $('#decoInfo');
-  const canSave = !takenByOther && (board.status === 'local' || (board.db && board.uid && board.canWrite !== false));
-  if (takenByOther) info.textContent = `${claim.nick || '다른 분'}님이 꾸민 자리예요. 빈 책상에 앉아서 꾸며 보세요.`;
-  else if (!canSave) info.textContent = '보기 전용이라 책상을 꾸밀 수 없어요.';
-  else if (mine && mine.desk && mine.desk !== key) info.textContent = '저장하면 내 꾸미기가 이 자리로 옮겨져요 (한 사람당 한 자리).';
-  else info.textContent = board.status === 'local' ? '이 화면에서는 저장되지 않아요 (아티팩트에서 열면 모두에게 공유돼요).' : '꾸민 자리는 모두에게 보이고 저장돼요. 한 사람당 한 자리예요.';
-  if (!takenByOther) {
-    const d = deskUI.draft;
-    chipRow(box, '소품 1 (모니터 옆)', DECOR_ITEMS, () => d.l, (v) => { d.l = v; });
-    chipRow(box, '소품 2 (키보드 옆)', DECOR_ITEMS, () => d.r, (v) => { d.r = v; });
-    chipRow(box, '모니터 화면', SCREENS, () => d.scr, (v) => { d.scr = v; });
-    chipRow(box, '머그컵', MUG_COLORS.map((c, i) => [i, i ? `색 ${i}` : '없음', c]), () => d.mug, (v) => { d.mug = v; });
-    chipRow(box, '의자 색', CHAIR_COLORS.map((c, i) => [i, `색 ${i + 1}`, c]), () => d.chair, (v) => { d.chair = v; });
-    chipRow(box, '이름표', [[true, '내 닉네임 달기'], [false, '없음']], () => d.plate, (v) => { d.plate = v; });
-    preview();
-  }
-  document.querySelector('.deco-save').disabled = !canSave;
-  document.querySelector('.deco-clear').hidden = !(mine && mine.desk === key);
-  $('#decoSheet').hidden = false;
-  mode.modal = true; keys.clear();
-  refreshContext(false);
-}
-function closeDecor(saved) {
-  $('#decoSheet').hidden = true;
-  mode.modal = false;
-  const key = deskUI.key;
-  deskUI.open = false; deskUI.key = null;
-  if (!saved && key) applyDecor(key, deskDecor.claims.get(key) || null);
-  refreshContext(false);
-}
-async function saveDecor() {
-  const key = deskUI.key, d = deskUI.draft;
-  const body = { desk: key, l: d.l, r: d.r, scr: d.scr, mug: d.mug, chair: d.chair, plate: !!d.plate, nick: me.name, t: myDecor()?.t || Date.now() };
-  const btn = document.querySelector('.deco-save'); btn.disabled = true;
-  try {
-    if (board.db && board.uid) await board.db.doc('desks/' + board.uid).set(body);
-    else { deskDecor.docs = [...deskDecor.docs.filter((x) => x.owner !== 'local'), sanitizeDecor(body, 'local')]; }
-    const prev = myDecor();
-    void prev;
-    rebuildClaims(deskDecor.docs);
-    closeDecor(true);
-    applyDecor(key, { ...body });
-    mySay('내 자리 완성! ✨');
-  } catch (e) {
-    $('#decoInfo').textContent = '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
-    btn.disabled = false;
-  }
-}
-async function clearDecor() {
-  const key = deskUI.key;
-  try {
-    if (board.db && board.uid) await board.db.doc('desks/' + board.uid).delete();
-    else { deskDecor.docs = deskDecor.docs.filter((x) => x.owner !== 'local'); rebuildClaims(deskDecor.docs); }
-    closeDecor(true);
-    applyDecor(key, null);
-  } catch (e) { $('#decoInfo').textContent = '자리를 비우지 못했어요. 잠시 후 다시 시도해 주세요.'; }
-}
-document.querySelector('.deco-save').addEventListener('click', saveDecor);
-document.querySelector('.deco-clear').addEventListener('click', clearDecor);
-document.querySelector('.deco-cancel').addEventListener('click', () => closeDecor(false));
-$('#decoSheet').addEventListener('click', (e) => { if (e.target === $('#decoSheet')) closeDecor(false); });
-
 /* =========================================================================
    빌드
    ========================================================================= */
@@ -4437,6 +4317,20 @@ buildInterior();
 buildVentRoom();
 buildBoard();
 buildWorkExtras();
+// 모든 책상을 무작위로 다채롭게 꾸며요 (모든 접속자에게 같은 모습)
+[...desks.keys()].forEach((key, i) => {
+  const r = (k) => hash(i * 13 + 5, k);
+  const items = DECOR_ITEMS.slice(1).map((x) => x[0]);
+  const pickI = (arr, k) => arr[Math.floor(r(k) * arr.length) % arr.length];
+  applyDecor(key, {
+    l: r(1) < 0.9 ? pickI(items, 2) : 'none',
+    r: r(3) < 0.65 ? pickI(items.filter((x) => x !== 'plant' && x !== 'flower'), 4) : 'none',
+    scr: pickI(SCREENS, 5)[0],
+    mug: r(6) < 0.75 ? 1 + Math.floor(r(7) * (MUG_COLORS.length - 1)) : 0,
+    chair: Math.floor(r(8) * CHAIR_COLORS.length),
+    plate: false,
+  });
+});
 buildWorldColliders();
 interior.traverse((m) => { if (m.isMesh) m.receiveShadow = true; });
 seats.forEach((s) => seatById.set(s.id, s));
@@ -4592,6 +4486,7 @@ function updatePerson(P, t, dt) {
   }
 }
 
+const _bw = new THREE.Vector3(), _bp = new THREE.Vector3();
 function updateBubbles(dt) {
   for (const P of people) {
     const b = P.bubble;
@@ -4600,8 +4495,22 @@ function updateBubbles(dt) {
     const k = P.bubbleT;
     const pop = k < 0.18 ? ease(k / 0.18) * 1.08 : k < 0.28 ? 1.08 - (k - 0.18) * 0.8 : 1;
     const fade = clamp((P.bubbleDur - k) / 0.35, 0, 1);
-    const h = 0.32 * (camera.aspect < 0.8 ? 1.25 : 1);
+    // 화면 밖으로 잘리지 않게: 카메라와 가까우면 화면 크기에 맞춰 줄여요
+    b.getWorldPosition(_bw);
+    const dist = Math.max(0.5, _bw.distanceTo(camera.position));
+    const visH = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), visW = visH * camera.aspect;
+    const h = Math.min(0.32 * (camera.aspect < 0.8 ? 1.15 : 1), (visW * 0.62) / P.bubbleAspect, visH * 0.13);
     b.scale.set(h * P.bubbleAspect * pop, h * pop, 1);
+    // 화면 가장자리에 걸리면 말풍선을 화면 안쪽으로 밀어 넣어요
+    _bp.copy(_bw).project(camera);
+    let cx = 0.5, cy = 0;
+    if (_bp.z < 1) {
+      const hw = (h * P.bubbleAspect) / visW, hh = (2 * h) / visH, m = 0.96;
+      if (_bp.x - hw < -m) cx = 0.5 - (-m - (_bp.x - hw)) / (2 * hw);
+      else if (_bp.x + hw > m) cx = 0.5 + (_bp.x + hw - m) / (2 * hw);
+      if (_bp.y + hh > 0.9) cy = Math.min(0.95, (_bp.y + hh - 0.9) / hh);
+    }
+    b.center.set(clamp(cx, -4, 5), cy);
     b.material.opacity = fade;
     if (k > P.bubbleDur) b.visible = false;
   }
@@ -4751,7 +4660,7 @@ requestAnimationFrame(frame);
 // 디버그/스크린샷용
 window.__office = {
   board, openNotes, addNote,
-  stations, desks, openDecor, deskDecor,
+  stations, desks,
   camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
   setHour(h) { TOD.override = h; applyTimeOfDay(); },
   renderAudio, tracks: () => Object.keys(TRACKS), musicZone,
