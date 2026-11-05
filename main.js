@@ -77,7 +77,7 @@ const PBR_SETS = {
 const MODEL_LIST = [
   'potted_plant_01_1k', 'potted_plant_02_1k', 'potted_plant_04_2k', 'desk_lamp_arm_01_1k', 'throw_pillows_01_1k',
   'modern_ceiling_lamp_01_2k', 'rubber_duck_toy_1k', 'food_apple_01_1k', 'concrete_cat_statue_1k', 'alarm_clock_01_2k',
-  'ceramic_vase_01_1k', 'Ottoman_01_2k', 'coffee_table_round_01_2k', 'modern_arm_chair_01_1k', 'sofa_02_2k',
+  'ceramic_vase_01_1k', 'Ottoman_01_2k', 'coffee_table_round_01_2k', 'modern_arm_chair_01_1k',
 ];
 const pbrTex = {};
 const models = {};
@@ -1568,20 +1568,13 @@ function buildInterior() {
   makePlant(g, -2.4, -1.0, 1.2);
   makePlant(g, 2.4, -1.0, 1.2);
   makePlant(g, -19, -1, 1.4);
-  // 대기 공간 (스캔 소파 · 암체어 · 커피테이블)
-  if (!addModel(g, 'sofa_02_2k', 0.85, -14.5, 0, -1.0, Math.PI)) {
-    addBox(g, 3, 0.45, 0.7, std(0x6aa7a0), -14.5, 0.225, -1.2);
-    addBox(g, 3, 0.5, 0.15, std(0x5c958e), -14.5, 0.7, -1.5);
-  }
-  blob(g, -14.5, 0, -1.3, 3.2, 1.4);
+  // 대기 공간 (스캔 암체어 · 커피테이블)
   addModel(g, 'modern_arm_chair_01_1k', 0.85, -11.6, 0, -2.4, -1.9);
   blob(g, -11.6, 0, -2.4, 1.2, 1.2);
   addModel(g, 'coffee_table_round_01_2k', 0.45, -13.8, 0, -2.9, 0);
   addModel(g, 'food_apple_01_1k', 0.08, -13.7, 0.45, -2.85, 0);
-  colBox(-14.5, -1.0, 2.2, 1.0);
   colCircle(-11.6, -2.4, 0.5);
   colCircle(-13.8, -2.9, 0.45);
-  for (const x of [-15.05, -14.5, -13.95]) addSeat('sofa', x, -1.12, Math.PI, { h: 0.47, ex: x, ez: -2.0 });
   addSeat('sofa', -11.6 + Math.sin(-1.9) * 0.06, -2.4 + Math.cos(-1.9) * 0.06, -1.9, { h: 0.47, ex: -11.6 + Math.sin(-1.9) * 0.9, ez: -2.4 + Math.cos(-1.9) * 0.9 });
 
   /* ---------- 업무 공간 ---------- */
@@ -2029,7 +2022,7 @@ function groundY(x, z) {
    ========================================================================= */
 const SEAT_INFO = {
   desk: { label: '💻 앉아서 일하기', pose: 'sit', state: 'type', ph: 'work' },
-  sofa: { label: '🛋️ 쇼파에 앉기', pose: 'sit', state: 'sit', ph: 'lobby' },
+  sofa: { label: '💺 암체어에 앉기', pose: 'sit', state: 'sit', ph: 'lobby' },
   lounge: { label: '🛋️ 둘러앉기', pose: 'sit', state: 'sit', ph: 'lounge' },
   bean: { label: '🫘 빈백에 앉기', pose: 'sit', state: 'sit', ph: 'lounge' },
   pp: { label: '🏓 탁구 치기', pose: 'stand', state: 'pp', ph: 'pingpong' },
