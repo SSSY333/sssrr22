@@ -1454,7 +1454,10 @@ function mainMenu() {
     { icon: '💗', label: '형사님 관계', onClick: () => openRel('profile') },
     { icon: '❓', label: '도움말', onClick: () => { G.screen = true; $('#help').classList.remove('hidden'); } },
     { icon: '💾', label: '지금 저장', onClick: () => { toast(save() ? '저장했어요' : '저장 공간이 부족해요'); } },
-    { icon: '🔄', label: '처음부터', wide: true, onClick: () => { if (confirm('저장된 진행 상황을 지우고 처음부터 시작할까요?')) { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); } } },
+    { icon: '🔄', label: '처음부터', wide: true, onClick: () => openSheet({ title: '처음부터 다시 할까요?', sub: '<div class="relneed">저장된 관계 · 추억 앨범 · 소지품이 모두 지워져요. 되돌릴 수 없어요.</div>', cols: 2, items: [
+      { icon: '🗑', label: '지우고 처음부터', onClick: () => { G.started = false; try { localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); } },
+      { icon: '↩', label: '계속 플레이', onClick: () => { } },
+    ] }) },
   ] });
 }
 
