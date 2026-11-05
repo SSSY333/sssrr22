@@ -84,7 +84,7 @@ async function nightEvent() {
   await say('det', 'smile', '…라고 형사로서 말하고, 개인적으로는 만나서 반가워요.');
   const i = await topic({ t: [], c: [['데려다 줄래요?', 4, '당연하죠. 야간 순찰 코스 변경. 당신 집 경유.', 'smile'], ['형사님 보러 나왔어요', 5, '…그런 말은 밤에 하면 더 반칙이에요.', 'blush'], ['산책 중이었어요', 2, '그럼 같이 해요. 밤바다 소리 좋거든요.', 'normal']] });
   S.rel.flags.night = true; await addAlbum('야간 순찰 중 우연히', 'night');
-  if (i === 0) { const h = BUILDINGS.find(b => b.id === 'home').doorTile; startCompanion(); closeDialog(); walkPlayer(h[0] + 0.5, h[1] + 0.5); }
+  if (i === 0) { const h = MAPS.island.buildings.find(b => b.id === 'home').doorTile; startCompanion(); closeDialog(); walkPlayer(h[0] + 0.5, h[1] + 0.5); }
 }
 async function rainEvent() {
   scriptDet(); const d = G.det; d.lookAt(G.player);
@@ -276,11 +276,11 @@ async function weddingEvent() {
   await fade(true);
   r.daily.weddingDone = true; d.outfit = 'suit'; P.outfit = 'wedding';
   P.map = 'island'; M = MAPS.island;
-  P.x = 20.5; P.y = 34.5; d.x = 22.5; d.y = 34.5; d.map = 'island'; d.visible = true; P.face = d.face = 'f';
-  G.tempObjs = [{ kind: 'furn', k: 'wedding', x: 21, y: 33, solid: false }, ...[[17, 32], [25, 32], [17, 30], [25, 30]].map(([x, y]) => ({ kind: 'lantern', x, y, solid: false }))];
+  const [bx, by] = P_('beach'); P.x = bx - 1; P.y = by; d.x = bx + 1; d.y = by; d.map = 'island'; d.visible = true; P.face = d.face = 'f';
+  G.tempObjs = [{ kind: 'furn', k: 'wedding', x: Math.floor(bx), y: Math.floor(by) - 1, solid: false }, ...[[-4, -2], [4, -2], [-4, -4], [4, -4]].map(([x, y]) => ({ kind: 'lantern', x: Math.floor(bx) + x, y: Math.floor(by) + y, solid: false }))];
   const guests = [...G.villagers, ...Object.values(G.rivals), ...G.pets];
-  guests.forEach((a, i) => { a.map = 'island'; a.visible = true; a.stop(); a.x = 16.5 + (i % 9) * 1.1; a.y = 31 + Math.floor(i / 9) * 1.2 - (i % 2) * 0.3; a.face = 'f'; a.left = a.x > 21.5; a.talking = true; });
-  G.camFocus = { x: 21.5, y: 33.2 }; G.camSnap = true;
+  guests.forEach((a, i) => { a.map = 'island'; a.visible = true; a.stop(); a.x = bx - 5 + (i % 10) * 1.1; a.y = by - 3 - Math.floor(i / 10) * 1.2 - (i % 2) * 0.3; a.face = 'f'; a.left = a.x > bx; a.talking = true; });
+  G.camFocus = { x: bx, y: by - 1.2 }; G.camSnap = true;
   await sleep(300); await fade(false);
   for (let i = 0; i < 6; i++) spawnFx('confetti');
   await say('chief', 'smile', '에헴. 오늘 해월도에 경사가 났습니다. 다들 조용!');
@@ -319,7 +319,7 @@ async function seasonEvent(ev) {
   S.eventsDone[ev.id + '_' + calendar(S.day).year] = true;
   const withDet = r.flags.met && d.visible && d.map === P.map && dist(d, P) < 6;
   if (withDet) { scriptDet(); d.walkTo(P.x, P.y); if (d.path.length) d.path.pop(); await waitUntil(() => !d.path.length, 6); d.lookAt(P); P.lookAt(d); }
-  G.camFocus = { x: (ev.at[0] + P.x) / 2, y: (ev.at[1] + P.y) / 2 };
+  G.camFocus = { x: (P_(ev.at)[0] + P.x) / 2, y: (P_(ev.at)[1] + P.y) / 2 };
   await say('narr', '', `${ev.icon} ${ev.name}`);
   if (withDet) {
     await talk(ev.lines[tierOf(r.stage)]);
@@ -408,8 +408,8 @@ async function fishTogether() {
   await runEvent(async () => {
     const P = G.player, d = G.det; scriptDet();
     toast('🎣 부두 끝 낚시터로 가요');
-    if (P.map !== 'island') { await goMap('island', 42.5, 21.5); }
-    await walkBothTo([44.5, 21.5], [44.5, 20.5]);
+    if (P.map !== 'island') { await goMap('island', ...P_('boatSpot')); }
+    await walkBothTo(P_('pierEnd'), P_('pierEnd2'));
     P.pose = 'fish'; d.pose = 'fish'; P.face = d.face = 'f'; P.left = d.left = false;
     await say('det', 'tease', '지는 사람이 내일 커피 사기. 콜?');
     closeDialog();
@@ -477,11 +477,12 @@ async function doDate(k) {
     if (D.time && S.min < D.time) { await say('det', 'tease', `${D.name}은(는) ${fmtTime(D.time)}쯤이 제일 좋아요. 그때까지 같이 있어요.`); S.min = D.time; }
     if (!S.comp) startCompanion();
     scriptDet();
-    if (P.map !== D.map) { await goMap(D.map, D.pos[0], D.pos[1]); }
+    const DP = typeof D.pos === 'string' ? P_(D.pos) : D.pos;
+    if (P.map !== D.map) { await goMap(D.map, DP[0], DP[1]); }
     await fade(true);
     if (P.seat) P.standUp(); if (d.seat) d.standUp();
     P.stop(); d.stop(); d.map = P.map;
-    [P.x, P.y] = nearestWalkable(D.pos[0], D.pos[1]);
+    [P.x, P.y] = nearestWalkable(DP[0], DP[1]);
     const n = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([a, b]) => [Math.floor(P.x) + a, Math.floor(P.y) + b]).find(([x, y]) => walkable(x, y)) || [Math.floor(P.x), Math.floor(P.y)];
     d.x = n[0] + 0.5; d.y = n[1] + 0.5;
     if (D.bench && M.benches[D.bench]) { P.sitAt(D.bench, 0); d.sitAt(D.bench, 1); } else { d.lookAt(P); P.lookAt(d); }
@@ -548,12 +549,13 @@ function checkEvents() {
   if (G.busy || paused() || G.working || G.fishing || G.decor) return;
   const d = G.det, P = G.player, r = S.rel, pl = curPlace(), dd = dist(d, P);
   const ev = activeEvent();
-  if (ev && ev.map === P.map && !r.daily.eventsSeen[ev.id] && Math.hypot(P.x - ev.at[0], P.y - ev.at[1]) < 3.2) { runEvent(() => seasonEvent(ev)); return; }
+  if (ev && ev.map === P.map && !r.daily.eventsSeen[ev.id] && Math.hypot(P.x - P_(ev.at)[0], P.y - P_(ev.at)[1]) < 3.2) { runEvent(() => seasonEvent(ev)); return; }
   if (!d.visible || d.map !== P.map) return;
   if (!r.flags.met && dd < 2.2) { runEvent(firstMeeting); return; }
   if (!r.flags.met) return;
-  if (d.task === 'waitLighthouse' && dd < 2.2 && !r.flags.engaged) { runEvent(proposalEvent); return; }
-  if (d.task === 'wedding' && dd < 2.5 && !r.flags.married) { runEvent(weddingEvent); return; }
+  const nearP = (k, rr) => P.map === 'island' && Math.hypot(P.x - P_(k)[0], P.y - P_(k)[1]) < rr;
+  if (!r.flags.engaged && r.daily.proposal && S.min >= 17.5 * 60 && S.min < 21.5 * 60 && dd < 2.5 && (d.task === 'waitLighthouse' || (S.comp && nearP('lighthouse', 3.5)))) { runEvent(proposalEvent); return; }
+  if (!r.flags.married && S.wedding === S.day && S.min >= 9 * 60 && S.min < 18 * 60 && dd < 3 && (d.task === 'wedding' || (S.comp && nearP('beach', 4)))) { runEvent(weddingEvent); return; }
   if (d.task === 'pickup' && dd < 2.2 && !r.daily.pickup) { runEvent(pickupEvent); return; }
   if (S.comp) {
     if (r.stage >= 2 && !r.flags.firstWalk && G.walkedTogether >= 30 && ['pier', 'beach', 'coast', 'lighthouse', 'fishing', 'observatory', 'rocks'].includes(pl) && !P.moving) { runEvent(firstWalkEvent); return; }
@@ -604,7 +606,7 @@ function planDay() {
   G.tempObjs = [];
   for (const ev of todayEvents()) if (ev.map === 'island' && !['typhoon', 'firstsnow'].includes(ev.id)) {
     for (const [dx, dy, kind] of [[-2, -2, 'stall'], [2, -2, 'stall'], [-3, 1, 'lantern'], [3, 1, 'lantern']]) {
-      const x = Math.floor(ev.at[0] + dx), y = Math.floor(ev.at[1] + dy);
+      const x = Math.floor(P_(ev.at)[0] + dx), y = Math.floor(P_(ev.at)[1] + dy);
       if (walkable(x, y, MAPS.island)) G.tempObjs.push({ kind, x, y, solid: false });
     }
   }
@@ -617,7 +619,7 @@ function dayStartMessages() {
   for (const ev of todayEvents()) setTimeout(() => toast(`${ev.icon} ${ev.intro} (${fmtTime(ev.from)}~)`), 1800);
   if (S.rel.daily.sick) setTimeout(() => toast('🤒 형사님이 감기에 걸렸대요. 경찰 사택에 가 볼까요?'), 2600);
   if (S.rel.daily.proposal) setTimeout(() => toast('💌 형사님의 쪽지: "오늘 저녁 등대에서 기다릴게요."'), 2600);
-  if (S.wedding === S.day && !S.rel.flags.married) setTimeout(() => toast('💒 오늘은 결혼식 날! 해수욕장으로 가요'), 2600);
+  if (S.wedding === S.day && !S.rel.flags.married) setTimeout(() => toast('💒 오늘은 결혼식 날! 9시~18시 사이에 해수욕장으로 가요 (🚌 해수욕장 정류장)'), 2600);
 }
 async function endDay(forced) {
   G.busy++;
@@ -634,7 +636,7 @@ async function endDay(forced) {
   S.weather = rollWeather();
   r.daily = newDaily(); S.spots = {};
   if (r.favor && S.day - r.favor.day > 2) r.favor = null;
-  const P = G.player, home = BUILDINGS.find(b => b.id === 'home').doorTile;
+  const P = G.player, home = 0;
   P.standUp(); P.stop(); P.pose = 'stand'; P.outfit = 'base';
   M = MAPS.in_home; P.map = 'in_home'; [P.x, P.y] = [3.5, 4.5];
   setFurniture(MAPS.in_home, homeFurnList());
@@ -653,7 +655,7 @@ async function endDay(forced) {
 }
 
 /* ---------------- 건물 · 직업 · 활동 ---------------- */
-function nearDoor(id, rr = 1.4) { const b = BUILDINGS.find(x => x.id === id); return G.player.map === 'island' && Math.hypot(G.player.x - b.doorTile[0] - 0.5, G.player.y - b.doorTile[1] - 0.5) <= rr; }
+function nearDoor(id, rr = 1.4) { const b = MAPS.island.buildings.find(x => x.id === id); return G.player.map === 'island' && Math.hypot(G.player.x - b.doorTile[0] - 0.5, G.player.y - b.doorTile[1] - 0.5) <= rr; }
 function canWork() {
   const J = JOBS[S.job];
   if (S.job === 'traveler') { const pl = curPlace(); return pl && TRAVEL_SPOTS.includes(pl) && !S.spots[pl]; }
@@ -667,7 +669,7 @@ function openBuilding(b) {
   if (b.id === 'lighthouse') { runEvent(async () => { await say('narr', '', S.min >= 17 * 60 && S.min < 19.5 * 60 ? '노을이 바다를 주황빛으로 물들이고 있다.' : '하얀 등대. 저녁에 오면 노을이 예쁘다고 한다.'); }); }
 }
 function leaveInterior() {
-  const id = M.owner, b = BUILDINGS.find(x => x.id === id);
+  const id = M.owner, b = MAPS.island.buildings.find(x => x.id === id);
   if (G.decor) closeDecor();
   goMap('island', b.doorTile[0] + 0.5, b.doorTile[1] + 0.5);
 }
@@ -829,6 +831,8 @@ function computeAction() {
   if (L && !L.found && P.map === 'island' && Math.hypot(P.x - L.x, P.y - L.y) < 1.3) return { label: '줍기', icon: '✨', hot: true, fn: () => { L.found = true; G.tempObjs = G.tempObjs.filter(o => !o.lostItem); toast(`✨ ${L.item}을(를) 찾았다! ${NPC_LOOKS[L.owner].name}께 돌려드려요`); Sound.sfx('coin'); } };
   const fs = fishSpot(); if (fs) return { label: S.comp && S.rel.stage >= 3 && fs === 'pier' ? '같이 낚시' : '낚시하기', icon: '🎣', fn: () => (S.comp && S.rel.stage >= 3 && fs === 'pier' ? fishTogether() : soloFish(fs)) };
   if (M.boatSpot && Math.hypot(P.x - M.boatSpot[0], P.y - M.boatSpot[1]) < 1.4) return { label: P.map === 'island' ? '무인도 가기' : '해월도로', icon: '🚤', hot: true, fn: rideBoat };
+  const stop = M.id === 'island' && M.objects.find(o => o.kind === 'busstop' && Math.hypot(P.x - o.x - 0.5, P.y - o.y - 0.5) < 1.8);
+  if (stop) return { label: '마을버스', icon: '🚌', fn: () => busMenu(stop.stop) };
   for (const [k, bk] of Object.entries(M.benches)) for (const s of bk.stand) if (Math.hypot(P.x - s[0] - 0.5, P.y - s[1] - 0.5) < 0.9) return { label: S.comp && S.rel.stage >= 2 ? '함께 앉기' : '앉기', icon: '🪑', fn: () => benchAction(k) };
   const orange = M.objects.find(o => o.kind === 'orange' && Math.hypot(P.x - o.x - 0.5, P.y - o.y - 0.5) < 1.5);
   if (orange) return { label: season() === 'winter' || calendar(S.day).month === 11 ? '귤 따기' : '귤나무', icon: '🍊', fn: () => orangeAction(orange) };
@@ -847,6 +851,25 @@ function stargaze() {
     if (S.comp && dist(G.det, G.player) < 3) { await say('det', S.rel.stage >= 5 ? 'blush' : 'smile', S.rel.stage >= 5 ? '저 별 두 개, 우리 같다. 딱 붙어 있잖아요.' : '여기서 보는 별이 섬에서 제일이에요.'); if (!S.rel.daily.stars) { S.rel.daily.stars = true; addAff(2); } }
   });
 }
+function busMenu(from) {
+  const items = Object.keys(BUS_NAMES).filter(k => k !== from).map(k => ({ icon: '🚌', label: BUS_NAMES[k], note: '1,000원 · 15분', onClick: () => rideBus(k) }));
+  openSheet({ title: `🚌 마을버스 — ${BUS_NAMES[from]} 정류장`, sub: '<div class="relneed">섬 곳곳을 빠르게 이어 주는 마을버스예요. 함께 다니는 중이면 형사님도 같이 타요.</div>', items, cols: 2 });
+}
+async function rideBus(k) {
+  if (S.money < 1000) { toast('차비가 부족해요'); return; }
+  if (S.min >= 22 * 60) { toast('막차가 끊겼어요'); return; }
+  S.money -= 1000; G.busy++;
+  await fade(true);
+  $('#boatScene').classList.remove('hidden'); $('#boatScene .boat').textContent = '🚌'; $('#boatScene p').textContent = `덜컹덜컹… ${BUS_NAMES[k]}(으)로 가는 중`;
+  await sleep(1100);
+  $('#boatScene').classList.add('hidden'); $('#boatScene .boat').textContent = '🚤'; $('#boatScene p').textContent = '통통통… 바다를 건너는 중';
+  const P = G.player, [x, y] = MAPS.island.stops[k];
+  if (P.seat) P.standUp(); P.stop(); P.x = x; P.y = y;
+  if (S.comp) { const d = G.det; d.stop(); [d.x, d.y] = nearestWalkable(x + 1, y, MAPS.island); G.hist = []; G.compSettled = false; }
+  advanceTime(15); G.camSnap = true; G.lastPlace = null;
+  G.busy--; await fade(false); updateHUD();
+  toast(`🚌 ${BUS_NAMES[k]} 도착`);
+}
 async function rideBoat() {
   const P = G.player;
   if (S.weather === 'storm') { toast('🌀 태풍이라 배가 뜨지 않아요'); return; }
@@ -859,7 +882,7 @@ async function rideBoat() {
   G.busy--;
   advanceTime(20);
   if (P.map === 'island') { await goMap('islet', MAPS.islet.spawn.dock[0], MAPS.islet.spawn.dock[1], { noFade: true }); toast('🏝️ 작은 무인도에 도착! 조개 줍기와 대물 낚시를 할 수 있어요'); }
-  else await goMap('island', 41.5, 21.5, { noFade: true });
+  else await goMap('island', ...P_('boatSpot'), { noFade: true });
   await fade(false);
 }
 function setAction(a, lock) {
@@ -948,7 +971,6 @@ function updateHUD() {
     cf.drawImage(drawPortrait(LOOKS.det, wearOf(G.det), r.stage >= 4 ? 'blush' : 'smile'), 0, 0);
   }
   const pl = curPlace(); $('#hPlace').textContent = placeName(pl) || M.name;
-  $('#mini').classList.toggle('closed', !S.settings.mini); $('#mini').classList.toggle('hidden', M.interior);
   updateDecorUI();
 }
 function compMenu() {
@@ -984,20 +1006,22 @@ function affectionMenu() {
 function activityMenu() {
   const st = S.rel.stage;
   const L = (s) => st < s ? { locked: true, note: `${s}단계`, why: `「${STAGES[s - 1].name}」 단계에서 열려요` } : {};
-  const go = (x, y, msg, map = 'island') => () => { if (G.player.map !== map) { toast('밖으로 나가서 가요'); return; } walkPlayer(x, y); if (msg) toast(msg); };
+  const go = (k, msg) => () => { if (G.player.map !== 'island') { toast('밖으로 나가서 가요'); return; } const [x, y] = P_(k); walkPlayer(x, y); if (msg) toast(msg + (Math.hypot(G.player.x - x, G.player.y - y) > 40 ? ' (멀면 🚌 마을버스가 빨라요)' : '')); };
   openSheet({ title: '함께 활동하기', cols: 3, items: [
     Object.assign({ icon: '🪑', label: '함께 앉기', note: '가까운 벤치', onClick: () => sitTogether() }, L(2)),
     Object.assign({ icon: '🎣', label: '같이 낚시', note: '부두 끝', onClick: () => fishTogether() }, L(3)),
     Object.assign({ icon: '🍳', label: '같이 요리', note: '집 주방', disabled: M.id !== 'in_home', why: '집 안에서 할 수 있어요', onClick: () => cookTogether() }, L(5)),
-    { icon: '🐚', label: '해변 산책', onClick: go(21.5, 34.5, '🐚 해수욕장으로 걸어가요') },
-    { icon: '🗼', label: '등대 구경', onClick: go(35.5, 35.5, '🗼 등대로 걸어가요') },
-    { icon: '☕', label: '카페 가기', onClick: go(16.5, 21.5, '☕ 카페 쉼터로 걸어가요') },
-    { icon: '⚓', label: '부두 가기', onClick: go(41.5, 21.5, '⚓ 부두로 걸어가요') },
-    { icon: '🌲', label: '숲길 산책', onClick: go(34.5, 26.5, '🌲 숲길로 걸어가요') },
-    { icon: '⭐', label: '전망대', onClick: go(9.5, 13.5, '⭐ 언덕 전망대로 걸어가요') },
-    { icon: '🪨', label: '갯바위', onClick: go(7.5, 24.5, '🪨 갯바위 낚시터로 걸어가요') },
-    { icon: '🍊', label: '귤밭', onClick: go(15.5, 25.5, '🍊 귤밭으로 걸어가요') },
-    { icon: '🚤', label: '무인도', onClick: go(41.5, 22.5, '🚤 부두에서 배를 타요') },
+    { icon: '🐚', label: '해변 산책', onClick: go('beach', '🐚 해수욕장으로 걸어가요') },
+    { icon: '🗼', label: '등대 구경', onClick: go('lighthouse', '🗼 등대로 걸어가요') },
+    { icon: '☕', label: '카페 가기', onClick: go('cafeDoor', '☕ 카페 쉼터로 걸어가요') },
+    { icon: '⚓', label: '포구 가기', onClick: go('harbor', '⚓ 동쪽 포구로 걸어가요') },
+    { icon: '🌲', label: '동백숲', onClick: go('pavilion', '🌲 동백숲 정자로 걸어가요') },
+    { icon: '🐴', label: '목장', onClick: go('ranchIn', '🐴 조랑말 목장으로 걸어가요') },
+    { icon: '🌬️', label: '풍차 언덕', onClick: go('windmill', '🌬️ 풍차 언덕으로 걸어가요') },
+    { icon: '⭐', label: '오름 전망대', onClick: go('observatory', '⭐ 오름 전망대로 걸어가요') },
+    { icon: '🪨', label: '갯바위', onClick: go('rocks', '🪨 갯바위 낚시터로 걸어가요') },
+    { icon: '🍊', label: '귤 농장', onClick: go('farm', '🍊 귤 농장 마을로 걸어가요') },
+    { icon: '🚤', label: '무인도', onClick: go('boatSpot', '🚤 포구에서 배를 타요') },
   ] });
 }
 
@@ -1134,10 +1158,10 @@ function loop(ts) {
       G.saveT += dt; if (G.saveT > 15) { G.saveT = 0; save(); }
       // 축제 효과 · 분실물 반짝이
       const ev = activeEvent();
-      if (ev && ev.fx && M.id === ev.map && Math.hypot(P.x - ev.at[0], P.y - ev.at[1]) < 14) {
+      if (ev && ev.fx && M.id === ev.map && Math.hypot(P.x - P_(ev.at)[0], P.y - P_(ev.at)[1]) < 14) {
         const rate = { fireworks: 0.9, confetti: 3, petals: 4, meteors: 0.8, snowlights: 3, fireflies: 0 }[ev.fx];
         if (Math.random() < dt * rate) spawnFx(ev.fx);
-        if (ev.fx === 'fireflies' && G.fx.filter(f => f.kind === 'firefly').length < 30) G.fx.push({ kind: 'firefly', wx: ev.at[0] + rand(-4, 4), wy: ev.at[1] + rand(-4, 4), ph: Math.random() * 6, t: 20 });
+        if (ev.fx === 'fireflies' && G.fx.filter(f => f.kind === 'firefly').length < 30) G.fx.push({ kind: 'firefly', wx: P_(ev.at)[0] + rand(-4, 4), wy: P_(ev.at)[1] + rand(-4, 4), ph: Math.random() * 6, t: 20 });
       }
       if (S.weather === 'snow' && season() === 'winter' && Math.random() < dt * 0.5 && todayEvents().some(e => e.id === 'christmas') && S.min > 18 * 60) spawnFx('snowlights');
       const L = S.rel.daily.lost; if (L && !L.found && P.map === 'island' && Math.random() < dt * 3) G.parts.push({ kind: 'spark', x: L.x, y: L.y, map: 'island', ox: rand(-5, 5), h: rand(4, 14), vh: 8, t: 0.8 });
@@ -1168,19 +1192,19 @@ function spawnActors() {
   M = MAPS[P.map];
   if (!walkable(Math.floor(P.x), Math.floor(P.y), M)) { [P.x, P.y] = nearestWalkable(P.x, P.y, M); }
   const d = G.det = mkActor('det', LOOKS.det, 'work', S.d.map || 'island', 'det');
-  d.speed = 2.5; d.state = 'sched'; d.x = S.d.x; d.y = S.d.y; d.visible = S.d.vis !== false;
-  if (!MAPS[d.map] || !walkable(Math.floor(d.x), Math.floor(d.y), MAPS[d.map])) { d.map = 'island'; d.x = 23.5; d.y = 21.5; }
-  G.villagers = Object.entries(VILLAGERS).map(([k, V]) => { const a = mkActor(k, NPC_LOOKS[k], 'base', 'island'); a.vid = k; a.isVillager = true; a.speed = k.startsWith('kid') ? 2.2 : 1.5; [a.x, a.y] = V.spots[0]; return a; });
+  d.speed = 2.15; d.state = 'sched'; d.x = S.d.x; d.y = S.d.y; d.visible = S.d.vis !== false;
+  if (!MAPS[d.map] || !walkable(Math.floor(d.x), Math.floor(d.y), MAPS[d.map])) { d.map = 'island'; [d.x, d.y] = P_('station'); }
+  G.villagers = Object.entries(VILLAGERS).map(([k, V]) => { const a = mkActor(k, NPC_LOOKS[k], 'base', 'island'); a.vid = k; a.isVillager = true; a.speed = V.speed || 1; [a.x, a.y] = nearestWalkable(...P_(V.spots[0]), MAPS.island); return a; });
   G.staff = [];
   for (const [mapId, list] of Object.entries(STAFF)) for (const [nid, x, y, hours] of list) { const a = mkActor(nid, NPC_LOOKS[nid], 'base', mapId, nid + '-staff'); a.x = x; a.y = y; a.isStaff = true; a.hours = hours; G.staff.push(a); }
   G.rivals = {};
   for (const [job, rv] of Object.entries(RIVALS)) {
     if (job === S.job) continue;
-    const a = mkActor(rv.id, Object.assign({ name: rv.name }, rv.look), 'base', rv.home || 'island'); a.isRival = true; a.rv = rv; a.job = job; a.speed = 2.2;
-    if (rv.home) [a.x, a.y] = rv.at; else [a.x, a.y] = [22.5, 35.5];
+    const a = mkActor(rv.id, Object.assign({ name: rv.name }, rv.look), 'base', rv.home || 'island'); a.isRival = true; a.rv = rv; a.job = job; a.speed = { doctor: 1.1, teacher: 1.0, traveler: 1.25, cafe: 0.95, haenyeo: 1.2 }[job];
+    if (rv.home) [a.x, a.y] = rv.at; else [a.x, a.y] = P_('beach');
     G.rivals[job] = a;
   }
-  G.pets = Object.entries(PETS).map(([k, V]) => { const a = new Actor(k, { name: ANIMAL_LOOKS[k].name, outfits: {} }, 'base', 'island'); a.vid = k; a.pet = ANIMAL_LOOKS[k]; a.speed = ANIMAL_LOOKS[k].kind === 'dog' ? 2.4 : 1.8; a.follow = 0; [a.x, a.y] = V.spots[0]; return a; });
+  G.pets = Object.entries(PETS).map(([k, V]) => { const a = new Actor(k, { name: ANIMAL_LOOKS[k].name, outfits: {} }, 'base', 'island'); a.vid = k; a.pet = ANIMAL_LOOKS[k]; a.speed = V.speed || 1; a.follow = 0; [a.x, a.y] = nearestWalkable(...P_(V.spots[0]), MAPS.island); return a; });
   G.actors = [P, d, ...G.villagers, ...G.staff, ...Object.values(G.rivals), ...G.pets];
   if (S.comp) { startCompanion(); [d.x, d.y] = nearestWalkable(P.x + 1, P.y, M); d.map = P.map; }
   G.camSnap = true;
@@ -1201,7 +1225,7 @@ function startGame(state, isNew) {
   spawnActors();
   if (!S.rel.daily.planned) { planDay(); S.rel.daily.planned = true; }
   G.started = true;
-  $('#title').classList.add('hidden'); $('#newgame').classList.add('hidden'); $('#hud').classList.remove('hidden'); $('#mini').classList.remove('hidden');
+  $('#title').classList.add('hidden'); $('#newgame').classList.add('hidden'); $('#hud').classList.remove('hidden');
   Sound.init(); Sound.setOn('music', S.settings.music); Sound.setOn('sfx', S.settings.sfx);
   drawMinimapBase(); updateHUD(); save();
   if (isNew) {
@@ -1279,8 +1303,10 @@ function bindUI() {
   $('#btnNew').onclick = () => { Sound.init(); $('#title').classList.add('hidden'); $('#newgame').classList.remove('hidden'); buildNewGameUI(); };
   $('#btnBack').onclick = () => { $('#newgame').classList.add('hidden'); $('#title').classList.remove('hidden'); };
   $('#btnCont').onclick = () => { Sound.init(); const s = loadSave(); if (s) { buildWorld(); startGame(s, false); } };
-  $('#miniHead').onclick = () => { if (!S) return; S.settings.mini = !S.settings.mini; updateHUD(); if (S.settings.mini) { drawMinimapBase(); drawMinimap(); } };
-  $('#miniC').addEventListener('click', miniTap);
+  $('#mapBtn').onclick = () => { if (!paused() && !G.busy) openBigMap(); };
+  $('#bigMap').addEventListener('click', bigMapTap);
+  $('#mapClose').onclick = closeBigMap;
+  $('#mapZoom').onclick = toggleBigMapZoom;
   $('#decorBtn').onclick = openDecor;
   $('#dDone').onclick = closeDecor;
   $('#dStore').onclick = () => { const d = G.decor; if (d.sel == null) return; const [k] = S.home[d.sel]; S.home.splice(d.sel, 1); S.furnInv[k] = (S.furnInv[k] || 0) + 1; d.sel = null; setFurniture(MAPS.in_home, homeFurnList()); updateDecorBar(); save(); };
@@ -1304,9 +1330,9 @@ function boot() {
   if (s) $('#contInfo').textContent = `${s.name} · ${JOBS[s.job].name} · ${dateLabel(s.day)} · ${STAGES[s.rel.stage - 1].name}`;
   // 타이틀 배경: 고정된 마을 그림 (움직이지 않아 끊김 없음)
   S = null; M = MAPS.island;
-  G.player = new Actor('p', playerLook('traveler', 'ponytail'), 'base'); G.player.x = 27.5; G.player.y = 24.5; G.player.visible = false;
+  G.player = new Actor('p', playerLook('traveler', 'ponytail'), 'base'); G.player.x = 66.5; G.player.y = 62.5; G.player.visible = false;
   G.actors = [];
-  G.camFocus = { x: 27.5, y: 22.5 }; G.camSnap = true;
+  G.camFocus = { x: 67.5, y: 60.5 }; G.camSnap = true;
   requestAnimationFrame(loop);
 }
 window.addEventListener('DOMContentLoaded', boot);

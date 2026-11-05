@@ -128,11 +128,11 @@ function checkStage() {
 function stageName(n = S.rel.stage) { return STAGES[n - 1].name; }
 
 /* ---------------- 형사님 AI ---------------- */
-const PATROL = [[23.5, 22.5], [21.5, 15.5], [24.5, 14.5], [18.5, 14.5], [16.5, 21.5], [15.5, 26.5], [21.5, 28.5], [24.5, 28.5], [28.5, 14.5], [30.5, 21.5], [21.5, 21.5], [36.5, 21.5]];
-const PIER_PATROL = [[38.5, 21.5], [42.5, 21.5], [43.5, 22.5], [39.5, 21.5], [7.5, 24.5], [8.5, 21.5]];
-const STROLL = [[21.5, 34.5], [26.5, 34.5], [17.5, 34.5], [21.5, 21.5], [34.5, 26.5], [34.5, 22.5]];
-const STATION = [23.5, 22.5];
-function detHomeDoor() { return S.rel.flags.married ? [18.5, 28.5] : [14.5, 14.5]; }
+const PATROL = ['station', 'schoolFront', 'clinicFront', 'hallFront', 'plaza', 'cafeDoor', 'orchardGate', 'homeDoor', 'villageEast', 'superDoor', 'villageWest', 'plaza'];
+const PIER_PATROL = ['harbor', 'pierEnd', 'sashimiDoor', 'storageDoor', 'boatSpot', 'harbor'];
+const STROLL = ['beach', 'beachEast', 'beachBench', 'beachWest', 'beach'];
+const STATION = null;
+function detHomeDoor() { return S.rel.flags.married ? P_('homeDoor') : P_('sataekDoor'); }
 function todayEvents() { const c = calendar(S.day); return EVENTS.filter(e => e.m === c.month && e.d === c.dom); }
 function activeEvent() { if (!S) return null; return todayEvents().find(e => S.min >= e.from && S.min < e.to) || null; }
 function detPlan(min) {
@@ -172,7 +172,7 @@ function detUpdate(dt) {
     if (d.seat) d.standUp();
     d.pose = 'stand';
     const needIsland = !['home', 'sick'].includes(plan.k);
-    if (needIsland && (d.map !== 'island' || !d.visible)) { const h = d.map === 'in_home' ? [18.5, 28.5] : d.map === 'in_sataek' ? [14.5, 14.5] : detHomeDoor(); d.map = 'island'; d.x = h[0]; d.y = h[1]; d.visible = true; }
+    if (needIsland && (d.map !== 'island' || !d.visible)) { const h = d.map === 'in_home' ? P_('homeDoor') : d.map === 'in_sataek' ? P_('sataekDoor') : detHomeDoor(); d.map = 'island'; d.x = h[0]; d.y = h[1]; d.visible = true; }
     if (plan.k === 'sick') { d.map = 'in_sataek'; d.x = 2.5; d.y = 2.5; d.visible = true; d.face = 'f'; d.left = true; }
   }
   d.wait -= dt;
@@ -193,14 +193,14 @@ function detUpdate(dt) {
     }
     case 'goHome': { const h = detHomeDoor(); if (Math.hypot(d.x - h[0], d.y - h[1]) < 0.3) { if (S.rel.flags.married) { d.map = 'in_home'; d.x = 2.5; d.y = 3.5; } else d.visible = false; } else goto(h[0], h[1]); break; }
     case 'meet': { d.speedMul = 1.1; if (d.wait <= 0) { d.wait = 1.2; if (P.map === 'island' && dist(d, P) > 1.6) d.walkTo(P.x, P.y); else d.stop(); } break; }
-    case 'station': goto(...STATION); if (!d.path.length && d.wait <= 0) { d.wait = rand(3, 7); d.left = !d.left; if (Math.random() < 0.3) d.say(pick(DUTY_LINES.station), 2.5); } break;
-    case 'pickup': goto(...STATION); if (!d.path.length) { d.face = 'f'; if (d.wait <= 0) { d.wait = 8; d.say('여보 언제 오나~', 2.5); } } break;
+    case 'station': goto(...P_('station')); if (!d.path.length && d.wait <= 0) { d.wait = rand(3, 7); d.left = !d.left; if (Math.random() < 0.3) d.say(pick(DUTY_LINES.station), 2.5); } break;
+    case 'pickup': goto(...P_('station')); if (!d.path.length) { d.face = 'f'; if (d.wait <= 0) { d.wait = 8; d.say('여보 언제 오나~', 2.5); } } break;
     case 'patrol': case 'pier': case 'stroll': {
       const route = plan.k === 'patrol' ? PATROL : plan.k === 'pier' ? PIER_PATROL : STROLL;
       d.speedMul = plan.k === 'stroll' ? 0.75 : 0.9;
       if (!d.path.length && d.wait <= 0) {
         if (d.sub > 0 && Math.random() < 0.25) d.say(pick(Math.random() < 0.4 ? SEASON_IDLE[season()] : DUTY_LINES[plan.k]), 2.6);
-        const wp = route[d.sub % route.length]; d.sub++; d.walkTo(wp[0], wp[1]); d.wait = rand(1.5, 3.5);
+        const wp = P_(route[d.sub % route.length]); d.sub++; d.walkTo(wp[0] + rand(-1, 1), wp[1] + rand(-1, 1)); d.wait = rand(1.5, 3.5);
       }
       break;
     }
@@ -213,16 +213,16 @@ function detUpdate(dt) {
       break;
     }
     case 'fishing': {
-      const fx = 44.5, fy = 20.5;
+      const [fx, fy] = P_('pierEnd2');
       if (Math.hypot(d.x - fx, d.y - fy) < 0.3) { d.pose = 'fish'; d.face = 'f'; d.left = false; if (d.wait <= 0) { d.wait = rand(6, 12); if (Math.random() < 0.3) d.say(pick(DUTY_LINES.fishing), 2.5); } }
       else { d.pose = 'stand'; goto(fx, fy); }
       break;
     }
-    case 'event': { const ev = plan.ev; goto(ev.at[0] + 1, ev.at[1]); if (!d.path.length && d.wait <= 0) { d.wait = rand(4, 8); d.lookAt(P); if (Math.random() < 0.4) d.say(`${ev.icon} ${ev.name}!`, 2.4); } break; }
+    case 'event': { const ev = plan.ev; goto(P_(ev.at)[0] + 1, P_(ev.at)[1]); if (!d.path.length && d.wait <= 0) { d.wait = rand(4, 8); d.lookAt(P); if (Math.random() < 0.4) d.say(`${ev.icon} ${ev.name}!`, 2.4); } break; }
     case 'rivalWalk': rivalWalkUpdate(dt); break;
     case 'sick': if (d.wait <= 0) { d.wait = 6; d.emo('🤒', 3); } break;
-    case 'wedding': goto(21.5, 34.5); if (!d.path.length && d.wait <= 0) { d.wait = 7; d.face = 'f'; d.say('…떨린다.', 2); } break;
-    case 'waitLighthouse': goto(35.5, 35.5); if (!d.path.length) { d.face = 'f'; d.left = true; if (d.wait <= 0) { d.wait = 9; d.emo('💍', 2); } } break;
+    case 'wedding': goto(...P_('beach')); if (!d.path.length && d.wait <= 0) { d.wait = 7; d.face = 'f'; d.say('…떨린다.', 2); } break;
+    case 'waitLighthouse': goto(...P_('lighthouse')); if (!d.path.length) { d.face = 'f'; d.left = true; if (d.wait <= 0) { d.wait = 9; d.emo('💍', 2); } } break;
   }
 }
 
@@ -242,7 +242,7 @@ function endCompanion(silent) {
   S.comp = false; S.hold = false; S.arm = false; d.state = 'sched'; d.task = null; d.speedMul = 1;
   if (G.player.carried) stopPiggy();
   if (d.seat) d.standUp(); d.pose = 'stand';
-  if (d.map !== 'island') { const b = BUILDINGS.find(b => 'in_' + b.id === d.map); const h = b ? b.doorTile : [21, 21]; d.map = 'island'; d.x = h[0] + 0.5; d.y = h[1] + 0.5; if (G.player.map === 'islet') { d.x = 41.5; d.y = 21.5; } }
+  if (d.map !== 'island') { const b = MAPS.island.buildings.find(b => 'in_' + b.id === d.map); const h = b ? b.doorTile : [62, 62]; d.map = 'island'; d.x = h[0] + 0.5; d.y = h[1] + 0.5; if (G.player.map === 'islet') { [d.x, d.y] = P_('boatSpot'); } }
   if (!silent) toast('형사님과의 동행이 끝났어요');
   updateHUD();
 }
@@ -303,14 +303,29 @@ function villagerUpdate(a, dt) {
   if (a.talking) { a.stop(); a.lookAt(G.player); return; }
   const on = V.hours ? S.min >= V.hours[0] && S.min < V.hours[1] : S.min >= 7 * 60 && S.min < 21 * 60;
   const ev = activeEvent();
-  if (!on && !ev) { a.visible = false; return; }
-  if (S.weather === 'storm') { a.visible = false; return; }
+  if ((!on && !ev) || S.weather === 'storm') { a.visible = false; if (a.map !== 'island') { a.map = 'island'; [a.x, a.y] = P_(V.spots[0]); } return; }
   a.visible = true;
   a.wait -= dt;
+  // 건물 안팎 오가기
+  const vis = !ev && (V.visits || []).find(([f, t]) => S.min >= f * 60 && S.min < t * 60);
+  const want = vis ? 'in_' + vis[2] : 'island';
+  if (a.map !== want) {
+    if (a.map === 'island') {
+      const b = MAPS.island.buildings.find(b => b.id === vis[2]), dx = b.doorTile[0] + 0.5, dy = b.doorTile[1] + 0.5;
+      if (Math.hypot(a.x - dx, a.y - dy) < 0.7) { a.map = want; [a.x, a.y] = MAPS[want].spawn.door; a.stop(); a.wait = 0; }
+      else if (!a.path.length && a.wait <= 0) { a.walkTo(dx, dy); a.wait = 2; }
+    } else {
+      const im = MAPS[a.map], ex = [im.exit[0] + 0.5, im.exit[1] + 0.5];
+      if (Math.hypot(a.x - ex[0], a.y - ex[1]) < 0.7) { const b = MAPS.island.buildings.find(b => 'in_' + b.id === im.id); a.map = 'island'; [a.x, a.y] = [b.doorTile[0] + 0.5, b.doorTile[1] + 0.5]; a.stop(); a.wait = 0; }
+      else if (!a.path.length && a.wait <= 0) { a.walkTo(ex[0], ex[1]); a.wait = 1.5; }
+    }
+    return;
+  }
   if (!a.path.length && a.wait <= 0) {
-    let sp = pick(V.spots);
-    if (ev && ev.map === 'island' && Math.random() < 0.7) sp = [ev.at[0] + rand(-3, 3), ev.at[1] + rand(-3, 3)];
-    a.walkTo(sp[0], sp[1]); a.wait = rand(4, 9);
+    if (a.map !== 'island') { const sp = pick(MAPS[a.map].visit); a.walkTo(sp[0], sp[1]); a.wait = rand(5, 12); return; }
+    let sp = P_(pick(V.spots)); sp = [sp[0] + rand(-2, 2), sp[1] + rand(-2, 2)];
+    if (ev && ev.map === 'island' && Math.random() < 0.7) { const e = P_(ev.at); sp = [e[0] + rand(-3, 3), e[1] + rand(-3, 3)]; }
+    a.walkTo(sp[0], sp[1]); a.wait = rand(5, 11);
     if (Math.random() < 0.15 && dist(a, G.player) < 8) a.say(villagerLine(a.vid), 2.6);
   }
 }
@@ -338,13 +353,13 @@ function rivalUpdate(a, dt) {
   } else {
     a.map = 'island'; a.visible = day && S.weather !== 'storm';
     a.wait -= dt;
-    if (!a.path.length && a.wait <= 0) { const sp = pick([[22.5, 35.5], [40.5, 21.5], [16.5, 22.5], [34.5, 34.5], [9.5, 13.5]]); a.walkTo(sp[0], sp[1]); a.wait = rand(6, 12); }
+    if (!a.path.length && a.wait <= 0) { const sp = P_(pick(['beach', 'harbor', 'cafeDoor', 'lighthouse', 'observatory', 'windmill', 'field'])); a.walkTo(sp[0] + rand(-2, 2), sp[1] + rand(-2, 2)); a.wait = rand(6, 12); }
   }
 }
 function rivalWalkUpdate(dt) {
   const d = G.det, rw = S.rel.daily.rival, a = G.rivals[rw.job];
   d.speedMul = 0.6;
-  if (!d.path.length && d.wait <= 0) { const wp = STROLL[d.sub % STROLL.length]; d.sub++; d.walkTo(wp[0], wp[1]); d.wait = rand(2, 4); }
+  if (!d.path.length && d.wait <= 0) { const wp = P_(STROLL[d.sub % STROLL.length]); d.sub++; d.walkTo(wp[0], wp[1]); d.wait = rand(2, 4); }
   rw.chatT = (rw.chatT || 0) - dt;
   if (rw.chatT <= 0 && a) {
     rw.chatT = 4.5; const c = RIVAL_CHAT[(rw.ci = (rw.ci || 0) + 1) % RIVAL_CHAT.length];
@@ -363,7 +378,7 @@ function petUpdate(a, dt) {
   if (a.map !== 'island') a.map = 'island';
   a.visible = S.weather !== 'storm' && !(S.min >= 22.5 * 60 || S.min < 6 * 60);
   a.wait -= dt;
-  if (a.follow > 0 && P.map === 'island') {
+  if (a.follow > 0 && P.map === 'island' && (!V.pen || (P.x > V.pen[0] && P.x < V.pen[2] && P.y > V.pen[1] && P.y < V.pen[3]))) {
     a.follow -= dt; a.pose = 'stand';
     if (dist(a, P) > 1.4) { if (!a.path.length || a.wait <= 0) { a.wait = 0.5; a.walkTo(P.x, P.y); if (a.path.length) a.path.pop(); } }
     else a.stop();
@@ -374,14 +389,14 @@ function petUpdate(a, dt) {
   a.speedMul = 1;
   if (!a.path.length && a.wait <= 0) {
     if (Math.random() < 0.35) { a.pose = 'sit'; a.wait = rand(4, 10); }
-    else { a.pose = 'stand'; const sp = pick(V.spots); a.walkTo(sp[0] + rand(-1, 1), sp[1] + rand(-1, 1)); a.wait = rand(3, 8); }
+    else { a.pose = 'stand'; let sp; if (V.pen) sp = [rand(V.pen[0], V.pen[2]), rand(V.pen[1], V.pen[3])]; else { const p = P_(pick(V.spots)); sp = [p[0] + rand(-2, 2), p[1] + rand(-2, 2)]; } a.walkTo(sp[0], sp[1]); a.wait = rand(3, 8); }
   }
 }
 async function petTalk(a) {
   const al = a.pet, cat = al.kind === 'cat';
   a.stop(); a.pose = 'sit'; a.lookAt(G.player);
   Sound.sfx(cat ? 'meow' : 'woof'); burst(a, 'heart', 2);
-  await say('narr', '', `${cat ? '🐱' : '🐶'} ${al.name}: ${pick(PETS[a.vid].lines)}`);
+  await say('narr', '', `${pony ? '🐴' : cat ? '🐱' : '🐶'} ${al.name}: ${pick(PETS[a.vid].lines)}`);
   const opts = ['쓰다듬는다', (S.inv.snack || 0) > 0 ? '간식을 준다 🦴' : '간식이 없다…', '그냥 둔다'];
   const c = await choose(opts);
   if (c === 0) { await say('narr', '', cat ? `${al.name}이(가) 눈을 가늘게 뜨고 골골거린다. 몇 걸음 졸졸 따라온다.` : `${al.name}이(가) 꼬리를 붕붕 흔든다. 신이 나서 따라온다!`); a.follow = rand(6, 11); }

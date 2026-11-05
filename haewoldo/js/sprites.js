@@ -952,3 +952,56 @@ function sprStall() {
   autoOutline(c, '#3a2618');
   return { c, ax: 18, ay: 34 };
 }
+
+/* v3 — 목장 · 풍차 · 정류장 */
+function sprFence() {
+  const c = mkCanvas(32, 24), g = c.getContext('2d');
+  g.fillStyle = '#c99a64'; g.fillRect(6, 6, 2, 12); g.fillRect(24, 6, 2, 12);
+  fillPoly(g, [[2, 9], [16, 3], [30, 9], [30, 11], [16, 5], [2, 11]], '#e0b583');
+  fillPoly(g, [[2, 14], [16, 8], [30, 14], [30, 16], [16, 10], [2, 16]], '#d0a06c');
+  autoOutline(c, '#5a3a24');
+  return { c, ax: 16, ay: 15 };
+}
+function sprHay() {
+  const c = mkCanvas(28, 24), g = c.getContext('2d');
+  fillEllipse(g, 14, 14, 11, 8, '#e8c66a'); fillEllipse(g, 12, 11, 7, 4, '#f4dc8a');
+  g.fillStyle = '#c9a24a'; for (let i = 0; i < 5; i++) g.fillRect(6 + i * 4, 12 + (i % 2), 2, 1);
+  autoOutline(c, '#7a5a24');
+  return { c, ax: 14, ay: 18 };
+}
+function sprWindmill() {
+  const c = mkCanvas(48, 80), g = c.getContext('2d');
+  fillPoly(g, [[18, 74], [30, 74], [27, 26], [21, 26]], '#f4f1ea');
+  fillPoly(g, [[24, 74], [30, 74], [27, 26], [24, 26]], '#d9d3c6');
+  g.fillStyle = '#3f63a8'; g.fillRect(22, 62, 4, 12);
+  const hx = 24, hy = 26;
+  g.fillStyle = '#ffffff';
+  for (const [dx, dy] of [[0, -20], [18, 6], [-18, 6]]) { for (let i = 0; i < 20; i++) { const t = i / 20; g.fillRect(Math.round(hx + dx * t) - 1, Math.round(hy + dy * t) - 1, 3, 3); } }
+  fillEllipse(g, hx, hy, 3, 3, '#e3615a');
+  autoOutline(c, '#3a3a44');
+  return { c, ax: 24, ay: 74 };
+}
+function sprBusStop() {
+  const c = mkCanvas(24, 40), g = c.getContext('2d');
+  g.fillStyle = '#5b5f69'; g.fillRect(11, 10, 2, 26);
+  fillEllipse(g, 12, 9, 7, 7, '#2f8f5a'); fillEllipse(g, 12, 9, 5, 5, '#ffffff');
+  g.fillStyle = '#2f8f5a'; g.fillRect(9, 7, 6, 4); g.fillStyle = '#ffffff'; g.fillRect(10, 8, 1, 1); g.fillRect(13, 8, 1, 1);
+  g.fillStyle = '#f2c94c'; g.fillRect(6, 30, 12, 2);
+  autoOutline(c, '#23262e');
+  return { c, ax: 12, ay: 36 };
+}
+ANIMAL_LOOKS.pony = { kind: 'pony', name: '조랑이', body: '#a8703f', dark: '#7a4e2a', light: '#c98f5a', belly: '#d9b08a', mane: '#3a2a22' };
+ANIMAL_LOOKS.pony2 = { kind: 'pony', name: '얼룩이', body: '#f4efe6', dark: '#cfc6b6', light: '#ffffff', belly: '#ffffff', mane: '#7a5a3f', patches: '#7a5a3f' };
+const _animalSprite0 = animalSprite;
+animalSprite = function (al, frame, sit) {
+  if (al.kind !== 'pony') return _animalSprite0(al, frame, sit);
+  const key = al.name + frame; if (_animalCache.has(key)) return _animalCache.get(key);
+  const c = mkCanvas(28, 26), g = c.getContext('2d'); const P = (col, x, y, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const lg = frame % 2;
+  P(al.mane, 3, 9, 2, 7); P(al.body, 5, 10, 14, 7); P(al.belly, 7, 14, 10, 2);
+  if (al.patches) { P(al.patches, 8, 10, 4, 3); P(al.patches, 15, 12, 3, 2); }
+  P(al.dark, 6, 17, 2, 6 - lg); P(al.dark, 9, 17, 2, 5 + lg); P(al.dark, 14, 17, 2, 6 - lg); P(al.dark, 17, 17, 2, 5 + lg);
+  P(al.body, 17, 4, 5, 9); P(al.body, 20, 6, 6, 5); P(al.mane, 16, 3, 3, 8); P(al.dark, 23, 9, 3, 2);
+  P('#2a2130', 21, 7, 1, 1); P(al.body, 18, 2, 2, 2);
+  autoOutline(c, '#3a2a20'); _animalCache.set(key, c); return c;
+};

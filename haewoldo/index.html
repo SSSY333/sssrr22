@@ -28,7 +28,7 @@
       <div id="hPlace" class="hplace">해월도</div>
       <button id="relBtn"><span class="heart">♥</span><span><b id="relStage">처음 만난 사이</b><i class="mini"><i id="relBar"></i></i></span></button>
     </div>
-    <div id="mini" class="hidden"><button id="miniHead">🗺 지도 <span class="arr">▾</span></button><canvas id="miniC" width="10" height="10"></canvas></div>
+    <button id="mapBtn">🗺 지도</button>
   </div>
   <button id="decorBtn" class="hidden">🛋 꾸미기</button>
   <div id="decorBar" class="hidden">
@@ -93,7 +93,7 @@
         <li><b>행동 버튼</b> — 오른쪽 아래 버튼이 상황에 맞게 바뀌어요: 일하기, 앉기, 낚시, 가게, 말 걸기.</li>
         <li><b>형사님</b> — 형사님을 눌러 인사·대화·함께 다니기. 관계가 깊어질수록 할 수 있는 일이 늘어요.</li>
         <li><b>동행</b> — 함께 다니는 동안 형사님이 뒤를 따라오고, 멈추면 옆에 서요. 왼쪽 위 형사님 아이콘으로 동행 메뉴를 열어요.</li>
-        <li><b>지도</b> — 위의 🗺 지도를 누르면 그곳으로 걸어가요. 접었다 펼 수 있어요.</li>
+        <li><b>지도</b> — 위의 🗺 지도 버튼을 누르면 섬 전체 지도가 펼쳐져요. 가고 싶은 곳을 누르면 걸어가요. 먼 곳은 🚌 마을버스 정류장을 이용해요.</li>
         <li><b>형사님 일과</b> — 07시 출근 · 오전 순찰 · 12시 카페 점심 · 오후 부두·갯바위 순찰 · 17시 퇴근 · 저녁 낚시 · 22시 귀가.</li>
         <li><b>관계</b> — 8단계(처음 만난 사이 → 부부). 하루에 쌓을 수 있는 호감도에 한도가 있고, 특별 이벤트로 더 가까워져요. 고백·프로포즈는 수락·보류·거절 모두 고를 수 있어요.</li>
         <li><b>계절</b> — 7월 1일 여름에 시작. 한 달은 10일이에요. 계절마다 섬 풍경, 옷차림, 대사, 축제가 바뀌어요.</li>
@@ -105,6 +105,12 @@
     </div>
   </div>
 
+  <div id="mapView" class="screen hidden">
+    <div class="map-head"><b>🗺 해월도 지도</b><button id="mapClose">✕</button></div>
+    <div class="map-wrap"><canvas id="bigMap"></canvas></div>
+    <button id="mapZoom">＋ 확대해서 보기</button>
+    <p id="mapHint"></p>
+  </div>
   <div id="flash"></div>
   <div id="fade"></div>
 

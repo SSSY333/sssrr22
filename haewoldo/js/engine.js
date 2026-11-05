@@ -2,7 +2,7 @@
 /* =========================================================
  *  해월도 마을생활 v2 — 엔진 (상태 · 캐릭터 · 렌더링 · 입력 · 시간)
  * ========================================================= */
-const SAVE_KEY = 'haewoldo-village-v2';
+const SAVE_KEY = 'haewoldo-village-v3';
 const MIN_PER_SEC = 1;               // 현실 1초 = 게임 1분 → 하루 약 17분, 계절(30일) 약 8~9시간
 const DOW = ['월', '화', '수', '목', '금', '토', '일'];
 const $ = (s) => document.querySelector(s);
@@ -31,9 +31,9 @@ function newDaily() { return { talk: 0, greet: false, gift: false, date: false, 
 function newState(name, job, hair, detName) {
   const st = MAPS.island.spawn[job];
   return {
-    v: 2, name, job, hair, detName: detName || '', day: 1, min: 8 * 60, weather: 'sunny', money: 12000, jobLv: 1, jobExp: 0, works: 0,
+    v: 3, name, job, hair, detName: detName || '', day: 1, min: 8 * 60, weather: 'sunny', money: 12000, jobLv: 1, jobExp: 0, works: 0,
     inv: { coffee: 1, tangerine: 1, snack: 2 }, furnInv: { plant: 1, cushion: 1 }, home: HOME_DEFAULT.map(f => f.slice()),
-    map: 'island', p: { x: st[0], y: st[1] }, d: { x: 23.5, y: 21.5, vis: true, map: 'island' },
+    map: 'island', p: { x: st[0], y: st[1] }, d: { x: P_('station')[0], y: P_('station')[1], vis: true, map: 'island' },
     comp: false, hold: false, arm: false, speed: 1,
     rel: { aff: 0, stage: 1, together: 0, gifts: 0, dates: 0, dateLog: [], giftLog: [], flags: {}, talkIdx: {}, guide: {}, favor: null, confessDay: -9, proposeDay: -9, metDay: 0, loverDay: 0, missDays: 0, lastGift: {}, daily: newDaily() },
     names: { detNick: '', meNick: '' }, wedding: null,
@@ -51,7 +51,7 @@ function save() {
   }
   return false;
 }
-function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return s && s.v === 2 && JOBS[s.job] ? s : null; } catch (e) { return null; } }
+function loadSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return s && s.v === 3 && JOBS[s.job] ? s : null; } catch (e) { return null; } }
 
 /* ---------------- 캐릭터 ---------------- */
 class Actor {
@@ -236,6 +236,7 @@ function objSprite(o) {
   const mk = {
     tree: () => sprTree('tree', o.v || 0, se), palm: () => sprTree('palm', 0, se), orange: () => sprTree('orange', 0, se),
     wall: sprWall, bench: sprBench, lamp: sprLamp, parasol: sprParasol, telescope: sprTelescope, hare: sprHareubang, board: sprBoard,
+    fence: sprFence, hay: sprHay, windmill: sprWindmill, busstop: sprBusStop,
     crates: sprCrates, boat: sprBoat, pot: sprPot, rocks: sprRocks, snowman: sprSnowman, pavilion: sprPavilion, tankOut: sprTankOut, lantern: sprLantern, stall: sprStall,
   }[o.kind];
   return (R.objSpr[key] = mk ? mk() : sprPot());
@@ -245,7 +246,7 @@ function resize() {
   const box = $('#game').getBoundingClientRect();
   R.dpr = Math.min(3, window.devicePixelRatio || 1);
   R.scale = box.width >= 440 ? 2.5 : 2;
-  R.K = R.scale * R.dpr;
+  R.cur = 0; R.K = R.scale * R.dpr;
   R.view.width = Math.round(box.width * R.dpr); R.view.height = Math.round(box.height * R.dpr);
   R.cssW = box.width; R.cssH = box.height;
   R.lw = box.width / R.scale; R.lh = box.height / R.scale;
@@ -273,19 +274,23 @@ function prect(g, wx, wy, w, h, col) { g.fillStyle = col; g.fillRect(SX(wx), SY(
 
 function render(dt) {
   const g = R.v, P = G.player, m = M;
+  const sc = m.interior ? Math.min(R.scale, R.cssW / ((m.W + m.H) * 16 + 16)) : R.scale;
+  if (sc !== R.cur) { R.cur = sc; R.K = sc * R.dpr; R.lw = R.cssW / sc; R.lh = R.cssH / sc; G.camSnap = true; }
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.imageSmoothingEnabled = false;
-  if (!m.ground || m.groundKey !== groundKey(m)) buildGround(m);
+  if (m.interior && (!m.ground || m.groundKey !== groundKey(m))) buildGround(m);
   // 카메라
   let fx, fy;
-  if (G.camFocus) [fx, fy] = iso(G.camFocus.x, G.camFocus.y); else [fx, fy] = iso(P.x, P.y);
+  if (G.camFocus) [fx, fy] = iso(G.camFocus.x, G.camFocus.y);
+  else if (m.interior) [fx, fy] = iso(m.W / 2, m.H / 2 + 0.6);
+  else [fx, fy] = iso(P.x, P.y);
   const tx = fx - R.lw / 2, ty = fy - 14 - R.lh * (m.interior ? 0.46 : 0.5);
   if (G.camSnap) { G.cam.x = tx; G.cam.y = ty; G.camSnap = false; }
   else { const k = 1 - Math.exp(-dt * 7); G.cam.x += (tx - G.cam.x) * k; G.cam.y += (ty - G.cam.y) * k; }
 
   g.fillStyle = m.interior ? '#2b2340' : (season() === 'winter' ? '#4892c4' : '#53a6dc');
   g.fillRect(0, 0, R.view.width, R.view.height);
-  blit(g, m.ground[m.interior ? 0 : G.waterFrame], -m.gOX, -m.gOY);
+  if (m.interior) blit(g, m.ground[0], -m.gOX, -m.gOY); else drawTiles(g, m);
   const dl = S ? daylight(S.min) : { night: 0 };
   const lit = !m.interior && dl.night > 0.5;
   const se = season();
@@ -422,7 +427,7 @@ function drawBubble(v, X, Y, text) {
 function drawActor(g, a, sx, sy) {
   if (a.pet) {
     const spr = animalSprite(a.pet, a.moving ? Math.floor(a.anim * 1.5) % 2 : 0, a.pose === 'sit');
-    blit(g, R.shadow, sx - 7, sy - 3); blit(g, spr, sx - 11, sy - 16, a.left); return;
+    blit(g, R.shadow, sx - 7, sy - 3); if (a.pet.kind === 'pony') blit(g, spr, sx - 14, sy - 24, a.left); else blit(g, spr, sx - 11, sy - 16, a.left); return;
   }
   const lift = a.seat ? 4 : a.carried ? 13 : 0;
   if (!a.seat && !a.carried) blit(g, R.shadow, sx - 7, sy - 3);
@@ -538,7 +543,7 @@ function waitUntil(cond, timeout = 15) { return new Promise(res => G.waiters.pus
 
 /* ---------------- 입력 ---------------- */
 function screenToWorld(px, py) {
-  const wx = px / R.scale + G.cam.x, wy = py / R.scale + G.cam.y;
+  const wx = px / R.cur + G.cam.x, wy = py / R.cur + G.cam.y;
   return { wx, wy, tx: (wx / 16 + wy / 8) / 2, ty: (wy / 8 - wx / 16) / 2 };
 }
 function onTap(px, py) {
@@ -614,45 +619,128 @@ function keyMove(dt) {
   return true;
 }
 
-/* ---------------- 미니맵 ---------------- */
-const MINI = { s: 2 };
-function drawMinimapBase() {
-  const c = $('#miniC'); if (!c || !S) return;
-  const m = M, s = MINI.s;
-  const W = (m.W + m.H) * s * 2, H = (m.W + m.H) * s + 4;
-  c.width = W; c.height = H;
-  const g = c.getContext('2d');
-  g.fillStyle = m.interior ? '#3a3050' : '#7fc4e8'; g.fillRect(0, 0, W, H);
-  const cols = { [T.SAND]: '#f1dca6', [T.GRASS]: season() === 'winter' ? '#eef3f7' : season() === 'autumn' ? '#c9bd6a' : '#8ccb64', [T.PATH]: '#e6ddcb', [T.WOOD]: '#b37e50', [T.FLOWER]: '#c9a0e8', [T.HILL]: '#a3d872', [T.ROCK]: '#5b5f69', [T.POND]: '#4c9db4', [T.FLOOR]: '#d7a874', [T.TILEF]: '#e1e9ec', [T.MAT]: '#d9cc96' };
+/* ---------------- 바닥 타일 (화면에 보이는 것만 매 프레임) ---------------- */
+const _tileC = new Map();
+function compTile(m, x, y, f) {
+  const se = season(), t = tileAt(x, y, m);
+  if (t === T.WATER) {
+    const wv = Math.floor(hash2(x, y, 1) * 4);
+    const landN = (xx, yy) => { const tt = tileAt(xx, yy, m); return tt !== T.WATER && tt !== T.WOOD; };
+    const fa = landN(x - 1, y) ? 1 : 0, fb = landN(x, y - 1) ? 1 : 0;
+    const key = 'w' + wv + f + fa + fb + se;
+    let c = _tileC.get(key);
+    if (!c) {
+      c = mkCanvas(32, 16); const g = c.getContext('2d'); g.drawImage(makeTile('water', wv, f, se), 0, 0);
+      g.fillStyle = 'rgba(255,255,255,0.75)';
+      if (fa) for (let X = 0; X < 16; X++) if ((X + f * 3) % 5 < 3) g.fillRect(X, 8 - Math.floor(X / 2) + 1, 1, 1);
+      if (fb) for (let X = 16; X < 32; X++) if ((X + f * 3) % 5 < 3) g.fillRect(X, Math.floor((X - 16) / 2) + 1, 1, 1);
+      _tileC.set(key, c);
+    }
+    return c;
+  }
+  const v = Math.floor(hash2(x, y, 2) * 8);
+  const wat = (xx, yy) => tileAt(xx, yy, m) === T.WATER;
+  const e1 = wat(x + 1, y) ? 1 : 0, e2 = wat(x, y + 1) ? 1 : 0, wp = t === T.WOOD && (wat(x + 1, y + 1) || e2) ? 1 : 0;
+  const key = t + '_' + v + '_' + e1 + e2 + wp + se;
+  let c = _tileC.get(key);
+  if (!c) {
+    c = mkCanvas(32, 24); const g = c.getContext('2d');
+    g.drawImage(makeTile(TILE_NAMES[t], v, 0, se), 0, 0);
+    const edgeCol = t === T.WOOD ? '#6e4a30' : t === T.SAND || t === T.PATH ? '#cfae72' : t === T.ROCK ? '#3b3e46' : '#9b7049';
+    const edgeH = t === T.WOOD ? 3 : 5;
+    if (e1) for (let X = 16; X < 32; X++) { const ye = 16 - Math.floor((X - 16) / 2); g.fillStyle = edgeCol; g.fillRect(X, ye - 1, 1, edgeH); g.fillStyle = shade(edgeCol, 0.8); g.fillRect(X, ye + edgeH - 2, 1, 1); }
+    if (e2) for (let X = 0; X < 16; X++) { const ye = 8 + Math.floor(X / 2); g.fillStyle = shade(edgeCol, 1.1); g.fillRect(X, ye, 1, edgeH); g.fillStyle = shade(edgeCol, 0.8); g.fillRect(X, ye + edgeH - 1, 1, 1); }
+    if (wp) { g.fillStyle = '#5a3a24'; g.fillRect(15, 15, 2, 6); }
+    _tileC.set(key, c);
+  }
+  return c;
+}
+function drawTiles(g, m) {
+  const inv = (wx, wy) => [(wx / 16 + wy / 8) / 2, (wy / 8 - wx / 16) / 2];
+  const cx0 = G.cam.x - 32, cy0 = G.cam.y - 32, cx1 = G.cam.x + R.lw + 32, cy1 = G.cam.y + R.lh + 32;
+  const cs = [inv(cx0, cy0), inv(cx1, cy0), inv(cx0, cy1), inv(cx1, cy1)];
+  const x0 = Math.max(0, Math.floor(Math.min(...cs.map(c => c[0])))), x1 = Math.min(m.W - 1, Math.ceil(Math.max(...cs.map(c => c[0]))));
+  const y0 = Math.max(0, Math.floor(Math.min(...cs.map(c => c[1])))), y1 = Math.min(m.H - 1, Math.ceil(Math.max(...cs.map(c => c[1]))));
+  for (let pass = 0; pass < 2; pass++) {
+    for (let s = x0 + y0; s <= x1 + y1; s++) {
+      for (let x = Math.max(x0, s - y1); x <= Math.min(x1, s - y0); x++) {
+        const y = s - x, t = m.tiles[y * m.W + x];
+        if ((t === T.WATER) !== (pass === 0)) continue;
+        const wx = (x - y) * 16 - 16, wy = (x + y) * 8;
+        if (wx > cx1 || wx + 32 < cx0 || wy > cy1 || wy + 24 < cy0) continue;
+        const c = compTile(m, x, y, G.waterFrame);
+        const X = SX(wx), Y = SY(wy);
+        g.drawImage(c, X, Y, SX(wx + 32) - X, SY(wy + c.height) - Y);
+      }
+    }
+  }
+}
+
+/* ---------------- 섬 지도 (접어 두었다가 누르면 크게) ---------------- */
+const BIGMAP = { key: '', s: 3 };
+function buildBigMap() {
+  const m = MAPS.island, s = BIGMAP.s, key = season();
+  if (BIGMAP.key === key && BIGMAP.base) return;
+  const W = (m.W + m.H) * s, H = (m.W + m.H) * s / 2 + 8;
+  const c = mkCanvas(W, H), g = c.getContext('2d');
+  g.fillStyle = season() === 'winter' ? '#5f9fd0' : '#7fc4e8'; g.fillRect(0, 0, W, H);
+  const se = season();
+  const cols = { [T.SAND]: '#f1dca6', [T.GRASS]: se === 'winter' ? '#eef3f7' : se === 'autumn' ? '#c9bd6a' : se === 'spring' ? '#a8dc78' : '#8ccb64', [T.PATH]: '#fff6e0', [T.WOOD]: '#b37e50', [T.FLOWER]: se === 'spring' ? '#f2d84a' : se === 'winter' ? '#d9404f' : '#c9a0e8', [T.HILL]: se === 'winter' ? '#e4ecf2' : '#6fb04f', [T.ROCK]: '#5b5f69', [T.POND]: '#4c9db4' };
   for (let y = 0; y < m.H; y++) for (let x = 0; x < m.W; x++) {
-    const t = tileAt(x, y, m); if (t === T.WATER) continue;
+    const t = m.tiles[y * m.W + x]; if (t === T.WATER) continue;
     g.fillStyle = cols[t] || '#8ccb64';
-    const X = (x - y + m.H) * s * 2, Y = (x + y) * s;
-    g.fillRect(X - s, Y, s * 4, s * 2); g.fillRect(X, Y - s * 0.5, s * 2, s * 3);
+    const X = (x - y + m.H) * s, Y = (x + y) * s / 2 + 4;
+    g.fillRect(Math.round(X - s), Math.round(Y), s * 2, Math.ceil(s / 2) + 1);
   }
-  for (const b of m.buildings) {
-    g.fillStyle = b.roof || '#d9473f';
-    for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { const X = (x - y + m.H) * s * 2, Y = (x + y) * s; g.fillRect(X - s, Y - s, s * 4, s * 3); }
-  }
-  MINI.base = g.getImageData(0, 0, W, H);
-  MINI.m = m.id;
+  for (const o of m.objects) if (o.kind === 'tree' || o.kind === 'palm' || o.kind === 'orange') { g.fillStyle = o.kind === 'orange' ? '#3f8f45' : se === 'autumn' ? '#d9843a' : se === 'winter' ? '#9fb8a8' : '#3f8f45'; const X = (o.x - o.y + m.H) * s, Y = (o.x + o.y) * s / 2 + 4; g.fillRect(X - 1, Y - 2, 3, 3); }
+  for (const b of m.buildings) { g.fillStyle = b.roof || '#d9473f'; const X = (b.x - b.y - b.h + m.H) * s, Y = (b.x + b.y) * s / 2 + 4; g.fillRect(X, Y - 3, (b.w + b.h) * s, (b.w + b.h) * s / 2 + 3); }
+  BIGMAP.base = c; BIGMAP.key = key;
 }
-function drawMinimap() {
-  const c = $('#miniC'); if (!c || !MINI.base || !S || !S.settings.mini) return;
-  if (MINI.m !== M.id) drawMinimapBase();
-  const g = c.getContext('2d'), m = M, s = MINI.s;
-  g.putImageData(MINI.base, 0, 0);
-  const dot = (a, col, r = 2.5) => { const X = (a.x - a.y + m.H) * s * 2, Y = (a.x + a.y) * s; g.fillStyle = '#3a2533'; g.beginPath(); g.arc(X, Y, r + 1, 0, 7); g.fill(); g.fillStyle = col; g.beginPath(); g.arc(X, Y, r, 0, 7); g.fill(); };
-  const ev = activeEvent(); if (ev && m.id === ev.map) { g.font = '11px sans-serif'; g.textAlign = 'center'; g.fillText('⭐', (ev.at[0] - ev.at[1] + m.H) * s * 2, (ev.at[0] + ev.at[1]) * s); }
-  for (const a of G.actors) if (a.visible && a.map === m.id && a !== G.player && a !== G.det && !a.pet) dot(a, a.isRival ? '#ffb3cc' : '#ffffff', 1.6);
-  if (G.det.visible && G.det.map === m.id) dot(G.det, '#2e3d66', 3);
-  dot(G.player, '#ff6f91', 3.2);
+function openBigMap() {
+  if (!S || G.busy) return;
+  buildBigMap();
+  BIGMAP.zoom = BIGMAP.zoom || 1;
+  drawBigMap();
+  $('#mapView').classList.remove('hidden'); G.screen = true;
+  $('#mapHint').textContent = G.player.map === 'island' ? '가고 싶은 곳을 누르면 걸어가요 · 🚌 정류장에서 마을버스를 탈 수 있어요' : '지금은 섬 밖이나 건물 안이에요. 밖으로 나가면 지도를 눌러 이동할 수 있어요';
+  const P = G.player;
+  if (BIGMAP.zoom > 1 && P.map === 'island') { const w = $('.map-wrap'), c = $('#bigMap'); const [X, Y] = BIGMAP.at(P.x, P.y); w.scrollLeft = X / R.dpr - w.clientWidth / 2; w.scrollTop = Y / R.dpr - w.clientHeight / 2; void c; }
 }
-function miniTap(e) {
-  const c = $('#miniC'), r = c.getBoundingClientRect();
-  const X = (e.clientX - r.left) * c.width / r.width, Y = (e.clientY - r.top) * c.height / r.height;
-  const s = MINI.s, m = M;
-  const a = X / (s * 2) - m.H, b = Y / s; // a = x - y, b = x + y
-  const x = (a + b) / 2, y = (b - a) / 2;
-  if (!G.busy && !paused() && !G.decor) walkPlayer(x, y);
+function drawBigMap() {
+  const c = $('#bigMap'), m = MAPS.island, s = BIGMAP.s, base = BIGMAP.base;
+  // 섬이 있는 부분만 잘라서 화면 너비에 맞춤
+  const sx0 = 12 * s, sx1 = base.width - 12 * s, sy0 = 4 * s, sy1 = base.height - 6 * s;
+  const cssW = Math.min(460, window.innerWidth) - 20, Z = BIGMAP.zoom, D = R.dpr;
+  const cw = cssW * Z, ch = cw * (sy1 - sy0) / (sx1 - sx0);
+  c.style.width = cw + 'px'; c.style.height = ch + 'px';
+  c.width = Math.round(cw * D); c.height = Math.round(ch * D);
+  const k = c.width / (sx1 - sx0);
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.drawImage(base, sx0, sy0, sx1 - sx0, sy1 - sy0, 0, 0, c.width, c.height);
+  const at = BIGMAP.at = (x, y) => [((x - y + m.H) * s - sx0) * k, ((x + y) * s / 2 + 4 - sy0) * k];
+  BIGMAP.inv = (X, Y) => { const wx = X / k + sx0, wy = Y / k + sy0; const a = wx / s - m.H, b = (wy - 4) * 2 / s; return [(a + b) / 2, (b - a) / 2]; };
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  const fs = (big) => (big ? 12.5 : 10.5) * D * Math.min(1.25, Z);
+  const label = (x, y, text, big) => { const [X, Y] = at(x, y); g.font = `${fs(big)}px Jua, sans-serif`; const w = g.measureText(text).width + 8 * D, h = fs(big) + 6 * D; g.fillStyle = 'rgba(255,253,246,0.94)'; roundRect(g, X - w / 2, Y - h / 2, w, h, h / 2); g.fill(); g.strokeStyle = '#3a2533'; g.lineWidth = 1.2 * D; g.stroke(); g.fillStyle = '#3a2533'; g.fillText(text, X, Y + 0.5 * D); };
+  const L = [['plaza', '해월 마을', 1], ['harbor', '동쪽 포구', 1], ['beach', '해수욕장', 1], ['farm', '귤 농장', 1], ['ranchIn', '조랑말 목장', 1], ['hill', '해월 오름', 1], ['rocks', '갯바위', 0], ['forest', '동백숲', 1], ['lighthouse', '등대', 0], ['windmill', '풍차 언덕', 0], ['field', '꽃밭', 0]];
+  if (Z > 1) L.push(['schoolFront', '학교', 0], ['cafeDoor', '카페', 0], ['police', '파출소', 0], ['homeDoor', '내 집', 0], ['hallFront', '회관', 0], ['sashimiDoor', '횟집', 0], ['storageDoor', '해녀창고', 0], ['sataekDoor', '사택', 0]);
+  for (const [kk, t, big] of L) { const p = P_(kk); label(p[0], p[1] - (kk === 'plaza' && Z === 1 ? 5 : 0), t, big); }
+  g.font = `${11 * D * Math.min(1.3, Z)}px sans-serif`;
+  for (const p of Object.values(m.stops)) { const [X, Y] = at(p[0], p[1]); g.fillText('🚌', X, Y - 9 * D); }
+  const ev = activeEvent(); if (ev) { const p = P_(ev.at); const [X, Y] = at(p[0], p[1]); g.font = `${16 * D}px sans-serif`; g.fillText('⭐', X + 14 * D, Y - 14 * D); }
+  const P = G.player, here = P.map === 'island' ? [P.x, P.y] : P.map.startsWith('in_') ? ((m.buildings.find(b => 'in_' + b.id === P.map) || { doorTile: [62, 62] }).doorTile) : P_('boatSpot');
+  const [X, Y] = at(here[0], here[1]);
+  g.fillStyle = '#3a2533'; g.beginPath(); g.arc(X, Y, 6 * D, 0, 7); g.fill(); g.fillStyle = '#ff6f91'; g.beginPath(); g.arc(X, Y, 4.5 * D, 0, 7); g.fill();
+  g.font = `${12 * D}px Jua, sans-serif`; g.fillStyle = '#ff6f91'; g.strokeStyle = '#ffffff'; g.lineWidth = 3 * D; g.strokeText('나', X, Y - 12 * D); g.fillText('나', X, Y - 12 * D);
+  $('#mapZoom').textContent = Z > 1 ? '－ 전체 보기' : '＋ 확대해서 보기';
 }
+function closeBigMap() { $('#mapView').classList.add('hidden'); G.screen = false; }
+function bigMapTap(e) {
+  const c = $('#bigMap'), r = c.getBoundingClientRect(), m = MAPS.island;
+  const [x, y] = BIGMAP.inv((e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height);
+  closeBigMap();
+  if (G.player.map === 'island' && !G.busy && !G.decor && inMap(Math.floor(x), Math.floor(y), m)) walkPlayer(x, y);
+}
+function toggleBigMapZoom() { BIGMAP.zoom = BIGMAP.zoom > 1 ? 1 : 2.4; openBigMap(); }
+function drawMinimapBase() { }
+function drawMinimap() { }
