@@ -132,6 +132,7 @@ const PATROL = ['station', 'schoolFront', 'clinicFront', 'hallFront', 'plaza', '
 const PIER_PATROL = ['harbor', 'pierEnd', 'sashimiDoor', 'storageDoor', 'boatSpot', 'harbor'];
 const STROLL = ['beach', 'beachEast', 'beachBench', 'beachWest', 'beach'];
 const STATION = null;
+function detDayOutfit(kind) { const pool = DET_WEAR[kind][season()]; return pool[(S.day * 7 + (kind === 'work' ? 3 : 0)) % pool.length]; }
 function detHomeDoor() { return S.rel.flags.married ? P_('homeDoor') : P_('sataekDoor'); }
 function todayEvents() { const c = calendar(S.day); return EVENTS.filter(e => e.m === c.month && e.d === c.dom); }
 function activeEvent() { if (!S) return null; return todayEvents().find(e => S.min >= e.from && S.min < e.to) || null; }
@@ -161,7 +162,7 @@ function detUpdate(dt) {
   const d = G.det, P = G.player;
   const plan = detPlan(S.min);
   if (plan.k === 'wedding' || (S.rel.daily.weddingDone)) d.outfit = 'suit';
-  else d.outfit = plan.duty ? 'work' : 'casual';
+  else d.outfit = detDayOutfit(plan.duty ? 'work' : 'casual');
   if (d.state === 'comp') { compUpdate(dt, plan); return; }
   if (d.state !== 'sched') return;
   if (d.talking) { d.stop(); d.lookAt(P); return; }
@@ -362,7 +363,7 @@ function rivalWalkUpdate(dt) {
   if (!d.path.length && d.wait <= 0) { const wp = P_(STROLL[d.sub % STROLL.length]); d.sub++; d.walkTo(wp[0], wp[1]); d.wait = rand(2, 4); }
   rw.chatT = (rw.chatT || 0) - dt;
   if (rw.chatT <= 0 && a) {
-    rw.chatT = 4.5; const c = RIVAL_CHAT[(rw.ci = (rw.ci || 0) + 1) % RIVAL_CHAT.length];
+    rw.chatT = 4.5; const CH = RIVAL_LINES[rw.job].chat; rw.ci = (rw.ci || 0) + 1; const c = CH[Math.floor(rw.ci / 2) % CH.length];
     if (rw.ci % 2) a.say(c[0], 4); else d.say(c[1], 4);
   }
   const P = G.player;
@@ -431,7 +432,9 @@ async function staffTalk(a) {
 async function rivalTalk(a) {
   a.talking = true; a.stop(); a.lookAt(G.player); G.player.lookAt(a);
   const after = S.rel.flags.lovers;
-  await say(a.id, after ? 'smile' : pick(['smile', 'tease', 'normal']), pick(after ? RIVAL_TALK.after : RIVAL_TALK.before).replace(/형사님/g, S.rel.stage >= 4 ? himCall() : '형사님'));
+  const RL = RIVAL_LINES[a.job], pool = after ? RL.after : [...RL.before, RL.season[season()]];
+  await say(a.id, after ? 'smile' : pick(['smile', 'tease', 'normal']), pick(pool).replace(/형사님/g, S.rel.stage >= 4 ? himCall() : '형사님'));
+  if (Math.random() < 0.4) await say(a.id, 'smile', pick(pool.filter(x => x)).replace(/형사님/g, S.rel.stage >= 4 ? himCall() : '형사님'));
   if (!after && S.rel.stage >= 2 && Math.random() < 0.5) {
     await say(a.id, 'tease', '…혹시 형사님이랑 무슨 사이예요? 그냥 궁금해서요~');
     const c = await choose(['그냥 아는 사이예요', '…비밀이에요', '친한 사이예요']);
@@ -442,7 +445,7 @@ async function rivalTalk(a) {
 async function jealousEvent(a) {
   const d = G.det, P = G.player; scriptDet();
   d.lookAt(P); a.stop(); a.lookAt(P);
-  await say(a.id, 'smile', `어, 안녕하세요~ 형사님이랑 산책 중이었어요. 호호.`);
+  await say(a.id, 'smile', RIVAL_LINES[a.job].intro);
   await say('det', 'surprise', `아, {me}! …마침 잘 왔어요.`);
   const j = JEALOUS[Math.floor(Math.random() * JEALOUS.length)];
   const opts = JEALOUS.map(x => x.q);
@@ -450,7 +453,7 @@ async function jealousEvent(a) {
   const J = JEALOUS[c], hi = S.rel.stage >= 4 ? 1 : 0;
   await say('det', hi ? 'blush' : 'normal', J.a[hi]);
   addAff(J.aff[hi], { event: true });
-  await say(a.id, 'sad', '…아, 저 먼저 가 볼게요~ 두 분 좋은 시간 보내세요!');
+  await say(a.id, 'sad', RIVAL_LINES[a.job].leave);
   endRivalWalk();
   if (c === 2 || S.rel.stage >= 3) { await say('det', 'smile', '같이 걸어요. 어디든.'); startCompanion(); }
   void j;
@@ -506,7 +509,7 @@ function doInteraction(id) {
         const tod = S.min < 11 * 60 ? 'morning' : S.min < 17 * 60 ? 'day' : 'evening';
         d.emo('👋');
         await say('det', st >= 4 ? 'blush' : 'smile', pick(GREETS[tod][Math.min(8, st)]));
-        if (!r.daily.greet) { r.daily.greet = true; addAff(1); } else await say('det', 'laugh', '또 인사해요? 하하, 좋아요.');
+        if (!r.daily.greet) { r.daily.greet = true; addAff(1); if (DET_OUTFIT_LINES[d.outfit] && st >= 2) await say('det', 'tease', DET_OUTFIT_LINES[d.outfit]); } else await say('det', 'laugh', '또 인사해요? 하하, 좋아요.');
         break;
       }
       case 'talk': await dailyTalk(); break;

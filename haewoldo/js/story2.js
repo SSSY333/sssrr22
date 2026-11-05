@@ -789,6 +789,8 @@ async function interiorAction(act) {
     case 'cook': if (S.comp && r.stage >= 5) cookTogether(); else runEvent(async () => { if (S.money < 2000) { await say('narr', '', '재료비가 부족하다.'); return; } S.money -= 2000; S.inv.lunchbox = (S.inv.lunchbox || 0) + 1; await say('narr', '', '🍱 도시락을 만들었다. 누군가에게 주면 좋겠다.'); }); return;
     case 'tv': runEvent(async () => { await say('narr', '', pick(['📺 일기예보: 내일 해월도는 ' + ({ summer: '무더위', autumn: '선선한 바람', winter: '찬 바람', spring: '따뜻한 봄볕' })[season()] + '.', '📺 드라마에서 형사가 고백하는 장면이 나온다. …괜히 웃음이 난다.'])); }); return;
     case 'sofa': runEvent(async () => { await say('narr', '', '소파에 폭 기대었다. 몸이 노곤노곤하다.'); advanceTime(30); }); return;
+    case 'clothes': clothesMenu(); return;
+    case 'salon': salonMenu(); return;
     case 'detBed': if (G.det.task === 'sick') runEvent(sickEvent); else runEvent(async () => { await say('narr', '', '형사님 침대. 이불이 반듯하게 개어져 있다.'); }); return;
   }
 }
@@ -821,8 +823,8 @@ function computeAction() {
   if (M.interior) {
     if (Math.floor(P.x) === M.exit[0] && Math.floor(P.y) === M.exit[1]) return { label: '나가기', icon: '🚪', fn: leaveInterior };
     for (const o of M.objects) if (o.kind === 'furn' && o.act && Math.hypot(P.x - o.x - 0.5, P.y - o.y - 0.5) < 1.6) {
-      const L = { work: JOBS[S.job].act, order: S.job === 'cafe' ? '카페 영업' : '주문하기', eat: '물회 먹기', tank: '수조 구경', karaoke: '노래하기', events: '행사 게시판', piano: '피아노', snack: '국수 먹기', desk: '책상 보기', board: '게시판', lost: '분실물 상자', shop: '장보기', furnShop: '가구 사기', gear: '장비 보기', prep: '해산물 손질', sleep: '잠자기', cook: '요리하기', tv: 'TV 보기', sofa: '쉬기', tankHome: '수족관', detBed: '살펴보기' }[o.act] || '살펴보기';
-      const I = { work: JOBS[S.job].icon, order: '☕', eat: '🍲', tank: '🐟', karaoke: '🎤', events: '📋', piano: '🎹', snack: '🍜', desk: '🗂', board: '📋', lost: '📦', shop: '🛒', furnShop: '🛋', gear: '🤿', prep: '🔪', sleep: '🛏', cook: '🍳', tv: '📺', sofa: '🛋', tankHome: '🐠', detBed: '🛏' }[o.act] || '👀';
+      const L = { clothes: '옷 고르기', salon: '머리 하기', work: JOBS[S.job].act, order: S.job === 'cafe' ? '카페 영업' : '주문하기', eat: '물회 먹기', tank: '수조 구경', karaoke: '노래하기', events: '행사 게시판', piano: '피아노', snack: '국수 먹기', desk: '책상 보기', board: '게시판', lost: '분실물 상자', shop: '장보기', furnShop: '가구 사기', gear: '장비 보기', prep: '해산물 손질', sleep: '잠자기', cook: '요리하기', tv: 'TV 보기', sofa: '쉬기', tankHome: '수족관', detBed: '살펴보기' }[o.act] || '살펴보기';
+      const I = { clothes: '👗', salon: '💇', work: JOBS[S.job].icon, order: '☕', eat: '🍲', tank: '🐟', karaoke: '🎤', events: '📋', piano: '🎹', snack: '🍜', desk: '🗂', board: '📋', lost: '📦', shop: '🛒', furnShop: '🛋', gear: '🤿', prep: '🔪', sleep: '🛏', cook: '🍳', tv: '📺', sofa: '🛋', tankHome: '🐠', detBed: '🛏' }[o.act] || '👀';
       return { label: L, icon: I, fn: () => interiorAction(o.act), hot: o.act === 'work' };
     }
     return { label: '나가기', icon: '🚪', fn: leaveInterior };
@@ -895,6 +897,49 @@ function setAction(a, lock) {
 }
 
 /* ---------------- 가게 ---------------- */
+function applyStyle(st) {
+  S.style = st;
+  const P = G.player; P.look = Object.assign(playerLookV2(S.job, S.hair, st), { cacheId: 'player-' + S.job + styleKey(st) });
+  G._compFace = null; save();
+}
+function styleReaction() {
+  runEvent(async () => {
+    await say('me', 'smile', '(거울 앞에서 한 바퀴 돌아봤다. 마음에 든다!)');
+    const d = G.det;
+    if (S.rel.flags.met && d.visible && d.map === G.player.map && dist(d, G.player) < 5) {
+      d.lookAt(G.player);
+      const st = S.rel.stage;
+      await say('det', st >= 4 ? 'blush' : 'surprise', st >= 8 ? '여보, 오늘 왜 이렇게 예뻐요? 나가지 마요. …농담이에요, 같이 나가요.' : st >= 5 ? '……와. 잠깐만요, 심장 좀 진정시키고요. 너무 잘 어울려요.' : st >= 3 ? '어, 새로 바꿨어요? 잘 어울려요. 진짜로.' : '오, 분위기 바뀌었네요. 잘 어울려요.');
+      if (!S.rel.daily.style) { S.rel.daily.style = true; addAff(1); }
+    }
+  });
+}
+function clothesMenu() {
+  const items = Object.entries(CLOTHES).map(([k, C]) => ({ icon: C.icon, label: C.name, note: k === 'job' ? '무료 · 원래 옷' : (S.style.clothes === k ? '입는 중 · ' : '') + fmtMoney(C.price), onClick: () => {
+    if (k === 'job') { applyStyle(Object.assign({}, S.style, { clothes: 'job', cc: null })); toast('💼 직업복으로 갈아입었어요'); styleReaction(); return; }
+    colorMenu('색을 골라요 — ' + C.name, CLOTH_COLORS, (col, name) => {
+      if (S.money < C.price) { toast('돈이 부족해요'); return; }
+      S.money -= C.price; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { clothes: k, cc: col })); updateHUD();
+      toast(`👗 ${name} ${C.name}(으)로 갈아입었어요`); styleReaction();
+    });
+  } }));
+  openSheet({ title: '👗 해월 옷가게', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 옷을 고르면 색을 정할 수 있어요</div>`, items, cols: 3 });
+}
+function colorMenu(title, colors, done) {
+  const items = colors.map(([name, col]) => ({ icon: `<i class="swatch" style="background:${col}"></i>`, label: name, onClick: () => done(col, name) }));
+  openSheet({ title, items, cols: 4 });
+}
+function salonMenu() {
+  const items = Object.entries(HAIR_STYLES).map(([k, name]) => ({ icon: '💇', label: name, note: (S.style.hair === k ? '지금 머리 · ' : '') + fmtMoney(STYLE_PRICE.hair), onClick: () => {
+    if (S.money < STYLE_PRICE.hair) { toast('돈이 부족해요'); return; }
+    S.money -= STYLE_PRICE.hair; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hair: k })); updateHUD(); toast(`💇 ${name}(으)로 바꿨어요`); styleReaction();
+  } }));
+  items.push({ icon: '🎨', label: '머리 색 바꾸기', note: fmtMoney(STYLE_PRICE.color), wide: true, onClick: () => colorMenu('머리 색 고르기', HAIR_COLORS, (col, name) => {
+    if (S.money < STYLE_PRICE.color) { toast('돈이 부족해요'); return; }
+    S.money -= STYLE_PRICE.color; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hairC: col })); updateHUD(); toast(`🎨 ${name}(으)로 염색했어요`); styleReaction();
+  }) });
+  openSheet({ title: '💇 미용실 해바라기', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 머리 모양 ${fmtMoney(STYLE_PRICE.hair)} · 염색 ${fmtMoney(STYLE_PRICE.color)}</div>`, items, cols: 3 });
+}
 function shopMenu() {
   const se = season();
   const items = SHOP.filter(k => !SHOP_SEASON[k] || SHOP_SEASON[k] === se).map(k => { const it = ITEMS[k]; return { icon: it.icon, label: it.name, note: fmtMoney(it.price), keep: true, onClick: () => { if (S.money < it.price) { toast('돈이 부족해요'); return; } S.money -= it.price; S.inv[k] = (S.inv[k] || 0) + 1; Sound.sfx('coin'); toast(`${it.icon} ${it.name} 구입 (보유 ${S.inv[k]})`); updateHUD(); save(); } }; });
@@ -1186,7 +1231,8 @@ function loop(ts) {
 /* ---------------- 시작 ---------------- */
 function mkActor(id, lookDef, outfit, map, cacheId) { const a = new Actor(id, Object.assign({}, lookDef, { cacheId: cacheId || id }), outfit, map); return a; }
 function spawnActors() {
-  const P = G.player = mkActor('player', playerLookV2(S.job, S.hair), 'base', S.map || 'island', 'player-' + S.job + S.hair);
+  S.style = S.style || defaultStyle(S.job, S.hair);
+  const P = G.player = mkActor('player', playerLookV2(S.job, S.hair, S.style), 'base', S.map || 'island', 'player-' + S.job + styleKey(S.style));
   P.speed = 2.9; P.x = S.p.x; P.y = S.p.y;
   if (!MAPS[P.map]) P.map = 'island';
   M = MAPS[P.map];
@@ -1209,18 +1255,24 @@ function spawnActors() {
   if (S.comp) { startCompanion(); [d.x, d.y] = nearestWalkable(P.x + 1, P.y, M); d.map = P.map; }
   G.camSnap = true;
 }
-function playerLookV2(job, hairKey) {
+function defaultStyle(job, hairKey) { const h = PLAYER_HAIRS[hairKey] || PLAYER_HAIRS.ponytail; return { hair: h.hair, hairC: h.hairC, clothes: 'job', cc: null }; }
+function styleKey(st) { return [st.hair, st.hairC, st.clothes, st.cc].join('-'); }
+function playerLookV2(job, hairKey, style) {
+  const st = style || defaultStyle(job, hairKey);
   const l = playerLook(job, hairKey);
-  l.fem = hairKey !== 'short';
+  l.hair = st.hair; l.hairC = st.hairC; l.hairH = shade(st.hairC, 1.35);
+  if (st.clothes !== 'job' && CLOTHES[st.clothes]) l.outfits.base = CLOTHES[st.clothes].make(st.cc || '#f19ab5');
+  l.fem = st.hair !== 'short' || !!(CLOTHES[st.clothes] && CLOTHES[st.clothes].fem);
   l.outfits.wedding = { coat: '#ffffff', coatS: '#e6e8f0', shirt: '#ffffff', pants: l.fem ? '#f7d4b5' : '#ffffff', skirt: l.fem ? '#ffffff' : null, long: true, shoes: '#ffffff', closed: true, collar: '#ffffff', veil: l.fem, corsage: '#f7b9c9', bow: l.fem ? null : '#f7b9c9' };
   return l;
 }
 function setupLooks() {
+  Object.assign(LOOKS.det.outfits, DET_OUTFITS);
   LOOKS.det.outfits.suit = { coat: '#23252e', coatS: '#17181f', shirt: '#ffffff', pants: '#23252e', shoes: '#17181f', bow: '#2b2b33', corsage: '#f7b9c9' };
 }
 function startGame(state, isNew) {
   S = state; S.rel.daily = Object.assign(newDaily(), S.rel.daily || {});
-  S.settings = Object.assign({ music: true, sfx: true, mini: true }, S.settings || {});
+  S.settings = Object.assign({ music: true, sfx: true, mini: true, zoom: 1 }, S.settings || {}); G.zoom = S.settings.zoom;
   G.title = false; G.camFocus = null;
   spawnActors();
   if (!S.rel.daily.planned) { planDay(); S.rel.daily.planned = true; }
@@ -1268,13 +1320,29 @@ function buildNewGameUI() {
 }
 function bindUI() {
   const view = R.view; let down = null;
-  view.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
-  view.addEventListener('pointermove', (e) => { if (G.decor) { const r = view.getBoundingClientRect(); const w = screenToWorld(e.clientX - r.left, e.clientY - r.top); G.decor.hover = [Math.floor(w.tx), Math.floor(w.ty)]; } });
+  // 두 손가락으로 확대 · 축소
+  const ptrs = new Map(); let pinch = null;
+  const setZoom = (z) => { G.zoom = Math.max(0.6, Math.min(2.2, z)); if (S) S.settings.zoom = G.zoom; };
+  view.addEventListener('pointerdown', (e) => {
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: G.zoom || 1 }; down = null; G.pinching = true; }
+    else if (ptrs.size === 1) down = { x: e.clientX, y: e.clientY };
+  });
+  view.addEventListener('pointermove', (e) => {
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; setZoom(pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d); return; }
+    if (G.decor) { const r = view.getBoundingClientRect(); const w = screenToWorld(e.clientX - r.left, e.clientY - r.top); G.decor.hover = [Math.floor(w.tx), Math.floor(w.ty)]; }
+  });
+  const endPtr = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2 && pinch) { pinch = null; G.pinching = false; save(); } };
+  view.addEventListener('pointercancel', (e) => { endPtr(e); down = null; });
   view.addEventListener('pointerup', (e) => {
-    if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
+    const wasPinch = !!pinch || ptrs.size > 1; endPtr(e);
+    if (!down || wasPinch) { if (!ptrs.size) down = null; return; }
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
     if (moved > 14) return;
     const r = view.getBoundingClientRect(); onTap(e.clientX - r.left, e.clientY - r.top);
   });
+  view.addEventListener('wheel', (e) => { e.preventDefault(); setZoom((G.zoom || 1) * (e.deltaY < 0 ? 1.1 : 0.9)); }, { passive: false });
   window.addEventListener('keydown', (e) => {
     if (e.target && e.target.tagName === 'INPUT') return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; G.keys[k] = true;
@@ -1304,7 +1372,18 @@ function bindUI() {
   $('#btnBack').onclick = () => { $('#newgame').classList.add('hidden'); $('#title').classList.remove('hidden'); };
   $('#btnCont').onclick = () => { Sound.init(); const s = loadSave(); if (s) { buildWorld(); startGame(s, false); } };
   $('#mapBtn').onclick = () => { if (!paused() && !G.busy) openBigMap(); };
-  $('#bigMap').addEventListener('click', bigMapTap);
+  { // 지도: 두 손가락 확대, 한 손가락 끌기, 탭하면 이동
+    const wrap = $('.map-wrap'), mp = new Map(); let mpinch = null, mdown = null, raf = 0;
+    wrap.addEventListener('pointerdown', (e) => { mp.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (mp.size === 2) { const [a, b] = [...mp.values()]; mpinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: BIGMAP.zoom || 1, sl: wrap.scrollLeft, st: wrap.scrollTop }; mdown = null; } else mdown = { x: e.clientX, y: e.clientY, sl: wrap.scrollLeft, st: wrap.scrollTop, e }; });
+    wrap.addEventListener('pointermove', (e) => {
+      if (!mp.has(e.pointerId)) return; mp.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (mpinch && mp.size === 2) { const [a, b] = [...mp.values()]; const z = Math.max(1, Math.min(4, mpinch.z * Math.hypot(a.x - b.x, a.y - b.y) / mpinch.d)); if (Math.abs(z - BIGMAP.zoom) > 0.02) { const k = z / BIGMAP.zoom; BIGMAP.zoom = z; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const cx = wrap.scrollLeft + wrap.clientWidth / 2, cy = wrap.scrollTop + wrap.clientHeight / 2; drawBigMap(); wrap.scrollLeft = cx * k - wrap.clientWidth / 2; wrap.scrollTop = cy * k - wrap.clientHeight / 2; }); } }
+      else if (mdown && e.pointerType === 'mouse' && e.buttons) { wrap.scrollLeft = mdown.sl - (e.clientX - mdown.x); wrap.scrollTop = mdown.st - (e.clientY - mdown.y); }
+    });
+    const up = (e) => { const was = !!mpinch; mp.delete(e.pointerId); if (mp.size < 2) mpinch = null; if (mdown && !was && Math.hypot(e.clientX - mdown.x, e.clientY - mdown.y) < 10 && e.target.id === 'bigMap') bigMapTap(e); if (!mp.size) mdown = null; };
+    wrap.addEventListener('pointerup', up); wrap.addEventListener('pointercancel', (e) => { mp.delete(e.pointerId); mpinch = null; mdown = null; });
+    wrap.addEventListener('wheel', (e) => { e.preventDefault(); BIGMAP.zoom = Math.max(1, Math.min(4, BIGMAP.zoom * (e.deltaY < 0 ? 1.15 : 0.87))); drawBigMap(); }, { passive: false });
+  }
   $('#mapClose').onclick = closeBigMap;
   $('#mapZoom').onclick = toggleBigMapZoom;
   $('#decorBtn').onclick = openDecor;

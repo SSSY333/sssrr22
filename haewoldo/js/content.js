@@ -114,7 +114,7 @@ const FISH_SPOTS = {
 const SHELL_TABLE = { beach: ['clam', 'clam', 'clam', 'conch', 'bomal', 'bomal', 'shell', 'pebble', 'seaweed'], islet: ['conch', 'bomal', 'urchin', 'shell', 'shell', 'pebble', 'clam', 'pearl'] };
 const SHOP = ['coffee', 'tangerine', 'lunchbox', 'hanky', 'flower', 'snack', 'hotpack', 'watermelon', 'chocolate', 'candy', 'porridge', 'ring'];
 const SHOP_SEASON = { watermelon: 'summer', hotpack: 'winter' };
-const FURN_SHOP = ['bed', 'sofa', 'table', 'chair', 'desk', 'shelf', 'plant', 'rug', 'lamp', 'tv', 'kitchen', 'fridge', 'tank', 'dining', 'cushion', 'photo', 'piano', 'bunting', 'crate'];
+const FURN_SHOP = ['bed', 'sofa', 'table', 'chair', 'desk', 'shelf', 'plant', 'rug', 'lamp', 'tv', 'kitchen', 'fridge', 'tank', 'dining', 'cushion', 'photo', 'piano', 'bunting', 'crate', 'rack', 'mirror', 'mannequin'];
 const LIKES = ['coffee', 'lunchbox', 'abalone', 'porridge', 'chocolate'];
 const FAVORS = [
   { item: 'coffee', ask: '오늘 서류가 산더미라… 혹시 슈퍼 갈 일 있으면 캔커피 하나만 부탁해도 돼요? 돈은 이따 드릴게요.', thanks: '살았다. 이걸로 오후 버틸 수 있겠어요. 이 은혜는 꼭 갚을게요.' },
@@ -487,3 +487,84 @@ const SEASON_WEAR = {
   generic: { summer: { rolled: true }, autumn: { tint: '#a9845f' }, winter: { scarf: true, winterTint: true }, spring: {} },
 };
 const SCARF_COLORS = ['#d9404f', '#3f7f6a', '#f2c94c', '#7fa3e6', '#f4efe2'];
+
+/* ---------------- v4: 형사님 옷 (외형은 그대로, 옷만 다양하게) ---------------- */
+const DET_OUTFITS = {
+  workShirt: { coat: '#9cc1e6', coatS: '#7ea4cc', shirt: '#9cc1e6', pants: '#1e2437', shoes: '#2b2220', badge: true, closed: true, collar: '#e8f2fc', rolled: true },
+  workVest: { coat: '#f1f1ee', coatS: '#d5d5d0', shirt: '#f1f1ee', vest: '#2e3d66', pants: '#1e2437', shoes: '#2b2220', badge: true, closed: true, collar: '#ffffff' },
+  linen: { coat: '#f4f1ea', coatS: '#d9d3c6', shirt: '#f4f1ea', pants: '#cbb792', shoes: '#8a5a3a', rolled: true, closed: true, collar: '#ffffff', shorts: true },
+  stripe: { coat: '#f4f4f2', coatS: '#d8d8d4', shirt: '#f4f4f2', stripe: '#3a4a7a', pants: '#3f5a8a', jeans: true, shoes: '#f1efe9', closed: true, collar: '#f4f4f2', rolled: true },
+  knit: { coat: '#e9dcc2', coatS: '#cdbfa2', shirt: '#e9dcc2', knit: true, pants: '#6b4a35', shoes: '#3b2e28', closed: true, collar: '#ffffff' },
+  hoodie: { coat: '#8a8f9a', coatS: '#6f7480', shirt: '#8a8f9a', hood: true, pants: '#3f5a8a', jeans: true, shoes: '#f1efe9', closed: true, collar: '#8a8f9a' },
+  denim: { coat: '#4f78b0', coatS: '#3c5f90', shirt: '#ffffff', denim: true, pants: '#23252e', shoes: '#2b2220' },
+};
+const DET_OUTFIT_NAMES = { work: '근무복 재킷', workShirt: '여름 근무 셔츠', workVest: '근무 조끼', casual: '하늘색 셔츠', linen: '리넨 셔츠 · 반바지', stripe: '줄무늬 티', knit: '니트 스웨터', hoodie: '후드티', denim: '데님 재킷' };
+const DET_WEAR = {
+  work: { summer: ['workShirt', 'workShirt', 'workVest'], autumn: ['work', 'workVest'], winter: ['work'], spring: ['work', 'workVest', 'workShirt'] },
+  casual: { summer: ['casual', 'linen', 'stripe'], autumn: ['knit', 'denim', 'hoodie', 'casual'], winter: ['knit', 'hoodie'], spring: ['denim', 'stripe', 'casual', 'hoodie'] },
+};
+Object.assign(SEASON_WEAR.det, {
+  workVest: { winter: { scarf: '#5b5f69' } }, knit: { winter: { scarf: '#d9404f' } }, hoodie: { winter: { scarf: '#3f7f6a' } }, denim: { winter: { scarf: '#f2c94c' } },
+});
+const DET_OUTFIT_LINES = { workShirt: '여름엔 반팔 근무복이에요. 시원해서 좋아요.', workVest: '오늘은 조끼 입었어요. 주머니가 많아서 귤도 들어가요.', linen: '반바지 처음 보죠? …다리 보지 마요.', stripe: '줄무늬 티, 어때요? 할머니가 사 주셨어요.', knit: '니트 입으니까 따뜻하다. 만져 볼래요?', hoodie: '쉬는 날엔 후드티가 최고예요.', denim: '데님 재킷 꺼냈어요. 좀 멋있어 보여요?' };
+
+/* ---------------- v4: 옷가게 · 미용실 ---------------- */
+const CLOTHES = {
+  job: { name: '직업복', icon: '💼', price: 0 },
+  dress: { name: '원피스', icon: '👗', price: 15000, fem: true, make: (c) => ({ coat: c, coatS: shade(c, 0.82), shirt: c, skirt: c, long: true, pants: '#f7d4b5', shoes: '#ffffff', closed: true, collar: '#ffffff', rolled: true }) },
+  skirtTee: { name: '티셔츠 + 치마', icon: '👚', price: 12000, fem: true, make: (c) => ({ coat: '#fbf7ee', coatS: '#ddd6c6', shirt: '#fbf7ee', skirt: c, pants: '#f7d4b5', shoes: '#e9e4da', closed: true, collar: '#fbf7ee', rolled: true }) },
+  jeansTee: { name: '티셔츠 + 청바지', icon: '👖', price: 12000, make: (c) => ({ coat: c, coatS: shade(c, 0.82), shirt: c, pants: '#4a6fa8', jeans: true, shoes: '#f1efe9', closed: true, collar: c, rolled: true }) },
+  shorts: { name: '반바지 세트', icon: '🩳', price: 10000, make: (c) => ({ coat: c, coatS: shade(c, 0.82), shirt: c, pants: '#e9e4da', shorts: true, shoes: '#f1efe9', closed: true, collar: '#ffffff', rolled: true }) },
+  knitSkirt: { name: '니트 + 롱스커트', icon: '🧶', price: 18000, fem: true, make: (c) => ({ coat: c, coatS: shade(c, 0.85), shirt: c, knit: true, skirt: '#6b4a35', long: true, pants: '#f7d4b5', shoes: '#6a4934', closed: true, collar: '#ffffff' }) },
+  hoodieJeans: { name: '후드티 + 청바지', icon: '🧥', price: 16000, make: (c) => ({ coat: c, coatS: shade(c, 0.8), shirt: c, hood: true, pants: '#4a6fa8', jeans: true, shoes: '#f1efe9', closed: true, collar: c }) },
+  shirtSlacks: { name: '셔츠 + 슬랙스', icon: '👔', price: 16000, make: (c) => ({ coat: '#ffffff', coatS: '#dddddd', shirt: '#ffffff', pants: c, shoes: '#3b2e28', closed: true, collar: '#ffffff', rolled: true }) },
+  stripeTee: { name: '줄무늬 티', icon: '🎽', price: 11000, make: (c) => ({ coat: '#ffffff', coatS: '#dcdcd8', shirt: '#ffffff', stripe: c, pants: '#3f5a8a', jeans: true, shoes: '#f1efe9', closed: true, collar: '#ffffff', rolled: true }) },
+  denimJacket: { name: '데님 재킷', icon: '🧢', price: 20000, make: (c) => ({ coat: '#4f78b0', coatS: '#3c5f90', shirt: c, denim: true, pants: '#23252e', shoes: '#f1efe9' }) },
+  hanbok: { name: '개량 한복', icon: '🎎', price: 30000, fem: true, make: (c) => ({ coat: '#fbf7ee', coatS: '#e3dccd', shirt: '#fbf7ee', skirt: c, long: true, accent: shade(c, 0.8), pants: '#f7d4b5', shoes: '#ffffff', closed: true, collar: c }) },
+};
+const CLOTH_COLORS = [['핑크', '#f19ab5'], ['하늘', '#8fc3ea'], ['민트', '#8fd6b8'], ['노랑', '#f2d06a'], ['라벤더', '#b9a6e8'], ['화이트', '#f6f4ee'], ['네이비', '#3a4a7a'], ['버건디', '#a8404f']];
+const HAIR_STYLES = { ponytail: '포니테일', bob: '단발', short: '짧은 머리', long: '긴 생머리', wave: '긴 웨이브', twin: '양갈래', bun: '똥머리' };
+const HAIR_COLORS = [['흑갈색', '#3b2a24'], ['밤색', '#6a4230'], ['초코', '#4a3226'], ['애쉬 브라운', '#8a7a70'], ['금발', '#d9a84a'], ['핑크', '#e88aa4'], ['와인', '#8a3040'], ['블루블랙', '#23283a']];
+const STYLE_PRICE = { hair: 8000, color: 6000 };
+Object.assign(NPC_LOOKS, {
+  tailor: { name: '옷가게 사장님', hair: 'bob', hairC: '#8a3040', hairH: '#a84a5a', eyeC: '#4a3020', fem: true, outfits: { base: { coat: '#2b2f3a', coatS: '#1c1f28', shirt: '#2b2f3a', skirt: '#2b2f3a', pants: '#f7d4b5', shoes: '#e3484a', closed: true, collar: '#ffffff' } } },
+  stylist: { name: '미용실 원장님', hair: 'wave', hairC: '#d9a84a', hairH: '#f0c870', eyeC: '#4a3020', fem: true, outfits: { base: { coat: '#f4f0ff', coatS: '#d9d0f0', shirt: '#f4f0ff', pants: '#3b3b48', shoes: '#2f2f2f', apron: '#8a6fc9', closed: true } } },
+});
+STAFF.in_clothes = [['tailor', 5.5, 1.5]];
+STAFF.in_salon = [['stylist', 2.5, 1.5]];
+STAFF_LINES.tailor = ['어서 오세요~ 오늘 들어온 원피스 예쁘죠?', '형사님도 가끔 오세요. 늘 같은 셔츠만 고르시지만. 호호.', '색 하나만 바꿔도 기분이 달라져요.'];
+STAFF_LINES.stylist = ['어머, 머리결 좋다~ 오늘은 어떤 스타일?', '형사님 앞머리는 제가 잘라 드려요. 비밀인데, 엄청 신경 쓰세요.', '봄엔 밝은 색이 잘 어울려요!'];
+
+/* ---------------- v4: 여성 주민 — 사람마다 성격과 말투 ---------------- */
+const RIVAL_LINES = {
+  doctor: { trait: '차분하고 걱정 많은 의사 · 건강 잔소리',
+    before: ['오늘 물 많이 드셨어요? 해월도 햇볕은 생각보다 세요.', '형사님이요? 순찰을 너무 무리하셔서 걱정이에요. 파스를 몰래 주머니에 넣어 드렸어요.', '진료 끝나고 등대 쪽 산책하는 게 제 유일한 취미예요. 가끔 형사님도 마주쳐요.', '형사님은 커피를 너무 많이 마셔요. 하루 세 캔은 과해요… 말려도 안 들으시네요.', '섬에 오고 나서 처음으로 마음 편히 웃었어요. 사람들이 다정해서요.', '혹시 요즘 잠은 잘 자요? 눈 밑이 조금 어두워 보여서요.', '형사님 손에 상처가 있길래 소독해 드렸어요. "고마워요" 하고 웃으시더라고요.'],
+    after: ['두 분 같이 다니시는 거 보면, 제가 처방한 어떤 약보다 효과가 좋아 보여요.', '형사님 요즘 건강 수치가 아주 좋아졌어요. 이유는… 알 것 같네요.', '행복도 전염된다더니, 두 분 보면 저까지 기분이 좋아져요.', '결혼하시면 건강검진은 제가 해 드릴게요. 약속이에요.'],
+    chat: [['형사님, 어제 또 야근하셨죠? 눈이 빨개요.', '들켰네요. 선생님 앞에선 거짓말을 못 하겠어요.'], ['이거 비타민이에요. 하루에 한 알.', '하하, 처방까지. 감사합니다, 선생님.'], ['요즘 웃는 얼굴이 많아지셨어요. 좋은 일 있으세요?', '…그렇게 티 나요?'], ['산책은 혈압에도 좋아요. 같이 걸으니 좋네요.', '건강 상담 겸 순찰이네요.'], ['형사님은 아플 때 누가 챙겨 줘요?', '음… 요즘은 챙겨 주는 사람이 있는 것 같기도 해요.'], ['다음 주 보건 교육, 같이 해 주실 거죠?', '네, 안전 교육은 제가 맡을게요.']],
+    intro: '어머, 안녕하세요. 형사님 혈압 얘기 하면서 걷는 중이었어요.', leave: '…두 분 얘기 나누세요. 저는 진료 시간이라 먼저 가 볼게요.',
+    season: { summer: '더위 먹으면 바로 보건지소로 오세요.', autumn: '환절기라 감기 환자가 많아요. 따뜻하게 입어요.', winter: '손 시리면 핫팩 하나 드릴까요?', spring: '꽃가루 알레르기 있으면 말해 주세요.' } },
+  teacher: { trait: '밝고 수다스러운 선생님 · 아이들 이야기',
+    before: ['어머, 안녕하세요! 오늘 우리 반 애들이 형사님 그림을 그렸는데 완전 미남으로 그렸어요!', '형사님이 호루라기 불면 애들이 줄을 착착 서요. 비결 좀 배우고 싶어요~', '운동회 때 형사님이랑 2인 3각 나가기로 했어요! …아직 형사님은 모르시지만요. 호호.', '하늘이가 그러는데 형사님 이상형이 "잘 웃는 사람"이래요. 저 많이 웃는데!', '수업 끝나고 바닷가 가는 게 제 낙이에요. 조개 주우면 애들 줘요.', '혹시 동화책 추천해 줄 수 있어요? 애들이 형사 나오는 이야기를 좋아해서요.', '어제 급식에 귤이 나왔는데, 순찰 오신 형사님께 하나 드렸거든요. 엄청 좋아하시더라고요!'],
+    after: ['우와, 두 분 사귀신다면서요! 애들이 벌써 축하 그림 그리고 있어요!', '하늘이가 결혼식에 화동 하고 싶대요. 꼭 시켜 주세요!', '부러워요~ 저도 해월도에서 운명 만날 수 있을까요?', '두 분 보면 동화책 주인공 같아요. 해피엔딩!'],
+    chat: [['형사님! 애들이 형사님 보고 싶대요. 내일 교통 안전 교실 와 주세요!', '하하, 좋아요. 호루라기 챙겨 갈게요.'], ['어머, 형사님 오늘 옷 예쁘다!', '…그래요? 그냥 입은 건데.'], ['형사님은 어릴 때 꿈이 뭐였어요? 저는 선생님!', '음, 저는 등대지기요.'], ['노을 보면 왜 이렇게 설레죠? 형사님도 그래요?', '…요즘 좀 그래요. 이유는 다른 데 있지만.'], ['같이 운동회 준비해요! 줄다리기 밧줄 사러 가요!', '네, 무거운 건 제가 들게요.'], ['형사님 웃을 때 눈 휘는 거 애들이 따라 해요. 귀여워요!', '하하, 그건 좀 부끄럽네요.']],
+    intro: '어머! 안녕하세요~ 형사님이랑 운동회 얘기하면서 걷고 있었어요!', leave: '아, 저 채점하러 가야 해요! 두 분 재밌게 놀아요~ 안녕!',
+    season: { summer: '여름방학엔 애들이랑 바다 캠프 가요!', autumn: '운동회 준비로 목이 다 쉬었어요~', winter: '눈 오면 애들이랑 눈사람 만들 거예요!', spring: '새 학기라 정신없어요. 그래도 즐거워요!' } },
+  traveler: { trait: '자유분방한 여행객 · 사진 · 친근한 반말',
+    before: ['헐, 여기 진짜 인생샷 맛집이다! 같이 찍을래요?', '나 원래 사흘만 있으려 했는데 벌써 한 달째예요. 해월도 마법인가 봐.', '형사님 진짜 포토제닉해요. 몰래 찍은 사진 보여 줄까요? …비밀!', '내일은 무인도 갈 거예요. 혼자 가면 무서우려나? 형사님 시간 되시려나~', '여행하면서 만난 사람 중에 형사님이 제일 친절해요. 길을 다섯 번 물어봤는데 다섯 번 다 웃으면서 알려 줬어요.', '블로그에 해월도 썼는데 조회수 대박 났어요! 형사님 사진도 살짝 넣었는데… 괜찮겠죠?', 'Life is short, 귤은 많이! 이게 제 해월도 좌우명이에요.'],
+    after: ['대박! 두 분 커플이에요? 커플 사진 찍어 줄게요. 프로필용으로!', '해월도 여행기 마지막 장은 두 분 이야기로 할래요. 완전 로맨스 영화야.', '나도 언젠가 이런 섬에서 이런 사랑 하고 싶다~', '두 분 결혼식 하면 꼭 불러 줘요. 비행기 타고서라도 올게요!'],
+    chat: [['형사님, 여기서 사진 한 장만! 하나 둘 셋!', '하하, 저 사진 잘 못 찍혀요.'], ['형사님 추천 맛집 어디예요? 진짜 로컬로!', '횟집 이모님 물회요. 이건 진짜예요.'], ['나 여기 눌러살까 봐요. 형사님 생각은요?', '해월도는 오는 사람 안 막아요. 환영이에요.'], ['형사님은 여행 안 가고 싶어요?', '음… 요즘은 여기가 제일 좋아서요.'], ['오늘 노을 미쳤다! 같이 봐요, 같이!', '네, 여기서 보면 제일 예뻐요.'], ['혹시 여자친구 있어요? 그냥 궁금해서~', '…비밀이에요. 하하.']],
+    intro: '오, 안녕! 나 형사님한테 섬 투어 받고 있었어요~', leave: '아 맞다, 나 배 시간! 먼저 갈게요, 바이바이~!',
+    season: { summer: '여름 바다 색 미쳤어요. 필터 필요 없음!', autumn: '억새 사진 찍으러 오름 갔다 왔어요!', winter: '귤 따기 체험 완전 강추!', spring: '유채꽃은 보정 안 해도 노래요!' } },
+  cafe: { trait: '새침한 츤데레 카페 사장 · 커피 장인',
+    before: ['어서 오세요. …아, 손님 아니었어요? 흥, 그럼 커피 한 잔은 사 가요.', '형사님이요? 딱히 신경 쓰는 건 아닌데, 매일 같은 시간에 오니까 커피를 미리 내려 두는 것뿐이에요.', '라떼 아트 연습 중이에요. 하트가 자꾸 찌그러져요. …누구 줄 건 아니에요!', '해월도 원두는 바닷바람을 맞아서 맛이 달라요. 진짜로요.', '형사님이 "오늘도 맛있네요" 하고 가면 그날은 기분이 좋아요. …방금 그 말 잊어요.', '단골 할인은 없어요. 근데 웃는 손님한텐 쿠키 하나 더 줘요.', '비 오는 날엔 카페가 제일 좋아요. 빗소리랑 커피 향.'],
+    after: ['…두 분 사귀는 거 다 알아요. 흥, 축하해요. 진심으로요.', '커플 메뉴 새로 만들었어요. 딱히 두 분 때문은 아니고요.', '형사님 요즘 커피에 설탕 넣어요. 연애하면 입맛도 달달해지나 봐요.', '결혼식 케이크는 제가 할게요. 거절하면 서운할 거예요.'],
+    chat: [['형사님, 오늘 원두 새로 볶았어요. …딱히 형사님 주려고 한 건 아니고.', '하하, 그래도 제일 먼저 맛보는 영광이네요.'], ['또 캔커피 마셨죠? 카페 사장 앞에서.', '들켰다. 내일은 꼭 카페 갈게요.'], ['흥, 산책은 그냥 원두 배달 가는 길이에요.', '네네, 배달 동행해 드릴게요.'], ['형사님은 단 거 싫어하죠? …아니에요? 기억해 둘게요.', '요즘은 좀 좋아졌어요.'], ['쿠키 남았는데 하나 드실래요? 남은 거예요, 남은 거.', '감사히 받을게요. 남은 거.'], ['…형사님, 요즘 누구 생각하면서 웃죠?', '하하… 티 나요?']],
+    intro: '…아, 안녕하세요. 원두 배달 가는 길에 형사님이랑 마주쳤을 뿐이에요. 그냥 그런 거예요.', leave: '흥, 저 바빠요. 카페 문 열어야 해서. …잘 가요.',
+    season: { summer: '아이스 귤 라떼 개시했어요. 맛없으면 말해요.', autumn: '가을엔 시나몬이죠. 딱히 추천하는 건 아니에요.', winter: '따뜻한 귤 차 마셔요. 감기 걸리면 곤란하니까.', spring: '벚꽃 라떼… 핑크라서 좀 부끄럽지만 팔아요.' } },
+  haenyeo: { trait: '씩씩하고 털털한 막내 해녀 · 제주 말투',
+    before: ['혼저 옵서~ 오늘 바당 물 좋수다!', '형사님이 맨날 부두에서 제 물질을 지켜봐요. 안전 확인이래요. 고맙긴 한데 좀 민망하수다.', '전복 하나 줄까요? 오늘 제일 큰 거 땄어요!', '할망들한테 아직 막내라고 혼나요. 그래도 숨 참기는 제가 제일 오래 해요!', '형사님한테 해녀 노래 가르쳐 줬는데 음치예요. 하하!', '바당은 무섭지만 정직해요. 사람도 그랬으면 좋겠수다.', '물질 끝나고 할망들이랑 떡 먹는 게 최고 행복이에요.'],
+    after: ['두 분 사귄다는 소문, 부두까지 다 퍼졌수다! 할망들이 난리예요.', '형사님 요즘 부두 순찰할 때 콧노래 불러요. 다 당신 덕이우다!', '결혼하면 제가 딴 제일 큰 전복으로 잔치해요!', '바당에 대고 두 분 행복하라고 빌었어요. 바당은 소원을 잘 들어줘요!'],
+    chat: [['형사님! 오늘 소라 엄청 땄수다. 하나 드릴까?', '하하, 막내 해녀님 덕에 저녁 반찬 생겼네요.'], ['물살 셀 땐 저 혼자 안 들어가요. 걱정 마시라고요!', '그래도 걱정되는 건 어쩔 수 없어요.'], ['형사님은 수영 잘해요? 제가 가르쳐 줄까?', '…저 맥주병이에요. 비밀로 해 줘요.'], ['할망들이 형사님 장가 언제 가냐고 물어보래요!', '하하… 그건 저도 궁금하네요.'], ['바당 냄새 좋지요? 이게 해월도 냄새우다.', '네, 이제 이 냄새 없으면 못 살 것 같아요.'], ['해녀 노래 다시 불러 봐요. 이어도사나~', '이어도… 사나… 하하, 또 틀렸죠?']],
+    intro: '혼저 옵서! 형사님이랑 바당 얘기하면서 걷고 있었수다!', leave: '저 물질 준비하러 가야 해요! 두 분 좋은 시간 보내수다~',
+    season: { summer: '여름 바당은 미역이 최고우다!', autumn: '가을 소라가 제일 달아요!', winter: '겨울 물은 칼 같아요. 그래도 들어가요!', spring: '봄 물질 시작했수다. 잠수굿도 보러 와요!' } },
+};

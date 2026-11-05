@@ -211,3 +211,6 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
 #mapView.hidden { display: none !important; }
 .map-wrap { flex: 0 1 auto; max-height: 70vh; overflow: auto; }
 #mapClose { color: var(--ink); }
+.swatch { display: inline-block; width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--line); }
+.map-wrap { touch-action: pan-x pan-y; }
+#mapHint::after { content: ' · 두 손가락으로 확대할 수 있어요'; }

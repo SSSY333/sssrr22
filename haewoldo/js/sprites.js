@@ -138,6 +138,8 @@ function drawChibi(look, outfitKey, face, frame, pose, blink) {
     P(o.pants, cx - 3, legTop, 3, legH - 1 - lUp); P(o.shoes, cx - 3, base - lUp, 3, 1);
     P(o.pants, cx + 1, legTop, 3, legH - 1 - rUp); P(o.shoes, cx + 1, base - rUp, 3, 1);
     if (tall) { P(shade(o.pants, 0.8), cx - 1, legTop, 1, legH - 2); P(shade(o.pants, 0.8), cx + 3, legTop, 1, legH - 2); }
+    if (o.shorts) { P(PAL.skin, cx - 3, legTop + 2, 3, legH - 3 - lUp); P(PAL.skin, cx + 1, legTop + 2, 3, legH - 3 - rUp); }
+    if (o.jeans) { P(shade(o.pants, 1.25), cx - 2, legTop + 1, 1, 2); P(shade(o.pants, 1.25), cx + 2, legTop + 1, 1, 2); }
   }
 
   if (o.skirt) {
@@ -147,6 +149,10 @@ function drawChibi(look, outfitKey, face, frame, pose, blink) {
   // --- 몸통
   P(o.coat, cx - hw, bodyTop, hw * 2 + 1, bodyH);
   P(o.coatS, cx + hw, bodyTop, 1, bodyH);
+  if (o.stripe) for (let r = 1; r < bodyH - 1; r += 2) P(o.stripe, cx - hw, bodyTop + r, hw * 2 + 1, 1);
+  if (o.knit) for (let r = 1; r < bodyH - 1; r++) for (let x = cx - hw + (r % 2); x <= cx + hw; x += 2) P(shade(o.coat, 1.1), x, bodyTop + r, 1, 1);
+  if (o.denim) { P(shade(o.coat, 1.2), cx - hw, bodyTop + 2, hw * 2 + 1, 1); P('#f0c13e', cx - 3, bodyTop + 3, 1, 1); P('#f0c13e', cx + 3, bodyTop + 3, 1, 1); }
+  if (o.vest) { P(o.vest, cx - hw, bodyTop, hw * 2 + 1, bodyH - 1); P(shade(o.vest, 0.8), cx, bodyTop + 1, 1, bodyH - 2); P('#f2c94c', cx - hw, bodyTop + 4, hw * 2 + 1, 1); }
   if (front) {
     if (!o.closed) {
       P(o.shirt, cx - 1, bodyTop, 3, bodyH - 2);
@@ -168,6 +174,7 @@ function drawChibi(look, outfitKey, face, frame, pose, blink) {
   P(shade(o.coat, 0.78), cx - hw, bodyTop + bodyH - 1, hw * 2 + 1, 1); // 밑단
   if (o.bow && front) { P(o.bow, cx - 2, bodyTop + 1, 2, 1); P(o.bow, cx + 1, bodyTop + 1, 2, 1); P(shade(o.bow, 0.7), cx, bodyTop + 1, 1, 1); }
   if (o.corsage && front) { P(o.corsage, cx + 2, bodyTop + 2, 2, 2); }
+  if (o.hood) { if (front) { P(shade(o.coat, 0.8), cx - 3, bodyTop, 7, 1); P('#ffffff', cx - 1, bodyTop + 1, 1, 2); P('#ffffff', cx + 1, bodyTop + 1, 1, 2); P(shade(o.coat, 0.85), cx - 2, bodyTop + 4, 5, 2); } else { P(shade(o.coat, 0.85), cx - 3, bodyTop, 7, 3); P(shade(o.coat, 0.7), cx - 2, bodyTop + 2, 5, 1); } }
   if (o.scarf) { P(o.scarf, cx - hw, bodyTop, hw * 2 + 1, 2); P(shade(o.scarf, 0.8), cx - hw, bodyTop + 1, hw * 2 + 1, 1); if (front) P(o.scarf, cx + 1, bodyTop + 2, 2, 3); else P(o.scarf, cx - 2, bodyTop + 2, 2, 2); }
 
   // --- 팔
@@ -302,6 +309,11 @@ function drawPortrait(look, outfitKey, expr) {
   if (o.apron) { P(o.apron, 8, 28, 16, 4); P(shade(o.apron, 0.8), 10, 27, 1, 1); P(shade(o.apron, 0.8), 21, 27, 1, 1); }
   if (o.stetho) { P('#4b5878', 12, 26, 1, 4); P('#4b5878', 19, 26, 1, 4); P('#c9ced8', 19, 30, 2, 2); }
   if (o.accent) { P(o.accent, 2, 29, 28, 1); }
+  if (o.stripe) for (let y = 27; y < 32; y += 2) P(o.stripe, 2, y, 28, 1);
+  if (o.knit) for (let y = 27; y < 32; y++) for (let x = 3 + (y % 2); x < 29; x += 2) P(shade(o.coat, 1.1), x, y, 1, 1);
+  if (o.vest) { P(o.vest, 4, 27, 8, 5); P(o.vest, 20, 27, 8, 5); P('#f2c94c', 4, 29, 8, 1); P('#f2c94c', 20, 29, 8, 1); }
+  if (o.denim) { P(shade(o.coat, 1.2), 3, 28, 7, 1); P(shade(o.coat, 1.2), 22, 28, 7, 1); }
+  if (o.hood) { P(shade(o.coat, 0.8), 7, 25, 18, 2); P('#ffffff', 13, 27, 1, 4); P('#ffffff', 18, 27, 1, 4); }
   if (o.strap) { P(o.strap, 6, 26, 2, 6); P(o.strap, 24, 26, 2, 6); }
 
   // 얼굴
@@ -762,6 +774,10 @@ function drawSign(g, kind, p) {
     plate('#b8503f'); g.fillStyle = '#ffffff'; g.fillRect(x - 3, y - 9, 6, 6); g.fillStyle = '#2b2026'; g.fillRect(x, y - 8, 1, 3); g.fillRect(x, y - 6, 2, 1);
   } else if (kind === 'heart') {
     plate('#e08a6e'); fillPoly(g, [[x - 4, y - 8], [x - 2, y - 10], [x, y - 8], [x + 2, y - 10], [x + 4, y - 8], [x, y - 3]], '#ffffff');
+  } else if (kind === 'dress') {
+    plate('#d9688a'); fillPoly(g, [[x - 2, y - 10], [x + 2, y - 10], [x + 4, y - 3], [x - 4, y - 3]], '#ffffff'); g.fillStyle = '#d9688a'; g.fillRect(x - 1, y - 8, 2, 1);
+  } else if (kind === 'scissors') {
+    plate('#8a6fc9'); g.fillStyle = '#ffffff'; for (let i = 0; i < 6; i++) { g.fillRect(x - 3 + i, y - 10 + i, 1, 1); g.fillRect(x + 2 - i, y - 10 + i, 1, 1); } fillEllipse(g, x - 3, y - 3, 2, 2, '#ffffff'); fillEllipse(g, x + 3, y - 3, 2, 2, '#ffffff');
   } else if (kind === 'fish') {
     plate('#2f6fa8'); fillEllipse(g, x - 1, y - 6, 4, 2, '#ffffff'); fillPoly(g, [[x + 2, y - 6], [x + 5, y - 9], [x + 5, y - 3]], '#ffffff'); g.fillStyle = '#2f6fa8'; g.fillRect(x - 3, y - 7, 1, 1);
   } else if (kind === 'hall') {
@@ -1005,3 +1021,11 @@ animalSprite = function (al, frame, sit) {
   P('#2a2130', 21, 7, 1, 1); P(al.body, 18, 2, 2, 2);
   autoOutline(c, '#3a2a20'); _animalCache.set(key, c); return c;
 };
+
+/* v4 — 옷가게 · 미용실 소품 */
+Object.assign(FURN, {
+  rack: { name: '옷걸이 행거', price: 9000, draw(g, x, y) { g.fillStyle = '#7a7e88'; g.fillRect(x - 12, y - 26, 2, 26); g.fillRect(x + 10, y - 26, 2, 26); g.fillRect(x - 12, y - 26, 24, 2); const cols = ['#f19ab5', '#7fa3e6', '#f2c94c', '#9bd24f', '#c08ad8']; for (let i = 0; i < 5; i++) { g.fillStyle = cols[i]; g.fillRect(x - 10 + i * 4, y - 24, 3, 12 + (i % 2) * 3); } } },
+  mirror: { name: '전신 거울', price: 12000, draw(g, x, y) { isoBox(g, x, y, 0.5, 0.12, 26, '#c99a64', '#a87a4a', '#946a40'); g.fillStyle = '#cfe8f7'; g.fillRect(x - 6, y - 25, 6, 20); g.fillStyle = '#ffffff'; g.fillRect(x - 5, y - 23, 1, 8); } },
+  mannequin: { name: '마네킹', price: 15000, draw(g, x, y) { g.fillStyle = '#7a7e88'; g.fillRect(x - 1, y - 8, 2, 8); g.fillRect(x - 4, y - 1, 8, 2); fillPoly(g, [[x - 6, y - 24], [x + 6, y - 24], [x + 4, y - 8], [x - 4, y - 8]], '#f19ab5'); fillEllipse(g, x, y - 28, 3, 3, '#f4efe6'); g.fillStyle = '#ffffff'; g.fillRect(x - 4, y - 16, 8, 1); } },
+  salonChair: { name: '미용 의자', price: 20000, draw(g, x, y) { g.fillStyle = '#5b5f69'; g.fillRect(x - 1, y - 6, 2, 6); g.fillRect(x - 5, y - 1, 10, 2); isoBox(g, x, y - 6, 0.4, 0.4, 3, '#8a6fc9', '#6f55ad', '#5f4799'); isoBox(g, x - 3, y - 9, 0.4, 0.1, 10, '#9a80d9', '#7a60b9', '#6f55ad'); } },
+});

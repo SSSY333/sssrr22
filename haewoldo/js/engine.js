@@ -274,8 +274,8 @@ function prect(g, wx, wy, w, h, col) { g.fillStyle = col; g.fillRect(SX(wx), SY(
 
 function render(dt) {
   const g = R.v, P = G.player, m = M;
-  const sc = m.interior ? Math.min(R.scale, R.cssW / ((m.W + m.H) * 16 + 16)) : R.scale;
-  if (sc !== R.cur) { R.cur = sc; R.K = sc * R.dpr; R.lw = R.cssW / sc; R.lh = R.cssH / sc; G.camSnap = true; }
+  const zm = G.zoom || 1, sc = (m.interior ? Math.min(R.scale, R.cssW / ((m.W + m.H) * 16 + 16)) : R.scale) * zm;
+  if (sc !== R.cur) { const pinching = G.pinching; R.cur = sc; R.K = sc * R.dpr; R.lw = R.cssW / sc; R.lh = R.cssH / sc; if (!pinching) G.camSnap = true; else G.camSnap = true; }
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.imageSmoothingEnabled = false;
   if (m.interior && (!m.ground || m.groundKey !== groundKey(m))) buildGround(m);
@@ -741,6 +741,6 @@ function bigMapTap(e) {
   closeBigMap();
   if (G.player.map === 'island' && !G.busy && !G.decor && inMap(Math.floor(x), Math.floor(y), m)) walkPlayer(x, y);
 }
-function toggleBigMapZoom() { BIGMAP.zoom = BIGMAP.zoom > 1 ? 1 : 2.4; openBigMap(); }
+function toggleBigMapZoom() { BIGMAP.zoom = BIGMAP.zoom > 1.05 ? 1 : 2.4; openBigMap(); }
 function drawMinimapBase() { }
 function drawMinimap() { }
