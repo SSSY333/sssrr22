@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#2b2340" />
-  <title>광화문 온기 오피스</title>
-  <meta name="description" content="광화문 거리의 유리 빌딩 속, 시끌벅적하지만 따뜻한 3D 오피스 (three.js)" />
+  <title>보장원</title>
+  <meta name="description" content="광화문 거리의 유리 빌딩 보장원 — 내 캐릭터로 돌아다니는 3D 멀티플레이 오피스 (three.js)" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet" />
@@ -22,30 +22,38 @@
 <body>
   <div id="app"></div>
 
-  <!-- 입장 화면 -->
+  <!-- 입장 화면: 닉네임 + 캐릭터 고르기 -->
   <section id="intro">
     <div class="card">
       <p class="eyebrow">서울 종로구 · 세종대로 광화문 거리</p>
-      <h1>온기 오피스</h1>
-      <p class="lead">유리 너머로 새어 나오는 따뜻한 불빛.<br />시끌벅적하지만 다정한 우리 회사로 들어가 볼까요?</p>
-      <button id="enter" disabled>불러오는 중…</button>
-      <p class="tip">드래그로 둘러보고, 두 손가락(휠)로 확대할 수 있어요</p>
+      <h1>보장원</h1>
+      <label class="field" for="nick">
+        <span>닉네임</span>
+        <input id="nick" type="text" maxlength="10" placeholder="닉네임을 입력하세요" autocomplete="off" enterkeyhint="go" />
+      </label>
+      <div class="field">
+        <span>캐릭터</span>
+        <div id="designs" class="designs" role="radiogroup" aria-label="캐릭터 선택"></div>
+      </div>
+      <button id="enter" type="button" disabled>불러오는 중…</button>
     </div>
   </section>
 
-  <!-- 내부 HUD -->
+  <!-- 게임 HUD -->
   <header id="brand" class="hud hidden">
-    <span class="dot"></span> 온기 오피스 <small id="zoneLabel">로비</small>
+    <span class="dot"></span> 보장원 <small id="online">👥 1명</small>
   </header>
-  <button id="sound" class="hud hidden" aria-label="소리 켜기">🔇</button>
-  <nav id="nav" class="hud hidden">
-    <button data-zone="street">🏙️<span>거리</span></button>
-    <button data-zone="lobby">🚪<span>로비</span></button>
-    <button data-zone="work">💻<span>업무공간</span></button>
-    <button data-zone="lounge">🛋️<span>휴게실</span></button>
-    <button data-zone="nap">🛏️<span>수면실</span></button>
-  </nav>
-  <p id="hint" class="hud hidden">사람을 탭하면 말을 걸 수 있어요 👋</p>
+  <div id="topbtns" class="hud hidden">
+    <button id="tp" type="button" aria-label="장소 이동">🧭</button>
+    <button id="sound" type="button" aria-label="소리 켜기/끄기">🔇</button>
+  </div>
+  <div id="tpPanel" class="hidden" role="menu" aria-label="장소 이동"></div>
+  <div id="joy" class="hud hidden" aria-label="이동 핸들"><div id="knob"></div></div>
+  <div id="actions" class="hud hidden">
+    <div id="phrases" aria-label="말하기"></div>
+    <button id="act" type="button" hidden></button>
+  </div>
+  <p id="hint" class="hud hidden"></p>
 
   <div id="error" class="hidden">이 기기에서는 3D(WebGL)를 표시할 수 없어요 😢</div>
 
