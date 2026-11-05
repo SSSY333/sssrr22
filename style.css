@@ -369,3 +369,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 .note-sw { width: 14px; height: 14px; border-radius: 4px; flex: none; }
 .note-tx { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
 .note-del { border: 0; background: #f1e2df; color: #8a3b3b; border-radius: 8px; padding: 6px 10px; font: 700 12px var(--font); cursor: pointer; }
+
+/* ---------- 책상 꾸미기 ---------- */
+.deco-body { display: flex; flex-direction: column; gap: 8px; }
+.deco-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.deco-chip { border: 2px solid #eadccb; background: #fff; border-radius: 999px; padding: 6px 11px; font: 700 13px var(--font); color: var(--ink); cursor: pointer; }
+.deco-chip.swatch { width: 30px; height: 30px; padding: 0; border-radius: 8px; }
+.deco-chip[aria-checked="true"] { border-color: #e0703c; background: #fff1e4; }
+.deco-chip.swatch[aria-checked="true"] { outline: 3px solid #2b2230; outline-offset: 2px; }
+.deco-sheet .sheet-go { background: linear-gradient(135deg, #6a9be0, #8f6fb5); }
+.deco-clear { align-self: center; border: 0; background: transparent; color: #8a3b3b; font: 700 13px var(--font); text-decoration: underline; cursor: pointer; padding: 4px; }
