@@ -2067,7 +2067,7 @@ function nearestCat(A, max = 1.25) {
 const HEART_TEX = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.font = '48px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('💕', 32, 36); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 function petCat(C, local) {
   C.petT = 4.5;
-  if (local) audio.purr();
+  if (local) audio.meow();
   for (let k = 0; k < 3; k++) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: HEART_TEX, transparent: true, depthWrite: false }));
     sp.scale.set(0.16, 0.16, 1);
@@ -2447,7 +2447,6 @@ function updateVent(t, dt) {
       papers.splice(i, 1);
       vent.boost = Math.min(2, vent.boost + 1.2);
       burstSparks();
-      audio.whoosh();
     }
   }
 }
@@ -2482,102 +2481,21 @@ const audio = {
     if (!this.ctx) {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       this.ctx = ctx;
-      this.master = ctx.createGain(); this.master.gain.value = 0.0;
+      this.master = ctx.createGain(); this.master.gain.value = 0.9;
       this.master.connect(ctx.destination);
-      const len = ctx.sampleRate * 2;
-      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-      this.noise = buf;
-      // 웅성웅성
-      this.murmur = ctx.createGain(); this.murmur.gain.value = 0.3; this.murmur.connect(this.master);
-      for (let i = 0; i < 6; i++) {
-        const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-        src.playbackRate.value = rand(0.8, 1.2);
-        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = rand(280, 1100); bp.Q.value = rand(2, 5);
-        const gn = ctx.createGain(); gn.gain.value = 0.0;
-        const lfo = ctx.createOscillator(); lfo.frequency.value = rand(1.5, 4.5);
-        const lg = ctx.createGain(); lg.gain.value = 0.35;
-        lfo.connect(lg); lg.connect(gn.gain);
-        const lfo2 = ctx.createOscillator(); lfo2.frequency.value = rand(0.1, 0.35);
-        const lg2 = ctx.createGain(); lg2.gain.value = 120;
-        lfo2.connect(lg2); lg2.connect(bp.frequency);
-        src.connect(bp); bp.connect(gn); gn.connect(this.murmur);
-        src.start(0, rand(0, 1.5)); lfo.start(); lfo2.start();
-      }
-      // 차량 소음
-      this.traffic = ctx.createGain(); this.traffic.gain.value = 0.1; this.traffic.connect(this.master);
-      const tsrc = ctx.createBufferSource(); tsrc.buffer = buf; tsrc.loop = true;
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380;
-      tsrc.connect(lp); lp.connect(this.traffic); tsrc.start();
-      // 키보드 타닥
-      this.fx = ctx.createGain(); this.fx.gain.value = 0.25; this.fx.connect(this.master);
-      const typing = () => {
-        if (this.on && mode.inside) {
-          const burst = Math.floor(rand(3, 9));
-          for (let i = 0; i < burst; i++) this.click(ctx.currentTime + i * rand(0.07, 0.16));
-        }
-        setTimeout(typing, rand(250, 1100));
-      };
-      typing();
       musicInit(ctx, this.master);
     }
-    if (music.want || !music.cur) musicSet(music.want || musicZone());
     this.ctx.resume();
     this.on = true;
-    this.setMix();
+    if (music.want || !music.cur) musicSet(music.want || musicZone());
   },
-  stop() { this.on = false; if (this.master) this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.2); },
-  setMix() {
-    if (!this.ctx || !this.on) return;
-    const t = this.ctx.currentTime;
-    this.master.gain.setTargetAtTime(0.9, t, 0.3);
-    const m = music.on ? 0.55 : 1;
-    this.murmur.gain.setTargetAtTime((mode.inside ? 0.38 : 0.05) * m, t, 0.6);
-    this.traffic.gain.setTargetAtTime((mode.inside ? 0.03 : 0.22) * (music.on ? 0.7 : 1), t, 0.6);
-  },
-  click(when) {
-    const ctx = this.ctx;
-    const src = ctx.createBufferSource(); src.buffer = this.noise;
-    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = rand(1800, 3500);
-    const gn = ctx.createGain();
-    gn.gain.setValueAtTime(0, when);
-    gn.gain.linearRampToValueAtTime(rand(0.08, 0.16), when + 0.002);
-    gn.gain.exponentialRampToValueAtTime(0.001, when + 0.035);
-    src.connect(hp); hp.connect(gn); gn.connect(this.fx);
-    src.start(when, rand(0, 1.5), 0.05);
-  },
-  tok(vol = 1) {
-    if (!this.on || !mode.inside) return;
-    const ctx = this.ctx, t = ctx.currentTime;
-    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(1300, t); o.frequency.exponentialRampToValueAtTime(700, t + 0.05);
-    const gn = ctx.createGain(); gn.gain.setValueAtTime(0.18 * vol, t); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-    o.connect(gn); gn.connect(this.fx); o.start(t); o.stop(t + 0.08);
-  },
-  whoosh() {
-    if (!this.on) return;
-    const ctx = this.ctx, t = ctx.currentTime;
-    const src = ctx.createBufferSource(); src.buffer = this.noise;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8;
-    bp.frequency.setValueAtTime(300, t); bp.frequency.exponentialRampToValueAtTime(1800, t + 0.5);
-    const gn = ctx.createGain(); gn.gain.setValueAtTime(0.001, t); gn.gain.exponentialRampToValueAtTime(0.35, t + 0.08); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-    src.connect(bp); bp.connect(gn); gn.connect(this.fx); src.start(t, rand(0, 1), 1);
-  },
-  purr() {
-    if (!this.on) return;
-    const ctx = this.ctx, t = ctx.currentTime;
-    const g = ctx.createGain(); g.gain.value = 0.95; g.connect(this.master);
-    mrrp(ctx, g, t + 0.05);
-    purrSound(ctx, g, t + 0.45, 4.2);
-    // 골골송이 잘 들리게 음악을 잠깐 줄여요
-    if (music.bus) { music.bus.gain.cancelScheduledValues(t); music.bus.gain.setTargetAtTime(0.18, t, 0.15); music.bus.gain.setTargetAtTime(0.6, t + 4.4, 0.6); }
-  },
-  pop() {
-    if (!this.on) return;
-    const ctx = this.ctx, t = ctx.currentTime;
-    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(rand(500, 800), t); o.frequency.exponentialRampToValueAtTime(rand(900, 1300), t + 0.08);
-    const gn = ctx.createGain(); gn.gain.setValueAtTime(0.06, t); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-    o.connect(gn); gn.connect(this.fx); o.start(t); o.stop(t + 0.13);
+  setMix() {},
+  // 효과음은 고양이 쓰다듬을 때 '삐용~' 하나만
+  meow() {
+    if (!this.ctx) return;
+    this.ctx.resume();
+    const g = this.ctx.createGain(); g.gain.value = 0.8; g.connect(this.master);
+    mrrp(this.ctx, g, this.ctx.currentTime + 0.03);
   },
 };
 
@@ -2772,7 +2690,6 @@ const TRACKS = {
       if (s === 0) c.forEach((n, i) => INST.epiano(ctx, out, t + i * 0.012, n + 12, sp * 12, 0.55));
       if (s === 10 && R(bar, 4) < 0.6) c.slice(1).forEach((n) => INST.epiano(ctx, out, t, n + 12, sp * 4, 0.3));
       if (s % 2 === 0 && R(bar, s, 6) > 0.8) INST.vibes(ctx, out, t, walk(this, [62, 65, 67, 69, 72, 74, 77], R(bar, s, 7)), sp * 3, 0.7);
-      if (R(bar, s, 9) < 0.45) INST.crackle(ctx, out, t + R(bar, s, 10) * sp, 0.6);
     },
   },
   // 로비 — 밝은 마림바
@@ -2854,7 +2771,6 @@ const TRACKS = {
       if (s === 0) { c.forEach((n) => INST.epiano(ctx, out, t, n + 12, sp * 14, 0.4)); c.forEach((n) => INST.pad(ctx, out, t, n, sp * 15, 0.5)); }
       if (s % 2 === 0 && R(bar, s) > 0.2) INST.musicbox(ctx, out, t, c[(s / 2) % 4] + 24, sp, 0.5);
       if (R(bar, s, 3) < 0.1) INST.chime(ctx, out, t, [84, 86, 88, 91, 93, 96][Math.floor(R(bar, s, 4) * 6)], 1, 0.7);
-      if (R(bar, s, 6) < 0.3) INST.crackle(ctx, out, t + R(bar, s, 7) * sp, 0.9);
     },
   },
 };
@@ -2898,8 +2814,6 @@ function musicSet(name) {
   const gain = trackOut(ctx, name, music.bus, music.rev);
   gain.gain.setTargetAtTime(TRACKS[name].vol, now + 0.05, 0.9);
   music.cur = { name, tr: TRACKS[name], gain, next: now + 0.1, step: 0 };
-  const el = document.getElementById('nowPlaying');
-  if (el) el.textContent = `🎵 ${TRACKS[name].title}`;
 }
 function musicTick() {
   const p = music.cur;
@@ -2942,7 +2856,6 @@ async function renderAudio(list, sr = 22050) {
     } else if (item.purr) {
       const g = ctx.createGain(); g.gain.value = 1; g.connect(ctx.destination);
       mrrp(ctx, g, t0 + 0.2);
-      purrSound(ctx, g, t0 + 0.7, item.sec - 1.0);
     }
     t0 += item.sec;
   }
@@ -2963,7 +2876,7 @@ async function renderAudio(list, sr = 22050) {
   return { wav: btoa(bin), peak, rms: Math.sqrt(sum / n) };
 }
 
-/* ---------- 고양이 소리: "므릅~" + 골골송 ---------- */
+/* ---------- 고양이 소리: '삐용~' ---------- */
 function mrrp(ctx, out, t) {
   const o = ctx.createOscillator(); o.type = 'sawtooth';
   o.frequency.setValueAtTime(430, t); o.frequency.linearRampToValueAtTime(700, t + 0.13); o.frequency.linearRampToValueAtTime(560, t + 0.32);
@@ -2977,37 +2890,6 @@ function mrrp(ctx, out, t) {
   const g = env(ctx, t, 0.9, 0.02, 0.32);
   o.connect(trill); trill.connect(f1); trill.connect(f2); f2.connect(g2); f1.connect(g); g2.connect(g); g.connect(out);
   o.start(t); o.stop(t + 0.45); lfo.start(t); lfo.stop(t + 0.2);
-}
-function purrSound(ctx, out, t0, len = 4.2) {
-  // 작은 스피커에서도 들리도록: 초당 26번의 '그르릉' 펄스를 몸통 공명(190·520Hz)으로 걸러, 숨 내쉴 때/들이쉴 때를 번갈아
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(0.0001, t0); master.gain.exponentialRampToValueAtTime(1, t0 + 0.35);
-  master.gain.setValueAtTime(1, t0 + len - 0.6); master.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
-  master.connect(out);
-  const sum = ctx.createGain();
-  const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = 190; f1.Q.value = 1.3;
-  const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 520; f2.Q.value = 2.2;
-  const f3 = ctx.createBiquadFilter(); f3.type = 'bandpass'; f3.frequency.value = 1150; f3.Q.value = 3;
-  const g1 = ctx.createGain(); g1.gain.value = 3.6;
-  const g2 = ctx.createGain(); g2.gain.value = 2.0;
-  const g3 = ctx.createGain(); g3.gain.value = 0.55;
-  sum.connect(f1); sum.connect(f2); sum.connect(f3); f1.connect(g1); f2.connect(g2); f3.connect(g3); g1.connect(master); g2.connect(master); g3.connect(master);
-  const nb = noiseBuf(ctx);
-  const breath = 2.3;
-  for (let t = 0; t < len; t += 1 / 26) {
-    const ph = (t % breath) / breath;
-    if (ph > 0.56 && ph < 0.63) continue; // 숨 바꾸는 틈
-    const exhale = ph < 0.56;
-    const amp = exhale ? 1 : 0.62;
-    const tt = t0 + t + (Math.random() - 0.5) * 0.004;
-    const src = ctx.createBufferSource(); src.buffer = nb; src.playbackRate.value = exhale ? 1 : 1.18;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(amp, tt + 0.004); g.gain.exponentialRampToValueAtTime(0.001, tt + 0.032);
-    src.connect(g); g.connect(sum); src.start(tt, Math.random() * 1.5, 0.04);
-    const o = ctx.createOscillator(); o.frequency.value = exhale ? 54 : 60;
-    const og = ctx.createGain(); og.gain.setValueAtTime(0, tt); og.gain.linearRampToValueAtTime(amp * 0.1, tt + 0.006); og.gain.exponentialRampToValueAtTime(0.001, tt + 0.036);
-    o.connect(og); og.connect(master); o.start(tt); o.stop(tt + 0.045);
-  }
 }
 
 /* =========================================================================
@@ -3245,7 +3127,6 @@ function mySay(text, style = 'normal') {
   say(me.A.P, text, 3.4, style);
   lastSay = { t: text, n: ++sayN };
   sendPresence(true);
-  audio.pop();
 }
 
 function updatePlayer(dt) {
@@ -3521,7 +3402,6 @@ async function enterGame() {
   $('#nick').blur();
   $('#intro').classList.add('hidden');
   audio.start();
-  $('#sound').textContent = '🔊';
   controls.autoRotate = false;
   controls.enabled = false;
   me.A = makeAvatar(me.design, me.name, true);
@@ -3549,22 +3429,8 @@ $('#music').addEventListener('click', () => {
   music.on = !music.on;
   $('#music').classList.toggle('off', !music.on);
   $('#music').setAttribute('aria-pressed', music.on ? 'true' : 'false');
+  if (music.on) audio.start();
   if (music.cur && audio.ctx) music.cur.gain.gain.setTargetAtTime(music.on ? music.cur.tr.vol : 0, audio.ctx.currentTime, 0.4);
-  audio.setMix();
-  if (music.on && music.cur) showNowPlaying();
-});
-let npTimer = 0;
-function showNowPlaying() {
-  const el = $('#nowPlaying');
-  if (!el || !music.cur || !music.on || !audio.on) return;
-  el.textContent = `🎵 ${music.cur.tr.title}`;
-  el.classList.remove('hidden');
-  clearTimeout(npTimer);
-  npTimer = setTimeout(() => el.classList.add('hidden'), 3500);
-}
-$('#sound').addEventListener('click', () => {
-  if (audio.on) { audio.stop(); $('#sound').textContent = '🔇'; }
-  else { audio.start(); $('#sound').textContent = '🔊'; }
 });
 $('#tp').addEventListener('click', () => $('#tpPanel').classList.toggle('hidden'));
 Object.entries(SPOTS).forEach(([k, s]) => {
@@ -3904,14 +3770,13 @@ function updatePingPong(dt, avatars) {
   pp.ball.visible = active;
   if (!active) return;
   pp.u += dt * pp.speed;
-  if (pp.u >= 1) { pp.u -= 1; pp.dir *= -1; audio.tok(1); }
+  if (pp.u >= 1) { pp.u -= 1; pp.dir *= -1; }
   const u = pp.u, u0 = 0.62;
   const xs = -1.55 * pp.dir, xe = 1.55 * pp.dir;
   const x = xs + (xe - xs) * u;
   let y;
   if (u < u0) { const s = u / u0; y = 1.0 + (0.8 - 1.0) * s + 0.32 * Math.sin(Math.PI * s); }
   else { const s = (u - u0) / (1 - u0); y = 0.8 + (1.0 - 0.8) * s + 0.28 * Math.sin(Math.PI * s); }
-  if (pp.lastHalf === 0 && u >= u0) audio.tok(0.6);
   pp.lastHalf = u >= u0 ? 1 : 0;
   pp.ball.position.set(x, y, Math.sin(u * Math.PI) * 0.25 * pp.dir);
   players.forEach((A, i) => {
@@ -4025,7 +3890,7 @@ function frame() {
   if (ctxT > 0.2) {
     ctxT = 0;
     refreshContext(false);
-    if (audio.ctx) { const z = musicZone(); if (music.cur?.name !== z) { musicSet(z); showNowPlaying(); } }
+    if (audio.ctx) { const z = musicZone(); if (music.cur?.name !== z) musicSet(z); }
   }
 
   if (composer) composer.render(); else renderer.render(scene, camera);

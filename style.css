@@ -353,15 +353,3 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 
 /* 배경음악 */
 #topbtns #music.off { opacity: 0.45; }
-#nowPlaying {
-  left: 50%;
-  transform: translateX(-50%);
-  top: calc(104px + env(safe-area-inset-top));
-  margin: 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(34, 26, 40, 0.55);
-  color: var(--cream);
-  font-size: 12px;
-  white-space: nowrap;
-}
