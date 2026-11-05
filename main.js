@@ -3688,7 +3688,7 @@ addEventListener('resize', onResize);
    ========================================================================= */
 const BOARD = { x: -10, z: -29.52, w: 5.2, h: 2.3, y: 1.75 };
 const NOTE_COLORS = ['#ffe27a', '#ffb3c1', '#a8e6cf', '#b8d8ff', '#ffd3a5'];
-const NOTE_MAX = 6, NOTE_SHOW = 24;
+const NOTE_MAX = 6, NOTE_SHOW = 12;
 const board = { notes: [], db: null, uid: null, canWrite: null, isAdmin: false, status: 'loading', writing: Promise.resolve(), canvas: null, tex: null, mesh: null, color: NOTE_COLORS[0] };
 function buildBoard() {
   const g = interior;
@@ -3733,20 +3733,20 @@ function drawBoard() {
     const msg = board.status === 'loading' ? '메모를 불러오는 중…' : board.status === 'offline' ? '메모판에 연결할 수 없어요. 잠시 후 다시 볼게요.' : '아직 메모가 없어요. 첫 메모를 붙여 보세요! ✏️';
     c.fillText(msg, W / 2, H / 2 + 40);
   }
-  const cols = 8, cw = (W - 80) / cols, ch = 165;
+  const cols = 6, cw = (W - 80) / cols, ch = 245;
   list.forEach((n, i) => {
     const col = i % cols, row = Math.floor(i / cols);
-    const cx = 40 + col * cw + cw / 2, cy = 150 + row * (ch + 12) + ch / 2;
+    const cx = 40 + col * cw + cw / 2, cy = 150 + row * (ch + 18) + ch / 2;
     const rot = (hash(n.id.length * 31 + i, n.t % 997) - 0.5) * 0.14;
     c.save(); c.translate(cx, cy); c.rotate(rot);
     const nw = cw - 22, nh = ch;
     c.fillStyle = 'rgba(30,30,40,.18)'; c.fillRect(-nw / 2 + 5, -nh / 2 + 7, nw, nh);
     c.fillStyle = n.color; c.fillRect(-nw / 2, -nh / 2, nw, nh);
     c.fillStyle = 'rgba(0,0,0,.06)'; c.fillRect(-nw / 2, -nh / 2, nw, 22);
-    c.fillStyle = '#2b2230'; c.font = `700 25px ${FONT}`;
-    wrapText(c, n.text, nw - 22, 4).forEach((ln, k) => c.fillText(ln, 0, -nh / 2 + 54 + k * 30));
-    c.fillStyle = 'rgba(43,34,48,.6)'; c.font = `600 19px ${FONT}`;
-    c.fillText(`— ${n.nick || '익명'}`, 0, nh / 2 - 12);
+    c.fillStyle = '#2b2230'; c.font = `700 36px ${FONT}`;
+    wrapText(c, n.text, nw - 26, 4).forEach((ln, k) => c.fillText(ln, 0, -nh / 2 + 68 + k * 42));
+    c.fillStyle = 'rgba(43,34,48,.65)'; c.font = `600 26px ${FONT}`;
+    c.fillText(`— ${n.nick || '익명'}`, 0, nh / 2 - 16);
     c.restore();
   });
   if (board.notes.length > NOTE_SHOW) { c.fillStyle = '#8a96a2'; c.font = `600 22px ${FONT}`; c.textAlign = 'right'; c.fillText(`최근 ${NOTE_SHOW}개만 보여요`, W - 40, H - 18); }
