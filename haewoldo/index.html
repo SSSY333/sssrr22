@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#53a6dc" />
+  <title>해월도 마을생활</title>
+  <meta name="description" content="섬마을 쿼터뷰 생활 시뮬레이션 & 연애 게임 — 파출소 형사님과 함께 걷고, 이야기하고, 추억을 만들어요." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="game">
+  <canvas id="view"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hbar">
+      <div class="hclock"><span id="hWeather">☀️</span><b id="hTime">08:00</b><small id="hDay">1일째</small></div>
+      <div class="hmoney">💰 <b id="hMoney">0원</b></div>
+      <button id="hSpeed" class="hbtn">⏩1x</button>
+      <button id="menuBtn" class="hbtn">☰</button>
+    </div>
+    <div class="hrow2">
+      <button id="compIcon" class="hidden"><canvas width="32" height="32" id="compFace"></canvas><span><b>파출소 형사님</b><small id="compState">동행 중</small></span></button>
+      <div id="hPlace" class="hplace">해월도</div>
+      <button id="relBtn"><span class="heart">♥</span><span><b id="relStage">처음 만난 사이</b><i class="mini"><i id="relBar"></i></i></span></button>
+    </div>
+  </div>
+  <div id="placeTag"></div>
+  <div id="toasts"></div>
+  <button id="actBtn" class="hidden"></button>
+
+  <!-- 대화창 -->
+  <div id="dlg" class="hidden">
+    <div id="dlgChoices"></div>
+    <div class="dlg-box">
+      <canvas id="dlgFace" width="32" height="32"></canvas>
+      <div class="dlg-body"><div id="dlgName"></div><div id="dlgText"></div></div>
+      <div class="dlg-next">▼</div>
+    </div>
+  </div>
+
+  <!-- 아래에서 올라오는 메뉴 -->
+  <div id="sheet" class="hidden">
+    <div class="sheet-card">
+      <div class="sheet-head"><b id="sheetTitle"></b><button id="sheetClose">✕</button></div>
+      <div id="sheetSub"></div>
+      <div id="sheetBody"></div>
+    </div>
+  </div>
+
+  <!-- 형사님 관계 화면 -->
+  <div id="rel" class="screen hidden">
+    <div class="rel-head">
+      <canvas id="relFace" width="32" height="32"></canvas>
+      <div><small>해월도 파출소</small><h2>파출소 형사님</h2><b id="relTitle"></b></div>
+      <button id="relClose">✕</button>
+    </div>
+    <div class="tabs"><button data-tab="profile" class="on">관계</button><button data-tab="acts">상호작용</button><button data-tab="album">추억 앨범</button></div>
+    <div class="rel-body">
+      <div id="tab-profile" class="tabpane"></div>
+      <div id="tab-acts" class="tabpane hidden"></div>
+      <div id="tab-album" class="tabpane hidden"></div>
+    </div>
+  </div>
+  <div id="zoom" class="hidden"><img id="zoomImg" alt="" /><p id="zoomCap"></p></div>
+
+  <div id="stageUp" class="screen-pop hidden">
+    <div class="pop">
+      <div class="pop-hearts">♥ ♥ ♥</div>
+      <small>관계가 발전했어요!</small>
+      <h2 id="suName"></h2>
+      <p id="suUnlock"></p>
+      <button id="suOk" class="big">좋아요!</button>
+    </div>
+  </div>
+
+  <div id="help" class="screen-pop hidden">
+    <div class="pop left">
+      <h2>해월도 생활 안내</h2>
+      <ul>
+        <li><b>이동</b> — 땅을 누르면 걸어가요. 건물·벤치·사람을 누르면 그 앞까지 가요. (PC: 방향키/WASD, 행동 E·Space)</li>
+        <li><b>행동 버튼</b> — 오른쪽 아래 버튼이 상황에 맞게 바뀌어요: 일하기, 앉기, 낚시, 가게, 말 걸기.</li>
+        <li><b>형사님</b> — 형사님을 눌러 인사·대화·함께 다니기. 관계가 깊어질수록 할 수 있는 일이 늘어요.</li>
+        <li><b>동행</b> — 함께 다니는 동안 형사님이 뒤를 따라오고, 멈추면 옆에 서요. 왼쪽 위 형사님 아이콘으로 동행 메뉴를 열어요.</li>
+        <li><b>형사님 일과</b> — 07시 출근 · 오전 순찰 · 12시 카페 점심 · 오후 부두 순찰 · 17시 퇴근 · 저녁 낚시 · 22시 귀가. 근무 중에는 동행이 짧아요.</li>
+        <li><b>관계</b> — 하트 버튼에서 단계, 다음 단계 조건, 추억 앨범을 확인해요. 고백은 수락·보류·거절 모두 고를 수 있어요.</li>
+        <li><b>하루</b> — 저녁 6시부터 집에서 잘 수 있어요. 자정이 되면 자동으로 다음 날이 와요. 진행은 자동 저장돼요.</li>
+      </ul>
+      <button id="helpOk" class="big">알겠어요</button>
+    </div>
+  </div>
+
+  <div id="flash"></div>
+  <div id="fade"></div>
+
+  <!-- 타이틀 -->
+  <section id="title" class="screen-pop">
+    <div class="logo">
+      <small>섬마을 생활 · 연애 시뮬레이션</small>
+      <h1>해월도<br><span>마을생활</span></h1>
+      <p>파출소 형사님과 함께 걷고, 이야기하고,<br>작은 추억을 하나씩 모아 가는 섬 생활</p>
+    </div>
+    <div class="title-btns">
+      <button id="btnCont" class="big hidden">이어하기<small id="contInfo"></small></button>
+      <button id="btnNew" class="big alt">새로 시작</button>
+    </div>
+    <p class="credit">Alpha 0.1 · 모든 그림은 코드로 그린 픽셀아트</p>
+  </section>
+
+  <section id="newgame" class="screen-pop hidden">
+    <div class="pop wide">
+      <h2>해월도에 온 걸 환영해요</h2>
+      <div class="pv">
+        <div class="pv-art"><canvas id="pvFace" width="32" height="32"></canvas><canvas id="pvChibi" width="24" height="34"></canvas></div>
+        <p id="jobDesc"></p>
+      </div>
+      <label class="lbl">이름<input id="nameIn" maxlength="8" placeholder="해월" autocomplete="off" /></label>
+      <div class="lbl">직업</div>
+      <div id="jobList"></div>
+      <div class="lbl">머리 모양</div>
+      <div id="hairList"></div>
+      <div class="ng-btns"><button id="btnBack" class="big alt">뒤로</button><button id="startBtn" class="big">섬으로 출발!</button></div>
+    </div>
+  </section>
+</div>
+
+<script src="js/sprites.js"></script>
+<script src="js/world.js"></script>
+<script src="js/content.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
