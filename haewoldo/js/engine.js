@@ -33,7 +33,7 @@ function newState(name, job, hair, detName) {
   return {
     v: 3, name, job, hair, detName: detName || '', day: 1, min: 8 * 60, weather: 'sunny', money: 12000, jobLv: 1, jobExp: 0, works: 0,
     inv: { coffee: 1, tangerine: 1, snack: 2 }, furnInv: { plant: 1, cushion: 1 }, home: HOME_DEFAULT.map(f => f.slice()),
-    map: 'island', p: { x: st[0], y: st[1] }, d: { x: P_('station')[0], y: P_('station')[1], vis: true, map: 'island' },
+    map: 'island', p: { x: st[0], y: st[1] }, d: (() => { const [x, y] = nearestWalkable(st[0] - 7, st[1] + 0.5, MAPS.island); return { x, y, vis: true, map: 'island' }; })(),
     comp: false, hold: false, arm: false, speed: 1,
     rel: { aff: 0, stage: 1, together: 0, gifts: 0, dates: 0, dateLog: [], giftLog: [], flags: {}, talkIdx: {}, guide: {}, favor: null, confessDay: -9, proposeDay: -9, metDay: 0, loverDay: 0, missDays: 0, lastGift: {}, daily: newDaily() },
     names: { detNick: '', meNick: '' }, wedding: null,

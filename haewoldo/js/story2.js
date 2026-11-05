@@ -7,38 +7,55 @@
 async function firstMeeting() {
   const d = G.det, P = G.player; scriptDet();
   d.lookAt(P); P.lookAt(d); d.emo('❗');
-  const job = S.job, H = G.villagers.find(v => v.vid === 'halmeoni');
+  const job = S.job;
+  const besideDet = (a) => { if (!a) return; const n = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([x, y]) => [Math.floor(d.x) + x, Math.floor(d.y) + y]).find(([x, y]) => walkable(x, y, MAPS.island) && !(x === Math.floor(P.x) && y === Math.floor(P.y))); if (n) { a.map = 'island'; a.x = n[0] + 0.5; a.y = n[1] + 0.5; a.visible = true; a.stop(); a.talking = true; a.lookAt(P); } };
   if (job === 'doctor') {
-    const n = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([a, b]) => [Math.floor(d.x) + a, Math.floor(d.y) + b]).find(([x, y]) => walkable(x, y, MAPS.island) && !(x === Math.floor(P.x) && y === Math.floor(P.y)));
-    if (n && H) { H.x = n[0] + 0.5; H.y = n[1] + 0.5; H.visible = true; H.stop(); H.talking = true; H.lookAt(P); }
-    await say('narr', '', '보건지소 문이 벌컥 열렸다.');
-    await say('det', 'serious', '실례합니다! 여기 의사 선생님…');
-    await say('det', 'surprise', '아, 새로 오신 선생님이구나. 순덕 할머니가 귤밭에서 넘어지셔서요.');
-    await say('halmeoni', 'smile', '아이고, 별것도 아닌디 이 양반이 업고 뛰어왔어.');
-    await say('narr', '', '할머니 무릎을 소독하고 밴드를 붙였다.');
-    await topic({ t: [], c: [['다행히 가벼운 찰과상이에요', 3, '다행이다… 제가 더 놀랐네요. 하하.', 'smile'], ['형사님 이마에도 땀이…', 4, '아, 이건… 할머니가 생각보다 무거우셔서. 쉿.', 'blush'], ['다음부터 조심하세요', 2, '네, 할머니. 들으셨죠? …저한테 하신 말이에요?', 'laugh']] });
-    if (H) H.talking = false;
+    const cat = G.pets.find(v => v.vid === 'cheese'); besideDet(cat); if (cat) cat.pose = 'sit';
+    await say('narr', '', '진료 준비를 하는데, 누군가 문을 조심스럽게 두드렸다.');
+    await say('det', 'normal', '저기… 아직 진료 안 하죠? 안 하면 그냥 갈게요. 진짜로.');
+    await say('narr', '', '남색 제복 소매가 찢어져 있고 손등엔 긁힌 자국. 발치에는 노란 고양이가 태연하게 앉아 있다.');
+    await say('det', 'tease', '귤밭 돌담 틈에 이 녀석이 끼어 있어서요. 구해 주다가… 제가 졌어요. 고양이한테.');
+    Sound.sfx('meow'); await say('narr', '', '🐱 노랑이가 "냥" 하고 하품을 했다. 전혀 미안해 보이지 않는다.');
+    await topic({ t: [], c: [['고양이부터 볼게요', 3, '…역시 의사 선생님이다. 저는 진료 순위에서 밀렸네요. 하하.', 'laugh'], ['손 이리 주세요', 4, '아, 이 정도는 괜찮은데… 네. 내밀게요. 살살 해 주세요.', 'blush'], ['형사님이 고양이한테 졌어요?', 2, '공식 기록에는 "무승부"로 해 주세요. 부탁이에요.', 'tease']] });
+    await say('narr', '', '소독약을 바르자 형사님이 움찔했다. 노랑이는 그 틈에 진료실 의자를 차지했다.');
+    await say('det', 'smile', '선생님 첫 환자가 저라니, 영광이네요. 진료비는 귤 한 박스로 될까요?');
+    if (cat) { cat.talking = false; cat.follow = 6; }
   } else if (job === 'teacher') {
-    await say('narr', '', '학교 앞. 아이들이 "경찰 아저씨!" 하며 누군가를 둘러싸고 있다.');
-    await say('det', 'laugh', '얘들아, 아저씨 말고 형사님. 몇 번을 말해.');
-    await say('det', 'surprise', '아, 새로 오신 선생님? 등굣길 안전 순찰 중이었어요.');
-    await topic({ t: [], c: [['아이들이 형사님을 좋아하네요', 3, '저보다는 제 호루라기를 좋아하죠.', 'tease'], ['안전 순찰 감사합니다', 2, '선생님도 아이들 길 건널 때 같이 봐 줘요. 우리 둘이 하면 철통보안.', 'smile'], ['아저씨 맞는데요?', 3, '…방금 상처받았어요. 진짜로.', 'laugh']] });
+    const kid = G.villagers.find(v => v.vid === 'kid'); besideDet(kid);
+    await say('narr', '', '첫 출근 날. 교실 문을 열자 아이들이 울상이다.');
+    await say('kid', 'sad', '선생님! 교실 소라게 「똘이」가 사라졌어요! 아침에 집이 비어 있었어요!');
+    await say('narr', '', '그때 복도 끝에서 남색 제복의 남자가 아주 진지한 얼굴로 걸어왔다.');
+    await say('det', 'serious', '신고 받고 왔습니다. 실종자… 아니, 실종 게의 인상착의 부탁드립니다.');
+    await say('kid', 'surprise', '껍데기가 분홍색이고요! 집게가 짝짝이예요!');
+    await say('det', 'serious', '분홍 껍데기, 짝짝이 집게. 결정적인 단서네요. 수첩에 적었습니다.');
+    await topic({ t: [], c: [['같이 찾아요, 형사님', 3, '좋아요. 합동 수사본부를 꾸리죠. 선생님이 본부장, 저는 수사반장.', 'smile'], ['(진지한 척 경례한다)', 4, '…큭. 아, 웃으면 안 되는데. 충성. 협조 감사합니다.', 'laugh'], ['소라게도 수사해요?', 2, '해월도에선 소라게도 주민이에요. 주민등록은 없지만.', 'tease']] });
+    await say('narr', '', '30분 뒤, 똘이는 형사님 모자 속에서 발견됐다. 아이들이 환호성을 질렀다.');
+    await say('det', 'blush', '…대체 언제 들어간 거지. 이건 비밀로 해 주세요, 선생님. 형사 체면이 있어서.');
+    if (kid) kid.talking = false;
   } else if (job === 'traveler') {
-    await say('narr', '', '배에서 내리자마자 바닷바람에 지도가 날아갔다…');
-    await say('det', 'surprise', '어이쿠, 잡았다! 이거 찾으세요?');
-    await say('det', 'smile', '해월도 처음이죠? 짐 보면 알아요. 형사의 감.');
-    await topic({ t: [], c: [['길을 잃었어요', 3, '섬에서 길 잃기가 더 어려운데. 그래도 제가 안내해 드릴게요.', 'tease'], ['지도 고마워요', 2, '지도보다 제가 더 정확해요. 위에 작은 지도도 있죠? 그걸 눌러도 돼요.', 'smile'], ['형사님이세요?', 2, '네, 해월도 파출소 형사. 섬에 형사가 저 하나라 그냥 "형사님"이에요.', 'laugh']] });
+    await say('narr', '', '배에서 내리자마자 포구에 서 있는 「해월도 파출소 순찰 구역」 안내판이 너무 귀여워서 사진을 찍고 있었다.');
+    await say('narr', '', '그런데 등 뒤에서 "흠, 흠" 헛기침 소리가 났다.');
+    await say('det', 'serious', '실례합니다. 파출소 안내판을 왜 그렇게 열심히 찍으시는지… 여쭤봐도 될까요?');
+    await say('det', 'laugh', '…농담이에요. 표정 봐. 하하, 그 안내판 예쁘죠? 제가 직접 그렸어요.');
+    await topic({ t: [], c: [['안내판이 너무 귀여워서요', 3, '그쵸? 제 작품이에요. 여행 후기에 별 다섯 개 부탁드려요.', 'laugh'], ['깜짝 놀랐잖아요!', 2, '미안해요. 새 얼굴이 오면 괜히 장난치고 싶어서. 형사 직업병이에요.', 'smile'], ['그럼 형사님도 찍을게요', 4, '…저요? 아, 잠깐만. 머리 좀 정리하고. …됐어요. 찍어요.', 'blush']] });
+    await say('det', 'smile', '숙소 찾아요? 짐 줘요, 들어 드릴게. 해월도 첫 손님은 파출소가 모시는 게 전통이에요.');
+    await say('det', 'tease', '방금 생긴 전통이지만요.');
   } else if (job === 'cafe') {
-    await say('narr', '', '개업 첫날. 딸랑, 첫 손님이 들어왔다.');
-    await say('det', 'smile', '여기 문 연 거죠? 아메리카노 하나요. 따뜻한 걸로.');
-    await say('det', 'tease', '개업 첫 손님이 경찰이면 장사 잘된대요. 방금 제가 지어낸 말이지만.');
-    await topic({ t: [], c: [['첫 손님이니까 서비스예요', 4, '…이러면 매일 오게 되잖아요.', 'blush'], ['4,500원입니다', 2, '하하, 원칙주의 사장님. 좋아요, 단골 하겠습니다.', 'laugh'], ['지어낸 말이요?', 3, '형사의 직감은 잘 맞아요. 두고 봐요.', 'tease']] });
+    await say('narr', '', '개업 첫날 아침. 커피 머신이 "푸슉—" 소리를 내더니 멈춰 버렸다.');
+    await say('narr', '', '딸랑. 하필 그때 첫 손님이 들어왔다. 남색 제복의 남자다.');
+    await say('det', 'normal', '문 연 거죠? 아메리카노 하나… 어, 기계가 왜 그래요?');
+    await say('det', 'serious', '잠깐만요. 형사의 감이 말해 주고 있어요. 이런 건 보통…');
+    await say('narr', '', '형사님이 머신 옆면을 "톡" 두드렸다. 푸슈욱— 머신이 다시 돌아가기 시작했다.');
+    await say('det', 'tease', '거봐요. 해월도 기계들은 다 제 말 들어요. 사람은 잘 안 듣지만.');
+    await topic({ t: [], c: [['첫 잔은 공짜예요', 4, '수리비로 받을게요. …이러면 매일 와서 고쳐야겠네.', 'blush'], ['우연이죠?', 2, '우연도 실력이에요. 형사는 운도 수사력이라서.', 'laugh'], ['다음에도 부탁해요', 3, '출장 수리 기사 겸 단골 1호. 접수했습니다.', 'smile']] });
     S.money += 4500; floatText(P, '+4,500원');
   } else {
-    await say('narr', '', '해녀창고 앞. 물질 준비를 하는데 누군가 다가왔다.');
-    await say('det', 'serious', '오늘 오후에 너울 온대요. 물질 나가시면 일찍 들어오세요.');
-    await say('det', 'smile', '…아, 새로 오신 분이구나. 순덕 할머니가 막내 해녀 들어왔다고 자랑하시더니.');
-    await topic({ t: [], c: [['걱정해 주셔서 고마워요', 3, '해안 안전이 제 담당이라서요. …그런 걸로 해 두죠.', 'tease'], ['바다는 제가 더 잘 알걸요?', 3, '하하, 맞는 말이에요. 그럼 바다는 당신이, 육지는 제가.', 'laugh'], ['네, 조심할게요', 1, '착하다. 아, 실례. 반말 아니고 감탄이에요.', 'smile']] });
+    await say('narr', '', '첫 물질. 바닷속에서 한참 숨을 참다가 수면 위로 "호오이—" 숨비소리를 내며 올라왔다.');
+    await say('narr', '', '그런데 부두 끝에서 누군가 제복 재킷을 벗어 던지고 뛰어들 자세를 하고 있다.');
+    await say('det', 'surprise', '괜찮아요?! 3분 넘게 안 올라와서… 지금 막 들어가려던 참이었어요!');
+    await say('narr', '', '…형사님은 이미 신발 한 짝을 바다에 빠뜨린 상태였다.');
+    await topic({ t: [], c: [['해녀는 원래 오래 참아요', 3, '…아. 그렇죠. 알고 있었어요. 알고는 있었는데 심장이 먼저 뛰어서.', 'blush'], ['신발… 빠졌어요', 2, '……못 본 척해 줄래요? 형사 인생 최대의 굴욕이에요.', 'sad'], ['걱정해 줘서 고마워요', 4, '고맙긴요. 바다는 당신 일터지만, 해안은 제 담당이니까요.', 'smile']] });
+    await say('narr', '', '망사리에서 소라 하나를 꺼내 건네자, 형사님이 젖은 신발 한 짝을 들고 멋쩍게 웃었다.');
   }
   await say('det', 'normal', S.detName ? `인사가 늦었네요. 해월도 파출소 형사 ${S.detName}입니다. 다들 그냥 "형사님"이라고 불러요.` : '인사가 늦었네요. 해월도 파출소 형사예요. 다들 그냥 "형사님"이라고 불러요.');
   const nm = await choose([`저는 ${S.name}이에요`, '잘 부탁드려요, 형사님']);
