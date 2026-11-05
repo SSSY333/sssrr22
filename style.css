@@ -289,3 +289,64 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 @media (min-width: 900px) {
   #intro { justify-content: flex-start; padding-left: 40px; background: linear-gradient(90deg, rgba(30, 22, 44, 0.45) 0%, rgba(30, 22, 44, 0) 45%); }
 }
+
+/* ---------- 불만창고 입력 시트 ---------- */
+#act2 {
+  pointer-events: auto;
+  border: 0;
+  border-radius: 18px;
+  padding: 13px 20px;
+  font: 800 16px var(--font);
+  color: #fff;
+  background: linear-gradient(135deg, #e85d8a, #ff9a5a);
+  box-shadow: 0 8px 20px rgba(232, 93, 138, 0.45);
+  cursor: pointer;
+}
+#act2:active { transform: scale(0.96); }
+.sheet-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(40, 18, 40, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.sheet {
+  width: min(440px, 100%);
+  background: #fff4f0;
+  border-radius: 22px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 20px 50px rgba(40, 10, 30, 0.4);
+  border: 2px solid #f6c1d0;
+}
+.sheet h2 { margin: 0; font-size: 19px; font-weight: 800; color: #b23a62; }
+.sheet-note { margin: 0; font-size: 12.5px; color: #8a5a66; }
+.vent-text {
+  width: 100%;
+  min-height: 120px;
+  resize: none;
+  border: 2px solid #f3c9d4;
+  border-radius: 14px;
+  padding: 12px;
+  font: 500 16px var(--font);
+  color: var(--ink);
+  background: #fff;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.vent-text:focus { outline: none; border-color: #e85d8a; }
+.sheet-btns { display: flex; gap: 8px; }
+.sheet-btns button { flex: 1; border: 0; border-radius: 14px; padding: 13px; font: 800 15px var(--font); cursor: pointer; }
+.sheet-cancel { background: #f1e2df; color: #6e5f62; }
+.sheet-go { background: linear-gradient(135deg, #e85d8a, #ff9a5a); color: #fff; }
+.sheet.shake { animation: shake 0.35s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+@media (pointer: coarse) { .sheet-wrap { align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .sheet.shake { animation: none; } }

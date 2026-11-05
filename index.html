@@ -51,9 +51,23 @@
   <div id="joy" class="hud hidden" aria-label="이동 핸들"><div id="knob"></div></div>
   <div id="actions" class="hud hidden">
     <div id="phrases" aria-label="말하기"></div>
+    <button id="act2" type="button" hidden></button>
     <button id="act" type="button" hidden></button>
   </div>
   <p id="hint" class="hud hidden"></p>
+
+  <!-- 불만창고: 저장되지 않고 아무에게도 보이지 않는 입력 -->
+  <div id="vent" class="sheet-wrap" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ventTitle">
+      <h2 id="ventTitle">스트레스 적기</h2>
+      <p class="sheet-note">🔒 여기 쓴 내용은 저장되지 않고, 누구에게도 보이지 않아요.</p>
+      <textarea class="vent-text" maxlength="300" rows="5" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="내용"></textarea>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel">취소</button>
+        <button type="button" class="sheet-go">🔥 벽난로에 던지기</button>
+      </div>
+    </div>
+  </div>
 
   <div id="error" class="hidden">이 기기에서는 3D(WebGL)를 표시할 수 없어요 😢</div>
 
