@@ -350,3 +350,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 @keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
 @media (pointer: coarse) { .sheet-wrap { align-items: flex-start; } }
 @media (prefers-reduced-motion: reduce) { .sheet.shake { animation: none; } }
+
+/* 배경음악 */
+#topbtns #music.off { opacity: 0.45; }
+#nowPlaying {
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(104px + env(safe-area-inset-top));
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(34, 26, 40, 0.55);
+  color: var(--cream);
+  font-size: 12px;
+  white-space: nowrap;
+}

@@ -2520,7 +2520,9 @@ const audio = {
         setTimeout(typing, rand(250, 1100));
       };
       typing();
+      musicInit(ctx, this.master);
     }
+    if (music.want || !music.cur) musicSet(music.want || musicZone());
     this.ctx.resume();
     this.on = true;
     this.setMix();
@@ -2530,8 +2532,9 @@ const audio = {
     if (!this.ctx || !this.on) return;
     const t = this.ctx.currentTime;
     this.master.gain.setTargetAtTime(0.9, t, 0.3);
-    this.murmur.gain.setTargetAtTime(mode.inside ? 0.38 : 0.05, t, 0.6);
-    this.traffic.gain.setTargetAtTime(mode.inside ? 0.03 : 0.22, t, 0.6);
+    const m = music.on ? 0.55 : 1;
+    this.murmur.gain.setTargetAtTime((mode.inside ? 0.38 : 0.05) * m, t, 0.6);
+    this.traffic.gain.setTargetAtTime((mode.inside ? 0.03 : 0.22) * (music.on ? 0.7 : 1), t, 0.6);
   },
   click(when) {
     const ctx = this.ctx;
@@ -2563,15 +2566,11 @@ const audio = {
   purr() {
     if (!this.on) return;
     const ctx = this.ctx, t = ctx.currentTime;
-    const src = ctx.createBufferSource(); src.buffer = this.noise; src.loop = true;
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
-    const am = ctx.createGain(); am.gain.value = 0;
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 24;
-    const lg = ctx.createGain(); lg.gain.value = 0.5;
-    lfo.connect(lg); lg.connect(am.gain);
-    const out = ctx.createGain(); out.gain.setValueAtTime(0.001, t); out.gain.exponentialRampToValueAtTime(0.7, t + 0.4); out.gain.setValueAtTime(0.7, t + 3.2); out.gain.exponentialRampToValueAtTime(0.001, t + 4.2);
-    src.connect(lp); lp.connect(am); am.connect(out); out.connect(this.fx);
-    src.start(t); lfo.start(t); src.stop(t + 4.3); lfo.stop(t + 4.3);
+    const g = ctx.createGain(); g.gain.value = 0.95; g.connect(this.master);
+    mrrp(ctx, g, t + 0.05);
+    purrSound(ctx, g, t + 0.45, 4.2);
+    // 골골송이 잘 들리게 음악을 잠깐 줄여요
+    if (music.bus) { music.bus.gain.cancelScheduledValues(t); music.bus.gain.setTargetAtTime(0.18, t, 0.15); music.bus.gain.setTargetAtTime(0.6, t + 4.4, 0.6); }
   },
   pop() {
     if (!this.on) return;
@@ -2581,6 +2580,435 @@ const audio = {
     o.connect(gn); gn.connect(this.fx); o.start(t); o.stop(t + 0.13);
   },
 };
+
+/* =========================================================================
+   음악 — 장소와 시간에 맞춰 브라우저가 직접 연주하는 배경음악 (파일 0 KB)
+   ========================================================================= */
+const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
+const NOISE_CACHE = new WeakMap();
+function noiseBuf(ctx) {
+  if (!NOISE_CACHE.has(ctx)) {
+    const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    NOISE_CACHE.set(ctx, b);
+  }
+  return NOISE_CACHE.get(ctx);
+}
+function makeImpulse(ctx, sec = 2.6, decay = 2.8) {
+  const len = Math.floor(ctx.sampleRate * sec);
+  const b = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = b.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  return b;
+}
+function env(ctx, t, peak, a, d, sustain = 0.0001, rel = 0) {
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a);
+  g.gain.exponentialRampToValueAtTime(Math.max(sustain, 0.0001), t + a + d);
+  if (rel) g.gain.exponentialRampToValueAtTime(0.0001, t + a + d + rel);
+  return g;
+}
+function osc(ctx, type, f, t, stop) { const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t); o.start(t); o.stop(stop); return o; }
+function noiseSrc(ctx, t, dur) { const s = ctx.createBufferSource(); s.buffer = noiseBuf(ctx); s.start(t, Math.random() * 1.5, dur); return s; }
+const INST = {
+  // 일렉 피아노 (로즈 느낌): 기음 + 짧은 쇳소리(tine)
+  epiano(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n), end = t + dur + 0.9;
+    const g = env(ctx, t, 0.16 * v, 0.008, Math.max(0.3, dur), 0.0001, 0.6);
+    osc(ctx, 'sine', f, t, end).connect(g);
+    const g2 = env(ctx, t, 0.05 * v, 0.003, 0.18);
+    osc(ctx, 'sine', f * 4.01, t, t + 0.4).connect(g2); g2.connect(g);
+    const g3 = env(ctx, t, 0.03 * v, 0.01, dur * 0.8);
+    osc(ctx, 'triangle', f * 2, t, end).connect(g3); g3.connect(g);
+    g.connect(out);
+  },
+  pad(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n), end = t + dur + 1.6;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = 0.4;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.035 * v, t + 0.7); g.gain.setValueAtTime(0.035 * v, t + dur); g.gain.linearRampToValueAtTime(0.0001, t + dur + 1.5);
+    for (const dt of [-6, 0, 7]) { const o = osc(ctx, 'sawtooth', f, t, end); o.detune.value = dt; o.connect(lp); }
+    lp.connect(g); g.connect(out);
+  },
+  bass(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n), end = t + dur + 0.3;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(320, t + 0.25);
+    const g = env(ctx, t, 0.22 * v, 0.006, dur, 0.0001, 0.12);
+    osc(ctx, 'sawtooth', f, t, end).connect(lp);
+    const sub = ctx.createGain(); sub.gain.value = 0.9; osc(ctx, 'sine', f, t, end).connect(sub); sub.connect(g);
+    lp.connect(g); g.connect(out);
+  },
+  upright(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n), end = t + 0.9;
+    const g = env(ctx, t, 0.26 * v, 0.008, 0.55);
+    osc(ctx, 'triangle', f, t, end).connect(g);
+    const g2 = env(ctx, t, 0.09 * v, 0.004, 0.12); osc(ctx, 'sine', f * 2, t, t + 0.3).connect(g2); g2.connect(g);
+    g.connect(out);
+  },
+  marimba(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n);
+    const g = env(ctx, t, 0.13 * v, 0.003, 0.45);
+    osc(ctx, 'sine', f, t, t + 0.6).connect(g);
+    const g2 = env(ctx, t, 0.05 * v, 0.002, 0.08); osc(ctx, 'sine', f * 3.98, t, t + 0.15).connect(g2); g2.connect(g);
+    g.connect(out);
+  },
+  musicbox(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n);
+    const g = env(ctx, t, 0.1 * v, 0.002, 1.4);
+    osc(ctx, 'sine', f, t, t + 1.6).connect(g);
+    const g2 = env(ctx, t, 0.035 * v, 0.002, 0.5); osc(ctx, 'sine', f * 3.01, t, t + 0.6).connect(g2); g2.connect(g);
+    const g3 = env(ctx, t, 0.02 * v, 0.001, 0.2); osc(ctx, 'sine', f * 5.4, t, t + 0.3).connect(g3); g3.connect(g);
+    g.connect(out);
+  },
+  vibes(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n), end = t + dur + 1.2;
+    const g = env(ctx, t, 0.1 * v, 0.004, dur + 0.5, 0.0001, 0.5);
+    const o = osc(ctx, 'sine', f, t, end);
+    const lfo = osc(ctx, 'sine', 5.5, t, end); const lg = ctx.createGain(); lg.gain.value = f * 0.004; lfo.connect(lg); lg.connect(o.frequency);
+    o.connect(g);
+    const g2 = env(ctx, t, 0.025 * v, 0.002, 0.3); osc(ctx, 'sine', f * 4, t, t + 0.4).connect(g2); g2.connect(g);
+    g.connect(out);
+  },
+  pluck(ctx, out, t, n, dur, v = 1) { // 나일론 기타 느낌
+    const f = midi(n), end = t + 1.2;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.5;
+    lp.frequency.setValueAtTime(Math.min(6000, f * 8), t); lp.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.35);
+    const g = env(ctx, t, 0.1 * v, 0.003, 0.9);
+    osc(ctx, 'sawtooth', f, t, end).connect(lp);
+    const o2 = osc(ctx, 'triangle', f * 2, t, end); const g2 = ctx.createGain(); g2.gain.value = 0.3; o2.connect(g2); g2.connect(lp);
+    lp.connect(g); g.connect(out);
+  },
+  flute(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n), end = t + dur + 0.4;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.07 * v, t + 0.07); g.gain.setValueAtTime(0.06 * v, t + dur); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.3);
+    const o = osc(ctx, 'sine', f, t, end);
+    const lfo = osc(ctx, 'sine', 5, t, end); const lg = ctx.createGain(); lg.gain.value = f * 0.006; lfo.connect(lg); lg.connect(o.frequency);
+    o.connect(g);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 2; bp.Q.value = 3;
+    const nb = ctx.createGain(); nb.gain.value = 0.15; noiseSrc(ctx, t, dur + 0.3).connect(bp); bp.connect(nb); nb.connect(g);
+    g.connect(out);
+  },
+  chime(ctx, out, t, n, dur, v = 1) {
+    const f = midi(n);
+    const g = env(ctx, t, 0.05 * v, 0.002, 2.2);
+    osc(ctx, 'sine', f, t, t + 2.4).connect(g);
+    const g2 = env(ctx, t, 0.02 * v, 0.002, 0.9); osc(ctx, 'sine', f * 2.76, t, t + 1).connect(g2); g2.connect(g);
+    g.connect(out);
+  },
+  kick(ctx, out, t, v = 1) {
+    const o = osc(ctx, 'sine', 120, t, t + 0.4); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+    const g = env(ctx, t, 0.55 * v, 0.003, 0.3); o.connect(g); g.connect(out);
+  },
+  snare(ctx, out, t, v = 1) {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 0.8;
+    const g = env(ctx, t, 0.22 * v, 0.002, 0.16); noiseSrc(ctx, t, 0.25).connect(bp); bp.connect(g);
+    const tg = env(ctx, t, 0.1 * v, 0.002, 0.08); osc(ctx, 'triangle', 190, t, t + 0.12).connect(tg); tg.connect(g);
+    g.connect(out);
+  },
+  brush(ctx, out, t, v = 1) {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.6;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.06 * v, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    noiseSrc(ctx, t, 0.3).connect(bp); bp.connect(g); g.connect(out);
+  },
+  rim(ctx, out, t, v = 1) {
+    const g = env(ctx, t, 0.09 * v, 0.001, 0.04); osc(ctx, 'square', 1700, t, t + 0.06).connect(g);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 6; g.connect(bp); bp.connect(out);
+  },
+  hat(ctx, out, t, v = 1, open = false) {
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+    const g = env(ctx, t, 0.08 * v, 0.001, open ? 0.22 : 0.04); noiseSrc(ctx, t, open ? 0.3 : 0.06).connect(hp); hp.connect(g); g.connect(out);
+  },
+  ride(ctx, out, t, v = 1) {
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5000;
+    const g = env(ctx, t, 0.05 * v, 0.001, 0.35); noiseSrc(ctx, t, 0.4).connect(hp); hp.connect(g);
+    const g2 = env(ctx, t, 0.012 * v, 0.001, 0.5); osc(ctx, 'square', 5200, t, t + 0.5).connect(g2); g2.connect(g);
+    g.connect(out);
+  },
+  shaker(ctx, out, t, v = 1) {
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 6500; bp.Q.value = 1.2;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05 * v, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    noiseSrc(ctx, t, 0.1).connect(bp); bp.connect(g); g.connect(out);
+  },
+  crackle(ctx, out, t, v = 1) {
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+    const g = env(ctx, t, 0.04 * v, 0.0005, 0.006); noiseSrc(ctx, t, 0.01).connect(hp); hp.connect(g); g.connect(out);
+  },
+};
+// 결정적 난수 (같은 마디는 같은 멜로디)
+const R = (a, b, c = 0) => hash(a * 7919 + c * 104729, b * 31 + 17);
+const walk = (tr, list, r) => { tr.mi = clamp((tr.mi ?? 2) + (r < 0.45 ? -1 : r < 0.9 ? 1 : 2), 0, list.length - 1); return list[tr.mi]; };
+const TRACKS = {
+  // 낮의 광화문 거리 — 산뜻한 시티팝
+  citypop: {
+    title: '세종대로 햇살', bpm: 104, swing: 0, vol: 0.72, rev: 0.22,
+    chords: [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [55, 59, 62, 65], [57, 60, 64, 67], [50, 53, 57, 60], [58, 62, 65, 69], [48, 52, 55, 58]],
+    roots: [41, 40, 38, 43, 45, 38, 46, 36],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s === 0 || s === 8 || (s === 11 && R(bar, s) < 0.5)) INST.kick(ctx, out, t, 0.9);
+      if (s === 4 || s === 12) INST.snare(ctx, out, t, 0.8);
+      if (s % 2 === 0) INST.hat(ctx, out, t, s % 4 === 2 ? 0.8 : 0.45, s === 14 && R(bar, 1) < 0.5);
+      const bs = { 0: root, 3: root + 12, 6: root, 8: root + 7, 10: root + 12, 14: root - 1 }[s];
+      if (bs !== undefined) INST.bass(ctx, out, t, bs, sp * 1.6, s === 0 ? 1 : 0.75);
+      if (s === 0 || s === 6 || s === 10) c.forEach((n) => INST.epiano(ctx, out, t, n + 12, sp * (s === 0 ? 3 : 2), 0.55));
+      if (s % 2 === 0 && R(bar, s, 3) > 0.68) INST.vibes(ctx, out, t, walk(this, [65, 67, 69, 72, 74, 77, 79, 81], R(bar, s, 5)), sp * 2, 0.75);
+    },
+  },
+  // 밤의 광화문 — 잔잔한 로파이
+  lofi: {
+    title: '밤의 광화문', bpm: 74, swing: 0.32, vol: 0.85, rev: 0.32,
+    chords: [[53, 57, 60, 64], [53, 55, 59, 62], [52, 55, 59, 62], [52, 55, 57, 61]],
+    roots: [38, 43, 36, 45],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s === 0 || s === 10 || (s === 7 && R(bar, s) < 0.6)) INST.kick(ctx, out, t, 0.65);
+      if (s === 4 || s === 12) INST.rim(ctx, out, t, 0.8);
+      if (s % 2 === 0) INST.hat(ctx, out, t, 0.28);
+      else if (R(bar, s, 2) < 0.25) INST.hat(ctx, out, t, 0.14);
+      if (s === 0) INST.bass(ctx, out, t, root, sp * 8, 0.7);
+      if (s === 10) INST.bass(ctx, out, t, root, sp * 3, 0.55);
+      if (s === 13) INST.bass(ctx, out, t, root + 7, sp * 2, 0.5);
+      if (s === 0) c.forEach((n, i) => INST.epiano(ctx, out, t + i * 0.012, n + 12, sp * 12, 0.55));
+      if (s === 10 && R(bar, 4) < 0.6) c.slice(1).forEach((n) => INST.epiano(ctx, out, t, n + 12, sp * 4, 0.3));
+      if (s % 2 === 0 && R(bar, s, 6) > 0.8) INST.vibes(ctx, out, t, walk(this, [62, 65, 67, 69, 72, 74, 77], R(bar, s, 7)), sp * 3, 0.7);
+      if (R(bar, s, 9) < 0.45) INST.crackle(ctx, out, t + R(bar, s, 10) * sp, 0.6);
+    },
+  },
+  // 로비 — 밝은 마림바
+  office: {
+    title: '보장원 로비', bpm: 96, swing: 0, vol: 0.8, rev: 0.3,
+    chords: [[48, 52, 55, 59], [45, 48, 52, 55], [41, 45, 48, 52], [43, 47, 50, 52]],
+    roots: [36, 33, 41, 43],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s === 0) c.forEach((n) => INST.pad(ctx, out, t, n + 12, sp * 15, 0.8));
+      const arp = [0, 1, 2, 3, 2, 1, 2, 3];
+      if (R(bar, s, 1) > 0.12) INST.marimba(ctx, out, t, c[arp[s % 8]] + 24, sp, s % 4 === 0 ? 1 : 0.6);
+      if (s % 2 === 1) INST.shaker(ctx, out, t, 0.7);
+      if (s === 0 || s === 8) INST.marimba(ctx, out, t, root + 12, sp * 2, 0.9);
+    },
+  },
+  // 업무공간 — 집중용 소프트 키즈
+  work: {
+    title: '집중 모드', bpm: 84, swing: 0.1, vol: 0.97, rev: 0.3,
+    chords: [[51, 55, 58, 62], [48, 51, 55, 58], [44, 48, 51, 55], [46, 50, 53, 55]],
+    roots: [39, 36, 44, 46],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s === 0) { c.forEach((n) => INST.pad(ctx, out, t, n + 12, sp * 15, 0.7)); INST.bass(ctx, out, t, root, sp * 6, 0.5); }
+      if (s === 0 || s === 8) INST.kick(ctx, out, t, s ? 0.25 : 0.35);
+      if (s % 2 === 0) INST.hat(ctx, out, t, 0.14);
+      if ((s % 4 === 0 && R(bar, s) < 0.55) || (s % 4 === 2 && R(bar, s) < 0.2)) INST.epiano(ctx, out, t, c[Math.floor(R(bar, s, 4) * 4)] + 24, sp * 3, 0.6);
+    },
+  },
+  // 휴게실 — 신나는 스윙 재즈
+  lounge: {
+    title: '휴게실 스윙', bpm: 118, swing: 0.3, vol: 1.12, rev: 0.25,
+    chords: [[50, 53, 57, 60], [55, 59, 62, 65], [48, 52, 55, 59], [57, 61, 64, 67], [50, 53, 57, 60], [55, 59, 62, 65], [52, 55, 59, 62], [57, 61, 64, 67]],
+    roots: [38, 43, 36, 45, 38, 43, 40, 45],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s % 4 === 0) {
+        const next = this.roots[(bar + 1) % this.roots.length];
+        const n = [root, root + (c[1] - c[0] + 0), root + 7, next + (R(bar, 2) < 0.5 ? 1 : -1)][s / 4];
+        INST.upright(ctx, out, t, n, sp * 4, 0.9);
+      }
+      if (s === 0 || s === 4 || s === 8 || s === 12) INST.ride(ctx, out, t, 0.8);
+      if (s === 6 || s === 14) INST.ride(ctx, out, t, 0.55);
+      if (s === 4 || s === 12) INST.brush(ctx, out, t, 1);
+      if (s === 0) INST.kick(ctx, out, t, 0.2);
+      if ((s === 6 || s === 14) && R(bar, s) < 0.75) c.forEach((n) => INST.epiano(ctx, out, t, n + 12, sp * 1.5, 0.5));
+      if (s % 2 === 0 && R(bar, s, 8) > 0.7) INST.vibes(ctx, out, t, walk(this, [72, 74, 75, 76, 79, 81, 84], R(bar, s, 9)), sp * 2, 0.8);
+    },
+  },
+  // 수면실 — 오르골 자장가
+  nap: {
+    title: '꿀잠 오르골', bpm: 64, swing: 0, vol: 1.0, rev: 0.45,
+    chords: [[53, 57, 60], [50, 53, 57], [46, 50, 53], [48, 52, 55]],
+    roots: [41, 38, 46, 36],
+    mel: [[81, 0, 77, 0, 72, 77, 81, 0], [79, 0, 77, 0, 74, 77, 81, 0], [82, 0, 81, 0, 79, 77, 74, 0], [76, 0, 79, 0, 77, 0, 0, 0]],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s === 0) c.forEach((n) => INST.pad(ctx, out, t, n + 12, sp * 15, 0.6));
+      if (s % 2 === 0) { const m = this.mel[bar % 4][s / 2]; if (m) INST.musicbox(ctx, out, t, m, sp * 2, 0.9); }
+      if (s % 4 === 2) INST.musicbox(ctx, out, t, c[(s / 2) % 3] + 12, sp, 0.35);
+    },
+  },
+  // 맞은편 맛집 거리 — 카페 보사노바
+  cafe: {
+    title: '맛집 거리 보사노바', bpm: 112, swing: 0, vol: 1.3, rev: 0.25,
+    chords: [[57, 60, 64, 67], [54, 57, 60, 64], [55, 59, 62, 66], [52, 55, 59, 64], [54, 57, 60, 64], [51, 54, 57, 59], [52, 55, 59, 62], [52, 56, 59, 62]],
+    roots: [45, 38, 43, 48, 42, 47, 40, 40],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s === 0) INST.pluck(ctx, out, t, root, sp * 4, 1);
+      if (s === 8) INST.pluck(ctx, out, t, root + 7, sp * 4, 0.9);
+      if ([0, 3, 6, 10, 13].includes(s)) c.forEach((n, i) => INST.pluck(ctx, out, t + i * 0.008, n, sp * 2, 0.55));
+      INST.shaker(ctx, out, t, s % 2 ? 0.35 : 0.55);
+      if (s === 3 || s === 10) INST.rim(ctx, out, t, 0.55);
+      if (s % 2 === 0 && R(bar, s, 4) > 0.76) INST.flute(ctx, out, t, walk(this, [67, 69, 71, 74, 76, 79, 81], R(bar, s, 5)), sp * 3, 0.8);
+    },
+  },
+  // 불만창고 — 벽난로 옆 포근한 오르골
+  vent: {
+    title: '불만창고 벽난로', bpm: 70, swing: 0, vol: 1.05, rev: 0.4,
+    chords: [[48, 52, 55, 59], [52, 55, 59, 62], [53, 57, 60, 64], [55, 59, 62, 64]],
+    roots: [36, 40, 41, 43],
+    step(s, bar, t, sp, c, root, out, ctx) {
+      if (s === 0) { c.forEach((n) => INST.epiano(ctx, out, t, n + 12, sp * 14, 0.4)); c.forEach((n) => INST.pad(ctx, out, t, n, sp * 15, 0.5)); }
+      if (s % 2 === 0 && R(bar, s) > 0.2) INST.musicbox(ctx, out, t, c[(s / 2) % 4] + 24, sp, 0.5);
+      if (R(bar, s, 3) < 0.1) INST.chime(ctx, out, t, [84, 86, 88, 91, 93, 96][Math.floor(R(bar, s, 4) * 6)], 1, 0.7);
+      if (R(bar, s, 6) < 0.3) INST.crackle(ctx, out, t + R(bar, s, 7) * sp, 0.9);
+    },
+  },
+};
+const music = { on: true, cur: null, bus: null, rev: null, comp: null, timer: null, want: null };
+function musicChain(ctx, dest) {
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.25;
+  const bus = ctx.createGain(); bus.gain.value = 0.6;
+  const rev = ctx.createConvolver(); rev.buffer = makeImpulse(ctx);
+  const rg = ctx.createGain(); rg.gain.value = 1;
+  rev.connect(rg); rg.connect(comp); bus.connect(comp); comp.connect(dest);
+  return { bus, rev, comp };
+}
+function musicInit(ctx, dest) {
+  Object.assign(music, musicChain(ctx, dest));
+  music.timer = setInterval(musicTick, 30);
+}
+function trackOut(ctx, name, bus, rev) {
+  const tr = TRACKS[name];
+  const gain = ctx.createGain(); gain.gain.value = 0;
+  gain.connect(bus);
+  const send = ctx.createGain(); send.gain.value = tr.rev; gain.connect(send); send.connect(rev);
+  return gain;
+}
+function scheduleStep(tr, step, t, sp, out) {
+  const s = step % 16, bar = Math.floor(step / 16);
+  const i = bar % tr.chords.length;
+  const sw = s % 2 === 1 ? sp * (tr.swing || 0) : 0;
+  tr.step(s, bar, t + sw, sp, tr.chords[i], tr.roots[i], out, out.context);
+}
+function musicSet(name) {
+  if (!audio.ctx || !music.bus) { music.want = name; return; }
+  if (music.cur?.name === name) return;
+  const ctx = audio.ctx, now = ctx.currentTime;
+  if (music.cur) {
+    const old = music.cur;
+    old.gain.gain.cancelScheduledValues(now);
+    old.gain.gain.setTargetAtTime(0, now, 0.7);
+    setTimeout(() => old.gain.disconnect(), 5000);
+  }
+  const gain = trackOut(ctx, name, music.bus, music.rev);
+  gain.gain.setTargetAtTime(TRACKS[name].vol, now + 0.05, 0.9);
+  music.cur = { name, tr: TRACKS[name], gain, next: now + 0.1, step: 0 };
+  const el = document.getElementById('nowPlaying');
+  if (el) el.textContent = `🎵 ${TRACKS[name].title}`;
+}
+function musicTick() {
+  const p = music.cur;
+  if (!p || !audio.on || !music.on || !audio.ctx) return;
+  const ctx = audio.ctx;
+  const sp = 60 / p.tr.bpm / 4;
+  if (p.next < ctx.currentTime - 0.25) p.next = ctx.currentTime + 0.05;
+  while (p.next < ctx.currentTime + 0.18) { scheduleStep(p.tr, p.step, p.next, sp, p.gain); p.next += sp; p.step++; }
+}
+function musicZone() {
+  const A = me?.A;
+  const h = TOD.hour;
+  const outside = () => (h >= 6 && h < 17.5 ? 'citypop' : 'lofi');
+  if (!A) return outside();
+  if (inVent(A.x, A.z)) return 'vent';
+  if (isInsideXZ(A.x, A.z)) {
+    if (A.x > 2.5 && A.z < -16) return 'nap';
+    if (A.x > 2.5) return 'lounge';
+    if (A.z < -6) return 'work';
+    return 'office';
+  }
+  return A.z > 24.5 ? 'cafe' : outside();
+}
+// 오프라인 렌더링 (미리 듣기 WAV 만들기)
+async function renderAudio(list, sr = 22050) {
+  const total = list.reduce((a, x) => a + x.sec, 0);
+  const ctx = new OfflineAudioContext(1, Math.ceil(total * sr), sr);
+  const { bus, rev } = musicChain(ctx, ctx.destination);
+  let t0 = 0;
+  for (const item of list) {
+    if (item.track) {
+      const tr = TRACKS[item.track];
+      const gain = trackOut(ctx, item.track, bus, rev);
+      gain.gain.setValueAtTime(0, t0); gain.gain.linearRampToValueAtTime(tr.vol, t0 + 0.6);
+      gain.gain.setValueAtTime(tr.vol, t0 + item.sec - 1.5); gain.gain.linearRampToValueAtTime(0, t0 + item.sec - 0.2);
+      const sp = 60 / tr.bpm / 4;
+      const saved = tr.mi;
+      for (let k = 0, t = t0 + 0.05; t < t0 + item.sec - 0.6; k++, t += sp) scheduleStep(tr, k, t, sp, gain);
+      tr.mi = saved;
+    } else if (item.purr) {
+      const g = ctx.createGain(); g.gain.value = 1; g.connect(ctx.destination);
+      mrrp(ctx, g, t0 + 0.2);
+      purrSound(ctx, g, t0 + 0.7, item.sec - 1.0);
+    }
+    t0 += item.sec;
+  }
+  const buf = await ctx.startRendering();
+  const d = buf.getChannelData(0);
+  let peak = 0, sum = 0;
+  for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > peak) peak = a; sum += d[i] * d[i]; }
+  // 16-bit WAV
+  const n = d.length, ab = new ArrayBuffer(44 + n * 2), v = new DataView(ab);
+  const wr = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  wr(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); wr(8, 'WAVE'); wr(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); wr(36, 'data'); v.setUint32(40, n * 2, true);
+  const norm = peak > 0.98 ? 0.98 / peak : 1;
+  for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, clamp(d[i] * norm, -1, 1) * 32767, true);
+  let bin = '';
+  const bytes = new Uint8Array(ab);
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return { wav: btoa(bin), peak, rms: Math.sqrt(sum / n) };
+}
+
+/* ---------- 고양이 소리: "므릅~" + 골골송 ---------- */
+function mrrp(ctx, out, t) {
+  const o = ctx.createOscillator(); o.type = 'sawtooth';
+  o.frequency.setValueAtTime(430, t); o.frequency.linearRampToValueAtTime(700, t + 0.13); o.frequency.linearRampToValueAtTime(560, t + 0.32);
+  const trill = ctx.createGain(); trill.gain.value = 1;
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 32;
+  const lg = ctx.createGain(); lg.gain.setValueAtTime(0.6, t); lg.gain.linearRampToValueAtTime(0, t + 0.12);
+  lfo.connect(lg); lg.connect(trill.gain);
+  const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = 950; f1.Q.value = 5;
+  const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 2100; f2.Q.value = 7;
+  const g2 = ctx.createGain(); g2.gain.value = 0.55;
+  const g = env(ctx, t, 0.9, 0.02, 0.32);
+  o.connect(trill); trill.connect(f1); trill.connect(f2); f2.connect(g2); f1.connect(g); g2.connect(g); g.connect(out);
+  o.start(t); o.stop(t + 0.45); lfo.start(t); lfo.stop(t + 0.2);
+}
+function purrSound(ctx, out, t0, len = 4.2) {
+  // 작은 스피커에서도 들리도록: 초당 26번의 '그르릉' 펄스를 몸통 공명(190·520Hz)으로 걸러, 숨 내쉴 때/들이쉴 때를 번갈아
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, t0); master.gain.exponentialRampToValueAtTime(1, t0 + 0.35);
+  master.gain.setValueAtTime(1, t0 + len - 0.6); master.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+  master.connect(out);
+  const sum = ctx.createGain();
+  const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = 190; f1.Q.value = 1.3;
+  const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.frequency.value = 520; f2.Q.value = 2.2;
+  const f3 = ctx.createBiquadFilter(); f3.type = 'bandpass'; f3.frequency.value = 1150; f3.Q.value = 3;
+  const g1 = ctx.createGain(); g1.gain.value = 3.6;
+  const g2 = ctx.createGain(); g2.gain.value = 2.0;
+  const g3 = ctx.createGain(); g3.gain.value = 0.55;
+  sum.connect(f1); sum.connect(f2); sum.connect(f3); f1.connect(g1); f2.connect(g2); f3.connect(g3); g1.connect(master); g2.connect(master); g3.connect(master);
+  const nb = noiseBuf(ctx);
+  const breath = 2.3;
+  for (let t = 0; t < len; t += 1 / 26) {
+    const ph = (t % breath) / breath;
+    if (ph > 0.56 && ph < 0.63) continue; // 숨 바꾸는 틈
+    const exhale = ph < 0.56;
+    const amp = exhale ? 1 : 0.62;
+    const tt = t0 + t + (Math.random() - 0.5) * 0.004;
+    const src = ctx.createBufferSource(); src.buffer = nb; src.playbackRate.value = exhale ? 1 : 1.18;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(amp, tt + 0.004); g.gain.exponentialRampToValueAtTime(0.001, tt + 0.032);
+    src.connect(g); g.connect(sum); src.start(tt, Math.random() * 1.5, 0.04);
+    const o = ctx.createOscillator(); o.frequency.value = exhale ? 54 : 60;
+    const og = ctx.createGain(); og.gain.setValueAtTime(0, tt); og.gain.linearRampToValueAtTime(amp * 0.1, tt + 0.006); og.gain.exponentialRampToValueAtTime(0.001, tt + 0.036);
+    o.connect(og); og.connect(master); o.start(tt); o.stop(tt + 0.045);
+  }
+}
 
 /* =========================================================================
    모드 / 카메라 트윈
@@ -3117,6 +3545,23 @@ async function enterGame() {
 }
 $('#enter').addEventListener('click', enterGame);
 $('#nick').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !$('#enter').disabled) enterGame(); });
+$('#music').addEventListener('click', () => {
+  music.on = !music.on;
+  $('#music').classList.toggle('off', !music.on);
+  $('#music').setAttribute('aria-pressed', music.on ? 'true' : 'false');
+  if (music.cur && audio.ctx) music.cur.gain.gain.setTargetAtTime(music.on ? music.cur.tr.vol : 0, audio.ctx.currentTime, 0.4);
+  audio.setMix();
+  if (music.on && music.cur) showNowPlaying();
+});
+let npTimer = 0;
+function showNowPlaying() {
+  const el = $('#nowPlaying');
+  if (!el || !music.cur || !music.on || !audio.on) return;
+  el.textContent = `🎵 ${music.cur.tr.title}`;
+  el.classList.remove('hidden');
+  clearTimeout(npTimer);
+  npTimer = setTimeout(() => el.classList.add('hidden'), 3500);
+}
 $('#sound').addEventListener('click', () => {
   if (audio.on) { audio.stop(); $('#sound').textContent = '🔇'; }
   else { audio.start(); $('#sound').textContent = '🔊'; }
@@ -3577,7 +4022,11 @@ function frame() {
   stars.mat.opacity = 0.75 + Math.sin(t * 2) * 0.2;
   blinkers.forEach((b) => { b.visible = Math.sin(t * 3) > 0; });
   ctxT += dt;
-  if (ctxT > 0.2) { ctxT = 0; refreshContext(false); }
+  if (ctxT > 0.2) {
+    ctxT = 0;
+    refreshContext(false);
+    if (audio.ctx) { const z = musicZone(); if (music.cur?.name !== z) { musicSet(z); showNowPlaying(); } }
+  }
 
   if (composer) composer.render(); else renderer.render(scene, camera);
   requestAnimationFrame(frame);
@@ -3588,6 +4037,7 @@ requestAnimationFrame(frame);
 window.__office = {
   camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
   setHour(h) { TOD.override = h; applyTimeOfDay(); },
+  renderAudio, tracks: () => Object.keys(TRACKS), musicZone,
   look(p, t) { return flyTo(new THREE.Vector3(...p), new THREE.Vector3(...t), 0.05); },
   step: (dt) => updatePlayer(dt),
   pokeFirst() { const R = [...remotes.values()][0]; if (!R) return 'no remote'; poke(R); return 'poked ' + R.name; },
