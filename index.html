@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2b2340" />
+  <title>광화문 온기 오피스</title>
+  <meta name="description" content="광화문 거리의 유리 빌딩 속, 시끌벅적하지만 따뜻한 3D 오피스 (three.js)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- 입장 화면 -->
+  <section id="intro">
+    <div class="card">
+      <p class="eyebrow">서울 종로구 · 세종대로 광화문 거리</p>
+      <h1>온기 오피스</h1>
+      <p class="lead">유리 너머로 새어 나오는 따뜻한 불빛.<br />시끌벅적하지만 다정한 우리 회사로 들어가 볼까요?</p>
+      <button id="enter" disabled>불러오는 중…</button>
+      <p class="tip">드래그로 둘러보고, 두 손가락(휠)로 확대할 수 있어요</p>
+    </div>
+  </section>
+
+  <!-- 내부 HUD -->
+  <header id="brand" class="hud hidden">
+    <span class="dot"></span> 온기 오피스 <small id="zoneLabel">로비</small>
+  </header>
+  <button id="sound" class="hud hidden" aria-label="소리 켜기">🔇</button>
+  <nav id="nav" class="hud hidden">
+    <button data-zone="street">🏙️<span>거리</span></button>
+    <button data-zone="lobby">🚪<span>로비</span></button>
+    <button data-zone="work">💻<span>업무공간</span></button>
+    <button data-zone="lounge">🛋️<span>휴게실</span></button>
+    <button data-zone="nap">🛏️<span>수면실</span></button>
+  </nav>
+  <p id="hint" class="hud hidden">사람을 탭하면 말을 걸 수 있어요 👋</p>
+
+  <div id="error" class="hidden">이 기기에서는 3D(WebGL)를 표시할 수 없어요 😢</div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
