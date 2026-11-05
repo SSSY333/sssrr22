@@ -459,6 +459,10 @@ let skyMat;
 }
 
 const LAMP_MAT = new THREE.MeshBasicMaterial({ color: 0xffd08a, toneMapped: false });
+const MOON_LAMP = new THREE.MeshBasicMaterial({
+  color: 0xffe2b8,
+  map: (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#fff4e0'; x.fillRect(0, 0, 128, 128); for (let i = 0; i < 26; i++) { x.fillStyle = `rgba(190,160,120,${0.08 + Math.random() * 0.14})`; x.beginPath(); x.arc(Math.random() * 128, Math.random() * 128, 3 + Math.random() * 10, 0, 7); x.fill(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })(),
+});
 const hemi = new THREE.HemisphereLight(0xffdcc0, 0x5b4636, 0.45);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffb27a, 2.6);
@@ -1904,7 +1908,7 @@ function buildInterior() {
       addBox(g, 0.45, 0.5, 0.45, wood, x + 1.7, 0.25, -29.3);
       colBox(x + 1.7, -28.6, 0.12, 2.6);
       addCyl(g, 0.05, 0.25, std(0xc9a46a, { metalness: 0.6 }), x + 1.7, 0.62, -29.3);
-      addSph(g, 0.14, glow(0xffb870), x + 1.7, 0.82, -29.3);
+      addSph(g, 0.15, MOON_LAMP, x + 1.7, 0.84, -29.3);
       addModel(g, 'alarm_clock_01_2k', 0.12, x + 1.55, 0.5, -29.1, 0.4);
     }
     // 커튼
@@ -1945,9 +1949,31 @@ function buildInterior() {
   stars.mat = new THREE.PointsMaterial({ color: 0xfff2c8, size: 0.06, transparent: true, toneMapped: false });
   g.add(new THREE.Points(sg, stars.mat));
   addPlane(g, 17.4, 13.9, new THREE.MeshBasicMaterial({ color: 0x2c2f52, side: THREE.DoubleSide }), 11.25, CEIL - 0.03, -23).rotation.x = Math.PI / 2;
-  const napLight = new THREE.PointLight(0xffa56b, 5, 10, 1.7);
+  const napLight = new THREE.PointLight(0xffb27a, 6.5, 11, 1.6);
   napLight.position.set(11, 3, -23.5);
   g.add(napLight);
+  /* 은은한 무드등: 종이 등 펜던트 · 플로어 스탠드 · 침대 밑 간접등 */
+  const lantern = new THREE.MeshStandardMaterial({ color: 0xfff1dc, emissive: 0xffc98a, emissiveIntensity: 0.75, roughness: 0.9 });
+  for (const [x, z, r] of [[7.2, -21.5, 0.32], [11.2, -24.2, 0.4], [15.4, -21.5, 0.32]]) {
+    addCyl(g, 0.006, CEIL - 2.75 - r, std(0x3a3030), x, (CEIL + 2.75 + r) / 2, z);
+    addMesh(g, SPH, lantern, x, 2.75, z, r, r * 0.9, r);
+    for (let k = -2; k <= 2; k++) addMesh(g, new THREE.TorusGeometry(1, 0.012, 4, 32), std(0xe8d6bc, { roughness: 0.9 }), x, 2.75 + k * r * 0.33, z, r * Math.cos(k * 0.33) * 1.0, r * Math.cos(k * 0.33), r * Math.cos(k * 0.33) * 1.0, { rx: Math.PI / 2 });
+  }
+  const shade = new THREE.MeshStandardMaterial({ color: 0xf6e2c4, emissive: 0xffb870, emissiveIntensity: 0.6, roughness: 0.9, side: THREE.DoubleSide });
+  for (const [x, z] of [[19.25, -25.0], [3.2, -21.2]]) {
+    addCyl(g, 0.16, 0.03, std(0x3a3030), x, 0.015, z);
+    addCyl(g, 0.018, 1.45, std(0xc9a46a, { metalness: 0.6, roughness: 0.4 }), x, 0.74, z);
+    addMesh(g, new THREE.CylinderGeometry(0.2, 0.27, 0.34, 24, 1, true), shade, x, 1.55, z);
+    addSph(g, 0.06, glow(0xffd8a0), x, 1.52, z);
+    colCircle(x, z, 0.2);
+    const l = new THREE.PointLight(0xffb070, 3.2, 6, 1.6);
+    l.position.set(x, 1.5, z);
+    g.add(l);
+  }
+  // 침대 아래·벽 따라 번지는 따뜻한 빛 웅덩이
+  const pool = new THREE.MeshBasicMaterial({ map: BLOB_TEX, color: 0xffa860, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+  for (const x of [6.2, 9.6, 13.0, 16.4]) { const m = addMesh(g, BLOB_GEO, pool, x, 0.015, -27.3, 1.8, 1, 0.9); m.renderOrder = 1; }
+  for (const [x, z] of [[19.25, -25.0], [3.2, -21.2]]) { const m = addMesh(g, BLOB_GEO, pool, x, 0.016, z, 2.4, 1, 2.4); m.renderOrder = 1; }
 
 }
 
@@ -3168,6 +3194,7 @@ function seatCamera(seat) {
 function doAction() {
   if (!me.A || !mode.playing) return;
   if (me.A.seat) { leaveSeat(me.A); sendPresence(true); refreshContext(true); return; }
+  if (nearBoard(me.A)) { openNotes(); return; }
   const s = nearestFreeSeat();
   const cat = nearestCat(me.A);
   if (cat && (!s || Math.hypot(me.A.x - cat.x, me.A.z - cat.z) < Math.hypot(me.A.x - s.ex, me.A.z - s.ez))) {
@@ -3392,6 +3419,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     const R = [...remotes.values()].find((r) => r.A.P === hit.object.userData.person);
     if (R) { poke(R); return; }
   }
+  if (board.mesh && raycaster.intersectObject(board.mesh, false)[0] && Math.hypot(me.A.x - BOARD.x, me.A.z - BOARD.z) < 8) { openNotes(); return; }
   plane.constant = -me.A.y;
   if (raycaster.ray.intersectPlane(plane, hitPt) && hitPt.distanceTo(camera.position) < 40) {
     me.target = { x: hitPt.x, z: hitPt.z };
@@ -3622,7 +3650,7 @@ function refreshContext(force) {
   const s = A.seat ? null : nearestFreeSeat();
   const cat = A.seat ? null : nearestCat(A);
   const catFirst = cat && (!s || Math.hypot(A.x - cat.x, A.z - cat.z) < Math.hypot(A.x - s.ex, A.z - s.ez));
-  const label = A.seat ? '🚶 일어나기' : catFirst ? '🐱 쓰다듬기' : s ? SEAT_INFO[s.kind].label : '';
+  const label = A.seat ? '🚶 일어나기' : nearBoard(A) ? '📝 메모 붙이기' : catFirst ? '🐱 쓰다듬기' : s ? SEAT_INFO[s.kind].label : '';
   const act = $('#act');
   if (act.textContent !== label) act.textContent = label;
   act.hidden = !label;
@@ -3656,6 +3684,210 @@ function onResize() {
 addEventListener('resize', onResize);
 
 /* =========================================================================
+   업무공간 화이트보드 + 포스트잇 메모 (db에 저장 · 모두에게 보여요)
+   ========================================================================= */
+const BOARD = { x: -10, z: -29.52, w: 5.2, h: 2.3, y: 1.75 };
+const NOTE_COLORS = ['#ffe27a', '#ffb3c1', '#a8e6cf', '#b8d8ff', '#ffd3a5'];
+const NOTE_MAX = 6, NOTE_SHOW = 24;
+const board = { notes: [], db: null, uid: null, canWrite: null, isAdmin: false, status: 'loading', writing: Promise.resolve(), canvas: null, tex: null, mesh: null, color: NOTE_COLORS[0] };
+function buildBoard() {
+  const g = interior;
+  const { x, z, w, h, y } = BOARD;
+  addBox(g, w + 0.16, h + 0.16, 0.06, std(0xb8bec4, { metalness: 0.55, roughness: 0.35 }), x, y, z);
+  board.canvas = document.createElement('canvas');
+  board.canvas.width = 1560; board.canvas.height = Math.round(1560 * h / w);
+  board.tex = new THREE.CanvasTexture(board.canvas);
+  board.tex.colorSpace = THREE.SRGBColorSpace;
+  board.tex.anisotropy = 8;
+  board.mesh = addWallPlane(g, w, h, new THREE.MeshBasicMaterial({ map: board.tex }), x, y, z + 0.035);
+  addBox(g, w * 0.9, 0.04, 0.1, std(0xb8bec4, { metalness: 0.55 }), x, y - h / 2 - 0.06, z + 0.06);
+  [0xe53935, 0x1e63d6, 0x2e7d32].forEach((c, i) => addCyl(g, 0.014, 0.13, std(c), x - 1.6 + i * 0.2, y - h / 2 - 0.03, z + 0.08, { rz: Math.PI / 2 }));
+  addBox(g, 0.22, 0.04, 0.08, std(0x3a3d42), x + 1.6, y - h / 2 - 0.03, z + 0.08);
+  drawBoard();
+}
+function wrapText(c, text, maxW, maxLines) {
+  const out = [];
+  let line = '';
+  for (const ch of [...text]) {
+    if (c.measureText(line + ch).width > maxW && line) { out.push(line); line = ch.trim() ? ch : ''; if (out.length === maxLines) break; }
+    else line += ch;
+  }
+  if (out.length < maxLines && line) out.push(line);
+  if (out.length === maxLines && out.join('').length < [...text].length) out[maxLines - 1] = out[maxLines - 1].slice(0, -1) + '…';
+  return out;
+}
+function drawBoard() {
+  const c = board.canvas.getContext('2d'), W = board.canvas.width, H = board.canvas.height;
+  const bg = c.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#fdfdfb'); bg.addColorStop(1, '#eef1f3');
+  c.fillStyle = bg; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(120,130,140,.08)'; for (let i = 0; i < 6; i++) c.fillRect(rand(0, W), rand(0, H), rand(80, 300), 3);
+  c.textBaseline = 'alphabetic';
+  c.fillStyle = '#d93a3a'; c.font = `800 52px ${FONT}`; c.textAlign = 'left';
+  c.fillText('📌 보장원 메모판', 40, 72);
+  c.fillStyle = '#5a6a7a'; c.font = `600 26px ${FONT}`;
+  c.fillText("가까이 가서 '📝 메모 붙이기'를 눌러 보세요 · 모두에게 보여요", 44, 112);
+  const list = [...board.notes].sort((a, b) => b.t - a.t).slice(0, NOTE_SHOW);
+  c.textAlign = 'center';
+  if (!list.length) {
+    c.fillStyle = '#8a96a2'; c.font = `700 40px ${FONT}`;
+    const msg = board.status === 'loading' ? '메모를 불러오는 중…' : board.status === 'offline' ? '메모판에 연결할 수 없어요. 잠시 후 다시 볼게요.' : '아직 메모가 없어요. 첫 메모를 붙여 보세요! ✏️';
+    c.fillText(msg, W / 2, H / 2 + 40);
+  }
+  const cols = 8, cw = (W - 80) / cols, ch = 165;
+  list.forEach((n, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    const cx = 40 + col * cw + cw / 2, cy = 150 + row * (ch + 12) + ch / 2;
+    const rot = (hash(n.id.length * 31 + i, n.t % 997) - 0.5) * 0.14;
+    c.save(); c.translate(cx, cy); c.rotate(rot);
+    const nw = cw - 22, nh = ch;
+    c.fillStyle = 'rgba(30,30,40,.18)'; c.fillRect(-nw / 2 + 5, -nh / 2 + 7, nw, nh);
+    c.fillStyle = n.color; c.fillRect(-nw / 2, -nh / 2, nw, nh);
+    c.fillStyle = 'rgba(0,0,0,.06)'; c.fillRect(-nw / 2, -nh / 2, nw, 22);
+    c.fillStyle = '#2b2230'; c.font = `700 25px ${FONT}`;
+    wrapText(c, n.text, nw - 22, 4).forEach((ln, k) => c.fillText(ln, 0, -nh / 2 + 54 + k * 30));
+    c.fillStyle = 'rgba(43,34,48,.6)'; c.font = `600 19px ${FONT}`;
+    c.fillText(`— ${n.nick || '익명'}`, 0, nh / 2 - 12);
+    c.restore();
+  });
+  if (board.notes.length > NOTE_SHOW) { c.fillStyle = '#8a96a2'; c.font = `600 22px ${FONT}`; c.textAlign = 'right'; c.fillText(`최근 ${NOTE_SHOW}개만 보여요`, W - 40, H - 18); }
+  board.tex.needsUpdate = true;
+}
+function ingestNotes(docs) {
+  const all = [];
+  for (const d of docs) {
+    const data = d.data() || {};
+    const arr = Array.isArray(data.notes) ? data.notes.slice(0, NOTE_MAX) : [];
+    for (const n of arr) {
+      if (!n || typeof n.text !== 'string') continue;
+      const text = cleanText(n.text, 60).trim();
+      if (!text) continue;
+      all.push({ owner: d.id, id: cleanText(n.id, 40) || String(Math.random()), text, color: NOTE_COLORS.includes(n.color) ? n.color : NOTE_COLORS[0], nick: cleanText(n.nick, 10), t: Number(n.t) || 0 });
+    }
+  }
+  board.notes = all;
+}
+async function initBoardData() {
+  try {
+    if (!window.claude?.use) throw new Error('local');
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if (!db) throw new Error('local');
+    board.db = db;
+    if (user) {
+      board.uid = await user.id();
+      board.canWrite = await user.can('data.write');
+      board.isAdmin = await user.canEdit();
+    }
+    const timer = setTimeout(() => { if (board.status === 'loading') { board.status = 'offline'; drawBoard(); } }, 10000);
+    db.collection('board').onSnapshot((snap) => {
+      if (!snap.metadata.fromCache) clearTimeout(timer);
+      ingestNotes(snap.docs);
+      board.status = 'ok';
+      drawBoard();
+      renderNoteList();
+    }, () => { clearTimeout(timer); if (!board.notes.length) board.status = 'offline'; drawBoard(); });
+  } catch (e) {
+    board.status = 'local';
+    drawBoard();
+  }
+}
+const myNotes = () => board.notes.filter((n) => n.owner === (board.uid || 'local'));
+function writeNotes(owner, notes) {
+  const body = { notes: notes.map(({ id, text, color, nick, t }) => ({ id, text, color, nick, t })) };
+  board.writing = board.writing.catch(() => {}).then(() => board.db.doc('board/' + owner).set(body));
+  return board.writing;
+}
+const canPost = () => board.status === 'local' || (board.db && board.uid && board.canWrite !== false);
+async function addNote(text, color) {
+  const n = { owner: board.uid || 'local', id: Date.now().toString(36) + Math.floor(rand(0, 1e6)).toString(36), text, color, nick: me.name, t: Date.now() };
+  const mine = [...myNotes()].sort((a, b) => a.t - b.t);
+  while (mine.length >= NOTE_MAX) mine.shift();
+  mine.push(n);
+  if (board.status === 'local' || !board.db) {
+    board.notes = [...board.notes.filter((x) => x.owner !== 'local'), ...mine];
+    drawBoard(); renderNoteList();
+    return;
+  }
+  await writeNotes(board.uid, mine);
+}
+async function removeNote(n) {
+  const rest = board.notes.filter((x) => x.owner === n.owner && x.id !== n.id);
+  if (!board.db) { board.notes = board.notes.filter((x) => x !== n); drawBoard(); renderNoteList(); return; }
+  await writeNotes(n.owner, rest);
+}
+const nearBoard = (A) => A && isInsideXZ(A.x, A.z) && Math.abs(A.x - BOARD.x) < BOARD.w / 2 + 0.6 && A.z < BOARD.z + 2.6;
+function openNotes() {
+  if (!me.A) return;
+  $('#noteSheet').hidden = false;
+  mode.modal = true;
+  keys.clear();
+  const info = $('#noteInfo');
+  if (board.status === 'local') info.textContent = '이 화면에서는 저장되지 않아요 (아티팩트에서 열면 모두에게 공유돼요).';
+  else if (!canPost()) info.textContent = '보기 전용이라 메모를 붙일 수 없어요. 메모 읽기는 가능해요.';
+  else info.textContent = `모두에게 보이고 메모판에 저장돼요. 한 사람당 ${NOTE_MAX}장까지 (넘으면 가장 오래된 메모가 떨어져요).`;
+  $('#noteText').disabled = !canPost();
+  document.querySelector('.note-go').disabled = !canPost();
+  renderNoteList();
+  if (canPost()) setTimeout(() => $('#noteText').focus(), 30);
+  refreshContext(false);
+}
+function closeNotes() {
+  $('#noteSheet').hidden = true;
+  mode.modal = false;
+  $('#noteText').blur();
+  refreshContext(false);
+}
+function renderNoteList() {
+  const box = $('#noteList');
+  if (!box) return;
+  box.replaceChildren();
+  const mine = myNotes().sort((a, b) => b.t - a.t);
+  const others = board.isAdmin ? board.notes.filter((n) => n.owner !== (board.uid || 'local')).sort((a, b) => b.t - a.t) : [];
+  const section = (title, list) => {
+    if (!list.length) return;
+    const h = document.createElement('p'); h.className = 'note-h'; h.textContent = title; box.appendChild(h);
+    for (const n of list) {
+      const row = document.createElement('div'); row.className = 'note-row';
+      const sw = document.createElement('span'); sw.className = 'note-sw'; sw.style.background = n.color;
+      const tx = document.createElement('span'); tx.className = 'note-tx'; tx.textContent = n.nick && list === others ? `${n.text} — ${n.nick}` : n.text;
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'note-del'; del.textContent = '떼기'; del.setAttribute('aria-label', '이 메모 떼기');
+      del.addEventListener('click', async () => { del.disabled = true; try { await removeNote(n); } catch (e) { del.disabled = false; $('#noteInfo').textContent = '메모를 떼지 못했어요. 잠시 후 다시 시도해 주세요.'; } });
+      row.append(sw, tx, del);
+      box.appendChild(row);
+    }
+  };
+  section('내 메모', mine);
+  section('다른 사람 메모 (관리)', others);
+}
+{
+  const colors = document.querySelector('.note-colors');
+  NOTE_COLORS.forEach((col, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'note-color'; b.style.background = col;
+    b.setAttribute('role', 'radio'); b.setAttribute('aria-label', `색 ${i + 1}`);
+    b.addEventListener('click', () => { board.color = col; colors.querySelectorAll('button').forEach((x) => x.setAttribute('aria-checked', x === b ? 'true' : 'false')); });
+    if (!i) b.setAttribute('aria-checked', 'true');
+    colors.appendChild(b);
+  });
+  document.querySelector('.note-go').addEventListener('click', async () => {
+    const text = cleanText($('#noteText').value, 60).trim();
+    if (!text) { const sh = document.querySelector('.note-sheet'); sh.classList.remove('shake'); void sh.offsetWidth; sh.classList.add('shake'); return; }
+    const go = document.querySelector('.note-go');
+    go.disabled = true;
+    try {
+      await addNote(text, board.color);
+      $('#noteText').value = '';
+      closeNotes();
+      mySay('메모 붙였어요! 📌');
+    } catch (e) {
+      $('#noteInfo').textContent = e?.code === 'quota_exceeded' ? '메모판이 가득 찼어요. 오래된 메모를 떼고 다시 붙여 주세요.' : '메모를 붙이지 못했어요. 잠시 후 다시 시도해 주세요.';
+    } finally { go.disabled = !canPost(); }
+  });
+  document.querySelector('.note-cancel').addEventListener('click', closeNotes);
+  $('#noteSheet').addEventListener('click', (e) => { if (e.target === $('#noteSheet')) closeNotes(); });
+  $('#noteText').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNotes(); });
+}
+
+/* =========================================================================
    빌드
    ========================================================================= */
 buildStreet();
@@ -3667,6 +3899,7 @@ buildGate();
 buildTower();
 buildInterior();
 buildVentRoom();
+buildBoard();
 buildWorldColliders();
 interior.traverse((m) => { if (m.isMesh) m.receiveShadow = true; });
 seats.forEach((s) => seatById.set(s.id, s));
@@ -3697,6 +3930,7 @@ $('#enter').disabled = false;
 $('#enter').textContent = '회사로 들어가기';
 applyTimeOfDay();
 setInterval(applyTimeOfDay, 15000);
+initBoardData();
 
 /* =========================================================================
    애니메이션
@@ -3971,6 +4205,7 @@ requestAnimationFrame(frame);
 
 // 디버그/스크린샷용
 window.__office = {
+  board, openNotes, addNote,
   camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
   setHour(h) { TOD.override = h; applyTimeOfDay(); },
   renderAudio, tracks: () => Object.keys(TRACKS), musicZone,
