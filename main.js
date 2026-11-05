@@ -718,6 +718,211 @@ function makeBuilding(w, h, d, x, z, o = {}) {
   scene.add(mesh);
   return mesh;
 }
+/* ---------- 맞은편 맛집 거리 (카페 · 빵집 · 분식 · 식당) ---------- */
+const SHOPS = [
+  { name: '종로 칼국수', sub: '손칼국수 · 만두', w: 12, h: 8, wall: '#d9c3a5', brick: true, awn: ['#2f6b4f', '#f3ead8'], sign: '#2f6b4f', menu: ['바지락 칼국수', '왕만두', '비빔국수'], scene: 'kor' },
+  { name: '광화문 빵집', sub: 'BAKERY', w: 11, h: 10, wall: '#f0e2cf', awn: ['#c0503a', '#fbf3e6'], sign: '#8a3b2a', menu: ['갓 구운 소금빵', '크루아상', '단팥빵'], scene: 'bakery', terrace: true },
+  { name: '세종 떡볶이', sub: '분식', w: 11, h: 7, wall: '#f2cf5b', awn: ['#d6452f', '#ffffff'], sign: '#d6452f', menu: ['국물 떡볶이', '김말이 튀김', '순대'], scene: 'snack' },
+  { name: '은행나무 커피', sub: 'COFFEE & DESSERT', w: 14, h: 9, wall: '#7a4e3a', brick: true, awn: ['#3b2a22', '#e9c46a'], sign: '#3b2a22', menu: ['은행잎 라떼', '바닐라 빈 라떼', '당근 케이크'], scene: 'cafe', terrace: true },
+  { name: '달콤 디저트', sub: '케이크 · 마카롱', w: 12, h: 11, wall: '#f6d5d8', awn: ['#e889a0', '#fff6f8'], sign: '#c95c78', menu: ['딸기 생크림 케이크', '마카롱 세트', '푸딩'], scene: 'dessert', terrace: true },
+  { name: '불판 고깃집', sub: '숯불구이', w: 13, h: 8, wall: '#3a3030', awn: ['#8a1f2a', '#2a1f1f'], sign: '#8a1f2a', menu: ['숯불 삼겹살', '된장찌개', '냉면'], scene: 'bbq' },
+  { name: '브런치 하우스', sub: 'BRUNCH', w: 12, h: 9, wall: '#e6efe8', awn: ['#6aa7a0', '#ffffff'], sign: '#3e7c74', menu: ['팬케이크', '에그 베네딕트', '오렌지 주스'], scene: 'brunch', terrace: true },
+  { name: '광장 피자', sub: 'PIZZA & PASTA', w: 13, h: 10, wall: '#e9d2b4', brick: true, awn: ['#2e7d32', '#f5f1e8', '#c62828'], sign: '#2e7d32', menu: ['마르게리타', '고르곤졸라', '토마토 파스타'], scene: 'pizza', terrace: true },
+  { name: '한그릇 국밥', sub: '24시간', w: 11, h: 7, wall: '#c9b79c', awn: ['#1f4fa0', '#f3ead8'], sign: '#1f4fa0', menu: ['돼지국밥', '순대국밥', '수육'], scene: 'kor' },
+  { name: '아이스크림 가게', sub: 'GELATO', w: 11, h: 8, wall: '#cfe6f2', awn: ['#7cc6e8', '#ffffff'], sign: '#3d8fb8', menu: ['피스타치오', '흑임자', '딸기 소르베'], scene: 'dessert', terrace: true },
+];
+function shopInterior(scene) {
+  return canvasTex(512, 220, (c, w, h) => {
+    const warm = { kor: '#f6c98a', bakery: '#ffd9a0', snack: '#ffcf8a', cafe: '#f2b874', dessert: '#ffd6dc', bbq: '#ff9f6a', brunch: '#ffe3b0', pizza: '#ffc27a' }[scene] || '#ffd29a';
+    const grd = c.createLinearGradient(0, 0, 0, h);
+    grd.addColorStop(0, warm); grd.addColorStop(1, '#6b4632');
+    c.fillStyle = grd; c.fillRect(0, 0, w, h);
+    // 펜던트 조명
+    for (let x = 50; x < w; x += 100) {
+      c.fillStyle = 'rgba(60,40,30,.8)'; c.fillRect(x - 1, 0, 2, 40);
+      const g2 = c.createRadialGradient(x, 50, 2, x, 50, 60); g2.addColorStop(0, 'rgba(255,240,200,1)'); g2.addColorStop(1, 'rgba(255,220,160,0)');
+      c.fillStyle = g2; c.fillRect(x - 60, 0, 120, 120);
+      c.fillStyle = '#3a2a22'; c.beginPath(); c.moveTo(x - 16, 52); c.lineTo(x + 16, 52); c.lineTo(x + 9, 38); c.lineTo(x - 9, 38); c.fill();
+    }
+    // 선반 · 진열대
+    c.fillStyle = 'rgba(90,60,40,.85)';
+    for (const y of [70, 105]) c.fillRect(20, y, w - 40, 5);
+    const items = { bakery: ['#c98a43', '#e0a85a', '#b5732f'], dessert: ['#ffb3c1', '#fff1c1', '#c6e8ff', '#d9a1ff'], cafe: ['#f4efe6', '#7a4e3a', '#e9c46a'], pizza: ['#d9452f', '#f2c14e'], snack: ['#e2452f', '#f2b84b'], kor: ['#f4efe6', '#e8d3b0'], bbq: ['#8a3b2a', '#f4efe6'], brunch: ['#f2c14e', '#ffffff', '#e8774a'] }[scene] || ['#f4efe6'];
+    for (const y of [56, 91]) for (let x = 30; x < w - 30; x += rand(16, 26)) { c.fillStyle = pick(items); c.beginPath(); c.ellipse(x, y + 8, rand(5, 9), rand(5, 8), 0, 0, 7); c.fill(); }
+    // 카운터 + 손님 실루엣
+    c.fillStyle = 'rgba(70,45,32,.95)'; c.fillRect(0, 160, w, 60);
+    for (let i = 0; i < 4; i++) {
+      const x = rand(40, w - 40);
+      c.fillStyle = 'rgba(50,32,25,.75)';
+      c.beginPath(); c.arc(x, 128, 13, 0, 7); c.fill();
+      c.beginPath(); c.ellipse(x, 160, 20, 22, 0, Math.PI, 0); c.fill();
+    }
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(0, 0, w * 0.35, h);
+  });
+}
+function awningTex(cols) {
+  return canvasTex(256, 64, (c, w, h) => {
+    const n = 12;
+    for (let i = 0; i < n; i++) { c.fillStyle = cols[i % cols.length]; c.fillRect((i * w) / n, 0, w / n + 1, h); }
+    c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(0, h - 6, w, 6);
+  });
+}
+function valanceTex(cols) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 64;
+  const g = c.getContext('2d');
+  const n = 16, sw = c.width / n;
+  for (let i = 0; i < n; i++) {
+    g.fillStyle = cols[i % cols.length];
+    g.beginPath(); g.moveTo(i * sw, 0); g.lineTo((i + 1) * sw, 0); g.lineTo((i + 1) * sw, 34); g.arc(i * sw + sw / 2, 34, sw / 2, 0, Math.PI); g.closePath(); g.fill();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function signTex(shop) {
+  return canvasTex(512, 128, (c, w, h) => {
+    c.fillStyle = shop.sign; roundRect(c, 0, 0, w, h, 22); c.fill();
+    c.strokeStyle = 'rgba(255,240,210,.75)'; c.lineWidth = 5; roundRect(c, 8, 8, w - 16, h - 16, 16); c.stroke();
+    c.fillStyle = '#fff6e4'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.shadowColor = 'rgba(255,200,120,.9)'; c.shadowBlur = 14;
+    c.font = `800 52px ${FONT}`; c.fillText(shop.name, w / 2, 54);
+    c.shadowBlur = 0; c.font = `600 22px ${FONT}`; c.fillStyle = 'rgba(255,246,228,.85)'; c.fillText(shop.sub, w / 2, 98);
+  });
+}
+function menuTex(shop) {
+  return canvasTex(256, 320, (c, w, h) => {
+    c.fillStyle = '#2d3a33'; c.fillRect(0, 0, w, h);
+    c.strokeStyle = '#a77b4f'; c.lineWidth = 14; c.strokeRect(0, 0, w, h);
+    c.fillStyle = '#ffe9a8'; c.textAlign = 'center'; c.font = `800 30px ${FONT}`; c.fillText('오늘의 메뉴', w / 2, 52);
+    c.font = `600 24px ${FONT}`; c.fillStyle = '#f4efe6';
+    shop.menu.forEach((m, i) => c.fillText(m, w / 2, 110 + i * 52));
+    c.fillStyle = '#ffb3a0'; c.font = `700 24px ${FONT}`; c.fillText('맛있어요 ♥', w / 2, 284);
+  });
+}
+function facadeFront(shop) {
+  const W = Math.round(shop.w * 24), H = Math.round(shop.h * 24);
+  const day = Math.random();
+  const emiCells = [];
+  const draw = (emi) => (c, w, h) => {
+    c.fillStyle = emi ? '#000' : shop.wall; c.fillRect(0, 0, w, h);
+    if (!emi && shop.brick) {
+      for (let y = 0; y < h; y += 8) for (let x = (y / 8) % 2 ? -8 : 0; x < w; x += 16) { c.fillStyle = `rgba(0,0,0,${0.04 + ((x * 7 + y * 3) % 5) * 0.012})`; c.fillRect(x + 1, y + 1, 14, 6); }
+    }
+    // 위층 창문 (1층 3.8m 위)
+    const top = h - (3.9 * 24);
+    const rows = Math.max(1, Math.floor(top / 72));
+    for (let r = 0; r < rows; r++) for (let i = 0; i < Math.floor(shop.w / 2.6); i++) {
+      const n = Math.floor(shop.w / 2.6), gap = w / n;
+      const x = i * gap + gap * 0.22, y = top - (r + 1) * 72 + 14, ww = gap * 0.56, hh = 46;
+      const lit = ((i * 13 + r * 7 + Math.floor(day * 10)) % 3) !== 0;
+      if (emi) { if (lit) { c.fillStyle = '#ffcf8a'; c.fillRect(x, y, ww, hh); } }
+      else {
+        c.fillStyle = '#e9e1d4'; c.fillRect(x - 3, y - 3, ww + 6, hh + 6);
+        c.fillStyle = lit ? '#ffd9a0' : '#3a4656'; c.fillRect(x, y, ww, hh);
+        c.fillStyle = 'rgba(255,255,255,.65)'; c.fillRect(x + ww / 2 - 1, y, 2, hh);
+        if (lit) { c.fillStyle = 'rgba(200,120,80,.35)'; c.fillRect(x, y, ww * 0.25, hh); c.fillRect(x + ww * 0.75, y, ww * 0.25, hh); }
+      }
+    }
+    if (!emi) { c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(0, 0, w, 6); }
+    void emiCells;
+  };
+  return new THREE.MeshStandardMaterial({ map: canvasTex(W, H, draw(false)), emissiveMap: canvasTex(W, H, draw(true)), emissive: 0xffffff, emissiveIntensity: 0.55, roughness: 0.85 });
+}
+function buildFoodStreet() {
+  const g = street;
+  const FRONT = 32.25;
+  let cursor = -66;
+  const tableTop = pbr('walnut_veneer', 1, 1, { rough: 0.4, fallback: 0x7b4a2c });
+  const metal = std(0x2b2b30, { metalness: 0.6, roughness: 0.4 });
+  const bulbs = [];
+  SHOPS.forEach((shop, si) => {
+    const cx = cursor + shop.w / 2;
+    cursor += shop.w + 1.2;
+    const D = 10;
+    const wallM = std(new THREE.Color(shop.wall).getHex(), { roughness: 0.9 });
+    const bld = new THREE.Mesh(BOX, [wallM, wallM, std(0x4a4440), wallM, wallM, facadeFront(shop)]);
+    bld.scale.set(shop.w, shop.h, D);
+    bld.position.set(cx, shop.h / 2, FRONT + D / 2);
+    bld.castShadow = bld.receiveShadow = true;
+    g.add(bld);
+    // 진열창 (따뜻한 실내)
+    const winW = shop.w - 3.4;
+    const win = addWallPlane(g, winW, 2.5, new THREE.MeshBasicMaterial({ map: shopInterior(shop.scene) }), cx + 0.9, 1.55, FRONT - 0.02, Math.PI);
+    void win;
+    addWallPlane(g, winW, 2.5, new THREE.MeshStandardMaterial({ color: 0xbfd6e2, transparent: true, opacity: 0.12, metalness: 0.9, roughness: 0.05, depthWrite: false }), cx + 0.9, 1.55, FRONT - 0.05, Math.PI).renderOrder = 2;
+    for (const dx of [-winW / 2, winW / 2]) addBox(g, 0.1, 2.6, 0.12, metal, cx + 0.9 + dx, 1.55, FRONT - 0.06);
+    addBox(g, winW, 0.1, 0.12, metal, cx + 0.9, 2.82, FRONT - 0.06);
+    addBox(g, winW + 0.1, 0.3, 0.18, std(0x4a3a30), cx + 0.9, 0.3, FRONT - 0.08);
+    // 문
+    const doorX = cx - shop.w / 2 + 1.15;
+    addWallPlane(g, 1.1, 2.4, new THREE.MeshBasicMaterial({ color: 0xffd9a0 }), doorX, 1.35, FRONT - 0.02, Math.PI);
+    addBox(g, 1.25, 0.08, 0.12, metal, doorX, 2.6, FRONT - 0.05);
+    for (const dx of [-0.6, 0.6]) addBox(g, 0.07, 2.5, 0.12, metal, doorX + dx, 1.35, FRONT - 0.05);
+    addBox(g, 0.03, 0.5, 0.05, std(0xc9a46a, { metalness: 0.8, roughness: 0.3 }), doorX + 0.38, 1.3, FRONT - 0.12);
+    // 어닝 (줄무늬 차양) + 물결 장식
+    const awn = new THREE.Mesh(BOX, new THREE.MeshStandardMaterial({ map: awningTex(shop.awn), roughness: 0.9, side: THREE.DoubleSide }));
+    awn.scale.set(shop.w - 0.4, 0.05, 1.7);
+    awn.position.set(cx, 3.25, FRONT - 0.8);
+    awn.rotation.x = -0.32;
+    g.add(awn);
+    const val = addWallPlane(g, shop.w - 0.4, 0.32, new THREE.MeshStandardMaterial({ map: valanceTex(shop.awn), transparent: true, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.9 }), cx, 2.82, FRONT - 1.62, Math.PI);
+    void val;
+    // 간판
+    const sw = Math.min(shop.w - 2, 7.5);
+    addWallPlane(g, sw, sw / 4, new THREE.MeshBasicMaterial({ map: signTex(shop), toneMapped: false }), cx, 4.2, FRONT - 0.04, Math.PI);
+    // 메뉴 입간판
+    const mx = cx + shop.w / 2 - 1.1, mz = 31.0;
+    const board = new THREE.Group();
+    board.position.set(mx, 0.15, mz);
+    board.rotation.y = Math.PI + 0.25;
+    g.add(board);
+    addBox(board, 0.62, 0.95, 0.05, std(0x8a5a3a), 0, 0.5, 0, { rx: -0.12 });
+    addWallPlane(board, 0.52, 0.65, new THREE.MeshStandardMaterial({ map: menuTex(shop), roughness: 0.9 }), 0, 0.55, 0.06).rotation.x = -0.12;
+    colCircle(mx, mz, 0.36);
+    // 문 옆 화분
+    addModel(g, 'potted_plant_04_2k', 1.2, doorX - 0.95 + (si % 2 ? 0 : 0), 0.15, 31.6, rand(0, 6));
+    colCircle(doorX - 0.95, 31.6, 0.4);
+    // 테라스 자리 (앉을 수 있어요)
+    if (shop.terrace) {
+      for (const tx of [cx - 1.2, cx + 1.9]) {
+        const tz = 30.35;
+        addCyl(g, 0.42, 0.04, tableTop, tx, 0.88, tz);
+        addCyl(g, 0.04, 0.72, metal, tx, 0.51, tz);
+        addCyl(g, 0.24, 0.03, metal, tx, 0.165, tz);
+        addCyl(g, 0.05, 0.09, std(pick([0xffffff, 0xf4efe6, 0xe8774a])), tx - 0.12, 0.945, tz + 0.05);
+        if (Math.random() < 0.7) { addCyl(g, 0.12, 0.012, std(0xffffff), tx + 0.12, 0.91, tz - 0.05); addSph(g, 0.05, std(pick([0xf2c14e, 0xe889a0, 0x8a4b34])), tx + 0.12, 0.95, tz - 0.05); }
+        blob(g, tx, 0.15, tz, 1.6, 1.0);
+        colCircle(tx, tz, 0.45);
+        for (const sx of [-1, 1]) {
+          const chx = tx + sx * 0.68;
+          const ch = new THREE.Group();
+          ch.position.set(chx, 0.15, tz);
+          ch.rotation.y = faceTo(-sx, 0);
+          g.add(ch);
+          const cm = std(pick([0x2b2b30, 0x3e7c74, 0x8a3b2a]), { roughness: 0.6 });
+          addBox(ch, 0.42, 0.05, 0.42, cm, 0, 0.46, 0);
+          addBox(ch, 0.42, 0.42, 0.04, cm, 0, 0.72, -0.2);
+          for (const lx of [-0.18, 0.18]) for (const lz of [-0.18, 0.18]) addBox(ch, 0.03, 0.46, 0.03, metal, lx, 0.23, lz);
+          addSeat('cafe', chx, tz, faceTo(-sx, 0), { h: 0.48, ex: chx + sx * 0.2, ez: tz - 0.85 });
+        }
+      }
+    }
+    // 가게 앞 줄조명
+    for (let i = 0; i <= 14; i++) {
+      const t = i / 14;
+      bulbs.push([cx - shop.w / 2 + t * shop.w, 5.0 - Math.sin(t * Math.PI) * 0.55, FRONT - 0.25]);
+    }
+  });
+  const bulbIM = new THREE.InstancedMesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), bulbs.length);
+  const m4 = new THREE.Matrix4(), col = new THREE.Color();
+  bulbs.forEach(([x, y, z], i) => { bulbIM.setMatrixAt(i, m4.makeTranslation(x, y, z)); bulbIM.setColorAt(i, col.set(pick([0xffd59a, 0xffc070, 0xffe6b8, 0xff9f6b]))); });
+  g.add(bulbIM);
+  // 맛집 거리 조명 (따뜻하게)
+  for (const x of [-40, 0, 40]) {
+    const l = new THREE.PointLight(0xffb36b, 30, 22, 1.6);
+    l.position.set(x, 4.5, 29.5);
+    g.add(l);
+  }
+}
+
 function buildNeighbors() {
   const stone = { frame: '#b9ab98', base: ['#3b4450', '#46505c'], chance: 0.4, metal: 0.1, rough: 0.6 };
   const brick = { frame: '#8e5a46', base: ['#33302f', '#3d3836'], chance: 0.35, metal: 0.05, rough: 0.7 };
@@ -1071,6 +1276,8 @@ const PHRASES = {
   lounge: ['ㅋㅋㅋㅋㅋ', '어제 그거 봤어?', '이 과자 맛있다!', '주말에 뭐 해?', '하하하 😂', '피자 한 조각 더!', '생일 축하해요 🎂', '진짜요?!', '우리 팀 최고 👍', '나도 나도!', '아 배불러~', '그래서 어떻게 됐어?'],
   pingpong: ['나이스! 🏓', '한 판 더!', '스매시!', '으앗!', '11 : 9!', '봐주는 거야~'],
   nap: ['Zzz…', '5분만 더…', '💤', '음냐음냐…', 'Zzz… 회의…', '깨우지 마세요 🤫'],
+  food: ['맛있겠다! 😋', '여기 줄 서 있네!', '빵 냄새 너무 좋다 🥐', '떡볶이 먹고 싶다 🌶️', '커피 한 잔 할까? ☕', '디저트 배는 따로 있지', '오늘 점심은 여기다!', '냄새 미쳤다…'],
+  cafe: ['맛있겠다! 😋', '이 집 라떼 맛집이래 ☕', '케이크 하나 더 시킬까? 🍰', '여기 분위기 좋다', '한 입만~', '사진 먼저 찍고 먹자 📸', '배불러… 행복해', '잘 먹겠습니다!'],
   street: ['광화문 도착!', '은행잎 진짜 예쁘다 🍂', '저 빌딩 불빛 좋다', '점심 먹으러 가자', '버스 왔다!', '산책하기 딱 좋네'],
   office: ['안녕하세요! 👋', '반가워요!', '커피 한잔 하실래요?', '오늘도 화이팅! 💪', '같이 놀아요!', '헤헤 😊'],
 };
@@ -1549,7 +1756,6 @@ function buildInterior() {
     addSeat('pp', 9.5 + 1.85, -2.8, -Math.PI / 2, { h: 0, ex: 9.5 + 2.4, ez: -2.8 }),
   ];
   makePlant(g, 19.2, -1.0, 1.3);
-  makePlant(g, 3.4, -15.2, 1.0);
   // 네온사인
   textPlane(g, '다 같이 쉬어가요 ☕', 6, 1.0, 11.5, 3.0, -15.86, 0, { color: '#ffe3c4', glow: '#ff7b54', size: 120 });
 
@@ -1829,6 +2035,7 @@ const SEAT_INFO = {
   pp: { label: '🏓 탁구 치기', pose: 'stand', state: 'pp', ph: 'pingpong' },
   bed: { label: '🛏️ 눕기', pose: 'lie', state: 'sleep', ph: 'nap' },
   recline: { label: '😌 기대 쉬기', pose: 'sit', state: 'doze', ph: 'nap' },
+  cafe: { label: '☕ 테라스에 앉기', pose: 'sit', state: 'sit', ph: 'cafe' },
 };
 const seatById = new Map();
 function placeOnSeat(A, seat) {
@@ -1884,6 +2091,7 @@ const SPOTS = {
   work: { x: -2.2, z: -13.5, ry: -Math.PI / 2, label: '💻 업무공간' },
   lounge: { x: 6.4, z: -5.6, ry: faceTo(1, -0.6), label: '🛋️ 휴게실' },
   nap: { x: 5.4, z: -18.6, ry: faceTo(0.6, -1), label: '🛏️ 수면실' },
+  food: { x: -9, z: 28.6, ry: 0, label: '🍰 맛집 거리' },
 };
 function cameraBehind(dur = 0) {
   const A = me.A;
@@ -1891,6 +2099,7 @@ function cameraBehind(dur = 0) {
   const tgt = new THREE.Vector3(A.x, A.y + 1.15, A.z);
   const pos = new THREE.Vector3(A.x - Math.sin(A.ry) * dist, A.y + (mode.inside ? 2.4 : 3.2), A.z - Math.cos(A.ry) * dist);
   if (dur) return flyTo(pos, tgt, dur);
+  if (tween) { const r = tween.res; tween = null; r(); }
   camera.position.copy(pos); controls.target.copy(tgt);
   return Promise.resolve();
 }
@@ -1926,7 +2135,7 @@ function seatCamera(seat) {
   else if (seat.kind === 'bed') { d = 2.4; h = 1.8; side = 0.4; }
   const tgt = new THREE.Vector3(seat.x, 0.155 + yOff, seat.z);
   const pos = new THREE.Vector3(seat.x + fx * d + fz * side, tgt.y + h, seat.z + fz * d - fx * side);
-  pos.x = clamp(pos.x, -19.4, 19.4); pos.y = clamp(pos.y, 0.8, 4.5); pos.z = clamp(pos.z, -29.4, -0.6);
+  if (isInsideXZ(seat.x, seat.z)) { pos.x = clamp(pos.x, -19.4, 19.4); pos.y = clamp(pos.y, 0.8, 4.5); pos.z = clamp(pos.z, -29.4, -0.6); }
   flyTo(pos, tgt, 0.8);
 }
 function doAction() {
@@ -2289,7 +2498,8 @@ function phraseKey() {
   const A = me.A;
   if (!A) return '';
   if (A.seat) return SEAT_INFO[A.seat.kind].ph;
-  return isInsideXZ(A.x, A.z) ? 'office' : 'street';
+  if (isInsideXZ(A.x, A.z)) return 'office';
+  return A.z > 24.5 ? 'food' : 'street';
 }
 function refreshContext(force) {
   if (!me.A) return;
@@ -2330,6 +2540,7 @@ addEventListener('resize', onResize);
 buildStreet();
 buildTraffic();
 buildNeighbors();
+buildFoodStreet();
 buildGate();
 buildTower();
 buildInterior();
