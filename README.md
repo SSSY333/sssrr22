@@ -12,13 +12,24 @@
 
 말풍선이 계속 떠오르고, 사람을 탭/클릭하면 대답해요. 🔊 버튼으로 웅성거림·타자 소리·탁구 소리(WebAudio로 합성)를 켜고 끌 수 있습니다.
 
+## 실사 에셋 (모두 CC0 — 출처 표시 불필요)
+`assets/` 폴더 전체 약 2 MB. 원본 1k~2k 스캔을 웹용으로 줄였어요 (텍스처 256~512px WebP, 모델은 meshopt 압축 + 폴리곤 단순화).
+
+| 종류 | 사용한 에셋 (Poly Haven, CC0) |
+| --- | --- |
+| 3D 스캔/모델 | potted_plant_01·02·04, desk_lamp_arm_01, throw_pillows_01, modern_ceiling_lamp_01, rubber_duck_toy, food_apple_01, concrete_cat_statue, alarm_clock_01, ceramic_vase_01, Ottoman_01, coffee_table_round_01, modern_arm_chair_01, sofa_02 |
+| PBR 텍스처 | asphalt_02, pavement_02, large_floor_tiles_02, concrete_floor_02, herringbone_parquet, red_brick_03, oak_veneer_01, walnut_veneer, velour_velvet, rough_linen, rough_wood, large_sandstone_blocks, grey_roof_tiles |
+| HDRI 조명 | sunset, apartment (Poly Haven HDRI를 512px EXR로 줄인 `@pmndrs/assets` 버전, CC0) |
+
+캐릭터는 귀여운 2등신 비율로 코드에서 직접 만들고(반짝이는 눈, 볼터치, 깜빡임), 옷에는 스캔 린넨 노멀맵을 입혔어요.
+
 ## 휴대폰
 - 터치 드래그로 회전, 두 손가락으로 확대/이동
 - 세로 화면에서는 카메라 시야각·위치를 자동으로 조정
 - 모바일에서는 픽셀 비율과 그림자 해상도를 낮춰 가볍게 동작
 
 ## 실행
-빌드가 필요 없는 정적 페이지입니다. three.js는 CDN(jsdelivr, `three@0.160.0`)에서 불러옵니다.
+빌드가 필요 없는 정적 페이지입니다. three.js는 CDN(jsdelivr, `three@0.170.0`)에서 불러옵니다 (용량 계산에서 제외).
 
 ```bash
 python3 -m http.server 8000
@@ -31,3 +42,4 @@ GitHub Pages로 배포하면 휴대폰에서 바로 열 수 있습니다 (Settin
 - `index.html` — 페이지 구조, 입장 화면, 하단 내비게이션
 - `style.css` — UI 스타일 (safe-area 대응)
 - `main.js` — three.js 씬 전체 (거리, 빌딩, 실내, 캐릭터, 애니메이션, 사운드)
+- `assets/` — CC0 스캔 모델(.glb), PBR 텍스처(.webp), HDRI(.exr)
