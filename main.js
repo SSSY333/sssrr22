@@ -2384,8 +2384,10 @@ function throwPaper(A) {
   const from = new THREE.Vector3(A.x + Math.sin(A.ry) * 0.25, A.y + 0.95, A.z + Math.cos(A.ry) * 0.25);
   const to = vent.fireWorld.clone();
   scene.add(m);
-  papers.push({ m, t: 0, from, to, dur: clamp(from.distanceTo(to) / 5, 0.6, 1.4) });
+  const vol = A === me.A ? 1 : nearMe(A);
+  papers.push({ m, t: 0, from, to, dur: clamp(from.distanceTo(to) / 5, 0.6, 1.4), vol });
   A.P.waveT = 0.7;
+  if (vol > 0.05) audio.whoosh(vol);
 }
 function burstSparks() {
   const s = vent.sparks;
@@ -2447,11 +2449,15 @@ function updateVent(t, dt) {
       papers.splice(i, 1);
       vent.boost = Math.min(2, vent.boost + 1.2);
       burstSparks();
+      if (p.vol > 0.05) audio.fwoomp(p.vol);
     }
   }
 }
 const GRAWLIX = ['#@$%&!!', '%$#@!!', '@#$%^&*!', '!@#$%!!', '&%#@!?', '$#@%&*!!', '#$%!!!', '@!#$%&'];
 function startRant(P, dur) {
+  const A = P === me.A?.P ? me.A : [...remotes.values()].find((r) => r.A.P === P)?.A;
+  const vol = P === me.A?.P ? 1 : nearMe(A);
+  if (vol > 0.05) audio.bubbles(dur, vol * 0.9);
   P.rantT = dur;
   P.rantNext = 0;
   P.anger.visible = true;
@@ -2490,7 +2496,16 @@ const audio = {
     if (music.want || !music.cur) musicSet(music.want || musicZone());
   },
   setMix() {},
-  // 효과음은 고양이 쓰다듬을 때 '삐용~' 하나만
+  sfx(fn, v = 1, ...args) {
+    if (!this.ctx) return;
+    const g = this.ctx.createGain(); g.gain.value = v; g.connect(this.master);
+    fn(this.ctx, g, this.ctx.currentTime + 0.01, ...args);
+    setTimeout(() => g.disconnect(), 15000);
+  },
+  pop(v = 1, pitch = 1) { this.sfx(popSound, v, 1, pitch); },
+  whoosh(v = 1) { this.sfx(whooshSound, v); },
+  fwoomp(v = 1) { this.sfx(fwoompSound, v); },
+  bubbles(dur, v = 1) { this.sfx(bubbleSound, v, dur); },
   meow() {
     if (!this.ctx) return;
     this.ctx.resume();
@@ -2853,6 +2868,10 @@ async function renderAudio(list, sr = 22050) {
       const saved = tr.mi;
       for (let k = 0, t = t0 + 0.05; t < t0 + item.sec - 0.6; k++, t += sp) scheduleStep(tr, k, t, sp, gain);
       tr.mi = saved;
+    } else if (item.sfx) {
+      const g = ctx.createGain(); g.gain.value = 1; g.connect(ctx.destination);
+      const fns = { pop: () => popSound(ctx, g, t0 + 0.1), poke: () => { popSound(ctx, g, t0 + 0.1); popSound(ctx, g, t0 + 0.21, 1, 1.5); }, paper: () => { whooshSound(ctx, g, t0 + 0.1); fwoompSound(ctx, g, t0 + 1.0); }, bubbles: () => bubbleSound(ctx, g, t0 + 0.1, item.sec - 0.4) };
+      fns[item.sfx]();
     } else if (item.purr) {
       const g = ctx.createGain(); g.gain.value = 1; g.connect(ctx.destination);
       mrrp(ctx, g, t0 + 0.2);
@@ -2876,6 +2895,54 @@ async function renderAudio(list, sr = 22050) {
   return { wav: btoa(bin), peak, rms: Math.sqrt(sum / n) };
 }
 
+/* ---------- 효과음 (잡음 없이 깨끗한 소리만) ---------- */
+function popSound(ctx, out, t, v = 1, pitch = 1) {
+  // 말할 때 '뾱'
+  const o = ctx.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(520 * pitch, t); o.frequency.exponentialRampToValueAtTime(1250 * pitch, t + 0.06);
+  const g = env(ctx, t, 0.32 * v, 0.004, 0.09);
+  const o2 = ctx.createOscillator(); o2.type = 'triangle'; o2.frequency.setValueAtTime(1040 * pitch, t); o2.frequency.exponentialRampToValueAtTime(2300 * pitch, t + 0.05);
+  const g2 = env(ctx, t, 0.06 * v, 0.003, 0.05);
+  o.connect(g); o2.connect(g2); g2.connect(g); g.connect(out);
+  o.start(t); o.stop(t + 0.16); o2.start(t); o2.stop(t + 0.1);
+}
+function whooshSound(ctx, out, t) {
+  // 종이 휙 — 부드러운 바람 소리 + 사인 글라이드
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf(ctx);
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.2;
+  bp.frequency.setValueAtTime(380, t); bp.frequency.exponentialRampToValueAtTime(1400, t + 0.35); bp.frequency.exponentialRampToValueAtTime(600, t + 0.7);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2200;
+  const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.32, t + 0.18); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
+  src.connect(bp); bp.connect(lp); lp.connect(g); g.connect(out);
+  src.start(t, 0.3, 0.8);
+  const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(300, t); o.frequency.exponentialRampToValueAtTime(700, t + 0.4);
+  const og = env(ctx, t, 0.05, 0.12, 0.45); o.connect(og); og.connect(out); o.start(t); o.stop(t + 0.65);
+}
+function fwoompSound(ctx, out, t) {
+  // 불 속에 들어가며 '화르륵' — 낮은 울림 + 위로 퍼지는 따뜻한 소리
+  const o = ctx.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(180, t + 0.25);
+  const g = env(ctx, t, 0.45, 0.02, 0.5); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.6);
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf(ctx);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(300, t); lp.frequency.exponentialRampToValueAtTime(1600, t + 0.3); lp.frequency.exponentialRampToValueAtTime(500, t + 0.9);
+  const ng = ctx.createGain(); ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(0.28, t + 0.08); ng.gain.exponentialRampToValueAtTime(0.0001, t + 1.0);
+  src.connect(lp); lp.connect(ng); ng.connect(out); src.start(t, 0.7, 1.1);
+  for (let i = 0; i < 3; i++) popSound(ctx, out, t + 0.12 + i * 0.09, 0.35, 1.3 + i * 0.25);
+}
+function bubbleSound(ctx, out, t0, dur, v = 1) {
+  // 욕할 때 '보글보글' — 위로 튀는 물방울 소리를 빠르게 이어서
+  let t = t0;
+  let k = 0;
+  while (t < t0 + dur) {
+    const f = 380 + hash(k, 3) * 700;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * (1.7 + hash(k, 5) * 0.6), t + 0.045);
+    const g = env(ctx, t, (0.16 + hash(k, 7) * 0.1) * v, 0.003, 0.06);
+    o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.09);
+    t += 0.055 + hash(k, 9) * 0.075;
+    k++;
+  }
+}
 /* ---------- 고양이 소리: '삐용~' ---------- */
 function mrrp(ctx, out, t) {
   const o = ctx.createOscillator(); o.type = 'sawtooth';
@@ -3122,9 +3189,11 @@ function doAction() {
     refreshContext(true);
   }
 }
+const nearMe = (A) => (me.A && A ? clamp(1.15 - Math.hypot(A.x - me.A.x, A.z - me.A.z) / 14, 0, 1) : 0);
 function mySay(text, style = 'normal') {
   if (!me.A) return;
   say(me.A.P, text, 3.4, style);
+  audio.pop();
   lastSay = { t: text, n: ++sayN };
   sendPresence(true);
 }
@@ -3241,7 +3310,7 @@ function applyRemote(peer) {
   if (pr.say && pr.say.n !== R.sayN) {
     R.sayN = pr.say.n;
     const t = cleanText(pr.say.t, 40);
-    if (t) say(R.A.P, t, 3.4, POKE_FROM.includes(t) || POKE_TO.includes(t) ? 'poke' : 'normal');
+    if (t) { say(R.A.P, t, 3.4, POKE_FROM.includes(t) || POKE_TO.includes(t) ? 'poke' : 'normal'); const v = nearMe(R.A) * 0.6; if (v > 0.05) audio.pop(v, 0.9); }
   }
   // 나를 찔렀나?
   // 고양이 쓰다듬기
@@ -3260,6 +3329,7 @@ function applyRemote(peer) {
     R.pokeN = pr.poke.n;
     if (myPeer && pr.poke.to === myPeer && me.A && mode.playing) {
       me.A.P.hopT = 0.55;
+      setTimeout(() => audio.pop(1, 1.5), 110);
       if (!me.A.seat) me.A.ry = Math.atan2(R.A.x - me.A.x, R.A.z - me.A.z);
       mySay(pick(POKE_TO), 'poke');
     }
@@ -3335,6 +3405,7 @@ function poke(R) {
   if (!me.A.seat) me.A.ry = Math.atan2(R.A.x - me.A.x, R.A.z - me.A.z);
   me.A.P.waveT = 0.9;
   mySay(pick(POKE_FROM), 'poke');
+  setTimeout(() => audio.pop(1, 1.5), 110);
 }
 
 /* =========================================================================
