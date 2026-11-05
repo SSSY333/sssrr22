@@ -839,11 +839,11 @@ const GEO = {
 };
 // 고를 수 있는 캐릭터 5종 (성별 구분 없음)
 const DESIGNS = [
-  { name: '귤귤', skin: 0xf6d3b8, shirt: 0xf08a4b, pants: 0x4a3a5a, hair: 0x5a3a28, shoe: 0xf2efe8, acc: 'beanie', accColor: 0xf2c14e },
-  { name: '민트', skin: 0xefc3a2, shirt: 0x7cc6b4, pants: 0x2f3542, hair: 0x17120f, shoe: 0x2a2522, acc: 'glasses', long: true },
-  { name: '곰돌', skin: 0xf8ddc8, shirt: 0xc89b6d, pants: 0x6b5a4a, hair: 0x6b4630, shoe: 0x8a4b34, acc: 'bear', accColor: 0xb07e55 },
-  { name: '하늘', skin: 0xe2ad8a, shirt: 0x6a9be0, pants: 0xe8e2d6, hair: 0x241a15, shoe: 0x3a4a6a, acc: 'cap', accColor: 0xe06b7a },
-  { name: '보라', skin: 0xf6dcc4, shirt: 0xb49ad8, pants: 0x2c3e66, hair: 0xc08a5a, shoe: 0xf2efe8, acc: 'phones', accColor: 0xf4efe6, long: true },
+  { skin: 0xf6d3b8, shirt: 0xf08a4b, pants: 0x4a3a5a, hair: 0x5a3a28, shoe: 0xf2efe8, acc: 'beanie', accColor: 0xf2c14e },
+  { skin: 0xefc3a2, shirt: 0x7cc6b4, pants: 0x2f3542, hair: 0x17120f, shoe: 0x2a2522, acc: 'glasses', long: true },
+  { skin: 0xf8ddc8, shirt: 0xc89b6d, pants: 0x6b5a4a, hair: 0x6b4630, shoe: 0x8a4b34, acc: 'bear', accColor: 0xb07e55 },
+  { skin: 0xe2ad8a, shirt: 0x6a9be0, pants: 0xe8e2d6, hair: 0x241a15, shoe: 0x3a4a6a, acc: 'cap', accColor: 0xe06b7a },
+  { skin: 0xf6dcc4, shirt: 0xb49ad8, pants: 0x2c3e66, hair: 0xc08a5a, shoe: 0xf2efe8, acc: 'phones', accColor: 0xf4efe6, long: true },
 ];
 const skinCache = new Map();
 function skinMat(c) {
@@ -2165,12 +2165,13 @@ function renderThumbs() {
     r.setPixelRatio(1); r.setSize(140, 170);
     r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping;
   }
-  DESIGNS.forEach((d, i) => {
+  DESIGNS.forEach((_d, i) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'design';
     b.setAttribute('role', 'radio');
     b.dataset.i = i;
+    b.setAttribute('aria-label', `캐릭터 ${i + 1}`);
     if (r) {
       const P = makePerson(i, { cast: false });
       P.blob.visible = false;
@@ -2178,14 +2179,11 @@ function renderThumbs() {
       sc.add(P.g);
       r.render(sc, cam);
       const img = document.createElement('img');
-      img.alt = d.name;
+      img.alt = '';
       img.src = r.domElement.toDataURL('image/png');
       b.appendChild(img);
       sc.remove(P.g);
     }
-    const sp = document.createElement('span');
-    sp.textContent = d.name;
-    b.appendChild(sp);
     b.addEventListener('click', () => pickDesign(i));
     box.appendChild(b);
   });
