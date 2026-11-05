@@ -51,8 +51,12 @@
 - 무작위로 30,000걸음 걸어 보는 자동 테스트에서 겹침 0, 벽 통과 0, 바닥 이탈 0.
 
 ## 멀티플레이
-claude.ai 아티팩트로 열면 `room` 기능으로 같은 페이지를 연 사람들이 실시간으로 보여요
-(위치 · 자세 · 앉은 자리 · 말풍선 · 콕 찌르기를 presence로 공유). 일반 정적 호스팅에서는 혼자 돌아다니는 모드로 동작합니다.
+- **GitHub Pages 등 일반 웹 주소**: [Trystero](https://github.com/dmotz/trystero)로 서버 없이 브라우저끼리 직접(WebRTC) 연결해요.
+  처음 서로를 찾을 때만 공개 Nostr 릴레이를 쓰고, 위치·자세·말풍선·콕 찌르기 같은 실제 데이터는 브라우저 사이로 바로 오가요.
+  같은 주소를 연 사람은 모두 같은 방(lobby)에 들어와요.
+- **claude.ai 아티팩트**: 아티팩트의 `room` 기능으로 연결돼요.
+- **메모판**: 아티팩트에서는 서버(db)에 저장돼요. GitHub Pages에서는 서버가 없어서, 내 메모는 내 브라우저에 저장되고 *지금 접속 중인 사람들*에게만 보여요.
+- 회사·학교 네트워크처럼 WebRTC를 막는 곳에서는 연결되지 않을 수 있어요 (그때는 혼자 모드로 계속 돌아다닐 수 있어요).
 
 ## 실사 에셋 (모두 CC0 — 출처 표시 불필요)
 `assets/` 폴더 전체 약 2 MB. 원본 1k~2k 스캔을 웹용으로 줄였어요 (텍스처 256~512px WebP, 모델은 meshopt 압축 + 폴리곤 단순화).
@@ -92,7 +96,7 @@ python3 -m http.server 8000
 # http://localhost:8000 접속 (같은 Wi-Fi의 휴대폰에서는 http://<PC IP>:8000)
 ```
 
-GitHub Pages로 배포하면 휴대폰에서 바로 열 수 있습니다 (Settings → Pages → 브랜치 선택).
+GitHub Pages: 저장소 Settings → Pages → Source를 'Deploy from a branch', 브랜치를 이 브랜치 / (root)로 저장하면 `https://sssy333.github.io/sssrr22/` 에서 열려요.
 
 ## 파일
 - `index.html` — 페이지 구조, 입장 화면, 하단 내비게이션

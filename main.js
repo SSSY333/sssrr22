@@ -3488,13 +3488,57 @@ function updateRemotes(dt) {
     syncAvatar(A);
   }
 }
+/* 아티팩트 밖(GitHub Pages 등)에서는 Trystero로 브라우저끼리 직접 연결해요 (서버 없음) */
+const P2P = { tr: null, notes: null };
+async function connectP2P() {
+  const { joinRoom, selfId } = await import('https://cdn.jsdelivr.net/npm/trystero@0.26.0/+esm');
+  const tr = joinRoom({ appId: 'bojangwon-gwanghwamun-office-v1' }, 'lobby');
+  P2P.tr = tr;
+  const pres = tr.makeAction('pres');
+  const peersMap = new Map();
+  const subs = [];
+  let mine = {};
+  const mk = (id, presence, isMe) => Object.freeze({ peer: id, by: null, isMe, sameTab: isMe, kind: 'viewer', guest: false, presence: Object.freeze(presence), updatedAt: Date.now() });
+  peersMap.set(selfId, mk(selfId, {}, true));
+  const emit = (ch) => { const peers = [...peersMap.values()]; subs.forEach((f) => f({ peers, joined: ch.joined || [], left: ch.left || [], updated: ch.updated || [] })); };
+  pres.onMessage = (data, meta) => {
+    const id = meta?.peerId;
+    if (!id || !data || typeof data !== 'object' || Array.isArray(data)) return;
+    if (JSON.stringify(data).length > 4096) return;
+    const isNew = !peersMap.has(id);
+    const p = mk(id, data, false);
+    peersMap.set(id, p);
+    emit(isNew ? { joined: [p] } : { updated: [p] });
+  };
+  tr.onPeerJoin = (id) => { pres.send(mine, { target: id }); P2P.notesJoin?.(id); };
+  tr.onPeerLeave = (id) => {
+    const p = peersMap.get(id);
+    if (p) { peersMap.delete(id); emit({ left: [p] }); }
+    P2P.notesLeave?.(id);
+  };
+  addEventListener('pagehide', () => { try { tr.leave(); } catch (e) { /* 무시 */ } });
+  boardP2P(tr);
+  return {
+    presence(patch) {
+      mine = { ...mine, ...patch };
+      for (const k of Object.keys(mine)) if (mine[k] === null) delete mine[k];
+      peersMap.set(selfId, mk(selfId, mine, true));
+      pres.send(mine);
+      return Promise.resolve();
+    },
+    onPeers(f) { subs.push(f); setTimeout(() => emit({ joined: [...peersMap.values()] }), 0); return () => {}; },
+  };
+}
 (async () => {
   try {
-    if (!window.claude?.use) return;
-    room = await window.claude.use('room');
-    if (!room) return;
-    room.onPeers(onPeers, () => { room = null; });
-  } catch (e) { room = null; }
+    if (window.claude?.use) {
+      room = await window.claude.use('room');
+      if (room) { room.onPeers(onPeers, () => { room = null; }); return; }
+    }
+    if (location.protocol === 'file:') return;
+    room = await connectP2P();
+    room.onPeers(onPeers);
+  } catch (e) { console.warn('멀티플레이 연결 실패 — 혼자 모드로 계속해요', e); room = null; }
 })();
 
 /* =========================================================================
@@ -3933,19 +3977,40 @@ function drawBoard() {
   if (board.notes.length > NOTE_SHOW) { c.fillStyle = '#8a96a2'; c.font = `600 22px ${FONT}`; c.textAlign = 'right'; c.fillText(`최근 ${NOTE_SHOW}개만 보여요`, W - 40, H - 18); }
   board.tex.needsUpdate = true;
 }
-function ingestNotes(docs) {
-  const all = [];
-  for (const d of docs) {
-    const data = d.data() || {};
-    const arr = Array.isArray(data.notes) ? data.notes.slice(0, NOTE_MAX) : [];
-    for (const n of arr) {
-      if (!n || typeof n.text !== 'string') continue;
-      const text = cleanText(n.text, 60).trim();
-      if (!text) continue;
-      all.push({ owner: d.id, id: cleanText(n.id, 40) || String(Math.random()), text, color: NOTE_COLORS.includes(n.color) ? n.color : NOTE_COLORS[0], nick: cleanText(n.nick, 10), t: Number(n.t) || 0 });
-    }
+function sanitizeNotes(owner, arr) {
+  const out = [];
+  for (const n of Array.isArray(arr) ? arr.slice(0, NOTE_MAX) : []) {
+    if (!n || typeof n.text !== 'string') continue;
+    const text = cleanText(n.text, 60).trim();
+    if (!text) continue;
+    out.push({ owner, id: cleanText(n.id, 40) || String(Math.random()), text, color: NOTE_COLORS.includes(n.color) ? n.color : NOTE_COLORS[0], nick: cleanText(n.nick, 10), t: Number(n.t) || 0 });
   }
-  board.notes = all;
+  return out;
+}
+function ingestNotes(docs) {
+  board.notes = docs.flatMap((d) => sanitizeNotes(d.id, (d.data() || {}).notes));
+}
+// 아티팩트 밖: 내 메모는 이 브라우저에 저장, 접속 중인 사람끼리 서로 보여줘요
+const LOCAL_NOTES_KEY = 'bjw.notes';
+const noteBody = (list) => list.map(({ id, text, color, nick, t }) => ({ id, text, color, nick, t }));
+function saveLocalNotes() {
+  store.set(LOCAL_NOTES_KEY, JSON.stringify(noteBody(myNotes())));
+  if (P2P.notes) P2P.notes.send(noteBody(myNotes()));
+}
+function loadLocalNotes() {
+  try { board.notes = [...board.notes.filter((n) => n.owner !== 'local'), ...sanitizeNotes('local', JSON.parse(store.get(LOCAL_NOTES_KEY) || '[]'))]; } catch (e) { /* 무시 */ }
+}
+function boardP2P(tr) {
+  const act = tr.makeAction('notes');
+  P2P.notes = act;
+  act.onMessage = (data, meta) => {
+    const id = meta?.peerId;
+    if (!id || board.db) return;
+    board.notes = [...board.notes.filter((n) => n.owner !== 'p2p:' + id), ...sanitizeNotes('p2p:' + id, data)];
+    drawBoard(); renderNoteList();
+  };
+  P2P.notesJoin = (id) => { if (!board.db) act.send(noteBody(myNotes()), { target: id }); };
+  P2P.notesLeave = (id) => { board.notes = board.notes.filter((n) => n.owner !== 'p2p:' + id); drawBoard(); };
 }
 async function initBoardData() {
   try {
@@ -3968,6 +4033,7 @@ async function initBoardData() {
     }, () => { clearTimeout(timer); if (!board.notes.length) board.status = 'offline'; drawBoard(); });
   } catch (e) {
     board.status = 'local';
+    loadLocalNotes();
     drawBoard();
   }
 }
@@ -3985,6 +4051,7 @@ async function addNote(text, color) {
   mine.push(n);
   if (board.status === 'local' || !board.db) {
     board.notes = [...board.notes.filter((x) => x.owner !== 'local'), ...mine];
+    saveLocalNotes();
     drawBoard(); renderNoteList();
     return;
   }
@@ -3992,7 +4059,7 @@ async function addNote(text, color) {
 }
 async function removeNote(n) {
   const rest = board.notes.filter((x) => x.owner === n.owner && x.id !== n.id);
-  if (!board.db) { board.notes = board.notes.filter((x) => x !== n); drawBoard(); renderNoteList(); return; }
+  if (!board.db) { board.notes = board.notes.filter((x) => x !== n); saveLocalNotes(); drawBoard(); renderNoteList(); return; }
   await writeNotes(n.owner, rest);
 }
 const nearBoard = (A) => A && isInsideXZ(A.x, A.z) && Math.abs(A.x - BOARD.x) < BOARD.w / 2 + 0.6 && A.z < BOARD.z + 2.6;
@@ -4002,7 +4069,7 @@ function openNotes() {
   mode.modal = true;
   keys.clear();
   const info = $('#noteInfo');
-  if (board.status === 'local') info.textContent = '이 화면에서는 저장되지 않아요 (아티팩트에서 열면 모두에게 공유돼요).';
+  if (board.status === 'local') info.textContent = `내 메모는 이 브라우저에 저장되고, 지금 접속 중인 사람들에게 보여요. 한 사람당 ${NOTE_MAX}장까지.`;
   else if (!canPost()) info.textContent = '보기 전용이라 메모를 붙일 수 없어요. 메모 읽기는 가능해요.';
   else info.textContent = `모두에게 보이고 메모판에 저장돼요. 한 사람당 ${NOTE_MAX}장까지 (넘으면 가장 오래된 메모가 떨어져요).`;
   $('#noteText').disabled = !canPost();
