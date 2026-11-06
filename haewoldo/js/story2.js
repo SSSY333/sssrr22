@@ -834,7 +834,7 @@ function computeAction() {
   if (G.working || G.fishing) return G.ctxAction;
   if (P.carried) return { label: '내리기', icon: '🧍', fn: () => { stopPiggy(); } };
   if (P.seat) return { label: '일어나기', icon: '🧍', fn: standUpPlayer };
-  if (d.visible && d.map === P.map && dist(d, P) < 1.9) return { label: S.rel.flags.met ? detLabel().slice(0, 7) : '말 걸기', icon: '💬', fn: () => interactWith(d), hot: !S.rel.flags.met };
+  if (d.visible && d.map === P.map && dist(d, P) < 1.9 && !(S.comp && d.state === 'comp' && S.rel.flags.met)) return { label: S.rel.flags.met ? detLabel().slice(0, 7) : '말 걸기', icon: '💬', fn: () => interactWith(d), hot: !S.rel.flags.met };
   if (canWork() && !M.interior) return { label: JOBS[S.job].act, icon: JOBS[S.job].icon, fn: doWork, hot: true };
   for (const a of G.actors) if (a !== P && a !== d && a.visible && a.map === P.map && dist(a, P) < 1.6) return { label: a.pet ? '쓰다듬기' : '말 걸기', icon: a.pet ? (a.pet.kind === 'cat' ? '🐱' : '🐶') : '💬', fn: () => interactWith(a) };
   if (M.interior) {

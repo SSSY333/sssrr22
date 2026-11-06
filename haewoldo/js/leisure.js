@@ -112,7 +112,7 @@ objSprite = function (o) {
 function leisureFireOn() {
   if (!S || S.weather === 'rain' || S.weather === 'storm' || S.weather === 'snow') return false;
   if (S.min < 17.5 * 60 && S.min > 6 * 60) return false;
-  return G.actors.some(a => a.visible && a.seat && a.seat.bench === 'camp') || (G.player.map === 'island' && Math.hypot(G.player.x - P_('camp')[0], G.player.y - P_('camp')[1]) < 4.5);
+  return G.actors.some(a => a.visible && a.seat && a.seat.bench === 'camp') || (G.player.map === 'island' && Math.hypot(G.player.x - 28.5, G.player.y - 57.5) < 3.6);
 }
 
 /* ---------------- 지도에 배치 ---------------- */
@@ -123,21 +123,36 @@ function leisureBuild() {
   const clear = (x0, y0, x1, y1) => { m.objects = m.objects.filter(o => { const inn = o.x >= x0 && o.x <= x1 && o.y >= y0 && o.y <= y1; if (inn && !o.water) { m.block[o.y * W + o.x] = 0; return false; } return true; }); };
   const put = (kind, x, y, extra = {}) => { const o = Object.assign({ kind, x, y, solid: extra.solid !== false }, extra); m.objects.push(o); if (o.solid) for (let yy = y; yy < y + (o.fh || 1); yy++) for (let xx = x; xx < x + (o.fw || 1); xx++) m.block[yy * W + xx] = 1; return o; };
   const blockT = (x, y) => { m.block[y * W + x] = 1; };
-  /* 1) 캠핑존 — 마을 서쪽의 빈 풀밭 */
-  clear(25, 52, 35, 61);
-  for (let y = 52; y <= 60; y++) for (let x = 25; x <= 35; x++) if (tileAt(x, y, m) !== T.PATH) setT(x, y, T.GRASS);
-  for (let y = 58; y <= 61; y++) setT(30, y, T.DIRT);
-  for (const [x, y] of [[29, 56], [30, 56], [31, 56], [29, 57], [31, 57], [29, 58], [30, 58], [31, 58]]) setT(x, y, T.DIRT);
-  for (const [x, y] of [[26, 59], [27, 60], [34, 59], [33, 60], [25, 55], [35, 56], [26, 53], [34, 53]]) setT(x, y, T.FLOWER);
-  put('tent', 26, 53, { fw: 2, fh: 2, v: 0 }); put('tent', 33, 53, { fw: 2, fh: 2, v: 1 });
-  put('campfire', 30, 57);
-  put('campChair', 29, 57, { rot: 1, seatOf: 'camp' }); put('campChair', 31, 57, { rot: 3, seatOf: 'camp' }); put('campChair', 30, 56, { rot: 0, seatOf: 'camp' }); put('campChair', 30, 58, { rot: 2, seatOf: 'camp' });
-  put('campTable', 32, 58); put('woodbox', 28, 59); put('icebox', 33, 58); put('basket', 27, 58, { solid: false });
-  put('campLantern', 28, 56, { light: true }); put('campLantern', 32, 56, { light: true });
-  put('woodSign', 31, 60);
-  for (const [x, y] of [[25, 57], [25, 58], [35, 58], [35, 59]]) put('lowfence', x, y);
-  m.benches.camp = { name: '캠핑 의자', place: 'camp', leisure: 'camp', seats: [[29, 57], [31, 57], [30, 56], [30, 58]], stand: [[28, 57], [32, 57], [30, 55], [30, 59]], face: [1, 3, 0, 2], behind: [0, 0, 0, 1], pairs: [[0, 2], [1, 2], [0, 3], [1, 3]] };
-  POI.camp = [30.5, 59.5]; POI.campCenter = [30.5, 57.5];
+  /* 1) 캠핑존 — 마을 서쪽 풀밭. 텐트 구역(위) · 휴식 구역(왼쪽 아래) · 바비큐 구역(오른쪽 아래) · 가운데 흙길 */
+  const CX0 = 25, CY0 = 50, CX1 = 37, CY1 = 61;
+  clear(CX0, CY0, CX1, CY1);
+  for (let y = CY0; y <= CY1; y++) for (let x = CX0; x <= CX1; x++) if (!isRoadT(tileAt(x, y, m))) setT(x, y, T.GRASS);
+  // 흙길: 출입구(아래) → 가운데 → 양쪽 텐트, 텐트 아래 평탄한 흙바닥
+  for (let y = 54; y <= CY1 + 1; y++) setT(31, y, T.DIRT);
+  for (let x = 26; x <= 36; x++) setT(x, 54, T.DIRT);
+  for (const [x0, y0] of [[26, 51], [34, 51]]) for (let y = y0; y <= y0 + 2; y++) for (let x = x0 - 1; x <= x0 + 2; x++) setT(x, y, T.DIRT);
+  // 휴식 구역 화로 주변 흙바닥, 바비큐 구역 돌바닥
+  for (let y = 56; y <= 59; y++) for (let x = 26; x <= 29; x++) if ((x + y) % 5) setT(x, y, T.DIRT);
+  for (let y = 56; y <= 59; y++) for (let x = 33; x <= 36; x++) setT(x, y, T.ALLEY);
+  for (const [x, y] of [[29, 52], [33, 52], [26, 60], [36, 60], [30, 51], [32, 51]]) setT(x, y, T.FLOWER);
+  // 텐트 구역 — 입구는 모두 앞(아래) 방향
+  put('tent', 26, 51, { fw: 2, fh: 2, v: 0, tent: 'A' }); put('tent', 34, 51, { fw: 2, fh: 2, v: 1, tent: 'B' });
+  put('campLantern', 29, 53, { light: true }); put('campLantern', 33, 53, { light: true });
+  // 휴식 구역 — 화로를 둘러싼 의자 4 · 작은 테이블 · 돗자리 · 화분
+  put('campfire', 28, 57);
+  put('campChair', 27, 57, { rot: 1, seatOf: 'camp' }); put('campChair', 29, 57, { rot: 3, seatOf: 'camp' }); put('campChair', 28, 56, { rot: 0, seatOf: 'camp' }); put('campChair', 28, 58, { rot: 2, seatOf: 'camp' });
+  put('woodbox', 26, 56); put('campTable', 26, 59); put('pot', 30, 60); put('mat', 27, 60, { fw: 2, fh: 1, flat: true, solid: false, keyFix: 27 + 60 - 0.5 }); m.block[60 * W + 27] = 1; m.block[60 * W + 28] = 1;
+  // 바비큐 구역 — 그릴 · 식탁 · 의자 · 식재료 보관함 · 작은 조명
+  put('grill', 35, 57); put('campTable2', 33, 59, { fw: 2, fh: 1 }); put('icebox', 36, 59); put('campLantern', 36, 56, { light: true });
+  put('campChair', 33, 58, { rot: 0, seatOf: 'bbq' }); put('campChair', 34, 58, { rot: 0, seatOf: 'bbq' });
+  put('woodSign', 29, 62);
+  // 울타리 — 모서리 자동 연결, 출입구(아래 가운데)는 비움
+  for (let x = CX0; x <= CX1; x++) { put('fence2', x, CY0); if (x < 30 || x > 32) put('fence2', x, CY1); }
+  for (let y = CY0 + 1; y < CY1; y++) { put('fence2', CX0, y); put('fence2', CX1, y); }
+  m.benches.camp = { name: '캠핑 의자', place: 'camp', leisure: 'camp', seats: [[27, 57], [29, 57], [28, 56], [28, 58]], stand: [[26, 57], [30, 57], [28, 55], [28, 59]], face: [1, 3, 0, 2], behind: [0, 0, 0, 1], pairs: [[0, 2], [1, 2], [0, 3], [1, 3]] };
+  m.benches.bbq = { name: '바비큐 식탁', place: 'camp', leisure: 'camp', seats: [[33, 58], [34, 58]], stand: [[33, 57], [34, 57]], face: [0, 0], pairs: [[0, 1]] };
+  m.benches.campMat = { name: '캠핑 돗자리', place: 'camp', leisure: 'mat', seats: [[27, 60], [28, 60]], stand: [[27, 59], [29, 60]], face: [0, 0], ground: true, pairs: [[0, 1]] };
+  POI.camp = [31.5, 59.5]; POI.campCenter = [31.5, 56.5]; POI.grillCook = [35.5, 58.5]; POI.tentA = [27.0, 53.5]; POI.tentB = [35.0, 53.5];
   /* 2) 돗자리 — 바다가 보이는 해변 위 잔디 */
   const CE = (x) => { let y = 64; while (inMap(x, y + 1, m) && tileAt(x, y + 1, m) !== T.WATER) y++; return y; };
   const findSpot = (w, h, xs) => { for (const x0 of xs) { const yb = CE(x0) - 11; for (let y0 = yb; y0 >= yb - 5; y0--) { let ok = true; for (let y = y0 - 1; y <= y0 + h; y++) for (let x = x0 - 1; x <= x0 + w; x++) { const t = tileAt(x, y, m); if (!(t === T.GRASS || t === T.FLOWER || t === T.SAND) || m.buildings.some(b => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h)) ok = false; } if (ok) return [x0, y0]; } } return null; };
@@ -171,7 +186,7 @@ function leisureBuild() {
   POI.manbokSeat = [WX + 1.5, 60.5];
   for (const bk of Object.values(m.benches)) if (bk.leisure) for (const s of bk.stand) { if (m.block[s[1] * W + s[0]]) m.block[s[1] * W + s[0]] = 0; if (tileAt(s[0], s[1], m) === T.WATER) setT(s[0], s[1], T.SAND); }
   // 장소 판정
-  m.places.camp = { name: '캠핑존', c: [30.5, 57], r: 4.6 }; PLACE_DEFS.camp = { name: '캠핑존' };
+  m.places.camp = { name: '캠핑존', test: (x, y) => x >= 25 && x <= 38 && y >= 50 && y <= 62 }; PLACE_DEFS.camp = { name: '캠핑존' };
   m.places.picnic = { name: '바닷가 돗자리', test: (x, y) => (x >= sA[0] - 1 && x <= sA[0] + 3 && y >= sA[1] - 1 && y <= sA[1] + 2) || (x >= sB[0] - 1 && x <= sB[0] + 3 && y >= sB[1] - 1 && y <= sB[1] + 3) }; PLACE_DEFS.picnic = { name: '바닷가 돗자리' };
   m.order = ['camp', 'picnic', ...m.order.filter(k => k !== 'camp' && k !== 'picnic')];
 }
@@ -351,7 +366,7 @@ async function coupleAct(k, id) {
     const P = G.player, d = G.det; d.talking = true;
     const dir = Math.sign(d.x - P.x + (d.y - P.y)) || 1, toward = (a, b, px) => { const sx = (iso(b.x, b.y)[0] - iso(a.x, a.y)[0]) > 0 ? 1 : -1; a.ox = sx * px; };
     const reset = () => { P.ox = P.oy = d.ox = d.oy = 0; P.lean = d.lean = false; P.lie = d.lie = 0; P.zzz = d.zzz = false; P.prop = d.prop = null; };
-    const lines = COUPLE_LINES[id] || ['…'];
+    const lines = (G._coupleOverride && G._coupleOverride[id]) || COUPLE_LINES[id] || ['…'];
     const faceEach = () => { P.lookAt(d); d.lookAt(P); };
     const hearts = (n = 4) => { burst(d, 'heart', n); burst(P, 'heart', n - 1); };
     switch (id) {

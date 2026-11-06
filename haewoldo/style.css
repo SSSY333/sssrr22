@@ -345,3 +345,10 @@ body.wide #newgame .pv p { font-size: 13px; }
 body { word-break: keep-all; overflow-wrap: break-word; }
 .si-label, .si-note, .pcard b, .pcard small, .job b, .choice, .toast, .qcard, .psub { word-break: keep-all; overflow-wrap: break-word; }
 #sheetBody .sitem { min-height: 66px; padding: 7px 3px 6px; }
+/* 개발자 모드 */
+#devBar { position: absolute; left: 6px; right: 6px; bottom: 8px; z-index: 16; background: var(--paper); border: 3px solid var(--line); border-radius: 14px; box-shadow: 0 3px 0 var(--line); padding: 6px; }
+#devInfo { font-size: 12.5px; margin-bottom: 6px; text-align: center; word-break: keep-all; }
+#devBar .dbtns { gap: 4px; margin-top: 4px; }
+#devBar .dbtns button { font-size: 11px; padding: 6px 1px; border-width: 2px; border-radius: 9px; }
+#devSel { border-bottom: 2px dashed var(--line); padding-bottom: 5px; }
+body.devOn #actBtn, body.devOn #decorBtn, body.devOn #questBtn, body.devOn #questPanel, body.devOn #mapBtn, body.devOn #mini { display: none !important; }

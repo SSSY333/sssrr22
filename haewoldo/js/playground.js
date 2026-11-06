@@ -80,33 +80,43 @@ function playgroundBuild() {
     if (best) { o.x = best[0]; o.y = best[1]; }
   }
   // 놀이터 자리 정리
-  m.objects = m.objects.filter(o => { const inn = o.x >= X - 1 && o.x <= X + 11 && o.y >= Y - 1 && o.y <= Y + 10 && !o.water; if (inn) m.block[o.y * W + o.x] = 0; return !inn; });
-  for (let y = Y - 1; y <= Y + 10; y++) for (let x = X - 1; x <= X + 11; x++) if (tileAt(x, y, m) !== T.WATER) setT(x, y, T.GRASS);
-  // 큰길(세로길)에서 이어지는 흙길 + 놀이터 안 흙바닥
-  let rx = X - 1; while (rx > X - 20 && !isRoadT(tileAt(rx, Y + 3, m))) { setT(rx, Y + 3, T.DIRT); rx--; }
-  for (let y = Y + 2; y <= Y + 8; y++) for (let x = X; x <= X + 9; x++) if ((x + y) % 7 !== 0) setT(x, y, T.DIRT);
-  for (const [x, y] of [[X, Y - 1], [X + 4, Y - 1], [X + 9, Y + 1], [X - 1, Y + 7], [X + 10, Y + 6], [X + 3, Y + 10], [X + 8, Y + 10]]) setT(x, y, T.FLOWER);
-  // 놀이기구
-  put('swingSet', X + 2, Y + 2, { fw: 2, fh: 1 });
-  put('seesaw', X + 6, Y + 3, { fw: 3, fh: 1 });
-  put('merry', X + 3, Y + 6, { fw: 2, fh: 2 });
-  put('sandbox', X + 7, Y + 6, { fw: 2, fh: 2, flat: true, solid: false, keyFix: X + 7 + Y + 6 - 0.4 });
-  put('playSign', X, Y + 2);
+  m.objects = m.objects.filter(o => { const inn = o.x >= X - 2 && o.x <= X + 11 && o.y >= Y - 2 && o.y <= Y + 11 && !o.water; if (inn) m.block[o.y * W + o.x] = 0; return !inn; });
+  for (let y = Y - 2; y <= Y + 11; y++) for (let x = X - 2; x <= X + 11; x++) if (tileAt(x, y, m) !== T.WATER && !isRoadT(tileAt(x, y, m))) setT(x, y, T.GRASS);
+  // 큰길에서 출입구(왼쪽)까지 흙길, 벤치 앞 보행로, 놀이 공간은 모래 바닥
+  let rx = X - 2; while (rx > X - 22 && !isRoadT(tileAt(rx, Y + 5, m))) { setT(rx, Y + 5, T.DIRT); rx--; }
+  for (let x = X - 1; x <= X + 9; x++) setT(x, Y + 1, T.DIRT);
+  for (let y = Y + 2; y <= Y + 9; y++) setT(X - 1, y, y >= Y + 4 && y <= Y + 6 ? T.DIRT : T.GRASS);
+  for (let y = Y + 2; y <= Y + 9; y++) for (let x = X; x <= X + 9; x++) { const corner = (x === X || x === X + 9) && (y === Y + 2 || y === Y + 9); setT(x, y, corner ? T.GRASS : T.SAND); }
+  for (const [x, y] of [[X + 10, Y + 1], [X - 1, Y + 9], [X + 10, Y + 9], [X + 4, Y - 1], [X + 9, Y - 1]]) setT(x, y, T.FLOWER);
+  // 놀이기구 — 서로 한 칸 이상 떨어지게
+  put('swingSet', X + 1, Y + 3, { fw: 2, fh: 1 });
+  put('slide', X + 5, Y + 3, { fw: 1, fh: 3 });
+  put('springRider', X + 8, Y + 3);
+  put('seesaw', X + 1, Y + 7, { fw: 3, fh: 1 });
+  put('merry', X + 6, Y + 7, { fw: 2, fh: 2 });
+  // 벤치는 놀이기구를 바라보게(앞쪽 보행로), 뒤에는 화단과 나무
   put('bench', X + 1, Y, { bench: 'pgBench' }); put('bench', X + 2, Y, { bench: 'pgBench' });
   put('bench', X + 6, Y, { bench: 'pgBench2' }); put('bench', X + 7, Y, { bench: 'pgBench2' });
   put('lamp', X + 4, Y, { light: true });
-  for (const [x, y] of [[X + 10, Y + 2], [X + 10, Y + 3], [X + 10, Y + 4], [X + 10, Y + 8], [X - 1, Y + 9], [X, Y + 9]]) put('lowfence', x, y);
-  put('flowerbed', X + 9, Y); put('bush', X + 10, Y + 9); put('tree', X - 1, Y + 1, { v: 1 }); put('tree', X + 10, Y - 1, { v: 2 });
-  // 좌석 (그네 2 · 시소 2 · 뺑뺑이 3 · 벤치 2+2)
+  put('flowerbed', X + 1, Y - 1); put('flowerbed', X + 2, Y - 1); put('flowerbed', X + 6, Y - 1); put('flowerbed', X + 7, Y - 1);
+  put('tree', X - 1, Y - 1, { v: 1 }); put('tree', X + 9, Y - 2, { v: 2 }); put('tree', X + 11, Y + 6, { v: 0 }); put('bush', X + 10, Y + 10);
+  put('playSign', X - 2, Y + 3);
+  // 울타리 — 출입구(왼쪽 가운데)와 보행로 쪽은 열어 둠
+  for (let y = Y + 2; y <= Y + 10; y++) { if (y < Y + 4 || y > Y + 6) put('fence2', X - 1, y); put('fence2', X + 10, y); }
+  for (let x = X; x <= X + 9; x++) put('fence2', x, Y + 10);
+  // 좌석 (그네 2 · 미끄럼틀 · 흔들말 · 시소 2 · 뺑뺑이 3 · 벤치 2+2)
   const B = m.benches;
-  B.swing = { name: '그네', place: 'playground', leisure: 'swing', play: 'swing', seats: [[X + 2, Y + 2], [X + 3, Y + 2]], stand: [[X + 2, Y + 3], [X + 3, Y + 3]], face: [0, 0], pairs: [[0, 1]] };
-  B.seesaw = { name: '시소', place: 'playground', leisure: 'seesaw', play: 'seesaw', seats: [[X + 6, Y + 3], [X + 8, Y + 3]], stand: [[X + 6, Y + 4], [X + 8, Y + 4]], face: [1, 3], pairs: [[0, 1]] };
-  B.merry = { name: '뺑뺑이', place: 'playground', leisure: 'merry', play: 'merry', center: [X + 4, Y + 7], seats: [[X + 3, Y + 6], [X + 4, Y + 6], [X + 3, Y + 7]], stand: [[X + 3, Y + 5], [X + 4, Y + 5], [X + 2, Y + 7]], face: [0, 0, 0], pairs: [[0, 1], [1, 2]] };
+  B.swing = { name: '그네', place: 'playground', leisure: 'swing', play: 'swing', seats: [[X + 1, Y + 3], [X + 2, Y + 3]], stand: [[X + 1, Y + 4], [X + 2, Y + 4]], face: [0, 0], pairs: [[0, 1]] };
+  B.slide = { name: '미끄럼틀', place: 'playground', leisure: 'slide', play: 'slide', seats: [[X + 5, Y + 3]], stand: [[X + 5, Y + 2]], exit: [X + 5, Y + 6], face: [0], pairs: [] };
+  B.spring = { name: '흔들말', place: 'playground', leisure: 'spring', play: 'spring', seats: [[X + 8, Y + 3]], stand: [[X + 8, Y + 4]], face: [0], pairs: [] };
+  B.seesaw = { name: '시소', place: 'playground', leisure: 'seesaw', play: 'seesaw', seats: [[X + 1, Y + 7], [X + 3, Y + 7]], stand: [[X + 1, Y + 8], [X + 3, Y + 8]], face: [1, 3], pairs: [[0, 1]] };
+  B.merry = { name: '뺑뺑이', place: 'playground', leisure: 'merry', play: 'merry', center: [X + 7, Y + 8], seats: [[X + 6, Y + 7], [X + 7, Y + 7], [X + 6, Y + 8]], stand: [[X + 6, Y + 6], [X + 7, Y + 6], [X + 5, Y + 8]], face: [0, 0, 0], pairs: [[0, 1], [1, 2]] };
   B.pgBench = { name: '놀이터 벤치', place: 'playground', leisure: 'park', seats: [[X + 1, Y], [X + 2, Y]], stand: [[X + 1, Y + 1], [X + 2, Y + 1]], face: [0, 0], pairs: [[0, 1]] };
   B.pgBench2 = { name: '놀이터 벤치', place: 'playground', leisure: 'park', seats: [[X + 6, Y], [X + 7, Y]], stand: [[X + 6, Y + 1], [X + 7, Y + 1]], face: [0, 0], pairs: [[0, 1]] };
-  for (const k of ['swing', 'seesaw', 'merry', 'pgBench', 'pgBench2']) for (const s of B[k].stand) m.block[s[1] * W + s[0]] = 0;
-  POI.playground = [X + 4.5, Y + 4.5]; POI.playgroundGate = [X - 0.5, Y + 3.5];
-  m.places.playground = { name: '해월 놀이터', test: (x, y) => x >= X - 1 && x <= X + 11 && y >= Y - 1 && y <= Y + 10 }; PLACE_DEFS.playground = { name: '해월 놀이터' };
+  for (const k of ['swing', 'slide', 'spring', 'seesaw', 'merry', 'pgBench', 'pgBench2']) for (const s of B[k].stand) m.block[s[1] * W + s[0]] = 0;
+  m.block[(Y + 6) * W + X + 5] = 0;
+  POI.playground = [X + 4.5, Y + 5.5]; POI.playgroundGate = [X - 1.5, Y + 5.5];
+  m.places.playground = { name: '해월 놀이터', test: (x, y) => x >= X - 2 && x <= X + 11 && y >= Y - 1 && y <= Y + 11 }; PLACE_DEFS.playground = { name: '해월 놀이터' };
   m.order = ['playground', ...m.order.filter(k => k !== 'playground')];
 }
 const _buildWorldPG = buildWorld;

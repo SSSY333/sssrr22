@@ -29,6 +29,7 @@ public class MainActivity extends Activity implements android.webkit.ValueCallba
     web.setOverScrollMode(View.OVER_SCROLL_NEVER);
     web.setWebViewClient(new WebViewClient());
     web.setWebChromeClient(new WebChromeClient());
+    web.addJavascriptInterface(new Bridge(this), "Android");
     web.setBackgroundColor(0xFF2B3550);
     setContentView(web);
     hideBars();
@@ -49,7 +50,7 @@ public class MainActivity extends Activity implements android.webkit.ValueCallba
     web.evaluateJavascript("(function(){try{var q=function(s){return document.querySelector(s)};var vis=function(s){var e=q(s);return e&&!e.classList.contains('hidden')};"
       + "if(vis('#panel')){closePanel();return 1}if(vis('#sheet')){closeSheet();return 1}if(vis('#mapView')){closeBigMap();return 1}if(vis('#rel')){closeRel();return 1}"
       + "if(vis('#questPanel')){toggleQuestPanel(false);return 1}if(vis('#zoom')){q('#zoom').classList.add('hidden');return 1}if(vis('#help')){q('#helpOk').click();return 1}"
-      + "if(vis('#newgame')){q('#btnBack').click();return 1}return 0}catch(e){return 0}})()", this);
+      + "if(vis('#newgame')){q('#btnBack').click();return 1}if(typeof G!=='undefined'&&G.dev){devExit();return 1}return 0}catch(e){return 0}})()", this);
   }
   @Override public void onReceiveValue(String v) { if (!"1".equals(v)) moveTaskToBack(true);
   }

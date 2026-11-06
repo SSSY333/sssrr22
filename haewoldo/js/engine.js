@@ -210,8 +210,10 @@ function drawInteriorWalls(g, m) {
       g.fillStyle = '#ffffff'; if ((X % 7) === 0) g.fillRect(X, Math.round(yE - 37), 1, 16);
     }
   };
-  win([0, 0], [m.W, 0], 0.55, 0.75, '#bfe3f7');
-  win([0, m.H], [0, 0], 0.25, 0.42, '#bfe3f7');
+  if (!m.noWindows) {
+    win([0, 0], [m.W, 0], 0.55, 0.75, '#bfe3f7');
+    win([0, m.H], [0, 0], 0.25, 0.42, '#bfe3f7');
+  }
   // 문 매트 위 문틀
   const [ex, ey] = m.exit; const dp = P(ex + 0.5, ey + 1);
   g.fillStyle = 'rgba(255,240,200,0.25)'; g.fillRect(Math.round(dp[0] - 8), Math.round(dp[1] - 4), 16, 4);
@@ -330,7 +332,14 @@ function render(dt) {
     const key = o.keyFix != null ? o.keyFix : wallI ? o.x + o.y + 0.1 : o.x + o.y + (fw - 1) + (fh - 1) + (flat ? 0.2 : 2);
     o._key = key;
     const ghost = G.decor && G.decor.drag && G.decor.drag.o === o;
-    list.push({ d: ghost ? 999 : key, f: () => { if (ghost) g.globalAlpha = 0.55; blit(g, sp.c, sx - sp.ax, sy - sp.ay); g.globalAlpha = 1; } });
+    list.push({ d: ghost ? 999 : key, f: () => {
+      if (ghost) g.globalAlpha = 0.55;
+      const sc = o.scale && o.scale !== 1 ? o.scale : 0;
+      if (sc) { const cw = sp.c.width, ch = sp.c.height; g.drawImage(sp.c, SX(sx - sp.ax * sc), SY(sy - sp.ay * sc), Math.round(cw * sc * R.K), Math.round(ch * sc * R.K)); }
+      else if (o.mirror) blit(g, sp.c, sx - (sp.c.width - sp.ax), sy - sp.ay, true);
+      else blit(g, sp.c, sx - sp.ax, sy - sp.ay);
+      g.globalAlpha = 1;
+    } });
     if (o.kind !== 'bench' && !flat && !wallI) solids.push({ x: o.x, y: o.y, w: fw, h: fh, key, sx0: sx - sp.ax, sx1: sx - sp.ax + sp.c.width });
     if ((o.light && lit) || (o.kind === 'furn' && FURN[o.k].light)) lights.push([sx, sy - (o.kind === 'furn' ? 24 : 30)]);
   }
@@ -386,7 +395,7 @@ function render(dt) {
   // 글자 레이어
   const D = R.dpr;
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  if (G.started) {
+  if (G.started && !G.noLabels) {
     g.font = `${10.5 * D}px Jua, 'Noto Sans KR', sans-serif`;
     for (const b of m.buildings) {
       const spr = buildingSprite(b, lit); const X = SX(spr.x + spr.c.width / 2), Y = SY(spr.y + (b.kind === 'lighthouse' ? 2 : 10));
@@ -654,7 +663,7 @@ function compTile(m, x, y, f) {
   const v = Math.floor(hash2(x, y, 2) * 8);
   const wat = (xx, yy) => tileAt(xx, yy, m) === T.WATER;
   const e1 = wat(x + 1, y) ? 1 : 0, e2 = wat(x, y + 1) ? 1 : 0, wp = t === T.WOOD && (wat(x + 1, y + 1) || e2) ? 1 : 0;
-  const isR = t === T.PATH || t === T.ALLEY || t === T.BOARD;
+  const isR = t === T.PATH || t === T.ALLEY || t === T.BOARD || t === 14 || (t === T.SAND && m.id === 'island' && !m.noSandEdge);
   const gr = (xx, yy) => { const tt = tileAt(xx, yy, m); return tt === T.GRASS || tt === T.FLOWER || tt === T.HILL; };
   const tm = isR ? (gr(x - 1, y) ? 1 : 0) | (gr(x, y - 1) ? 2 : 0) | (gr(x + 1, y) ? 4 : 0) | (gr(x, y + 1) ? 8 : 0) : 0;
   const key = t + '_' + v + '_' + e1 + e2 + wp + se + '_' + tm;

@@ -288,7 +288,7 @@ function compUpdate(dt, plan) {
       if (G.compIdle > 11 && !d.bubble && Math.random() < dt * 0.09) {
         const pl = curPlace(), st = Math.min(8, S.rel.stage);
         const pool = [...IDLE[st], ...(PLACE_IDLE[pl] || []), ...SEASON_IDLE[season()], ...(WEATHER_IDLE[S.weather] || [])];
-        d.lookAt(P); d.say(pick(pool), 3.2);
+        d.lookAt(P); d.say(typeof compLine === 'function' && Math.random() < 0.7 ? compLine() : pick(pool), 3.2);
       }
     }
   }
