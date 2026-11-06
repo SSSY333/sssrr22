@@ -1,6 +1,6 @@
 # 해월도 다이어리 — 안드로이드 앱
 
-- `haewoldo-diary-0.9.6.apk` — 바로 설치할 수 있는 APK (Android 7.0 이상, 세로 전체 화면)
+- `haewoldo-diary-0.9.7.apk` — 바로 설치할 수 있는 APK (Android 7.0 이상, 세로 전체 화면)
 - 게임 파일과 Jua 글꼴이 앱 안에 들어 있어서 인터넷 없이도 플레이할 수 있어요.
 - 저장은 앱 데이터(localStorage)에 남아요. 앱을 지우면 저장도 지워져요.
 - 카메라 사진은 사진첩 `Pictures/해월도`, 맵 편집 JSON은 `Download/해월도`에 저장돼요.
