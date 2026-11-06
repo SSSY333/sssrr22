@@ -744,8 +744,10 @@ function drawBigMap() {
   const c = $('#bigMap'), m = MAPS.island, s = BIGMAP.s, base = BIGMAP.base;
   // 섬이 있는 부분만 잘라서 화면 너비에 맞춤
   const sx0 = 12 * s, sx1 = base.width - 12 * s, sy0 = 4 * s, sy1 = base.height - 6 * s;
-  const gb = $('#game').getBoundingClientRect(), cssW = Math.min(gb.width - 20, document.body.classList.contains('wide') ? (gb.height - 150) * 2.05 : 460), Z = BIGMAP.zoom, D = R.dpr;
+  const gb = $('#game').getBoundingClientRect(), cssW = Math.min(gb.width - 20, 460), Z = BIGMAP.zoom;
   const cw = cssW * Z, ch = cw * (sy1 - sy0) / (sx1 - sx0);
+  // 휴대폰 캔버스 한계(가로 4096px · 면적) 안으로 해상도를 맞춤 — 넘으면 지도가 깜빡이거나 하얗게 사라짐
+  const D = BIGMAP.D = Math.max(1, Math.min(R.dpr, 4000 / cw, 4000 / ch, Math.sqrt(10e6 / (cw * ch))));
   c.style.width = cw + 'px'; c.style.height = ch + 'px';
   c.width = Math.round(cw * D); c.height = Math.round(ch * D);
   const k = c.width / (sx1 - sx0);

@@ -354,10 +354,12 @@ computeAction = function () {
   // 동행 중에도 주변 사람 · 시설은 그대로, 여러 개면 고르기
   for (const a of G.actors) if (a !== P && a !== d && a.visible && a.map === P.map && dist(a, P) < 1.7 && !a.pet && (!base || base.label !== '말 걸기')) cands.push({ label: `${(a.look.name || '').split(' ').pop()}와 이야기`, icon: '💬', fn: () => interactWith(a) });
   if (S.comp && d.visible && d.map === P.map && dist(d, P) < 3 && !base) cands.push({ label: `${himCall()} 메뉴`, icon: '💞', fn: () => detMenu() });
-  const pa = !base || base.label === '나가기' ? placeActsHere() : []; if (pa.length) cands.push({ label: '여기서 할 일', icon: '🌿', fn: placeActMenu });
+  const pa = placeActsHere(); if (pa.length) cands.push({ label: '여기서 할 일', icon: '🌿', fn: placeActMenu });
+  // 지나가는 사람 · 동물이 「여기서 할 일」을 밀어내지 않게: 그때는 장소 활동이 큰 버튼, 사람은 작은 버튼
+  if (base && pa.length && ['말 걸기', '쓰다듬기'].includes(base.label)) cands.unshift(cands.splice(cands.length - 1, 1)[0]);
   if (cands.length <= 1) return cands[0] || null;
-  const head = cands[0];
-  return { label: head.label.length > 6 ? head.label.slice(0, 6) + '…' : head.label, icon: head.icon, hot: head.hot, multi: cands.length, fn: () => openSheet({ title: '무엇을 할까요?', items: cands.map(c => ({ icon: c.icon, label: c.label, onClick: c.fn })), cols: 2 }) };
+  if (cands.length >= 4) return { label: '선택하기', icon: '👆', fn: () => openSheet({ title: '무엇을 할까요?', items: cands.map(c => ({ icon: c.icon, label: c.label, onClick: c.fn })), cols: 2 }) };
+  return Object.assign({}, cands[0], { cands });
 };
 /* 형사님 전용 행동 메뉴 (형사님을 직접 누르거나 왼쪽 위 아이콘) */
 const _detMenuLife = detMenu;

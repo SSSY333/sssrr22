@@ -171,4 +171,4 @@ buildNewGameUI = function () {
   const hairs = Object.keys(PLAYER_HAIRS);
   document.querySelectorAll('#hairList .hair').forEach((b, i) => { const k = hairs[i]; if (!k) return; b.innerHTML = imgTag(chibiIcon(playerLookV2('traveler', k), 'base', 'ngh-' + k), '') + `<span>${b.textContent}</span>`; });
 };
-window.addEventListener('resize', () => { if ($('#mapView') && !$('#mapView').classList.contains('hidden')) drawBigMap(); });
+let _bmW = 0; window.addEventListener('resize', () => { const w = $('#game') ? Math.round($('#game').getBoundingClientRect().width) : 0; if (w === _bmW) return; _bmW = w; if ($('#mapView') && !$('#mapView').classList.contains('hidden')) drawBigMap(); });

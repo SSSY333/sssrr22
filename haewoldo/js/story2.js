@@ -1235,7 +1235,7 @@ function loop(ts) {
       }
     }
     G.ctxT -= dt;
-    if (G.ctxT <= 0 && !G.ctxLock) { G.ctxT = 0.2; const a = (!paused() && !G.busy && !G.decor) ? computeAction() : null; const cur = G.ctxAction; if (!a !== !cur || (a && cur && (a.label !== cur.label))) setAction(a); else if (a) G.ctxAction.fn = a.fn; }
+    if (G.ctxT <= 0 && !G.ctxLock) { G.ctxT = 0.2; const a = (!paused() && !G.busy && !G.decor) ? computeAction() : null; const cur = G.ctxAction; if (!a !== !cur || (a && cur && (typeof actKey === 'function' ? actKey(a) !== actKey(cur) : a.label !== cur.label))) setAction(a); else if (a) G.ctxAction.fn = a.fn; }
     if (Math.floor(G.t * 4) !== Math.floor((G.t - dt) * 4)) updateHUD();
   }
   for (let i = G.floats.length - 1; i >= 0; i--) { G.floats[i].t -= dt; if (G.floats[i].t <= 0) G.floats.splice(i, 1); }
@@ -1394,10 +1394,10 @@ function bindUI() {
     wrap.addEventListener('pointerdown', (e) => { mp.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (mp.size === 2) { const [a, b] = [...mp.values()]; mpinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: BIGMAP.zoom || 1, sl: wrap.scrollLeft, st: wrap.scrollTop }; mdown = null; } else mdown = { x: e.clientX, y: e.clientY, sl: wrap.scrollLeft, st: wrap.scrollTop, e }; });
     wrap.addEventListener('pointermove', (e) => {
       if (!mp.has(e.pointerId)) return; mp.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (mpinch && mp.size === 2) { const [a, b] = [...mp.values()]; const z = Math.max(1, Math.min(4, mpinch.z * Math.hypot(a.x - b.x, a.y - b.y) / mpinch.d)); if (Math.abs(z - BIGMAP.zoom) > 0.02) { const k = z / BIGMAP.zoom; BIGMAP.zoom = z; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const cx = wrap.scrollLeft + wrap.clientWidth / 2, cy = wrap.scrollTop + wrap.clientHeight / 2; drawBigMap(); wrap.scrollLeft = cx * k - wrap.clientWidth / 2; wrap.scrollTop = cy * k - wrap.clientHeight / 2; }); } }
+      if (mpinch && mp.size === 2) { const [a, b] = [...mp.values()]; const z = Math.max(1, Math.min(4, mpinch.z * Math.hypot(a.x - b.x, a.y - b.y) / mpinch.d)); if (Math.abs(z - BIGMAP.zoom) > 0.02) { const k = z / BIGMAP.zoom; BIGMAP.zoom = z; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { const c = $('#bigMap'), cx = wrap.scrollLeft + wrap.clientWidth / 2, cy = wrap.scrollTop + wrap.clientHeight / 2; /* 손가락을 움직이는 동안엔 크기만 바꾸고, 다 놓으면 다시 그림 */ c.style.width = parseFloat(c.style.width) * k + 'px'; c.style.height = parseFloat(c.style.height) * k + 'px'; wrap.scrollLeft = cx * k - wrap.clientWidth / 2; wrap.scrollTop = cy * k - wrap.clientHeight / 2; BIGMAP.dirty = true; }); } }
       else if (mdown && e.pointerType === 'mouse' && e.buttons) { wrap.scrollLeft = mdown.sl - (e.clientX - mdown.x); wrap.scrollTop = mdown.st - (e.clientY - mdown.y); }
     });
-    const up = (e) => { const was = !!mpinch; mp.delete(e.pointerId); if (mp.size < 2) mpinch = null; if (mdown && !was && Math.hypot(e.clientX - mdown.x, e.clientY - mdown.y) < 10 && e.target.id === 'bigMap') bigMapTap(e); if (!mp.size) mdown = null; };
+    const up = (e) => { const was = !!mpinch; mp.delete(e.pointerId); if (mp.size < 2) { mpinch = null; if (BIGMAP.dirty) { BIGMAP.dirty = false; const sl = wrap.scrollLeft, st = wrap.scrollTop; drawBigMap(); wrap.scrollLeft = sl; wrap.scrollTop = st; } } if (mdown && !was && Math.hypot(e.clientX - mdown.x, e.clientY - mdown.y) < 10 && e.target.id === 'bigMap') bigMapTap(e); if (!mp.size) mdown = null; };
     wrap.addEventListener('pointerup', up); wrap.addEventListener('pointercancel', (e) => { mp.delete(e.pointerId); mpinch = null; mdown = null; });
     wrap.addEventListener('wheel', (e) => { e.preventDefault(); BIGMAP.zoom = Math.max(1, Math.min(4, BIGMAP.zoom * (e.deltaY < 0 ? 1.15 : 0.87))); drawBigMap(); }, { passive: false });
   }

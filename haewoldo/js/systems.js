@@ -191,7 +191,7 @@ const _drawBigMap0 = drawBigMap;
 drawBigMap = function () {
   _drawBigMap0();
   if (!S) return;
-  const c = $('#bigMap'), g = c.getContext('2d'), D = R.dpr, at = BIGMAP.at;
+  const c = $('#bigMap'), g = c.getContext('2d'), D = BIGMAP.D || R.dpr, at = BIGMAP.at;
   g.textAlign = 'center'; g.textBaseline = 'middle';
   const lab = (x, y, text, col = '#3a2533', bg = 'rgba(255,253,246,0.94)') => { const [X, Y] = at(x, y); g.font = `${10 * D * Math.min(1.25, BIGMAP.zoom)}px Jua, sans-serif`; const w = g.measureText(text).width + 8 * D, h = 15 * D; g.fillStyle = bg; roundRect(g, X - w / 2, Y - h / 2, w, h, h / 2); g.fill(); g.fillStyle = col; g.fillText(text, X, Y + 0.5 * D); };
   for (const p of MAPS.island.portals) if (S.hidden[p.id]) lab(p.x + 0.5, p.y - 1, HIDDEN_DEFS[p.id].icon + ' ' + HIDDEN_DEFS[p.id].name, '#5a3a7a');

@@ -352,3 +352,22 @@ body { word-break: keep-all; overflow-wrap: break-word; }
 #devBar .dbtns button { font-size: 11px; padding: 6px 1px; border-width: 2px; border-radius: 9px; }
 #devSel { border-bottom: 2px dashed var(--line); padding-bottom: 5px; }
 body.devOn #actBtn, body.devOn #decorBtn, body.devOn #questBtn, body.devOn #questPanel, body.devOn #mapBtn, body.devOn #mini { display: none !important; }
+/* 도트 아이콘 (이모지 대신) */
+img.px-emo { width: 1.2em; height: 1.2em; image-rendering: pixelated; image-rendering: crisp-edges; vertical-align: -0.22em; display: inline-block; }
+#actBtn img.px-emo { width: 34px; height: 34px; vertical-align: 0; }
+.si-icon img.px-emo { width: 30px; height: 30px; vertical-align: 0; }
+/* 행동 버튼 옆 작은 보조 버튼 */
+#actChips { position: absolute; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 126px); z-index: 14; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+#actChips .chip { display: flex; align-items: center; gap: 4px; background: var(--paper); border: 3px solid var(--line); border-radius: 999px; box-shadow: 0 2px 0 var(--line); padding: 4px 10px 4px 6px; font-size: 12.5px; max-width: 150px; animation: pop .2s ease; }
+#actChips .chip b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#actChips .chip img.px-emo { width: 20px; height: 20px; vertical-align: 0; }
+#actChips .chip:active { transform: translateY(2px); box-shadow: 0 0 0 var(--line); }
+body.talking #actChips, body.devOn #actChips { display: none; }
+/* 오른쪽 지도 · 퀘스트 버튼: 같은 크기로 나란히 */
+#sideBtns { pointer-events: auto; display: flex; justify-content: flex-end; gap: 6px; margin-top: 7px; }
+#sideBtns #mapBtn { margin: 0; }
+#sideBtns #questBtn { position: static; writing-mode: horizontal-tb; border: 3px solid var(--line); border-radius: 12px; box-shadow: 0 3px 0 var(--line); padding: 4px 12px; font-size: 14px; top: auto; right: auto; }
+#sideBtns #questBtn.hidden { display: none !important; }
+#questPanel { top: calc(env(safe-area-inset-top) + 150px) !important; }
+/* 첫 화면 버튼을 조금 위로 */
+#title .title-btns { margin-bottom: 22vh; }
