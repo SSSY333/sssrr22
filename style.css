@@ -408,3 +408,5 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
   #brand { left: max(10px, env(safe-area-inset-left)); padding: 6px 10px; gap: 6px; font-size: 12.5px; }
   #brand small { font-size: 11px; }
 }
+#online.net-wait { opacity: 0.55; }
+#online.net-wait::after { content: " · 연결 중…"; }

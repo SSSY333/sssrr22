@@ -3396,7 +3396,7 @@ function sendPresence(force) {
 }
 function flushPresence(dt) {
   presenceT += dt;
-  if (!room || !me.A || !presenceDirty || presenceT < 0.1) return;
+  if (!room || !me.A || !presenceDirty || presenceT < (RELAY.relay ? 0.15 : 0.1)) return;
   presenceT = 0; presenceDirty = false;
   const A = me.A;
   const data = {
@@ -3490,11 +3490,76 @@ function updateRemotes(dt) {
     syncAvatar(A);
   }
 }
-/* 아티팩트 밖(GitHub Pages 등)에서는 Trystero로 브라우저끼리 직접 연결해요 (서버 없음) */
+/* 아티팩트 밖(GitHub Pages 등)에서는 무료 공개 MQTT 중계소를 거쳐 주고받아요 (가입·서버 없음)
+   두 곳(HiveMQ · EMQX)에 동시에 보내고 받은 쪽은 중복을 버려요 → 한 곳이 멈춰도 계속돼요 */
+const RELAY = {
+  brokers: ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt'],
+  base: 'bojangwon-gwanghwamun/v1/lobby/',
+  status: 'connecting',
+};
+async function relayJoinRoom() {
+  const mqtt = (await import('https://cdn.jsdelivr.net/npm/mqtt@5.16.0/dist/mqtt.esm.js')).default;
+  const selfId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  const topic = RELAY.base + selfId;
+  const actions = {};
+  const seen = new Map(); // peerId → { s, t }
+  let seq = 0;
+  const room = { selfId, onPeerJoin: null, onPeerLeave: null };
+  const clients = RELAY.brokers.map((url) => mqtt.connect(url, {
+    clientId: 'bjw_' + selfId + '_' + Math.random().toString(36).slice(2, 6),
+    keepalive: 30, reconnectPeriod: 3000, connectTimeout: 9000, clean: true,
+    will: { topic, payload: JSON.stringify({ a: '_bye' }), qos: 0, retain: false },
+  }));
+  const publish = (a, d) => {
+    const msg = JSON.stringify({ a, s: ++seq, d });
+    if (msg.length > 6000) return;
+    for (const c of clients) if (c.connected) c.publish(topic, msg, { qos: 0 });
+  };
+  const updateStatus = () => {
+    const n = clients.filter((c) => c.connected).length;
+    RELAY.status = n ? 'ok' : 'connecting';
+    setNetBadge();
+  };
+  for (const c of clients) {
+    c.on('connect', () => { c.subscribe(RELAY.base + '+', { qos: 0 }); publish('_hi'); updateStatus(); });
+    c.on('close', updateStatus);
+    c.on('offline', updateStatus);
+    c.on('error', () => {});
+    c.on('message', (t, buf) => {
+      const id = t.slice(RELAY.base.length);
+      if (!id || id === selfId || id.includes('/') || buf.length > 6000) return;
+      let m; try { m = JSON.parse(new TextDecoder().decode(buf)); } catch (e) { return; }
+      if (!m || typeof m.a !== 'string') return;
+      if (m.a === '_bye') { if (seen.delete(id)) room.onPeerLeave?.(id); return; }
+      const prev = seen.get(id);
+      if (prev && typeof m.s === 'number' && m.s <= prev.s && m.a !== '_hi') return; // 다른 중계소에서 온 중복
+      const isNew = !prev;
+      seen.set(id, { s: typeof m.s === 'number' ? m.s : (prev?.s || 0), t: Date.now() });
+      if (isNew || m.a === '_hi') room.onPeerJoin?.(id);
+      if (m.a[0] !== '_') actions[m.a]?.onMessage?.(m.d, { peerId: id });
+    });
+  }
+  // 살아 있다는 신호 (3초) · 10초 동안 소식 없으면 나간 걸로
+  setInterval(() => {
+    publish('_hb');
+    const now = Date.now();
+    for (const [id, v] of seen) if (now - v.t > 10000) { seen.delete(id); room.onPeerLeave?.(id); }
+  }, 3000);
+  room.makeAction = (name) => (actions[name] = { onMessage: null, send(data) { publish(name, data); } });
+  room.leave = () => { publish('_bye'); for (const c of clients) c.end(true); };
+  return room;
+}
+function setNetBadge() {
+  const el = document.getElementById('online');
+  if (!el || !room || !RELAY.relay) return;
+  el.title = RELAY.status === 'ok' ? '멀티플레이 연결됨' : '멀티플레이 연결 중…';
+  el.classList.toggle('net-wait', RELAY.status !== 'ok');
+}
 const P2P = { tr: null, notes: null };
 async function connectP2P() {
-  const { joinRoom, selfId } = await import('https://cdn.jsdelivr.net/npm/trystero@0.26.0/+esm');
-  const tr = joinRoom({ appId: 'bojangwon-gwanghwamun-office-v1' }, 'lobby');
+  const tr = await relayJoinRoom();
+  RELAY.relay = true;
+  const selfId = tr.selfId;
   P2P.tr = tr;
   const pres = tr.makeAction('pres');
   const peersMap = new Map();
