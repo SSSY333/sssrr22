@@ -41,7 +41,7 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !LOW; // 휴대폰: 실시간 그림자 끔 (바닥 접지 그림자는 그대로)
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 $('#app').appendChild(renderer.domElement);
 let composer = null;
@@ -87,7 +87,8 @@ await Promise.all([
     try {
       const t = await texLoader.loadAsync(`${ASSET}tex/${name}_${KEYS[k]}.webp`);
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.anisotropy = 8;
+      t.anisotropy = LOW ? 2 : 8;
+      if (LOW && t.image && t.image.width > 256) { const c = document.createElement('canvas'); c.width = c.height = 256; c.getContext('2d').drawImage(t.image, 0, 0, 256, 256); t.image = c; t.needsUpdate = true; }
       if (k === 'd') t.colorSpace = THREE.SRGBColorSpace;
       (pbrTex[name] ||= {})[KEYS[k]] = t;
     } catch (e) { console.warn('texture', name, e); }
@@ -240,14 +241,24 @@ function addWallPlane(p, w, h, m, x, y, z, ry = 0) {
 }
 
 /* ---------- 캔버스 텍스처 ---------- */
+// 휴대폰: 큰 그림(512px 초과)은 절반 크기로 줄여 GPU 메모리·대역폭을 아껴요
+function shrinkForPhone(img) {
+  if (!LOW || !img || !img.width || Math.max(img.width, img.height) <= 512) return img;
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(img.width / 2)); c.height = Math.max(1, Math.round(img.height / 2));
+  const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+  g.drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
 function canvasTex(w, h, draw, srgb = true) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   const g = c.getContext('2d');
   draw(g, w, h);
-  const t = new THREE.CanvasTexture(c);
+  const t = new THREE.CanvasTexture(shrinkForPhone(c));
+  t.userData.src = c;
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = LOW ? 2 : 4;
   return t;
 }
 function tiled(tex, rx, ry) {
@@ -466,7 +477,7 @@ const hemi = new THREE.HemisphereLight(0xffdcc0, 0x5b4636, 0.45);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffb27a, 2.6);
 sun.position.copy(SUN_DIR).multiplyScalar(160);
-sun.castShadow = true;
+sun.castShadow = !LOW;
 sun.shadow.mapSize.set(LOW ? 1024 : 2048, LOW ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 400 });
 sun.shadow.bias = -0.0004;
@@ -800,7 +811,7 @@ function buildTraffic() {
     { z: 20.2, dir: 1 }, { z: 23.3, dir: 1 },
   ];
   lanes.forEach((ln) => {
-    const n = 4;
+    const n = LOW ? 2 : 4; // 휴대폰: 차량 절반
     for (let i = 0; i < n; i++) {
       const type = Math.random() < 0.18 ? 'bus' : Math.random() < 0.35 ? 'taxi' : 'car';
       const v = makeVehicle(type);
@@ -1791,17 +1802,19 @@ function buildInterior() {
   makePlant(g, -19, -6.3, 1.1);
   // 업무 조명
   // 업무공간 조명 (밝고 따뜻하게: 천장 4곳)
-  zones.workLights = [[-14.5, -10.5], [-6.5, -10.5], [-14.5, -22.5], [-6.5, -22.5]].map(([x, z]) => {
-    const l = new THREE.PointLight(0xffe2bd, 42, 18, 1.4);
+  zones.workLights = (LOW ? [[-10.5, -12], [-10.5, -21]] : [[-14.5, -10.5], [-6.5, -10.5], [-14.5, -22.5], [-6.5, -22.5]]).map(([x, z]) => {
+    const l = new THREE.PointLight(0xffe2bd, LOW ? 62 : 42, LOW ? 22 : 18, 1.4);
     l.position.set(x, 4.3, z);
     return l;
   });
   g.add(...zones.workLights);
   // 천장 조명 패널 (빛이 나는 면)
   for (const x of [-14.5, -6.5]) for (const z of [-13.5, -20.5]) addBox(g, 3.2, 0.03, 1.2, glow(0xfff4e2), x, GF - 0.17, z);
-  const lobbyLight = new THREE.PointLight(0xffcf9a, 20, 13, 1.6);
-  lobbyLight.position.set(-4, 4.2, -2.5);
-  g.add(lobbyLight);
+  if (!LOW) {
+    const lobbyLight = new THREE.PointLight(0xffcf9a, 20, 13, 1.6);
+    lobbyLight.position.set(-4, 4.2, -2.5);
+    g.add(lobbyLight);
+  }
 
   // 업무/휴게 구분 책장
   const shelf = new THREE.Group();
@@ -2048,9 +2061,11 @@ function buildInterior() {
     addMesh(g, new THREE.CylinderGeometry(0.2, 0.27, 0.34, 24, 1, true), shade, x, 1.55, z);
     addSph(g, 0.06, glow(0xffd8a0), x, 1.52, z);
     colCircle(x, z, 0.2);
-    const l = new THREE.PointLight(0xffb070, 3.2, 6, 1.6);
-    l.position.set(x, 1.5, z);
-    g.add(l);
+    if (!LOW) {
+      const l = new THREE.PointLight(0xffb070, 3.2, 6, 1.6);
+      l.position.set(x, 1.5, z);
+      g.add(l);
+    }
   }
   // 침대 아래·벽 따라 번지는 따뜻한 빛 웅덩이
   const pool = new THREE.MeshBasicMaterial({ map: BLOB_TEX, color: 0xffa860, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
@@ -2471,7 +2486,7 @@ function buildVentRoom() {
   }
   vent.roomLight = new THREE.PointLight(0xffb6cc, 9, 9, 1.5);
   vent.roomLight.position.set(cx, ceil - 0.4, cz);
-  g.add(vent.roomLight);
+  if (!LOW) g.add(vent.roomLight); else { vent.fireLight.distance = 9; vent.fireLight.decay = 1.3; }
   // 불꽃 터짐(종이 던졌을 때)
   {
     const n = 60, pos = new Float32Array(n * 3), vel = new Float32Array(n * 3);
