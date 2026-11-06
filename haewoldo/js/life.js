@@ -107,7 +107,7 @@ function tentCoupleMenu() {
   const st = S.rel.stage;
   const items = TENT_ACTS.filter(a => a[4] <= st + 1).map(([id, vis, icon, label, need]) => ({ icon, label, locked: st < need, note: st < need ? STAGES[need - 1].name : '', why: `「${STAGES[need - 1].name}」 단계에서 할 수 있어요`, onClick: () => tentAct(id, vis) }));
   items.push({ icon: '🧍', label: '일어나기', onClick: () => standUpPlayer() });
-  openSheet({ title: `⛺ 텐트 안 · ${himCall()}와 함께`, items, cols: 4 });
+  openSheet({ title: `⛺ 텐트 안 · ${josa(himCall(), '과', '와')} 함께`, items, cols: 4 });
 }
 async function tentAct(id, vis) {
   if (id === 'morning') {
@@ -352,7 +352,7 @@ computeAction = function () {
   const cands = [];
   if (base) cands.push(base);
   // 동행 중에도 주변 사람 · 시설은 그대로, 여러 개면 고르기
-  for (const a of G.actors) if (a !== P && a !== d && a.visible && a.map === P.map && dist(a, P) < 1.7 && !a.pet && (!base || base.label !== '말 걸기')) cands.push({ label: `${(a.look.name || '').split(' ').pop()}와 이야기`, icon: '💬', fn: () => interactWith(a) });
+  for (const a of G.actors) if (a !== P && a !== d && a.visible && a.map === P.map && dist(a, P) < 1.7 && !a.pet && (!base || base.label !== '말 걸기')) cands.push({ label: `${josa((a.look.name || '').split(' ').pop(), '과', '와')} 이야기`, icon: '💬', fn: () => interactWith(a) });
   if (S.comp && d.visible && d.map === P.map && dist(d, P) < 3 && !base) cands.push({ label: `${himCall()} 메뉴`, icon: '💞', fn: () => detMenu() });
   const pa = placeActsHere(); if (pa.length) cands.push({ label: '여기서 할 일', icon: '🌿', fn: placeActMenu });
   // 지나가는 사람 · 동물이 「여기서 할 일」을 밀어내지 않게: 그때는 장소 활동이 큰 버튼, 사람은 작은 버튼

@@ -55,7 +55,7 @@ function farmAdvance() {
   }
   F.day = S.day;
   // 결혼 후엔 형사님이 아침에 물을 줌
-  if (S.rel.flags.married && F.plots.some(p => p && !p.dead && !plotRipe(p))) { for (const p of F.plots) if (p && !p.dead) p.wet = S.day; setTimeout(() => toast(`🌱 ${himCall()}이(가) 아침 일찍 텃밭에 물을 줬어요`), 2600); }
+  if (S.rel.flags.married && F.plots.some(p => p && !p.dead && !plotRipe(p))) { for (const p of F.plots) if (p && !p.dead) p.wet = S.day; setTimeout(() => toast(`🌱 ${josa(himCall(), '이', '가')} 아침 일찍 텃밭에 물을 줬어요`), 2600); }
 }
 function farmTick() {
   if (!S || !G.started) return;
@@ -139,7 +139,7 @@ function farmPlant(k, only) {
     P.faceTo(0, -1); burst(P, 'spark', 3); Sound.sfx('tap');
     await say('narr', '', `🌱 ${C.name} 씨앗을 ${n}칸에 심었다. 흙을 토닥토닥 덮어 줬다. (${C.days}일 뒤 수확)`);
     if (!C.se.includes(season())) await say('narr', '', '제철이 아니라 조금 걱정되지만… 정성으로 키워 보자.');
-    if (withDet) { scriptDet(); d.lookAt(P); await say('det', 'smile', casualOn() ? pick([`${C.name}? 좋다. 다 자라면 나도 한 입만 줘.`, '흙 만지니까 기분 좋다. 순찰보다 이게 체질인가.']) : `${C.name}을 심으셨네요. 다 자라면 저도 구경시켜 주세요.`); addAff(1); }
+    if (withDet) { scriptDet(); d.lookAt(P); await say('det', 'smile', casualOn() ? pick([`${C.name}? 좋다. 다 자라면 나도 한 입만 줘.`, '흙 만지니까 기분 좋다. 순찰보다 이게 체질인가.']) : `${josa(C.name, '을', '를')} 심으셨네요. 다 자라면 저도 구경시켜 주세요.`); addAff(1); }
     advanceTime(10); save();
   });
 }
@@ -178,7 +178,7 @@ function farmHarvest() {
       if (S.rel.stage >= 5) { const c = await choose([`이거 ${himCall()} 몫이야`, '같이 요리해 먹자']); if (c === 0) { S.inv['c_' + k]--; await say('det', 'blush', '…나 주는 거야? 이건 아까워서 못 먹겠다. 그래도 먹을 거지만.'); addAff(4); } else { await say('det', 'smile', '좋아. 오늘 저녁은 우리 텃밭 요리다.'); addAff(2); } }
     }
     if (!F.first) { F.first = { day: S.day, crop: list[0][0] }; memPerm('firstHarvest', { name: '첫 수확' }); await addAlbum('텃밭 첫 수확', 'daily'); toast('🏅 첫 수확! 수확한 작물은 슈퍼에서 팔거나 선물할 수 있어요'); }
-    memRecent('farm', `텃밭에서 ${list.map(([k]) => CROPS[k].name).join('·')}를 수확했다`);
+    memRecent('farm', `텃밭에서 ${josa(list.map(([k]) => CROPS[k].name).join('·'), '을', '를')} 수확했다`);
     advanceTime(15); save();
   });
 }
