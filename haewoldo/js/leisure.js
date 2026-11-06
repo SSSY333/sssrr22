@@ -383,7 +383,7 @@ const V_REL = { 'halmeoni+okja': 'friend', 'kid+kid2': 'friend', 'tourist+touris
 function vRel(a, b) { return V_REL[a + '+' + b] || V_REL[b + '+' + a] || null; }
 const LEISURE_PLANS = [
   { h: [7, 10], who: ['grandpa'], b: 'pavilion', act: 'read' }, { h: [7.5, 10], who: ['halmeoni'], b: 'pavilion', act: 'rest' },
-  { h: [11, 16], who: ['halmeoni', 'okja'], b: 'picnicB', act: 'chat' }, { h: [13, 16.5], who: ['kid', 'kid2'], b: 'pavilion', act: 'snack' },
+  { h: [11, 13.4], who: ['halmeoni', 'okja'], b: 'picnicB', act: 'chat' }, { h: [18.6, 19.5], who: ['kid', 'kid2'], b: 'pavilion', act: 'snack' },
   { h: [12, 17], who: ['tourist', 'tourist2'], b: 'picnicA', act: 'couple' }, { h: [16, 19.5], who: ['farmer', 'rancher'], b: 'camp', act: 'couple' },
   { h: [17, 20], who: ['chief', 'grandpa'], b: 'pavilion', act: 'chat' }, { h: [13, 17], who: ['keeper'], b: 'picnicB', act: 'nap' }, { h: [18, 20.5], who: ['postman'], b: 'camp', act: 'rest' },
 ];
@@ -394,7 +394,7 @@ function leisureTick() {
   const h = S.min / 60;
   for (const pl of LEISURE_PLANS) {
     if (h < pl.h[0] || h >= pl.h[1]) continue;
-    const key = pl.who.join('+') + S.day; if (G._leisDone && G._leisDone[key]) continue;
+    const key = pl.who.join('+') + pl.b + pl.h[0] + ':' + S.day; if (G._leisDone && G._leisDone[key]) continue;
     const as = pl.who.map(id => G.villagers.find(v => v.id === id));
     if (as.some(a => !a || !a.visible || a.map !== 'island' || a.leis || a.talking || a.hold > 0)) continue;
     if (Math.random() > 0.15) continue;
