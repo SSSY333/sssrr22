@@ -372,3 +372,9 @@ body.talking #actChips, body.devOn #actChips { display: none; }
 #hMoney { display: inline-block; min-width: 5.6em; text-align: left; }
 #hDay { display: inline-block; min-width: 3.6em; }
 #hWeather { display: inline-block; width: 1.3em; text-align: center; }
+/* 표지 그림 (해월도 다이어리) */
+#title { background: #8fcf6a url('img/cover.jpg') center top / cover no-repeat !important; }
+#title .logo, #title .cloud { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; animation: none; }
+#title { justify-content: flex-end !important; }
+#title .title-btns { margin: 0 auto 13vh; }
+#title .title-btns .big { box-shadow: 0 4px 0 var(--line), 0 6px 18px rgba(40, 30, 60, .35); }
