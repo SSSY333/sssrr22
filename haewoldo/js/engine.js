@@ -246,7 +246,6 @@ function objSprite(o) {
 }
 
 function resize() {
-  document.body.classList.toggle('wide', window.innerWidth / Math.max(1, window.innerHeight) >= 0.72);
   const box = $('#game').getBoundingClientRect();
   R.dpr = Math.min(3, window.devicePixelRatio || 1);
   const md = Math.min(box.width, box.height);
