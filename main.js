@@ -610,16 +610,16 @@ function buildStreet() {
   const dashGeo = new THREE.PlaneGeometry(3, 0.15);
   dashGeo.rotateX(-Math.PI / 2);
   const dashes = [];
-  for (let x = -130; x < 280; x += 7) for (const z of [8.25, 21.75]) dashes.push([x, z]);
+  for (let x = -130; x < 280; x += 7) for (const z of [8.25, 21.75]) if (Math.abs(x) > 5) dashes.push([x, z]); // 횡단보도 위에서는 차선이 끊겨요
   const dashIM = new THREE.InstancedMesh(dashGeo, std(0xe9e5dd), dashes.length);
   const m4 = new THREE.Matrix4();
   dashes.forEach(([x, z], i) => dashIM.setMatrixAt(i, m4.makeTranslation(x, 0.03, z)));
   dashIM.receiveShadow = true;
   g.add(dashIM);
-  // 횡단보도 (건물 입구 앞)
+  // 횡단보도 (건물 입구 앞) — 실제처럼 흰 막대가 차가 다니는 방향으로 길게 놓이고, 건너는 방향으로 줄지어 있어요
   const stripes = [];
-  for (let x = -4.5; x <= 4.5; x += 1) for (const z of [8.25, 21.75]) stripes.push([x, z]);
-  const stripeGeo = new THREE.PlaneGeometry(0.5, 5.6);
+  for (const z0 of [5.75, 19.25]) for (let k = 0; k < 6; k++) stripes.push([0, z0 + k]);
+  const stripeGeo = new THREE.PlaneGeometry(6, 0.5);
   stripeGeo.rotateX(-Math.PI / 2);
   const stIM = new THREE.InstancedMesh(stripeGeo, std(0xf0ece4), stripes.length);
   stripes.forEach(([x, z], i) => stIM.setMatrixAt(i, m4.makeTranslation(x, 0.031, z)));
