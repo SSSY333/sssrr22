@@ -424,3 +424,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 .net-sum.good { background: #e3f4e8; color: #1f5e36; }
 .net-sum.ok { background: #fff1d6; color: #7a4e00; }
 .net-sum.bad { background: #fde2df; color: #8a2a20; }
+
+/* 휴대폰: 그림자 대신 화면 가장자리를 은은하게 어둡게 해서 깊이감을 줘요 */
+body.low #app::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 70% at 50% 48%, transparent 55%, rgba(30, 18, 30, 0.26) 100%);
+}

@@ -20,6 +20,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const isTouch = matchMedia('(pointer: coarse)').matches;
 const LOW = isTouch || Math.min(innerWidth, innerHeight) < 600;
+if (LOW) document.body.classList.add('low'); // 휴대폰: 화면 가장자리를 살짝 어둡게 (깊이감)
 const FONT = `'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif`;
 
 try {
@@ -474,6 +475,9 @@ const MOON_LAMP = new THREE.MeshBasicMaterial({
   color: 0xffe2b8,
   map: (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#fff4e0'; x.fillRect(0, 0, 128, 128); for (let i = 0; i < 26; i++) { x.fillStyle = `rgba(190,160,120,${0.08 + Math.random() * 0.14})`; x.beginPath(); x.arc(Math.random() * 128, Math.random() * 128, 3 + Math.random() * 10, 0, 7); x.fill(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })(),
 });
+// 휴대폰은 그림자가 없어 화면이 고르게 밝아 보이므로, 빛과 노출을 살짝 낮춰 깊이감을 살려요
+const LOWK = LOW ? { sun: 0.82, hemi: 0.78, env: 0.8, exp: 0.9 } : { sun: 1, hemi: 1, env: 1, exp: 1 };
+const envLevel = (inside) => (inside ? 0.5 * (0.6 + 0.4 * TOD.envK) : TOD.env) * LOWK.env;
 const hemi = new THREE.HemisphereLight(0xffdcc0, 0x5b4636, 0.45);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffb27a, 2.6);
@@ -551,15 +555,14 @@ function applyTimeOfDay() {
   sun.position.copy(dir).multiplyScalar(160);
   skyMat.uniforms.sunDir.value.set(dir.x, Math.max(0.02, dir.y * 0.4), dir.z).normalize();
   LC(a.sun, b.sun, sun.color);
-  sun.intensity = L(a.sunI, b.sunI);
+  sun.intensity = L(a.sunI, b.sunI) * LOWK.sun;
   LC(a.hemiS, b.hemiS, hemi.color);
   LC(a.hemiG, b.hemiG, hemi.groundColor);
-  hemi.intensity = L(a.hemiI, b.hemiI);
+  hemi.intensity = L(a.hemiI, b.hemiI) * LOWK.hemi;
   TOD.env = L(a.env, b.env);
   TOD.envK = clamp(TOD.env / 0.6, 0.3, 1.4);
-  if (!mode?.inside) scene.environmentIntensity = TOD.env;
-  else scene.environmentIntensity = 0.5 * (0.6 + 0.4 * TOD.envK);
-  renderer.toneMappingExposure = L(a.exp, b.exp);
+  scene.environmentIntensity = envLevel(!!mode?.inside);
+  renderer.toneMappingExposure = L(a.exp, b.exp) * LOWK.exp;
   const win = L(a.win, b.win);
   for (const { m, base } of NIGHT_MATS) m.emissiveIntensity = base * win;
   TOD.lamp = L(a.lamp, b.lamp);
@@ -593,14 +596,16 @@ function buildStreet() {
   const paveFar = pbr('pavement_02', 420 / 2.5, 7 / 2.5, { fallback: 0xb9b0a4 });
   const paveMid = pbr('large_floor_tiles_02', 330 / 2.4, 7 / 2.4, { color: 0xf2e6d6, fallback: 0xd9cbb8 });
   const curb = std(0xb7afa4);
+  // 넓은 보도 면이 아래 연석과 겹쳐 깜빡이지 않도록 살짝 앞으로 당겨 그려요
+  for (const m of [pave, paveFar, paveMid]) { m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -4; }
   // 인도 (건물 쪽)
-  addBox(g, 420, 0.15, 5, curb, 70, 0.075, 2.5, { receive: true });
+  addBox(g, 420, 0.144, 5, curb, 70, 0.072, 2.5, { receive: true });
   addPlane(g, 420, 5, pave, 70, 0.152, 2.5);
   // 중앙 광장
-  addBox(g, 330, 0.15, 7, curb, 45, 0.075, 15, { receive: true });
+  addBox(g, 330, 0.144, 7, curb, 45, 0.072, 15, { receive: true });
   addPlane(g, 330, 7, paveMid, 45, 0.152, 15);
   // 건너편 인도
-  addBox(g, 420, 0.15, 7, curb, 70, 0.075, 28.5, { receive: true });
+  addBox(g, 420, 0.144, 7, curb, 70, 0.072, 28.5, { receive: true });
   addPlane(g, 420, 7, paveFar, 70, 0.152, 28.5);
   // 건너편 너머 바닥
   addPlane(g, 420, 60, pbr('pavement_02', 420 / 3, 60 / 3, { color: 0xd8d0c6, fallback: 0x8a7f74 }), 70, 0.01, 62);
@@ -1791,7 +1796,7 @@ function buildInterior() {
   // 업무 조명
   // 업무공간 조명 (밝고 따뜻하게: 천장 4곳)
   zones.workLights = (LOW ? [[-10.5, -12], [-10.5, -21]] : [[-14.5, -10.5], [-6.5, -10.5], [-14.5, -22.5], [-6.5, -22.5]]).map(([x, z]) => {
-    const l = new THREE.PointLight(0xffe2bd, LOW ? 62 : 42, LOW ? 22 : 18, 1.4);
+    const l = new THREE.PointLight(0xffe2bd, LOW ? 54 : 42, LOW ? 22 : 18, 1.4);
     l.position.set(x, 4.3, z);
     return l;
   });
@@ -3086,7 +3091,7 @@ function setInside(v) {
   if (mode.inside === v) return;
   mode.inside = v;
   scene.environment = (v ? envIn : envOut) || envOut;
-  scene.environmentIntensity = v ? 0.5 * (0.6 + 0.4 * TOD.envK) : TOD.env;
+  scene.environmentIntensity = envLevel(v);
   audio.setMix();
 }
 const isInsideXZ = (x, z) => x > -20 && x < 20 && z < 0 && z > -30;
