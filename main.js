@@ -4145,20 +4145,6 @@ function buildPosterWall(g, wallX0, wallZ, ceil) {
   const rectPx = ([, lx, w, h]) => [lx * PX, (ceil - TOP) * PX, w * PX, h * PX];
   const map = canvasTex(W, H, (c) => {
     if (T?.diff?.image) tileBrick(c, T.diff.image, W, H, PX, x0, wallX0, BRICK_TINT); else { c.fillStyle = '#c8806a'; c.fillRect(0, 0, W, H); }
-    // 벽에 칠한 그림: 왼쪽엔 은행잎, 오른쪽엔 글씨
-    c.save(); c.globalAlpha = 0.88;
-    [[1.2, 2.6, 0.55, -0.4], [2.15, 2.15, 0.42, 0.5], [1.5, 1.7, 0.36, 1.2], [2.5, 3.1, 0.3, -1.0], [0.85, 3.25, 0.26, 0.9]].forEach(([lx, ly, r, rot], i) => {
-      c.save(); c.translate(lx * PX, (ceil - ly) * PX); c.rotate(rot);
-      c.fillStyle = i % 2 ? '#f6c945' : '#f2b33d';
-      c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r * PX, -2.45, -0.7); c.closePath(); c.fill();
-      c.strokeStyle = c.fillStyle; c.lineWidth = 0.035 * PX; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, r * 0.45 * PX); c.stroke();
-      c.restore();
-    });
-    c.fillStyle = '#fff6e8'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.font = `800 ${0.42 * PX}px ${FONT}`; c.fillText('오늘도 함께', 12.05 * PX, (ceil - 2.75) * PX);
-    c.font = `800 ${0.62 * PX}px ${FONT}`; c.fillText('보장원', 12.05 * PX, (ceil - 2.05) * PX);
-    c.fillRect(10.9 * PX, (ceil - 1.6) * PX, 2.3 * PX, 0.05 * PX);
-    c.restore();
     // 포스터 (벽에 딱 붙은 종이 + 아주 얇은 그림자)
     for (const p of posters) {
       const [x, y, w, h] = rectPx(p);
