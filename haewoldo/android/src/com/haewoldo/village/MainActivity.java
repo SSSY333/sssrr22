@@ -10,7 +10,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-/* 해월도 마을생활 — 게임 HTML을 앱 안에서 전체 화면으로 실행. 저장(localStorage)은 앱 데이터에 남는다. */
+/* 해월도 다이어리 — 게임 HTML을 앱 안에서 전체 화면으로 실행. 저장(localStorage)은 앱 데이터에 남는다. */
 public class MainActivity extends Activity implements android.webkit.ValueCallback<String> {
   private WebView web;
 
