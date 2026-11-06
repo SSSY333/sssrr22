@@ -246,9 +246,11 @@ function objSprite(o) {
 }
 
 function resize() {
+  document.body.classList.toggle('wide', window.innerWidth / Math.max(1, window.innerHeight) >= 0.72);
   const box = $('#game').getBoundingClientRect();
   R.dpr = Math.min(3, window.devicePixelRatio || 1);
-  R.scale = box.width >= 440 ? 2.5 : 2;
+  const md = Math.min(box.width, box.height);
+  R.scale = md >= 540 ? 2.8 : md >= 440 ? 2.5 : 2;
   R.cur = 0; R.K = R.scale * R.dpr;
   R.view.width = Math.round(box.width * R.dpr); R.view.height = Math.round(box.height * R.dpr);
   R.cssW = box.width; R.cssH = box.height;
@@ -277,7 +279,7 @@ function prect(g, wx, wy, w, h, col) { g.fillStyle = col; g.fillRect(SX(wx), SY(
 
 function render(dt) {
   const g = R.v, P = G.player, m = M;
-  const zm = G.zoom || 1, sc = (m.interior ? Math.min(R.scale, R.cssW / ((m.W + m.H) * 16 + 16)) : R.scale) * zm;
+  const zm = G.zoom || 1, sc = (m.interior ? Math.min(R.scale, R.cssW / ((m.W + m.H) * 16 + 16), R.cssH / ((m.W + m.H) * 8 + 150)) : R.scale) * zm;
   if (sc !== R.cur) { const pinching = G.pinching; R.cur = sc; R.K = sc * R.dpr; R.lw = R.cssW / sc; R.lh = R.cssH / sc; if (!pinching) G.camSnap = true; else G.camSnap = true; }
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.imageSmoothingEnabled = false;
@@ -734,7 +736,7 @@ function drawBigMap() {
   const c = $('#bigMap'), m = MAPS.island, s = BIGMAP.s, base = BIGMAP.base;
   // 섬이 있는 부분만 잘라서 화면 너비에 맞춤
   const sx0 = 12 * s, sx1 = base.width - 12 * s, sy0 = 4 * s, sy1 = base.height - 6 * s;
-  const cssW = Math.min(460, window.innerWidth) - 20, Z = BIGMAP.zoom, D = R.dpr;
+  const gb = $('#game').getBoundingClientRect(), cssW = Math.min(gb.width - 20, document.body.classList.contains('wide') ? (gb.height - 150) * 2.05 : 460), Z = BIGMAP.zoom, D = R.dpr;
   const cw = cssW * Z, ch = cw * (sy1 - sy0) / (sx1 - sx0);
   c.style.width = cw + 'px'; c.style.height = ch + 'px';
   c.width = Math.round(cw * D); c.height = Math.round(ch * D);

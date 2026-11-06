@@ -266,3 +266,78 @@ button.mini { display: inline; width: auto; height: auto; background: #fff; bord
 .album figure.fc img { object-fit: contain; background: #fff; }
 .muted { color: var(--ink2); }
 #decorBar .dbtns { flex-wrap: wrap; }
+
+/* ---------- 픽셀 아이콘 ---------- */
+.si-icon img, img.si-img { width: 40px; height: 40px; image-rendering: pixelated; display: block; object-fit: contain; }
+img.si-img.chibi { width: 40px; height: 56px; }
+.pcard img { image-rendering: pixelated; }
+.noimg img { width: 40%; aspect-ratio: auto; background: none; }
+img.clueimg { width: 18px; height: 18px; vertical-align: middle; image-rendering: pixelated; }
+.job img, .hair img { width: 30px; height: 42px; image-rendering: pixelated; display: block; margin: 0 auto 2px; }
+
+/* ---------- 4:3 화면 (폴드 펼친 화면 · 태블릿 · PC) ---------- */
+body.wide { display: flex; align-items: center; justify-content: center; }
+body.wide #game { width: min(100vw, calc(100dvh * 4 / 3)); height: auto; aspect-ratio: 4 / 3; margin: 0; }
+body.wide #hud { padding: 8px 12px 0; }
+body.wide .hbar { max-width: 640px; }
+body.wide .hclock, body.wide .hmoney, body.wide .hbtn { font-size: 14px; padding: 3px 8px; }
+body.wide #actBtn { width: 78px; min-width: 78px; height: 78px; right: 14px; bottom: 14px; }
+body.wide #actBtn span { font-size: 24px; } body.wide #actBtn b { font-size: 12px; }
+body.wide #decorBtn { bottom: 16px; }
+body.wide #toasts { top: 110px; left: 18%; right: 18%; }
+body.wide #questBtn { top: 138px; }
+body.wide #questPanel { top: 178px; bottom: 104px; width: 300px; }
+body.wide #saveDot { top: 84px; }
+body.wide #dlg { left: 50%; right: auto; width: min(680px, 92%); transform: translateX(-50%); padding-bottom: 10px; }
+body.wide .dlg-box { min-height: 96px; padding: 10px; }
+body.wide #dlgFace { width: 72px; height: 72px; }
+body.wide #dlgChoices { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
+body.wide .choice { font-size: 15px; padding: 8px 12px; }
+body.wide #sheet { align-items: center; justify-content: center; }
+body.wide .sheet-card { width: min(760px, 94%); max-height: 94%; border: 4px solid var(--line); border-radius: 20px; padding: 10px 12px 12px; box-shadow: 0 5px 0 var(--line); }
+body.wide #sheetBody { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)) !important; gap: 7px; }
+body.wide .sitem { min-height: 64px; padding: 6px 4px; }
+body.wide .sitem.wide { grid-column: auto; flex-direction: column; min-height: 64px; }
+body.wide .si-label { font-size: 13px; }
+body.wide #panel { padding: 8px; }
+body.wide .panel-card { width: min(820px, 100%); max-height: 98%; }
+body.wide #panelBody { padding: 8px 12px 12px; }
+body.wide .pgrid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 7px; }
+body.wide .pcard { min-height: 84px; }
+body.wide .pcard img { max-height: 56px; }
+body.wide .buy { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; text-align: left; }
+body.wide .buy img { max-width: 100%; max-height: 300px; grid-row: 1 / 6; justify-self: center; }
+body.wide .buy .prow { grid-column: 2; }
+body.wide #panel.full .strip { float: left; margin: 0 14px 6px 0; }
+body.wide #panel.full .strip img { height: min(72dvh, 470px); }
+body.wide #panel.full .prow { overflow: hidden; }
+body.wide .countdown { height: 60dvh; }
+body.wide .album { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+body.wide .aimg img { width: auto; max-width: 55%; max-height: 50dvh; float: left; margin-right: 12px; }
+body.wide .hplan img { max-height: 40dvh; width: auto; max-width: 100%; }
+body.wide .cal { columns: 2; } body.wide .cal li { break-inside: avoid; }
+body.wide .nb { display: inline-block; width: calc(50% - 6px); vertical-align: top; margin-right: 4px; }
+body.wide .pop { max-width: 640px; }
+body.wide .pop.left ul { columns: 2; column-gap: 20px; max-height: 62dvh; }
+body.wide #newgame .pop.wide { max-width: 760px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; align-content: start; }
+body.wide #newgame .pop.wide > h2 { grid-column: 1 / 3; grid-row: 1; margin: 0 0 6px; }
+body.wide #newgame .pop.wide > .pv { grid-column: 1; grid-row: 2 / 4; align-self: start; }
+body.wide #newgame .pop.wide > label:nth-of-type(1) { grid-column: 1; grid-row: 4; }
+body.wide #newgame .pop.wide > label:nth-of-type(2) { grid-column: 1; grid-row: 5; }
+body.wide #newgame .pop.wide > div.lbl:nth-of-type(2) { grid-column: 2; grid-row: 2; margin-top: 0; }
+body.wide #newgame .pop.wide > #jobList { grid-column: 2; grid-row: 3; }
+body.wide #newgame .pop.wide > div.lbl:nth-of-type(4) { grid-column: 2; grid-row: 4; }
+body.wide #newgame .pop.wide > #hairList { grid-column: 2; grid-row: 5; }
+body.wide #newgame .pop.wide > .ng-btns { grid-column: 1 / 3; grid-row: 6; }
+body.wide #newgame .lbl { margin: 8px 0 4px; }
+body.wide #title { padding: 30px 22px 24px; }
+body.wide .logo { margin-top: 2vh; } body.wide .logo h1 { font-size: 52px; }
+body.wide .rel-body { padding-bottom: 8px; }
+body.wide .stats { grid-template-columns: repeat(4, 1fr); }
+body.wide #mapView .map-wrap { flex: 1; }
+body.wide #jobList { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+body.wide #hairList { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+body.wide .job, body.wide .hair { padding: 4px 2px; font-size: 12px; }
+body.wide .job img, body.wide .hair img { width: 24px; height: 34px; }
+body.wide #newgame .pop.wide { padding: 12px 14px; }
+body.wide #newgame .pv p { font-size: 13px; }

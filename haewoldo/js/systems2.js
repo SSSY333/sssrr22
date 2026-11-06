@@ -245,7 +245,7 @@ function notebookMenu(tab = 'case') {
     html = CASE_ORDER.map(id => {
       const C = CASES[id], st = S.cases[id];
       if (!st) return `<div class="nb lock"><b>🔒 ???</b><small>아직 일어나지 않은 사건</small></div>`;
-      const clues = C.clues.map(c => `<li class="${st.clues[c[0]] ? 'ok' : ''}">${st.clues[c[0]] ? '✔ ' + c[1] + ' — ' + c[4] : '○ 단서 미발견'}</li>`).join('');
+      const clues = C.clues.map(c => `<li class="${st.clues[c[0]] ? 'ok' : ''}">${st.clues[c[0]] ? `<img class="clueimg" src="${spriteIcon(sprProp(c[0]), 1.5)}"> ` + c[1] + ' — ' + c[4] : '○ 단서 미발견'}</li>`).join('');
       const talks = C.talks.map(t => `<li class="${st.talks[t[0]] ? 'ok' : ''}">${st.talks[t[0]] ? `✔ ${NPC_LOOKS[t[0]].name}: "${t[1]}"` : '○ 탐문 필요'}</li>`).join('');
       return `<div class="nb ${st.step === 'solved' ? 'solved' : ''}"><b>${C.icon} ${C.name}</b><small>${C.place} · ${st.step === 'solved' ? '해결 — ' + C.truth : st.step === 'report' ? '형사님에게 상담 필요' : '수사 중'}</small><ul>${clues}${talks}</ul>${caseReady(id) ? `<button class="big nbdeduce" data-id="${id}">🧠 단서 조합해서 추리하기</button>` : ''}</div>`;
     }).join('');

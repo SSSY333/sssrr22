@@ -457,7 +457,7 @@ function festDecorPick(key) {
     const st = S.fest[key], F = FESTS[st.fid], chosen = new Set();
     const draw = () => {
       const cost = [...chosen].reduce((a, i) => a + F.decor[i][2], 0);
-      openPanel('장식 · 가판대 배치', `<p class="psub">예산 <b>${fmtMoney(st.budget)}</b> · 선택 ${fmtMoney(cost)} · 최대 3개</p><div class="pgrid">${F.decor.map((d, i) => `<button class="pcard ${chosen.has(i) ? 'on' : ''}" data-i="${i}"><span class="pic">${d[1]}</span><b>${d[0]}</b><small>${fmtMoney(d[2])} · 장식 +${d[3]}</small></button>`).join('')}</div><button id="fdOk" class="big">이렇게 꾸미기</button>`, (body) => {
+      openPanel('장식 · 가판대 배치', `<p class="psub">예산 <b>${fmtMoney(st.budget)}</b> · 선택 ${fmtMoney(cost)} · 최대 3개</p><div class="pgrid">${F.decor.map((d, i) => `<button class="pcard ${chosen.has(i) ? 'on' : ''}" data-i="${i}"><img src="${decorIcon(d[1])}"><b>${d[0]}</b><small>${fmtMoney(d[2])} · 장식 +${d[3]}</small></button>`).join('')}</div><button id="fdOk" class="big">이렇게 꾸미기</button>`, (body) => {
         body.querySelectorAll('.pcard').forEach(b => b.onclick = () => { const i = +b.dataset.i; if (chosen.has(i)) chosen.delete(i); else if (chosen.size < 3) chosen.add(i); draw(); });
         body.querySelector('#fdOk').onclick = () => { const c2 = [...chosen].reduce((a, i) => a + F.decor[i][2], 0); if (!chosen.size) { toast('하나 이상 골라요'); return; } if (c2 > st.budget) { toast('예산이 모자라요'); return; } st.budget -= c2; st.decor = [...chosen]; st.step = 4; closePanel(); toast('🎪 장식과 가판대 배치 완료!'); save(); res(); };
       });
@@ -474,7 +474,7 @@ function festRolePick(key) {
     let ri = 0; st.roles = {};
     const draw = () => {
       if (ri >= F.roles.length) { st.part += F.roles.reduce((a, r, i) => a + (st.roles[r] === fits[i] ? 3 : 1), 0); st.step = 5; closePanel(); toast('🙌 역할 배정 끝! 축제 준비 완료'); qSet('fest_' + key, { state: 'READY_TO_COMPLETE' }); save(); res(); return; }
-      openPanel(`역할 배정 — ${F.roles[ri]}`, `<p class="psub">${ri + 1}/${F.roles.length} · 어울리는 사람을 고르면 참여도가 더 올라요</p><div class="pgrid">${cand.filter(v => !Object.values(st.roles).includes(v)).map(v => `<button class="pcard" data-v="${v}"><span class="pic">🙂</span><b>${NPC_LOOKS[v].name}</b></button>`).join('')}</div>`, (body) => {
+      openPanel(`역할 배정 — ${F.roles[ri]}`, `<p class="psub">${ri + 1}/${F.roles.length} · 어울리는 사람을 고르면 참여도가 더 올라요</p><div class="pgrid">${cand.filter(v => !Object.values(st.roles).includes(v)).map(v => `<button class="pcard" data-v="${v}"><img src="${faceIcon(NPC_LOOKS[v], 'base', 'smile', v)}"><b>${NPC_LOOKS[v].name}</b></button>`).join('')}</div>`, (body) => {
         body.querySelectorAll('.pcard').forEach(b => b.onclick = () => { st.roles[F.roles[ri]] = b.dataset.v; ri++; draw(); });
       });
       G._panelClose = () => res();
