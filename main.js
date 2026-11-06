@@ -1767,7 +1767,16 @@ function buildInterior() {
 
   // 뒷벽 (벽돌)
   addBox(g, W, CEIL, 0.3, std(0xd9c6b0), 0, CEIL / 2, -D + 0.15);
-  addWallPlane(g, W - 0.2, CEIL, pbr('red_brick_03', (W - 0.2) / 2.6, CEIL / 2.6, { color: 0xf2e2d4 }), 0, CEIL / 2, -D + 0.31);
+  // 벽돌 벽은 포스터 벽 구간을 빼고 양쪽으로 나눠 그리고, 무늬가 끊기지 않게 맞춰요
+  const WALL_X0 = -W / 2 + 0.1;
+  const brickSeg = (a, b) => {
+    const m = pbr('red_brick_03', (b - a) / BRICK_TILE, CEIL / BRICK_TILE, { color: 0xf2e2d4 });
+    for (const t of [m.map, m.normalMap]) if (t) t.offset.x = ((a - WALL_X0) / BRICK_TILE) % 1;
+    addWallPlane(g, b - a, CEIL, m, (a + b) / 2, CEIL / 2, -D + 0.31);
+  };
+  brickSeg(WALL_X0, POSTER_WALL.x0);
+  brickSeg(POSTER_WALL.x1, W / 2 - 0.1);
+  buildPosterWall(g, WALL_X0, -D + 0.31, CEIL);
   // 벽시계
   const clockTex = canvasTex(128, 128, (c) => {
     c.fillStyle = '#fffaf2'; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.fill();
@@ -4075,56 +4084,20 @@ function onResize() {
 addEventListener('resize', onResize);
 
 /* =========================================================================
-   업무공간 포스터 벽 — 이것저것 붙어 있는 알록달록한 벽
+   업무공간 포스터 벽 — 벽돌 벽 그림에 포스터를 함께 그려 넣어 벽과 한 몸이에요
    ========================================================================= */
-const POSTER_WALL = { x: -6.6, z: -29.52, y: 1.75 };
-function posterTex(kind, w, h) {
-  const PX = 360; // 1 m 당 픽셀
-  return canvasTex(Math.round(w * PX), Math.round(h * PX), (c, W, H) => {
-    const T = (txt, x, y, size, color, weight = 800, align = 'center') => { c.fillStyle = color; c.font = `${weight} ${size}px ${FONT}`; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(txt, x, y); };
-    if (kind === 'workshop') {
-      const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#ffb347'); g.addColorStop(1, '#e8613c'); c.fillStyle = g; c.fillRect(0, 0, W, H);
-      for (let i = 0; i < 9; i++) { c.save(); c.translate(W * (0.15 + (i % 3) * 0.35), H * (0.12 + Math.floor(i / 3) * 0.13)); c.rotate(i * 0.7); c.fillStyle = i % 2 ? '#ffe08a' : '#fff1c4'; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, W * 0.09, -2.3, -0.85); c.closePath(); c.fill(); c.restore(); }
-      T('보장원', W / 2, H * 0.52, W * 0.15, '#fff');
-      T('가을 워크숍', W / 2, H * 0.64, W * 0.11, '#fff');
-      T('11.21 FRI · 북악산 산책', W / 2, H * 0.78, W * 0.055, '#5a1e12', 600);
-      T('도시락 · 단체사진 · 보물찾기', W / 2, H * 0.86, W * 0.05, '#5a1e12', 600);
-    } else if (kind === 'cat') {
-      c.fillStyle = '#fbf8f0'; c.fillRect(0, 0, W, H);
-      T('고양이를 찾습니다', W / 2, H * 0.1, W * 0.1, '#c0392b');
-      const cx = W / 2, cy = H * 0.38, r = W * 0.22;
-      c.fillStyle = '#f2a65a'; c.beginPath(); c.moveTo(cx - r * 0.9, cy - r * 0.4); c.lineTo(cx - r * 0.7, cy - r * 1.25); c.lineTo(cx - r * 0.15, cy - r * 0.8); c.lineTo(cx + r * 0.15, cy - r * 0.8); c.lineTo(cx + r * 0.7, cy - r * 1.25); c.lineTo(cx + r * 0.9, cy - r * 0.4); c.fill();
-      c.beginPath(); c.ellipse(cx, cy, r, r * 0.85, 0, 0, 7); c.fill();
-      c.fillStyle = '#2b2230'; for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(cx + sx * r * 0.38, cy - r * 0.05, r * 0.09, r * 0.14, 0, 0, 7); c.fill(); }
-      c.fillStyle = '#e9718d'; c.beginPath(); c.moveTo(cx - r * 0.08, cy + r * 0.2); c.lineTo(cx + r * 0.08, cy + r * 0.2); c.lineTo(cx, cy + r * 0.3); c.fill();
-      c.strokeStyle = '#2b2230'; c.lineWidth = W * 0.006; for (const sx of [-1, 1]) for (const dy of [-0.05, 0.08]) { c.beginPath(); c.moveTo(cx + sx * r * 0.3, cy + r * (0.3 + dy)); c.lineTo(cx + sx * r * 1.1, cy + r * (0.2 + dy * 2)); c.stroke(); }
-      T('이름: 치즈 (주황색, 겁 많음)', W / 2, H * 0.66, W * 0.055, '#2b2230', 600);
-      T('탕비실 간식 냄새에 잘 나타나요', W / 2, H * 0.72, W * 0.05, '#6e5f62', 400);
-      c.setLineDash([W * 0.015, W * 0.012]); c.strokeStyle = '#999'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, H * 0.8); c.lineTo(W, H * 0.8); c.stroke(); c.setLineDash([]);
-      for (let i = 0; i < 7; i++) { const x = (i + 0.5) * W / 7; c.strokeStyle = '#ccc'; c.beginPath(); c.moveTo(i * W / 7, H * 0.8); c.lineTo(i * W / 7, H); c.stroke(); c.save(); c.translate(x, H * 0.9); c.rotate(-Math.PI / 2); T('☎ 내선 1234', 0, 0, W * 0.035, '#2b2230', 600); c.restore(); }
-    } else if (kind === 'cheer') {
+const POSTER_WALL = { x0: -11.5, x1: 2.5 }; // 회의실 옆 유리벽 ~ 수면실 벽 사이 뒷벽
+const BRICK_TILE = 2.6, BRICK_TINT = '#f2e2d4';
+function drawPoster(kind, c, W, H) {
+  const T = (txt, x, y, size, color, weight = 800, align = 'center') => { c.fillStyle = color; c.font = `${weight} ${size}px ${FONT}`; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(txt, x, y); };
+  if (kind === 'cheer') {
       c.fillStyle = '#c9e8dc'; c.fillRect(0, 0, W, H);
       c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(W * 0.5, H * 0.36, W * 0.3, 0, 7); c.fill();
       T('오늘도', W / 2, H * 0.3, W * 0.13, '#2f6b4f');
       T('수고했어요', W / 2, H * 0.44, W * 0.13, '#2f6b4f');
       T('☺', W / 2, H * 0.66, W * 0.22, '#e0703c', 400);
       T('물 한 잔 · 스트레칭 한 번', W / 2, H * 0.88, W * 0.06, '#3e7c74', 600);
-    } else if (kind === 'bauhaus') {
-      c.fillStyle = '#f1e9da'; c.fillRect(0, 0, W, H);
-      c.fillStyle = '#d6452f'; c.beginPath(); c.arc(W * 0.35, H * 0.3, W * 0.25, 0, 7); c.fill();
-      c.fillStyle = '#1f4fa0'; c.fillRect(W * 0.45, H * 0.42, W * 0.42, H * 0.3);
-      c.fillStyle = '#f2b33d'; c.beginPath(); c.moveTo(W * 0.1, H * 0.85); c.lineTo(W * 0.5, H * 0.85); c.lineTo(W * 0.3, H * 0.55); c.fill();
-      c.fillStyle = '#2b2230'; c.fillRect(W * 0.08, H * 0.9, W * 0.84, H * 0.012);
-      T('FORM · COLOR · OFFICE', W / 2, H * 0.95, W * 0.05, '#2b2230', 600);
-    } else if (kind === 'night') {
-      const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#1b1f45'); g.addColorStop(0.7, '#6b4a8a'); g.addColorStop(1, '#f39b6d'); c.fillStyle = g; c.fillRect(0, 0, W, H);
-      c.fillStyle = '#fff3c4'; c.beginPath(); c.arc(W * 0.75, H * 0.2, W * 0.08, 0, 7); c.fill();
-      for (let i = 0; i < 40; i++) { c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect((i * 97) % W, (i * 53) % (H * 0.45), 2, 2); }
-      c.fillStyle = '#20183a'; c.beginPath(); c.moveTo(0, H * 0.78); c.quadraticCurveTo(W * 0.35, H * 0.5, W * 0.7, H * 0.7); c.lineTo(W, H * 0.6); c.lineTo(W, H); c.lineTo(0, H); c.fill();
-      c.fillStyle = '#2b2045'; c.fillRect(W * 0.3, H * 0.74, W * 0.4, H * 0.1);
-      c.beginPath(); c.moveTo(W * 0.24, H * 0.75); c.quadraticCurveTo(W * 0.5, H * 0.64, W * 0.76, H * 0.75); c.fill();
-      T('SEOUL · 광화문의 밤', W / 2, H * 0.92, W * 0.07, '#ffe2bd', 600);
-    } else if (kind === 'lunch') {
+  } else if (kind === 'lunch') {
       c.fillStyle = '#fffaf0'; c.fillRect(0, 0, W, H);
       c.fillStyle = '#f2b33d'; c.fillRect(0, 0, W, H * 0.16);
       T('🍚 오늘 점심 뭐 먹지?', W / 2, H * 0.08, W * 0.08, '#3b2a22');
@@ -4135,21 +4108,14 @@ function posterTex(kind, w, h) {
         c.strokeStyle = '#d6452f'; c.lineWidth = W * 0.008;
         for (let k = 0; k < n; k++) { const x = W * 0.55 + (k % 5) * W * 0.05 + Math.floor(k / 5) * W * 0.3; c.beginPath(); if (k % 5 === 4) { c.moveTo(x - W * 0.22, y + W * 0.02); c.lineTo(x + W * 0.01, y - W * 0.03); } else { c.moveTo(x, y - W * 0.035); c.lineTo(x, y + W * 0.035); } c.stroke(); }
       });
-    } else if (kind === 'sports') {
+  } else if (kind === 'sports') {
       c.fillStyle = '#2f6fd6'; c.fillRect(0, 0, W, H);
       c.fillStyle = '#fff'; for (let i = 0; i < 6; i++) c.fillRect(0, H * (0.6 + i * 0.07), W, H * 0.02);
       c.fillStyle = '#f2b33d'; c.beginPath(); c.moveTo(W * 0.32, H * 0.18); c.lineTo(W * 0.68, H * 0.18); c.quadraticCurveTo(W * 0.68, H * 0.42, W * 0.5, H * 0.45); c.quadraticCurveTo(W * 0.32, H * 0.42, W * 0.32, H * 0.18); c.fill();
       c.fillRect(W * 0.46, H * 0.44, W * 0.08, H * 0.06); c.fillRect(W * 0.38, H * 0.5, W * 0.24, H * 0.04);
       T('보장원 체육대회', W / 2, H * 0.08, W * 0.095, '#fff');
       T('탁구 · 줄다리기 · 계주', W / 2, H * 0.56, W * 0.06, '#fff', 600);
-    } else if (kind === 'coffee') {
-      c.fillStyle = '#3b2a22'; c.fillRect(0, 0, W, H);
-      c.strokeStyle = '#e9c46a'; c.lineWidth = W * 0.02; c.strokeRect(W * 0.06, H * 0.05, W * 0.88, H * 0.9);
-      c.fillStyle = '#f3ead8'; c.fillRect(W * 0.3, H * 0.32, W * 0.34, H * 0.3); c.beginPath(); c.arc(W * 0.66, H * 0.45, W * 0.08, -1.6, 1.6); c.lineWidth = W * 0.035; c.strokeStyle = '#f3ead8'; c.stroke();
-      c.strokeStyle = 'rgba(243,234,216,0.7)'; c.lineWidth = W * 0.015; for (const dx of [0.38, 0.47, 0.56]) { c.beginPath(); c.moveTo(W * dx, H * 0.28); c.quadraticCurveTo(W * (dx + 0.04), H * 0.22, W * dx, H * 0.15); c.stroke(); }
-      T('커피 먼저,', W / 2, H * 0.72, W * 0.1, '#e9c46a');
-      T('일은 그다음', W / 2, H * 0.82, W * 0.1, '#e9c46a');
-    } else { // 공지
+  } else {
       c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
       c.fillStyle = '#1e8c5a'; c.fillRect(0, 0, W, H * 0.22);
       T('공지', W / 2, H * 0.11, W * 0.13, '#fff');
@@ -4157,32 +4123,59 @@ function posterTex(kind, w, h) {
       T('탕비실 컵은 제자리에', W / 2, H * 0.58, W * 0.08, '#2b2230', 600);
       T('프린터가 화나면 살살 달래기', W / 2, H * 0.74, W * 0.07, '#2b2230', 600);
       T('— 총무팀', W * 0.9, H * 0.9, W * 0.06, '#6e5f62', 400, 'right');
-    }
-  });
+  }
 }
-function buildPosterWall() {
-  const g = interior;
-  const { x, z, y } = POSTER_WALL;
-  // [종류, 가로 오프셋, 높이 오프셋, 폭, 높이, 기울기]
-  const LAYOUT = [
-    ['workshop', -2.0, 0.2, 0.9, 1.25, 0.03], ['cat', -0.95, 0.35, 0.7, 0.98, -0.05], ['cheer', -0.05, 0.05, 0.75, 1.0, 0.02],
-    ['night', 0.95, 0.32, 1.0, 0.72, -0.02], ['lunch', 2.05, 0.15, 0.78, 1.0, 0.04], ['bauhaus', -1.55, -0.72, 0.62, 0.8, -0.03],
-    ['coffee', -0.55, -0.66, 0.6, 0.78, 0.05], ['sports', 0.55, -0.55, 0.72, 0.98, -0.04], ['notice', 1.75, -0.72, 0.7, 0.6, 0.02],
-  ];
-  const tape = std(0xf3e7c2, { roughness: 0.9 });
-  const pins = [0xe53935, 0x1e63d6, 0x2e7d32, 0xf2b33d].map((c) => std(c, { roughness: 0.4 }));
-  LAYOUT.forEach(([kind, dx, dy, w, h, rz], i) => {
-    const zz = z + 0.012 + i * 0.002;
-    const m = addWallPlane(g, w, h, new THREE.MeshStandardMaterial({ map: posterTex(kind, w, h), roughness: 0.85 }), x + dx, y + dy, zz);
-    m.rotation.z = rz;
-    const cs = Math.cos(rz), sn = Math.sin(rz);
-    const at = (px, py) => [x + dx + px * cs - py * sn, y + dy + px * sn + py * cs];
-    if (i % 2) {
-      for (const sx of [-1, 1]) { const [tx, ty] = at(sx * (w / 2 - 0.04), h / 2 - 0.03); const t = addWallPlane(g, 0.14, 0.045, tape, tx, ty, zz + 0.003); t.rotation.z = rz + sx * 0.6; }
-    } else {
-      for (const sx of [-1, 1]) { const [px, py] = at(sx * (w / 2 - 0.05), h / 2 - 0.05); addSph(g, 0.018, pins[(i + (sx > 0)) % 4], px, py, zz + 0.012); }
+// 벽돌 무늬를 실제 벽과 같은 위치·간격으로 이어 그려요
+function tileBrick(c, img, W, H, PX, x0, wallX0, tint) {
+  const tile = BRICK_TILE * PX;
+  const i0 = Math.floor((x0 - wallX0) / BRICK_TILE);
+  for (let i = i0; (wallX0 + i * BRICK_TILE - x0) * PX < W; i++) {
+    const dx = (wallX0 + i * BRICK_TILE - x0) * PX;
+    for (let k = 0; H - k * tile > 0; k++) c.drawImage(img, dx, H - (k + 1) * tile, tile, tile);
+  }
+  if (tint) { c.globalCompositeOperation = 'multiply'; c.fillStyle = tint; c.fillRect(0, 0, W, H); c.globalCompositeOperation = 'source-over'; }
+}
+function buildPosterWall(g, wallX0, wallZ, ceil) {
+  const { x0, x1 } = POSTER_WALL, PX = 200;
+  const W = Math.round((x1 - x0) * PX), H = Math.round(ceil * PX);
+  const T = pbrTex.red_brick_03;
+  // 반듯하게 한 줄로 (윗선 맞춤) — [종류, 왼쪽 x(m, 벽 구간 기준), 폭, 높이]
+  const TOP = 2.95;
+  const posters = [['cheer', 3.41, 1.24, 1.65], ['lunch', 5.0, 1.29, 1.65], ['sports', 6.64, 1.21, 1.65], ['notice', 8.2, 1.6, 1.3]];
+  const rectPx = ([, lx, w, h]) => [lx * PX, (ceil - TOP) * PX, w * PX, h * PX];
+  const map = canvasTex(W, H, (c) => {
+    if (T?.diff?.image) tileBrick(c, T.diff.image, W, H, PX, x0, wallX0, BRICK_TINT); else { c.fillStyle = '#c8806a'; c.fillRect(0, 0, W, H); }
+    // 벽에 칠한 그림: 왼쪽엔 은행잎, 오른쪽엔 글씨
+    c.save(); c.globalAlpha = 0.88;
+    [[1.2, 2.6, 0.55, -0.4], [2.15, 2.15, 0.42, 0.5], [1.5, 1.7, 0.36, 1.2], [2.5, 3.1, 0.3, -1.0], [0.85, 3.25, 0.26, 0.9]].forEach(([lx, ly, r, rot], i) => {
+      c.save(); c.translate(lx * PX, (ceil - ly) * PX); c.rotate(rot);
+      c.fillStyle = i % 2 ? '#f6c945' : '#f2b33d';
+      c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r * PX, -2.45, -0.7); c.closePath(); c.fill();
+      c.strokeStyle = c.fillStyle; c.lineWidth = 0.035 * PX; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, r * 0.45 * PX); c.stroke();
+      c.restore();
+    });
+    c.fillStyle = '#fff6e8'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = `800 ${0.42 * PX}px ${FONT}`; c.fillText('오늘도 함께', 12.05 * PX, (ceil - 2.75) * PX);
+    c.font = `800 ${0.62 * PX}px ${FONT}`; c.fillText('보장원', 12.05 * PX, (ceil - 2.05) * PX);
+    c.fillRect(10.9 * PX, (ceil - 1.6) * PX, 2.3 * PX, 0.05 * PX);
+    c.restore();
+    // 포스터 (벽에 딱 붙은 종이 + 아주 얇은 그림자)
+    for (const p of posters) {
+      const [x, y, w, h] = rectPx(p);
+      c.fillStyle = 'rgba(40,20,20,0.28)'; c.fillRect(x + 3, y + 4, w, h);
+      c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.translate(x, y); drawPoster(p[0], c, w, h); c.restore();
     }
   });
+  let normalMap = null;
+  if (T?.nor?.image) {
+    normalMap = canvasTex(W, H, (c) => {
+      tileBrick(c, T.nor.image, W, H, PX, x0, wallX0, null);
+      c.fillStyle = 'rgb(128,128,255)'; // 포스터 부분은 평평하게
+      for (const p of posters) { const [x, y, w, h] = rectPx(p); c.fillRect(x, y, w, h); }
+    }, false);
+  }
+  const m = new THREE.MeshStandardMaterial({ map, normalMap, roughness: 1 });
+  addWallPlane(g, x1 - x0, ceil, m, (x0 + x1) / 2, ceil / 2, wallZ);
 }
 
 /* =========================================================================
@@ -4577,7 +4570,6 @@ buildGate();
 buildTower();
 buildInterior();
 buildVentRoom();
-buildPosterWall();
 buildWorkExtras();
 // 모든 책상을 무작위로 다채롭게 꾸며요 (모든 접속자에게 같은 모습)
 [...desks.keys()].forEach((key, i) => {
