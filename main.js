@@ -8,6 +8,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* =========================================================================
    기본 유틸
@@ -36,7 +37,7 @@ try {
   $('#intro').classList.add('hidden');
   throw e;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio, LOW ? 1.5 : 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, LOW ? 1.25 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1777,19 +1778,6 @@ function buildInterior() {
   });
 
   /* ---------- 로비 ---------- */
-  const recep = new THREE.Group();
-  recep.position.set(-6.2, 0, -3.2);
-  g.add(recep);
-  const walnut = pbr('walnut_veneer', 2, 1, { rough: 0.5, fallback: 0xb07a4a });
-  addBox(recep, 3.4, 0.9, 0.8, walnut, 0, 0.45, 0);
-  addBox(recep, 3.6, 0.05, 1.0, std(0xf4efe6, { roughness: 0.2 }), 0, 0.925, 0);
-  textPlane(recep, '보장원', 1.6, 0.4, 0, 0.5, 0.41, 0, { color: '#fff1d6', size: 130 });
-  colBox(-6.2, -3.2, 3.7, 1.1);
-  colCircle(3.4, -1.4, 0.32);
-  addBox(recep, 0.4, 0.3, 0.05, std(0x1c1c20), 0.9, 1.1, -0.2, { rx: -0.2 });
-  addModel(recep, 'ceramic_vase_01_1k', 0.35, -1.2, 0.95, 0.1);
-  blob(recep, 0, 0, 0, 4.2, 1.6);
-  addModel(g, 'concrete_cat_statue_1k', 0.45, 3.4, 0, -1.4, -0.6);
   makePlant(g, -2.4, -1.0, 1.2);
   makePlant(g, 2.4, -1.0, 1.2);
 
@@ -4722,6 +4710,66 @@ buildWorkExtras();
 });
 buildWorldColliders();
 interior.traverse((m) => { if (m.isMesh) m.receiveShadow = true; });
+// 휴대폰: 거리의 움직이지 않는 물건들을 재질별로 한 덩어리로 합쳐 그리기 횟수를 줄여요 (모양은 그대로)
+function mergeStatic(root, skip) {
+  const CELL = 48, buckets = new Map(), v = new THREE.Vector3();
+  root.updateMatrixWorld(true);
+  const walk = (o) => {
+    if (skip.has(o)) return;
+    for (const c of o.children) walk(c);
+    const m = o;
+    if (!m.isMesh || m.isInstancedMesh || m.isSkinnedMesh || Array.isArray(m.material) || !m.visible) return;
+    const mat = m.material, geo = m.geometry;
+    if (mat.transparent && mat !== BLOB_MAT) return;
+    if (geo.morphAttributes && Object.keys(geo.morphAttributes).length) return;
+    const pos = geo.attributes.position;
+    if (!pos || !(pos.array instanceof Float32Array) || pos.isInterleavedBufferAttribute) return;
+    const names = Object.keys(geo.attributes).sort();
+    if (names.some((n) => { const a = geo.attributes[n]; return a.isInterleavedBufferAttribute || !(a.array instanceof Float32Array); })) return;
+    geo.boundingSphere || geo.computeBoundingSphere();
+    v.copy(geo.boundingSphere.center).applyMatrix4(m.matrixWorld);
+    const key = [mat.uuid, names.map((n) => n + geo.attributes[n].itemSize).join(','), !!geo.index, m.renderOrder, m.frustumCulled, Math.floor(v.x / CELL), Math.floor(v.z / CELL)].join('|');
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(m);
+  };
+  walk(root);
+  let before = 0, after = 0;
+  for (const list of buckets.values()) {
+    before += list.length;
+    if (list.length < 2) { after++; continue; }
+    const geos = list.map((m) => { const g = m.geometry.clone(); g.clearGroups(); g.applyMatrix4(m.matrixWorld); return g; });
+    const merged = mergeGeometries(geos, false);
+    geos.forEach((g) => g.dispose());
+    if (!merged) { after += list.length; continue; }
+    const src = list[0], mm = new THREE.Mesh(merged, src.material);
+    mm.renderOrder = src.material.transparent ? src.renderOrder : src.renderOrder - 1; // 합친 덩어리를 먼저 그려 얇게 겹친 면(보도블록 등)이 위로 보이게 mm.frustumCulled = src.frustumCulled;
+    mm.receiveShadow = src.receiveShadow; mm.castShadow = src.castShadow;
+    mm.matrixAutoUpdate = false;
+    scene.add(mm);
+    list.forEach((m) => m.parent.remove(m));
+    after++;
+  }
+  return { before, after };
+}
+// 코드가 손잡이를 쥐고 있는 물체(문·고양이·차·프린터·커피머신 등 움직이거나 바뀌는 것)는 합치지 않아요
+function heldObjects(roots, keep) {
+  const out = new Set(), seen = new Set();
+  const scan = (v, d) => {
+    if (!v || typeof v !== 'object' || seen.has(v) || d > 7) return;
+    seen.add(v);
+    if (v.isObject3D) { if (!keep.has(v)) out.add(v); return; }
+    if (v.isMaterial || v.isTexture || v.isBufferGeometry || v.isColor || v.isVector3 || ArrayBuffer.isView(v)) return;
+    if (v instanceof Map || v instanceof Set) { for (const x of v.values()) scan(x, d + 1); return; }
+    for (const k in v) { try { scan(v[k], d + 1); } catch {} }
+  };
+  roots.forEach((r) => scan(r, 0));
+  return out;
+}
+if (LOW) {
+  const skip = heldObjects([cars, cats, doors, blinkers, pingpong, zones, vent, papers, board, stations, printers, flyers, shredder, nightLights, people, leaves, stars, seats], new Set([scene, street, interior]));
+  const a = mergeStatic(street, skip), b = mergeStatic(interior, skip);
+  window.__mergeInfo = { street: a, interior: b, held: skip.size };
+}
 seats.forEach((s) => seatById.set(s.id, s));
 
 // 데스크톱: 따뜻한 조명이 은은하게 번지는 블룸 (휴대폰은 가볍게 생략)
@@ -5074,7 +5122,7 @@ requestAnimationFrame(frame);
 window.__office = {
   board, openNotes, addNote,
   stations, desks,
-  changeCharacter, takePhoto, onPeers, renderer, remotes,
+  changeCharacter, takePhoto, onPeers, renderer, remotes, scene, street, interior, raycaster,
   camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
   setHour(h) { TOD.override = h; applyTimeOfDay(); },
   renderAudio, tracks: () => Object.keys(TRACKS), musicZone,
