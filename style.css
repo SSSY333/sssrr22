@@ -366,18 +366,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 /* ---------- 메모판 시트 ---------- */
 .note-sheet { background: #fbfaf5; border-color: #e8e2c8; max-height: calc(100dvh - 32px); overflow-y: auto; }
 .note-sheet h2 { color: #2b2230; }
-.note-text { min-height: 84px; }
-.note-colors { display: flex; gap: 8px; }
-.note-color { width: 34px; height: 34px; border-radius: 8px; border: 2px solid rgba(0, 0, 0, 0.08); cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
-.note-color[aria-checked="true"] { outline: 3px solid #2b2230; outline-offset: 2px; }
 .note-sheet .sheet-go { background: linear-gradient(135deg, #f2b33d, #e0703c); }
 .note-sheet button:disabled { opacity: 0.5; cursor: not-allowed; }
-.note-list { display: flex; flex-direction: column; gap: 6px; }
-.note-h { margin: 6px 0 0; font-size: 12px; font-weight: 800; color: #6e5f62; }
-.note-row { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 10px; padding: 6px 8px; border: 1px solid #eee6d6; }
-.note-sw { width: 14px; height: 14px; border-radius: 4px; flex: none; }
-.note-tx { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
-.note-del { border: 0; background: #f1e2df; color: #8a3b3b; border-radius: 8px; padding: 6px 10px; font: 700 12px var(--font); cursor: pointer; }
 
 
 /* 대화하기 (대사 목록 접기/펴기) */

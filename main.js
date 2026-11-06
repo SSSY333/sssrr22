@@ -3286,7 +3286,6 @@ function seatCamera(seat) {
 function doAction() {
   if (!me.A || !mode.playing) return;
   if (me.A.seat) { leaveSeat(me.A); sendPresence(true); refreshContext(true); return; }
-  if (nearBoard(me.A)) { openNotes(); return; }
   const stn = nearestStation(me.A, me.A.P.holding);
   const buddy = stn ? null : nearestRemote(me.A);
   if (buddy) { poke(buddy); return; }
@@ -3620,7 +3619,7 @@ function setNetBadge() {
   el.title = RELAY.status === 'ok' ? '멀티플레이 연결됨' : '멀티플레이 연결 중…';
   el.classList.toggle('net-wait', RELAY.status !== 'ok');
 }
-const P2P = { tr: null, notes: null };
+const P2P = { tr: null };
 async function connectP2P() {
   const tr = await relayJoinRoom();
   RELAY.relay = true;
@@ -3656,14 +3655,12 @@ async function connectP2P() {
     peersMap.set(id, p);
     emit(isNew ? { joined: [p] } : { updated: [p] });
   };
-  tr.onPeerJoin = (id) => { pres.send(mine, { target: id }); P2P.notesJoin?.(id); };
+  tr.onPeerJoin = (id) => { pres.send(mine, { target: id }); };
   tr.onPeerLeave = (id) => {
     const p = peersMap.get(id);
     if (p) { peersMap.delete(id); emit({ left: [p] }); }
-    P2P.notesLeave?.(id);
   };
   addEventListener('pagehide', () => { try { tr.leave(); } catch (e) { /* 무시 */ } });
-  boardP2P(tr);
   return {
     presence(patch) {
       mine = { ...mine, ...patch };
@@ -3721,7 +3718,6 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     }
     if (best) { poke(best); return; }
   }
-  if (board.mesh && raycaster.intersectObject(board.mesh, false)[0] && Math.hypot(me.A.x - BOARD.x, me.A.z - BOARD.z) < 8) { openNotes(); return; }
   plane.constant = -me.A.y;
   if (raycaster.ray.intersectPlane(plane, hitPt) && hitPt.distanceTo(camera.position) < 40) {
     me.target = { x: hitPt.x, z: hitPt.z };
@@ -4044,8 +4040,8 @@ function refreshContext(force) {
   const cat = A.seat ? null : nearestCat(A);
   const catFirst = cat && (!s || Math.hypot(A.x - cat.x, A.z - cat.z) < Math.hypot(A.x - s.ex, A.z - s.ez));
   const stn = nearestStation(A, A.P.holding);
-  const buddy = A.seat || stn || nearBoard(A) ? null : nearestRemote(A);
-  const label = A.seat ? '🚶 일어나기' : nearBoard(A) ? '📝 메모 붙이기' : stn ? stationLabel(stn) : buddy ? `👉 ${buddy.name} 콕 찌르기` : catFirst ? '🐱 쓰다듬기' : s ? SEAT_INFO[s.kind].label : '';
+  const buddy = A.seat || stn ? null : nearestRemote(A);
+  const label = A.seat ? '🚶 일어나기' : stn ? stationLabel(stn) : buddy ? `👉 ${buddy.name} 콕 찌르기` : catFirst ? '🐱 쓰다듬기' : s ? SEAT_INFO[s.kind].label : '';
   const act = $('#act');
   if (act.textContent !== label) act.textContent = label;
   act.hidden = !label;
@@ -4079,230 +4075,114 @@ function onResize() {
 addEventListener('resize', onResize);
 
 /* =========================================================================
-   업무공간 화이트보드 + 포스트잇 메모 (db에 저장 · 모두에게 보여요)
+   업무공간 포스터 벽 — 이것저것 붙어 있는 알록달록한 벽
    ========================================================================= */
-const BOARD = { x: -6.6, z: -29.52, w: 5.2, h: 2.3, y: 1.75 };
-const NOTE_COLORS = ['#ffe27a', '#ffb3c1', '#a8e6cf', '#b8d8ff', '#ffd3a5'];
-const NOTE_MAX = 6, NOTE_SHOW = 12;
-const board = { notes: [], db: null, uid: null, canWrite: null, isAdmin: false, status: 'loading', writing: Promise.resolve(), canvas: null, tex: null, mesh: null, color: NOTE_COLORS[0] };
-function buildBoard() {
+const POSTER_WALL = { x: -6.6, z: -29.52, y: 1.75 };
+function posterTex(kind, w, h) {
+  const PX = 360; // 1 m 당 픽셀
+  return canvasTex(Math.round(w * PX), Math.round(h * PX), (c, W, H) => {
+    const T = (txt, x, y, size, color, weight = 800, align = 'center') => { c.fillStyle = color; c.font = `${weight} ${size}px ${FONT}`; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(txt, x, y); };
+    if (kind === 'workshop') {
+      const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#ffb347'); g.addColorStop(1, '#e8613c'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+      for (let i = 0; i < 9; i++) { c.save(); c.translate(W * (0.15 + (i % 3) * 0.35), H * (0.12 + Math.floor(i / 3) * 0.13)); c.rotate(i * 0.7); c.fillStyle = i % 2 ? '#ffe08a' : '#fff1c4'; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, W * 0.09, -2.3, -0.85); c.closePath(); c.fill(); c.restore(); }
+      T('보장원', W / 2, H * 0.52, W * 0.15, '#fff');
+      T('가을 워크숍', W / 2, H * 0.64, W * 0.11, '#fff');
+      T('11.21 FRI · 북악산 산책', W / 2, H * 0.78, W * 0.055, '#5a1e12', 600);
+      T('도시락 · 단체사진 · 보물찾기', W / 2, H * 0.86, W * 0.05, '#5a1e12', 600);
+    } else if (kind === 'cat') {
+      c.fillStyle = '#fbf8f0'; c.fillRect(0, 0, W, H);
+      T('고양이를 찾습니다', W / 2, H * 0.1, W * 0.1, '#c0392b');
+      const cx = W / 2, cy = H * 0.38, r = W * 0.22;
+      c.fillStyle = '#f2a65a'; c.beginPath(); c.moveTo(cx - r * 0.9, cy - r * 0.4); c.lineTo(cx - r * 0.7, cy - r * 1.25); c.lineTo(cx - r * 0.15, cy - r * 0.8); c.lineTo(cx + r * 0.15, cy - r * 0.8); c.lineTo(cx + r * 0.7, cy - r * 1.25); c.lineTo(cx + r * 0.9, cy - r * 0.4); c.fill();
+      c.beginPath(); c.ellipse(cx, cy, r, r * 0.85, 0, 0, 7); c.fill();
+      c.fillStyle = '#2b2230'; for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(cx + sx * r * 0.38, cy - r * 0.05, r * 0.09, r * 0.14, 0, 0, 7); c.fill(); }
+      c.fillStyle = '#e9718d'; c.beginPath(); c.moveTo(cx - r * 0.08, cy + r * 0.2); c.lineTo(cx + r * 0.08, cy + r * 0.2); c.lineTo(cx, cy + r * 0.3); c.fill();
+      c.strokeStyle = '#2b2230'; c.lineWidth = W * 0.006; for (const sx of [-1, 1]) for (const dy of [-0.05, 0.08]) { c.beginPath(); c.moveTo(cx + sx * r * 0.3, cy + r * (0.3 + dy)); c.lineTo(cx + sx * r * 1.1, cy + r * (0.2 + dy * 2)); c.stroke(); }
+      T('이름: 치즈 (주황색, 겁 많음)', W / 2, H * 0.66, W * 0.055, '#2b2230', 600);
+      T('탕비실 간식 냄새에 잘 나타나요', W / 2, H * 0.72, W * 0.05, '#6e5f62', 400);
+      c.setLineDash([W * 0.015, W * 0.012]); c.strokeStyle = '#999'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, H * 0.8); c.lineTo(W, H * 0.8); c.stroke(); c.setLineDash([]);
+      for (let i = 0; i < 7; i++) { const x = (i + 0.5) * W / 7; c.strokeStyle = '#ccc'; c.beginPath(); c.moveTo(i * W / 7, H * 0.8); c.lineTo(i * W / 7, H); c.stroke(); c.save(); c.translate(x, H * 0.9); c.rotate(-Math.PI / 2); T('☎ 내선 1234', 0, 0, W * 0.035, '#2b2230', 600); c.restore(); }
+    } else if (kind === 'cheer') {
+      c.fillStyle = '#c9e8dc'; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(W * 0.5, H * 0.36, W * 0.3, 0, 7); c.fill();
+      T('오늘도', W / 2, H * 0.3, W * 0.13, '#2f6b4f');
+      T('수고했어요', W / 2, H * 0.44, W * 0.13, '#2f6b4f');
+      T('☺', W / 2, H * 0.66, W * 0.22, '#e0703c', 400);
+      T('물 한 잔 · 스트레칭 한 번', W / 2, H * 0.88, W * 0.06, '#3e7c74', 600);
+    } else if (kind === 'bauhaus') {
+      c.fillStyle = '#f1e9da'; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#d6452f'; c.beginPath(); c.arc(W * 0.35, H * 0.3, W * 0.25, 0, 7); c.fill();
+      c.fillStyle = '#1f4fa0'; c.fillRect(W * 0.45, H * 0.42, W * 0.42, H * 0.3);
+      c.fillStyle = '#f2b33d'; c.beginPath(); c.moveTo(W * 0.1, H * 0.85); c.lineTo(W * 0.5, H * 0.85); c.lineTo(W * 0.3, H * 0.55); c.fill();
+      c.fillStyle = '#2b2230'; c.fillRect(W * 0.08, H * 0.9, W * 0.84, H * 0.012);
+      T('FORM · COLOR · OFFICE', W / 2, H * 0.95, W * 0.05, '#2b2230', 600);
+    } else if (kind === 'night') {
+      const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#1b1f45'); g.addColorStop(0.7, '#6b4a8a'); g.addColorStop(1, '#f39b6d'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#fff3c4'; c.beginPath(); c.arc(W * 0.75, H * 0.2, W * 0.08, 0, 7); c.fill();
+      for (let i = 0; i < 40; i++) { c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect((i * 97) % W, (i * 53) % (H * 0.45), 2, 2); }
+      c.fillStyle = '#20183a'; c.beginPath(); c.moveTo(0, H * 0.78); c.quadraticCurveTo(W * 0.35, H * 0.5, W * 0.7, H * 0.7); c.lineTo(W, H * 0.6); c.lineTo(W, H); c.lineTo(0, H); c.fill();
+      c.fillStyle = '#2b2045'; c.fillRect(W * 0.3, H * 0.74, W * 0.4, H * 0.1);
+      c.beginPath(); c.moveTo(W * 0.24, H * 0.75); c.quadraticCurveTo(W * 0.5, H * 0.64, W * 0.76, H * 0.75); c.fill();
+      T('SEOUL · 광화문의 밤', W / 2, H * 0.92, W * 0.07, '#ffe2bd', 600);
+    } else if (kind === 'lunch') {
+      c.fillStyle = '#fffaf0'; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#f2b33d'; c.fillRect(0, 0, W, H * 0.16);
+      T('🍚 오늘 점심 뭐 먹지?', W / 2, H * 0.08, W * 0.08, '#3b2a22');
+      const menu = [['칼국수', 5], ['떡볶이', 7], ['국밥', 4], ['피자', 3], ['샐러드', 2]];
+      menu.forEach(([m, n], i) => {
+        const y = H * (0.27 + i * 0.14);
+        T(m, W * 0.1, y, W * 0.075, '#2b2230', 600, 'left');
+        c.strokeStyle = '#d6452f'; c.lineWidth = W * 0.008;
+        for (let k = 0; k < n; k++) { const x = W * 0.55 + (k % 5) * W * 0.05 + Math.floor(k / 5) * W * 0.3; c.beginPath(); if (k % 5 === 4) { c.moveTo(x - W * 0.22, y + W * 0.02); c.lineTo(x + W * 0.01, y - W * 0.03); } else { c.moveTo(x, y - W * 0.035); c.lineTo(x, y + W * 0.035); } c.stroke(); }
+      });
+    } else if (kind === 'sports') {
+      c.fillStyle = '#2f6fd6'; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#fff'; for (let i = 0; i < 6; i++) c.fillRect(0, H * (0.6 + i * 0.07), W, H * 0.02);
+      c.fillStyle = '#f2b33d'; c.beginPath(); c.moveTo(W * 0.32, H * 0.18); c.lineTo(W * 0.68, H * 0.18); c.quadraticCurveTo(W * 0.68, H * 0.42, W * 0.5, H * 0.45); c.quadraticCurveTo(W * 0.32, H * 0.42, W * 0.32, H * 0.18); c.fill();
+      c.fillRect(W * 0.46, H * 0.44, W * 0.08, H * 0.06); c.fillRect(W * 0.38, H * 0.5, W * 0.24, H * 0.04);
+      T('보장원 체육대회', W / 2, H * 0.08, W * 0.095, '#fff');
+      T('탁구 · 줄다리기 · 계주', W / 2, H * 0.56, W * 0.06, '#fff', 600);
+    } else if (kind === 'coffee') {
+      c.fillStyle = '#3b2a22'; c.fillRect(0, 0, W, H);
+      c.strokeStyle = '#e9c46a'; c.lineWidth = W * 0.02; c.strokeRect(W * 0.06, H * 0.05, W * 0.88, H * 0.9);
+      c.fillStyle = '#f3ead8'; c.fillRect(W * 0.3, H * 0.32, W * 0.34, H * 0.3); c.beginPath(); c.arc(W * 0.66, H * 0.45, W * 0.08, -1.6, 1.6); c.lineWidth = W * 0.035; c.strokeStyle = '#f3ead8'; c.stroke();
+      c.strokeStyle = 'rgba(243,234,216,0.7)'; c.lineWidth = W * 0.015; for (const dx of [0.38, 0.47, 0.56]) { c.beginPath(); c.moveTo(W * dx, H * 0.28); c.quadraticCurveTo(W * (dx + 0.04), H * 0.22, W * dx, H * 0.15); c.stroke(); }
+      T('커피 먼저,', W / 2, H * 0.72, W * 0.1, '#e9c46a');
+      T('일은 그다음', W / 2, H * 0.82, W * 0.1, '#e9c46a');
+    } else { // 공지
+      c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
+      c.fillStyle = '#1e8c5a'; c.fillRect(0, 0, W, H * 0.22);
+      T('공지', W / 2, H * 0.11, W * 0.13, '#fff');
+      T('퇴근 전 모니터 끄기', W / 2, H * 0.42, W * 0.08, '#2b2230', 600);
+      T('탕비실 컵은 제자리에', W / 2, H * 0.58, W * 0.08, '#2b2230', 600);
+      T('프린터가 화나면 살살 달래기', W / 2, H * 0.74, W * 0.07, '#2b2230', 600);
+      T('— 총무팀', W * 0.9, H * 0.9, W * 0.06, '#6e5f62', 400, 'right');
+    }
+  });
+}
+function buildPosterWall() {
   const g = interior;
-  const { x, z, w, h, y } = BOARD;
-  addBox(g, w + 0.16, h + 0.16, 0.06, std(0xb8bec4, { metalness: 0.55, roughness: 0.35 }), x, y, z);
-  board.canvas = document.createElement('canvas');
-  board.canvas.width = 1560; board.canvas.height = Math.round(1560 * h / w);
-  board.tex = new THREE.CanvasTexture(board.canvas);
-  board.tex.colorSpace = THREE.SRGBColorSpace;
-  board.tex.anisotropy = 8;
-  board.mesh = addWallPlane(g, w, h, new THREE.MeshBasicMaterial({ map: board.tex }), x, y, z + 0.035);
-  addBox(g, w * 0.9, 0.04, 0.1, std(0xb8bec4, { metalness: 0.55 }), x, y - h / 2 - 0.06, z + 0.06);
-  [0xe53935, 0x1e63d6, 0x2e7d32].forEach((c, i) => addCyl(g, 0.014, 0.13, std(c), x - 1.6 + i * 0.2, y - h / 2 - 0.03, z + 0.08, { rz: Math.PI / 2 }));
-  addBox(g, 0.22, 0.04, 0.08, std(0x3a3d42), x + 1.6, y - h / 2 - 0.03, z + 0.08);
-  drawBoard();
-}
-function wrapText(c, text, maxW, maxLines) {
-  const out = [];
-  let line = '';
-  for (const ch of [...text]) {
-    if (c.measureText(line + ch).width > maxW && line) { out.push(line); line = ch.trim() ? ch : ''; if (out.length === maxLines) break; }
-    else line += ch;
-  }
-  if (out.length < maxLines && line) out.push(line);
-  if (out.length === maxLines && out.join('').length < [...text].length) out[maxLines - 1] = out[maxLines - 1].slice(0, -1) + '…';
-  return out;
-}
-function drawBoard() {
-  const c = board.canvas.getContext('2d'), W = board.canvas.width, H = board.canvas.height;
-  const bg = c.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#fdfdfb'); bg.addColorStop(1, '#eef1f3');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  c.fillStyle = 'rgba(120,130,140,.08)'; for (let i = 0; i < 6; i++) c.fillRect(rand(0, W), rand(0, H), rand(80, 300), 3);
-  c.textBaseline = 'alphabetic';
-  c.fillStyle = '#d93a3a'; c.font = `800 52px ${FONT}`; c.textAlign = 'left';
-  c.fillText('📌 보장원 메모판', 40, 72);
-  c.fillStyle = '#5a6a7a'; c.font = `600 26px ${FONT}`;
-  c.fillText("가까이 가서 '📝 메모 붙이기'를 눌러 보세요 · 모두에게 보여요", 44, 112);
-  const list = [...board.notes].sort((a, b) => b.t - a.t).slice(0, NOTE_SHOW);
-  c.textAlign = 'center';
-  if (!list.length) {
-    c.fillStyle = '#8a96a2'; c.font = `700 40px ${FONT}`;
-    const msg = board.status === 'loading' ? '메모를 불러오는 중…' : board.status === 'offline' ? '메모판에 연결할 수 없어요. 잠시 후 다시 볼게요.' : '아직 메모가 없어요. 첫 메모를 붙여 보세요! ✏️';
-    c.fillText(msg, W / 2, H / 2 + 40);
-  }
-  const cols = 6, cw = (W - 80) / cols, ch = 245;
-  list.forEach((n, i) => {
-    const col = i % cols, row = Math.floor(i / cols);
-    const cx = 40 + col * cw + cw / 2, cy = 150 + row * (ch + 18) + ch / 2;
-    const rot = (hash(n.id.length * 31 + i, n.t % 997) - 0.5) * 0.14;
-    c.save(); c.translate(cx, cy); c.rotate(rot);
-    const nw = cw - 22, nh = ch;
-    c.fillStyle = 'rgba(30,30,40,.18)'; c.fillRect(-nw / 2 + 5, -nh / 2 + 7, nw, nh);
-    c.fillStyle = n.color; c.fillRect(-nw / 2, -nh / 2, nw, nh);
-    c.fillStyle = 'rgba(0,0,0,.06)'; c.fillRect(-nw / 2, -nh / 2, nw, 22);
-    c.fillStyle = '#2b2230'; c.font = `700 36px ${FONT}`;
-    wrapText(c, n.text, nw - 26, 4).forEach((ln, k) => c.fillText(ln, 0, -nh / 2 + 68 + k * 42));
-    c.fillStyle = 'rgba(43,34,48,.65)'; c.font = `600 26px ${FONT}`;
-    c.fillText(`— ${n.nick || '익명'}`, 0, nh / 2 - 16);
-    c.restore();
-  });
-  if (board.notes.length > NOTE_SHOW) { c.fillStyle = '#8a96a2'; c.font = `600 22px ${FONT}`; c.textAlign = 'right'; c.fillText(`최근 ${NOTE_SHOW}개만 보여요`, W - 40, H - 18); }
-  board.tex.needsUpdate = true;
-}
-function sanitizeNotes(owner, arr) {
-  const out = [];
-  for (const n of Array.isArray(arr) ? arr.slice(0, NOTE_MAX) : []) {
-    if (!n || typeof n.text !== 'string') continue;
-    const text = cleanText(n.text, 60).trim();
-    if (!text) continue;
-    out.push({ owner, id: cleanText(n.id, 40) || String(Math.random()), text, color: NOTE_COLORS.includes(n.color) ? n.color : NOTE_COLORS[0], nick: cleanText(n.nick, 10), t: Number(n.t) || 0 });
-  }
-  return out;
-}
-function ingestNotes(docs) {
-  board.notes = docs.flatMap((d) => sanitizeNotes(d.id, (d.data() || {}).notes));
-}
-// 아티팩트 밖: 내 메모는 이 브라우저에 저장, 접속 중인 사람끼리 서로 보여줘요
-const LOCAL_NOTES_KEY = 'bjw.notes';
-const noteBody = (list) => list.map(({ id, text, color, nick, t }) => ({ id, text, color, nick, t }));
-function saveLocalNotes() {
-  store.set(LOCAL_NOTES_KEY, JSON.stringify(noteBody(myNotes())));
-  if (P2P.notes) P2P.notes.send(noteBody(myNotes()));
-}
-function loadLocalNotes() {
-  try { board.notes = [...board.notes.filter((n) => n.owner !== 'local'), ...sanitizeNotes('local', JSON.parse(store.get(LOCAL_NOTES_KEY) || '[]'))]; } catch (e) { /* 무시 */ }
-}
-function boardP2P(tr) {
-  const act = tr.makeAction('notes');
-  P2P.notes = act;
-  act.onMessage = (data, meta) => {
-    const id = meta?.peerId;
-    if (!id || board.db) return;
-    board.notes = [...board.notes.filter((n) => n.owner !== 'p2p:' + id), ...sanitizeNotes('p2p:' + id, data)];
-    drawBoard(); renderNoteList();
-  };
-  P2P.notesJoin = (id) => { if (!board.db) act.send(noteBody(myNotes()), { target: id }); };
-  P2P.notesLeave = (id) => { board.notes = board.notes.filter((n) => n.owner !== 'p2p:' + id); drawBoard(); };
-}
-async function initBoardData() {
-  try {
-    if (!window.claude?.use) throw new Error('local');
-    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
-    if (!db) throw new Error('local');
-    board.db = db;
-    if (user) {
-      board.uid = await user.id();
-      board.canWrite = await user.can('data.write');
-      board.isAdmin = await user.canEdit();
+  const { x, z, y } = POSTER_WALL;
+  // [종류, 가로 오프셋, 높이 오프셋, 폭, 높이, 기울기]
+  const LAYOUT = [
+    ['workshop', -2.0, 0.2, 0.9, 1.25, 0.03], ['cat', -0.95, 0.35, 0.7, 0.98, -0.05], ['cheer', -0.05, 0.05, 0.75, 1.0, 0.02],
+    ['night', 0.95, 0.32, 1.0, 0.72, -0.02], ['lunch', 2.05, 0.15, 0.78, 1.0, 0.04], ['bauhaus', -1.55, -0.72, 0.62, 0.8, -0.03],
+    ['coffee', -0.55, -0.66, 0.6, 0.78, 0.05], ['sports', 0.55, -0.55, 0.72, 0.98, -0.04], ['notice', 1.75, -0.72, 0.7, 0.6, 0.02],
+  ];
+  const tape = std(0xf3e7c2, { roughness: 0.9 });
+  const pins = [0xe53935, 0x1e63d6, 0x2e7d32, 0xf2b33d].map((c) => std(c, { roughness: 0.4 }));
+  LAYOUT.forEach(([kind, dx, dy, w, h, rz], i) => {
+    const zz = z + 0.012 + i * 0.002;
+    const m = addWallPlane(g, w, h, new THREE.MeshStandardMaterial({ map: posterTex(kind, w, h), roughness: 0.85 }), x + dx, y + dy, zz);
+    m.rotation.z = rz;
+    const cs = Math.cos(rz), sn = Math.sin(rz);
+    const at = (px, py) => [x + dx + px * cs - py * sn, y + dy + px * sn + py * cs];
+    if (i % 2) {
+      for (const sx of [-1, 1]) { const [tx, ty] = at(sx * (w / 2 - 0.04), h / 2 - 0.03); const t = addWallPlane(g, 0.14, 0.045, tape, tx, ty, zz + 0.003); t.rotation.z = rz + sx * 0.6; }
+    } else {
+      for (const sx of [-1, 1]) { const [px, py] = at(sx * (w / 2 - 0.05), h / 2 - 0.05); addSph(g, 0.018, pins[(i + (sx > 0)) % 4], px, py, zz + 0.012); }
     }
-    const timer = setTimeout(() => { if (board.status === 'loading') { board.status = 'offline'; drawBoard(); } }, 10000);
-    db.collection('board').onSnapshot((snap) => {
-      if (!snap.metadata.fromCache) clearTimeout(timer);
-      ingestNotes(snap.docs);
-      board.status = 'ok';
-      drawBoard();
-      renderNoteList();
-    }, () => { clearTimeout(timer); if (!board.notes.length) board.status = 'offline'; drawBoard(); });
-  } catch (e) {
-    board.status = 'local';
-    loadLocalNotes();
-    drawBoard();
-  }
-}
-const myNotes = () => board.notes.filter((n) => n.owner === (board.uid || 'local'));
-function writeNotes(owner, notes) {
-  const body = { notes: notes.map(({ id, text, color, nick, t }) => ({ id, text, color, nick, t })) };
-  board.writing = board.writing.catch(() => {}).then(() => board.db.doc('board/' + owner).set(body));
-  return board.writing;
-}
-const canPost = () => board.status === 'local' || (board.db && board.uid && board.canWrite !== false);
-async function addNote(text, color) {
-  const n = { owner: board.uid || 'local', id: Date.now().toString(36) + Math.floor(rand(0, 1e6)).toString(36), text, color, nick: me.name, t: Date.now() };
-  const mine = [...myNotes()].sort((a, b) => a.t - b.t);
-  while (mine.length >= NOTE_MAX) mine.shift();
-  mine.push(n);
-  if (board.status === 'local' || !board.db) {
-    board.notes = [...board.notes.filter((x) => x.owner !== 'local'), ...mine];
-    saveLocalNotes();
-    drawBoard(); renderNoteList();
-    return;
-  }
-  await writeNotes(board.uid, mine);
-}
-async function removeNote(n) {
-  const rest = board.notes.filter((x) => x.owner === n.owner && x.id !== n.id);
-  if (!board.db) { board.notes = board.notes.filter((x) => x !== n); saveLocalNotes(); drawBoard(); renderNoteList(); return; }
-  await writeNotes(n.owner, rest);
-}
-const nearBoard = (A) => A && isInsideXZ(A.x, A.z) && Math.abs(A.x - BOARD.x) < BOARD.w / 2 + 0.6 && A.z < BOARD.z + 2.6;
-function openNotes() {
-  if (!me.A) return;
-  $('#noteSheet').hidden = false;
-  mode.modal = true;
-  keys.clear();
-  const info = $('#noteInfo');
-  if (board.status === 'local') info.textContent = `내 메모는 이 브라우저에 저장되고, 지금 접속 중인 사람들에게 보여요. 한 사람당 ${NOTE_MAX}장까지.`;
-  else if (!canPost()) info.textContent = '보기 전용이라 메모를 붙일 수 없어요. 메모 읽기는 가능해요.';
-  else info.textContent = `모두에게 보이고 메모판에 저장돼요. 한 사람당 ${NOTE_MAX}장까지 (넘으면 가장 오래된 메모가 떨어져요).`;
-  $('#noteText').disabled = !canPost();
-  document.querySelector('.note-go').disabled = !canPost();
-  renderNoteList();
-  if (canPost()) setTimeout(() => $('#noteText').focus(), 30);
-  refreshContext(false);
-}
-function closeNotes() {
-  $('#noteSheet').hidden = true;
-  mode.modal = false;
-  $('#noteText').blur();
-  refreshContext(false);
-}
-function renderNoteList() {
-  const box = $('#noteList');
-  if (!box) return;
-  box.replaceChildren();
-  const mine = myNotes().sort((a, b) => b.t - a.t);
-  const others = board.isAdmin ? board.notes.filter((n) => n.owner !== (board.uid || 'local')).sort((a, b) => b.t - a.t) : [];
-  const section = (title, list) => {
-    if (!list.length) return;
-    const h = document.createElement('p'); h.className = 'note-h'; h.textContent = title; box.appendChild(h);
-    for (const n of list) {
-      const row = document.createElement('div'); row.className = 'note-row';
-      const sw = document.createElement('span'); sw.className = 'note-sw'; sw.style.background = n.color;
-      const tx = document.createElement('span'); tx.className = 'note-tx'; tx.textContent = n.nick && list === others ? `${n.text} — ${n.nick}` : n.text;
-      const del = document.createElement('button'); del.type = 'button'; del.className = 'note-del'; del.textContent = '떼기'; del.setAttribute('aria-label', '이 메모 떼기');
-      del.addEventListener('click', async () => { del.disabled = true; try { await removeNote(n); } catch (e) { del.disabled = false; $('#noteInfo').textContent = '메모를 떼지 못했어요. 잠시 후 다시 시도해 주세요.'; } });
-      row.append(sw, tx, del);
-      box.appendChild(row);
-    }
-  };
-  section('내 메모', mine);
-  section('다른 사람 메모 (관리)', others);
-}
-{
-  const colors = document.querySelector('.note-colors');
-  NOTE_COLORS.forEach((col, i) => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'note-color'; b.style.background = col;
-    b.setAttribute('role', 'radio'); b.setAttribute('aria-label', `색 ${i + 1}`);
-    b.addEventListener('click', () => { board.color = col; colors.querySelectorAll('button').forEach((x) => x.setAttribute('aria-checked', x === b ? 'true' : 'false')); });
-    if (!i) b.setAttribute('aria-checked', 'true');
-    colors.appendChild(b);
   });
-  document.querySelector('.note-go').addEventListener('click', async () => {
-    const text = cleanText($('#noteText').value, 60).trim();
-    if (!text) { const sh = document.querySelector('.note-sheet'); sh.classList.remove('shake'); void sh.offsetWidth; sh.classList.add('shake'); return; }
-    const go = document.querySelector('.note-go');
-    go.disabled = true;
-    try {
-      await addNote(text, board.color);
-      $('#noteText').value = '';
-      closeNotes();
-      mySay('메모 붙였어요! 📌');
-    } catch (e) {
-      $('#noteInfo').textContent = e?.code === 'quota_exceeded' ? '메모판이 가득 찼어요. 오래된 메모를 떼고 다시 붙여 주세요.' : '메모를 붙이지 못했어요. 잠시 후 다시 시도해 주세요.';
-    } finally { go.disabled = !canPost(); }
-  });
-  document.querySelector('.note-cancel').addEventListener('click', closeNotes);
-  $('#noteSheet').addEventListener('click', (e) => { if (e.target === $('#noteSheet')) closeNotes(); });
-  $('#noteText').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNotes(); });
 }
 
 /* =========================================================================
@@ -4697,7 +4577,7 @@ buildGate();
 buildTower();
 buildInterior();
 buildVentRoom();
-buildBoard();
+buildPosterWall();
 buildWorkExtras();
 // 모든 책상을 무작위로 다채롭게 꾸며요 (모든 접속자에게 같은 모습)
 [...desks.keys()].forEach((key, i) => {
@@ -4771,7 +4651,7 @@ function heldObjects(roots, keep) {
   return out;
 }
 if (LOW) {
-  const skip = heldObjects([cars, cats, doors, blinkers, pingpong, zones, vent, papers, board, stations, printers, flyers, shredder, nightLights, people, leaves, stars, seats], new Set([scene, street, interior]));
+  const skip = heldObjects([cars, cats, doors, blinkers, pingpong, zones, vent, papers, stations, printers, flyers, shredder, nightLights, people, leaves, stars, seats], new Set([scene, street, interior]));
   const a = mergeStatic(street, skip), b = mergeStatic(interior, skip);
   window.__mergeInfo = { street: a, interior: b, held: skip.size };
 }
@@ -4803,7 +4683,6 @@ $('#enter').disabled = false;
 $('#enter').textContent = '회사로 들어가기';
 applyTimeOfDay();
 setInterval(applyTimeOfDay, 15000);
-initBoardData();
 
 /* =========================================================================
    애니메이션
@@ -5125,7 +5004,6 @@ requestAnimationFrame(frame);
 
 // 디버그/스크린샷용
 window.__office = {
-  board, openNotes, addNote,
   stations, desks,
   changeCharacter, takePhoto, onPeers, renderer, remotes, scene, street, interior, raycaster,
   camera, controls, me, teleport, doAction, seats, mySay, enterGame, keys, colliders, groundY, isInsideXZ, openVent, submitVent, cats,
