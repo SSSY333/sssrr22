@@ -366,3 +366,9 @@ body.talking #actChips, body.devOn #actChips { display: none; }
 #questPanel { top: calc(env(safe-area-inset-top) + 150px) !important; }
 /* 첫 화면 버튼을 조금 위로 */
 #title .title-btns { margin-bottom: 22vh; }
+/* 상단바 숫자 폭 고정 (시간 · 돈이 바뀔 때 칸이 흔들리지 않게) */
+#hTime, #hMoney, #hDay, #hSpeed { font-variant-numeric: tabular-nums; }
+#hTime { display: inline-block; min-width: 3.2em; text-align: center; }
+#hMoney { display: inline-block; min-width: 5.6em; text-align: left; }
+#hDay { display: inline-block; min-width: 3.6em; }
+#hWeather { display: inline-block; width: 1.3em; text-align: center; }

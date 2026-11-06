@@ -17,6 +17,19 @@ function fixEmoji(s) {
     return ch + '️';
   });
 }
+
+/* 글자를 넣는 순간 바로 컬러로 고치고, 같은 글자를 또 넣으면 건너뜀 — 상단바가 1초에 4번 다시 써지면서
+   흑백↔컬러가 번갈아 바뀌어 폭이 흔들리던 문제 방지 */
+{
+  const TD = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+  Object.defineProperty(Node.prototype, 'textContent', { configurable: true, enumerable: TD.enumerable, get() { return TD.get.call(this); }, set(v) {
+    if (typeof v === 'string') v = fixEmoji(v);
+    if (this.nodeType === 1 && typeof v === 'string' && this.childNodes.length === 1 && this.firstChild.nodeType === 3 && this.firstChild.nodeValue === v) return;
+    TD.set.call(this, v);
+  } });
+  const HD = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+  Object.defineProperty(Element.prototype, 'innerHTML', { configurable: true, enumerable: HD.enumerable, get() { return HD.get.call(this); }, set(v) { HD.set.call(this, typeof v === 'string' ? fixEmoji(v) : v); } });
+}
 /* 화면 글자 */
 function emojiFixNode(root) {
   if (!root) return;

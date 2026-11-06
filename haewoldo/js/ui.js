@@ -119,7 +119,7 @@ function bindJoystick() {
     const j = G.joy; if (!j || j.id !== e.pointerId) return;
     const dx = e.clientX - j.x0, dy = e.clientY - j.y0, L = Math.hypot(dx, dy);
     if (!j.on && L > 14) j.on = true;
-    if (j.on) { const k = Math.min(1, L / 48); j.dx = dx / (L || 1) * k; j.dy = dy / (L || 1) * k; }
+    if (j.on) { const k = Math.min(1, L / 34); j.dx = dx / (L || 1) * k; j.dy = dy / (L || 1) * k; }
   });
   const end = (e) => { const j = G.joy; if (j && j.id === e.pointerId) { G.joy = null; if (j.on) { G.player.moving = false; G._suppressTap = true; setTimeout(() => { G._suppressTap = false; }, 50); } } };
   view.addEventListener('pointerup', end); view.addEventListener('pointercancel', end);
@@ -131,7 +131,7 @@ keyMove = function (dt) {
   const P = G.player; if (P.seat) standUpPlayer();
   P.path = []; G.pending = null;
   let mx = j.dx + j.dy, my = j.dy - j.dx; const l = Math.hypot(mx, my) || 1; mx /= l; my /= l;
-  const sp = P.speed * dt * Math.max(0.45, Math.min(1, Math.hypot(j.dx, j.dy)));
+  const sp = P.speed * dt * 1.7 * Math.max(0.6, Math.min(1, Math.hypot(j.dx, j.dy)));
   const ok = (x, y) => [[0.25, 0.25], [-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25]].every(([a, b]) => walkable(Math.floor(x + a), Math.floor(y + b)));
   const ox = P.x, oy = P.y;
   if (ok(P.x + mx * sp, P.y)) P.x += mx * sp;
