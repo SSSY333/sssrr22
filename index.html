@@ -40,7 +40,7 @@
   </section>
 
   <!-- 게임 HUD -->
-  <header id="brand" class="hud hidden">
+  <header id="brand" class="hud hidden" role="button" tabindex="0" aria-label="네트워크 상태 보기">
     <span class="dot"></span> 보장원 <small id="online">👥 1명</small> <small id="clock"></small>
   </header>
   <div id="topbtns" class="hud hidden">
@@ -107,6 +107,18 @@
         <button type="button" class="sheet-cancel shot-close">닫기</button>
         <button type="button" class="sheet-go" id="shotSave">💾 사진 저장</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 네트워크 상태 -->
+  <div id="netSheet" class="sheet-wrap" hidden>
+    <div class="sheet note-sheet" role="dialog" aria-modal="true" aria-labelledby="netTitle">
+      <h2 id="netTitle">📶 네트워크 상태</h2>
+      <p class="net-sum" id="netSum" aria-live="polite"></p>
+      <div id="netBody" class="net-body"></div>
+      <p class="sheet-note">왕복 지연: 내 신호가 상대에게 갔다가 돌아오는 시간이에요 (이 창을 열어 둔 동안 2초마다 재요). 300 ms 아래면 끊김 없이 느껴져요.</p>
+      <p class="sheet-note"><a href="loadtest.html" target="_blank" rel="noopener">접속 인원 테스트 페이지 열기 →</a></p>
+      <div class="sheet-btns"><button type="button" class="sheet-cancel net-close">닫기</button></div>
     </div>
   </div>
 

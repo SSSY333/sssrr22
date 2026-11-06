@@ -410,3 +410,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-2); 
 }
 #online.net-wait { opacity: 0.55; }
 #online.net-wait::after { content: " · 연결 중…"; }
+
+/* 네트워크 상태 */
+#brand { cursor: pointer; }
+.net-body { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.net-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 8px; padding: 6px 8px; border-radius: 8px; background: #fff; border: 1px solid #eee6d6; font-variant-numeric: tabular-nums; }
+.net-row span { min-width: 0; overflow-wrap: anywhere; }
+.net-row.net-head { background: transparent; border: 0; font-weight: 800; color: #6e5f62; font-size: 12px; padding-bottom: 0; }
+.net-row.good span:nth-child(2) { color: #1f7a45; font-weight: 700; }
+.net-row.ok span:nth-child(2) { color: #a86a00; font-weight: 700; }
+.net-row.bad span:nth-child(2) { color: #c0392b; font-weight: 700; }
+.net-sum { margin: 0; padding: 8px 10px; border-radius: 10px; background: #f4efe6; font-weight: 700; font-size: 13px; }
+.net-sum.good { background: #e3f4e8; color: #1f5e36; }
+.net-sum.ok { background: #fff1d6; color: #7a4e00; }
+.net-sum.bad { background: #fde2df; color: #8a2a20; }

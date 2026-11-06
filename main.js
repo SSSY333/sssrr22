@@ -3478,6 +3478,47 @@ function onPeers(change) {
   for (const p of [...change.joined, ...change.updated]) if (!p.sameTab && p.kind === 'viewer') applyRemote(p);
   updateOnline();
 }
+/* ---------- 네트워크 상태 (실제 접속자 지연 확인) ---------- */
+const NET = { peers: new Map(), sent: 0, firstFrom: [0, 0], t0: performance.now() };
+function netPeer(id) { if (!NET.peers.has(id)) NET.peers.set(id, { rtt: [], times: [] }); return NET.peers.get(id); }
+const median = (a) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+const latClass = (ms) => (ms == null ? '' : ms < 300 ? 'good' : ms < 600 ? 'ok' : 'bad');
+function renderNet() {
+  const box = $('#netBody');
+  if (!box || $('#netSheet').hidden) return;
+  const now = performance.now();
+  box.replaceChildren();
+  const line = (cls, ...cells) => { const r = document.createElement('div'); r.className = 'net-row ' + (cls || ''); for (const c of cells) { const s = document.createElement('span'); s.textContent = c; r.appendChild(s); } box.appendChild(r); return r; };
+  if (!RELAY.relay) {
+    const p = document.createElement('p'); p.className = 'sheet-note';
+    p.textContent = room ? 'claude.ai 아티팩트 연결을 쓰고 있어요. 지연 측정은 GitHub Pages 주소에서 볼 수 있어요.' : '멀티플레이에 연결되어 있지 않아요 (혼자 모드).';
+    box.appendChild(p);
+    return;
+  }
+  const names = ['HiveMQ', 'EMQX'];
+  const tot = NET.firstFrom[0] + NET.firstFrom[1] || 1;
+  line('net-head', '중계소', '상태', '먼저 도착');
+  (RELAY.clients || []).forEach((c, i) => line(c.connected ? 'good' : 'bad', names[i], c.connected ? '연결됨' : '끊김', `${Math.round((100 * NET.firstFrom[i]) / tot)}%`));
+  const secs = (now - NET.t0) / 1000;
+  line('', '내가 보내는 횟수', `${(NET.sent / Math.max(1, secs)).toFixed(1)}/초`, '');
+  line('net-head', '접속자', '왕복 지연', '받는 횟수 · 마지막');
+  const all = [];
+  for (const R of remotes.values()) {
+    const P = NET.peers.get(R.peer) || { rtt: [], times: [] };
+    P.times = P.times.filter((t) => now - t < 5000);
+    const rtt = median(P.rtt); if (rtt != null) all.push(rtt);
+    const last = P.times.length ? ((now - P.times[P.times.length - 1]) / 1000).toFixed(1) + '초 전' : '-';
+    line(latClass(rtt), R.name, rtt == null ? '재는 중…' : `${Math.round(rtt)} ms`, `${(P.times.length / 5).toFixed(1)}/초 · ${last}`);
+  }
+  if (!remotes.size) line('', '다른 접속자가 없어요', '', '');
+  const sum = $('#netSum');
+  if (all.length) {
+    const avg = all.reduce((a, b) => a + b, 0) / all.length, worst = Math.max(...all);
+    sum.textContent = `평균 ${Math.round(avg)} ms · 가장 느린 사람 ${Math.round(worst)} ms — ${worst < 300 ? '끊김 없이 좋아요 👍' : worst < 600 ? '조금 늦지만 괜찮아요' : '느려요 (끊겨 보일 수 있어요)'}`;
+    sum.className = 'net-sum ' + latClass(worst);
+  } else { sum.textContent = '왕복 지연은 이 창을 열어 둔 동안 2초마다 재요.'; sum.className = 'net-sum'; }
+}
+setInterval(renderNet, 1000);
 function updateOnline() {
   $('#online').textContent = `👥 ${remotes.size + (me.A ? 1 : 0)}명`;
 }
@@ -3518,7 +3559,7 @@ async function relayJoinRoom() {
   const seen = new Map(); // peerId → { s, t }
   let seq = 0;
   const room = { selfId, onPeerJoin: null, onPeerLeave: null };
-  const clients = RELAY.brokers.map((url) => mqtt.connect(url, {
+  const clients = RELAY.clients = RELAY.brokers.map((url) => mqtt.connect(url, {
     clientId: 'bjw_' + selfId + '_' + Math.random().toString(36).slice(2, 6),
     keepalive: 30, reconnectPeriod: 3000, connectTimeout: 9000, clean: true,
     will: { topic, payload: JSON.stringify({ a: '_bye' }), qos: 0, retain: false },
@@ -3527,6 +3568,7 @@ async function relayJoinRoom() {
     const msg = JSON.stringify({ a, s: ++seq, d });
     if (msg.length > 6000) return;
     for (const c of clients) if (c.connected) c.publish(topic, msg, { qos: 0 });
+    NET.sent++;
   };
   const updateStatus = () => {
     const n = clients.filter((c) => c.connected).length;
@@ -3549,6 +3591,8 @@ async function relayJoinRoom() {
       const isNew = !prev;
       seen.set(id, { s: typeof m.s === 'number' ? m.s : (prev?.s || 0), t: Date.now() });
       if (isNew || m.a === '_hi') room.onPeerJoin?.(id);
+      if (m.a === 'pres') netPeer(id).times.push(performance.now());
+      NET.firstFrom[RELAY.clients.indexOf(c)]++;
       if (m.a[0] !== '_') actions[m.a]?.onMessage?.(m.d, { peerId: id });
     });
   }
@@ -3581,6 +3625,20 @@ async function connectP2P() {
   const mk = (id, presence, isMe) => Object.freeze({ peer: id, by: null, isMe, sameTab: isMe, kind: 'viewer', guest: false, presence: Object.freeze(presence), updatedAt: Date.now() });
   peersMap.set(selfId, mk(selfId, {}, true));
   const emit = (ch) => { const peers = [...peersMap.values()]; subs.forEach((f) => f({ peers, joined: ch.joined || [], left: ch.left || [], updated: ch.updated || [] })); };
+  // 왕복 지연 재기: 3초마다 '핑' → 받은 사람이 '퐁' (내 시계로만 재서 정확해요)
+  const ping = tr.makeAction('ping');
+  ping.onMessage = (d, meta) => {
+    const id = meta?.peerId;
+    if (!id || !d || typeof d !== 'object') return;
+    if (d.k === 'q' && typeof d.ts === 'number') ping.send({ k: 'r', to: d.from, ts: d.ts });
+    else if (d.k === 'r' && d.to === selfId && typeof d.ts === 'number') {
+      const rtt = performance.now() - d.ts;
+      if (rtt >= 0 && rtt < 30000) { const P = netPeer(id); P.rtt.push(rtt); if (P.rtt.length > 10) P.rtt.shift(); }
+    }
+  };
+  P2P.pingNow = () => ping.send({ k: 'q', from: selfId, ts: performance.now() });
+  // 네트워크 창을 열어 둔 동안만 재요 (평소 부담 0)
+  setInterval(() => { if (!document.getElementById('netSheet').hidden) ping.send({ k: 'q', from: selfId, ts: performance.now() }); }, 2000);
   pres.onMessage = (data, meta) => {
     const id = meta?.peerId;
     if (!id || !data || typeof data !== 'object' || Array.isArray(data)) return;
@@ -3817,6 +3875,11 @@ function changeCharacter(i) {
   mySay(pick(['짜잔! ✨', '변신 완료!', '어때요? 😎']));
 }
 $('#char').addEventListener('click', openCharSheet);
+const openNet = () => { $('#netSheet').hidden = false; mode.modal = true; keys.clear(); renderNet(); P2P.pingNow?.(); };
+$('#brand').addEventListener('click', openNet);
+$('#brand').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openNet(); } });
+document.querySelector('.net-close').addEventListener('click', () => { $('#netSheet').hidden = true; mode.modal = false; });
+$('#netSheet').addEventListener('click', (e) => { if (e.target === $('#netSheet')) { $('#netSheet').hidden = true; mode.modal = false; } });
 document.querySelector('.char-cancel').addEventListener('click', closeCharSheet);
 $('#charSheet').addEventListener('click', (e) => { if (e.target === $('#charSheet')) closeCharSheet(); });
 
