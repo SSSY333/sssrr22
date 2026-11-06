@@ -3371,7 +3371,13 @@ function updatePlayer(dt) {
     d = Math.atan2(Math.sin(d), Math.cos(d));
     A.ry += d * Math.min(1, dt * 12);
   }
+  const wasMoving = A.moving;
   A.moving = sp > 0.25;
+  if (wasMoving !== A.moving) sendPresence(true);
+  else if (A.moving) {
+    const h = Math.atan2(A.vx, A.vz);
+    if (Math.abs(Math.atan2(Math.sin(h - (A.lastSentH ?? h)), Math.cos(h - (A.lastSentH ?? h)))) > 0.5) { A.lastSentH = h; sendPresence(true); }
+  }
   if (me.petT > 0) { me.petT -= dt; if (A.moving) me.petT = 0; }
   if (A.moving) A.P.actT = 0;
   A.P.state = A.moving ? 'walk' : A.P.actT > 0 ? A.P.actState : me.petT > 0 ? 'pet' : 'idle';
@@ -3404,6 +3410,7 @@ function flushPresence(dt) {
     x: Math.round(A.x * 100) / 100, z: Math.round(A.z * 100) / 100, r: Math.round(A.ry * 100) / 100,
     k: A.seat ? A.seat.id : null,
     h: A.P.holding ? 1 : 0,
+    vx: A.seat ? 0 : Math.round(A.vx * 100) / 100, vz: A.seat ? 0 : Math.round(A.vz * 100) / 100,
   };
   if (lastSay) data.say = lastSay;
   if (lastPoke) data.poke = lastPoke;
@@ -3428,6 +3435,7 @@ function applyRemote(peer) {
     remotes.set(peer.peer, R);
   }
   R.tx = num(pr.x, -110, 165); R.tz = num(pr.z, -30, 32); R.tr = num(pr.r, -10, 10);
+  R.vx = num(pr.vx, -6, 6); R.vz = num(pr.vz, -6, 6); R.at = performance.now();
   if (!!pr.h !== !!R.A.P.holding) setHolding(R.A.P, !!pr.h);
   const seat = typeof pr.k === 'string' ? seatById.get(pr.k) : null;
   if (seat && R.A.seat !== seat) placeOnSeat(R.A, seat);
@@ -3477,10 +3485,15 @@ function updateRemotes(dt) {
   for (const R of remotes.values()) {
     const A = R.A;
     if (A.seat) { syncAvatar(A); continue; }
-    const dx = R.tx - A.x, dz = R.tz - A.z, d = Math.hypot(dx, dz);
-    if (d > 8) { A.x = R.tx; A.z = R.tz; }
-    else { const k = Math.min(1, dt * 8); A.x += dx * k; A.z += dz * k; }
-    const sp = d * 8;
+    // 받은 위치 + 속도로 '지금쯤 여기 있겠지'를 예측해 따라가요 (중계 지연 보정)
+    const age = Math.min(0.6, ((performance.now() - (R.at || 0)) / 1000) + (RELAY.relay ? 0.2 : 0.05));
+    const px = R.tx + (R.vx || 0) * age, pz = R.tz + (R.vz || 0) * age;
+    const p = { x: px, z: pz };
+    if (R.vx || R.vz) resolveCollisions(p); // 예측이 벽을 넘지 않게
+    const dx = p.x - A.x, dz = p.z - A.z, d = Math.hypot(dx, dz);
+    if (d > 8) { A.x = p.x; A.z = p.z; }
+    else { const k = Math.min(1, dt * 14); A.x += dx * k; A.z += dz * k; }
+    const sp = Math.max(Math.hypot(R.vx || 0, R.vz || 0), d * 4);
     A.moving = sp > 0.35;
     A.P.state = A.moving ? 'walk' : A.P.actT > 0 ? A.P.actState : R.petUntil > performance.now() ? 'pet' : 'idle';
     A.P.walkRate = clamp(sp / 2.5, 0.6, 1.8);
