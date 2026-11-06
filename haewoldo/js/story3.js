@@ -10,10 +10,11 @@ G.visitors = [];
 const _say0 = say;
 say = function (who, expr, text) {
   let t = speechPick(text);
-  if (!G.rawSpeech && casualOn()) { if (who === 'det') t = toBanmal(t); else if (who === 'me') t = toBanmalMe(t); }
+  if (who !== 'me' && who !== 'narr') G._talkTo = who;
+  if (!G.rawSpeech && casualOn()) { if (who === 'det') t = toBanmal(t); else if (who === 'me' && G._talkTo === 'det') t = toBanmalMe(t); }
   return _say0(who, expr, t);
 };
-choiceText = function (t) { t = speechPick(fillNames(t)); if (casualOn() && !G.rawSpeech) return toBanmalMe(t); return S.rel.stage >= 4 && himCall() !== '형사님' ? t.replace(/형사님/g, himCall()) : t; };
+choiceText = function (t) { t = speechPick(fillNames(t)); if (G._talkTo && G._talkTo !== 'det') return t; if (casualOn() && !G.rawSpeech) return toBanmalMe(t); return S.rel.stage >= 4 && himCall() !== '형사님' ? t.replace(/형사님/g, himCall()) : t; };
 const _actorSay0 = Actor.prototype.say;
 Actor.prototype.say = function (text, t) { let s = speechPick(text); if (this.id === 'det' && casualOn()) s = toBanmal(s); return _actorSay0.call(this, s, t); };
 himCall = function () {
@@ -566,10 +567,10 @@ function ferryInfo() {
 /* ---------------- 상호작용 훅 ---------------- */
 const _interactWith0 = interactWith;
 interactWith = function (a) {
-  if (a.isVisitor) { runEvent(() => visitorTalk(a)); return; }
+  if (a.isVisitor) { runEvent(() => { G._talkTo = a.id; return visitorTalk(a); }); return; }
   if (a.isVillager || a.isStaff) {
     runEvent(async () => {
-      a.talking = true; a.stop(); a.lookAt(G.player); G.player.lookAt(a);
+      G._talkTo = a.id; a.talking = true; a.stop(); a.lookAt(G.player); G.player.lookAt(a);
       if (await caseTalk(a)) { closeDialog(); a.talking = false; return; }
       if (a.isVillager && await festDonate(a)) { closeDialog(); a.talking = false; return; }
       const rm = a.isVillager && rumorFor(a.vid);
@@ -636,25 +637,25 @@ styleReaction = function () { S.rel.daily.styleChanged = true; _styleReaction0()
 /* ---------------- 메뉴 묶음 ---------------- */
 mainMenu = function () {
   const grp = (title, items) => openSheet({ title, cols: 2, items, onClose: null });
-  openSheet({ title: '메뉴', cols: 2, sub: `<div class="relneed">${S.name} · ${JOBS[S.job].name} Lv.${S.jobLv} · 마을 평판 ${S.rep}<br>${calendar(S.day).year}년째 · <span id="saveInfo">자동 저장 ${S.savedAt ? new Date(S.savedAt).toLocaleTimeString('ko-KR') : ''}</span></div>`, items: [
-    { icon: '💗', label: '관계', note: '형사님 · 약속 · 기억 · 데이트 · 커플 의상', onClick: () => grp('💗 관계', [
+  openSheet({ title: '메뉴', cols: 3, sub: `<div class="relneed">${S.name} · ${JOBS[S.job].name} Lv.${S.jobLv} · 마을 평판 ${S.rep}<br>${calendar(S.day).year}년째 · <span id="saveInfo">자동 저장 ${S.savedAt ? new Date(S.savedAt).toLocaleTimeString('ko-KR') : ''}</span></div>`, items: [
+    { icon: '💗', label: '관계', note: '형사님·약속', onClick: () => grp('💗 관계', [
       { icon: '🕵️', label: '형사님 정보', onClick: () => openRel('profile') }, { icon: '📅', label: '약속 · 달력', onClick: calendarMenu }, { icon: '💭', label: '기억', onClick: memoryMenu },
       { icon: '💌', label: '데이트 장소', onClick: () => openRel('acts') }, { icon: '💑', label: '커플 의상', onClick: () => wardrobeMenu('d') }, { icon: '✏️', label: '형사님 이름', onClick: renameDet }]) },
-    { icon: '🏘', label: '마을', note: '여객선 · 방문객 · 소문 · 축제', onClick: () => grp('🏘 마을', [
+    { icon: '🏘', label: '마을', note: '배·소문·축제', onClick: () => grp('🏘 마을', [
       { icon: '⛴', label: '여객선', onClick: ferryInfo }, { icon: '🧳', label: '방문객', onClick: visitorMenu }, { icon: '🗣', label: '소문', onClick: rumorMenu }, { icon: '🎪', label: '축제', onClick: festMenu }]) },
-    { icon: '📒', label: '수첩', note: '수사 · 탐험 · 보물지도', onClick: () => grp('📒 수첩', [
+    { icon: '📒', label: '수첩', note: '수사·보물', onClick: () => grp('📒 수첩', [
       { icon: '🔎', label: '수사 수첩', onClick: () => notebookMenu('case') }, { icon: '🧭', label: '탐험 수첩', onClick: () => notebookMenu('explore') }, { icon: '🗺', label: '보물지도', onClick: () => notebookMenu('treasure') }, { icon: '🐟', label: '물고기 도감', onClick: dexMenu }]) },
-    { icon: '📔', label: '추억', note: '앨범 · 네컷사진 · 기념일', onClick: () => grp('📔 추억', [
+    { icon: '📔', label: '추억', note: '앨범·네컷', onClick: () => grp('📔 추억', [
       { icon: '📔', label: '앨범', onClick: () => albumMenu() }, { icon: '🎞', label: '네컷사진', onClick: () => albumMenu({ cat: 'fourcut' }) }, { icon: '💍', label: '기념일', onClick: annivMenu }]) },
-    { icon: '🏠', label: '집', note: '가구 · 가구점 · 확장 · 옷장', onClick: () => grp('🏠 집', [
+    { icon: '🏠', label: '집', note: '가구·옷장', onClick: () => grp('🏠 집', [
       { icon: '🛋', label: '가구 배치', note: '집 안에서', onClick: () => { if (M.id === 'in_home') openDecor(); else toast('집 안에서 「꾸미기」를 눌러요'); } }, { icon: '🛒', label: '가구점 카탈로그', onClick: () => furnShopMenu() }, { icon: '🏗', label: '집 확장', onClick: expandMenu },
       { icon: '👗', label: '옷장', onClick: () => wardrobeMenu('p') }, { icon: '🖼', label: '사진 액자', onClick: () => albumMenu({ cat: 'fourcut' }) }, { icon: '🏡', label: '공동생활', onClick: homeLifeMenu }]) },
     { icon: '🎒', label: '소지품', onClick: invMenu },
-    { icon: S.settings.music ? '🎵' : '🔇', label: S.settings.music ? '배경음악 끄기' : '배경음악 켜기', onClick: () => { S.settings.music = !S.settings.music; Sound.init(); Sound.setOn('music', S.settings.music); save(); } },
+    { icon: S.settings.music ? '🎵' : '🔇', label: S.settings.music ? '음악 끄기' : '음악 켜기', onClick: () => { S.settings.music = !S.settings.music; Sound.init(); Sound.setOn('music', S.settings.music); save(); } },
     { icon: S.settings.sfx ? '🔊' : '🔈', label: S.settings.sfx ? '효과음 끄기' : '효과음 켜기', onClick: () => { S.settings.sfx = !S.settings.sfx; Sound.init(); Sound.setOn('sfx', S.settings.sfx); save(); } },
     { icon: '❓', label: '도움말', onClick: () => { G.screen = true; $('#help').classList.remove('hidden'); } },
     { icon: '💾', label: '지금 저장', onClick: () => { toast(save() ? '💾 저장했어요' : '저장 공간이 부족해요'); } },
-    { icon: '🔄', label: '처음부터', wide: true, onClick: () => openSheet({ title: '처음부터 다시 할까요?', sub: '<div class="relneed">저장된 관계 · 추억 앨범 · 소지품이 모두 지워져요. 되돌릴 수 없어요.</div>', cols: 2, items: [
+    { icon: '🔄', label: '처음부터', onClick: () => openSheet({ title: '처음부터 다시 할까요?', sub: '<div class="relneed">저장된 관계 · 추억 앨범 · 소지품이 모두 지워져요. 되돌릴 수 없어요.</div>', cols: 2, items: [
       { icon: '🗑', label: '지우고 처음부터', onClick: () => { G.started = false; try { localStorage.removeItem(SAVE_KEY4); localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); } },
       { icon: '↩', label: '계속 플레이', onClick: () => { } }] }) },
   ] });
@@ -781,3 +782,7 @@ window.HW.sys = { qGet, qSet, questViews, caseDiscover, unlockHidden, treasureFr
 /* 대사가 끝난 뒤 캐릭터 이동을 기다릴 때 대화창이 열린 채로 멈추지 않게 */
 const _waitUntil0 = waitUntil;
 waitUntil = function (cond, timeout) { if (G.dialog && !_dlgResolve) closeDialog(); return _waitUntil0(cond, timeout); };
+
+/* 대화 상대 기록: 이벤트는 기본적으로 형사님과의 대화 */
+const _runEventT = runEvent;
+runEvent = function (fn) { return _runEventT(async () => { G._talkTo = 'det'; return fn(); }); };

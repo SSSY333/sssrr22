@@ -341,3 +341,7 @@ body.wide .job, body.wide .hair { padding: 4px 2px; font-size: 12px; }
 body.wide .job img, body.wide .hair img { width: 24px; height: 34px; }
 body.wide #newgame .pop.wide { padding: 12px 14px; }
 body.wide #newgame .pv p { font-size: 13px; }
+/* 단어 중간에서 줄이 바뀌지 않게 */
+body { word-break: keep-all; overflow-wrap: break-word; }
+.si-label, .si-note, .pcard b, .pcard small, .job b, .choice, .toast, .qcard, .psub { word-break: keep-all; overflow-wrap: break-word; }
+#sheetBody .sitem { min-height: 66px; padding: 7px 3px 6px; }
