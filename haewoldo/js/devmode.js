@@ -243,7 +243,7 @@ const devNewId = () => 'a' + Date.now().toString(36) + Math.floor(Math.random() 
 function devMove(o, nx, ny) {
   const grp = devGroup(o), dx = nx - o.x, dy = ny - o.y; if (!dx && !dy) { devRebuild(); return; }
   const tiles = o.solid ? devFoot(o, nx, ny) : [];
-  devConfirm(devGuard(M, tiles, o), () => devCommit(() => { for (const x of grp) devSet(x, { x: x.x + dx, y: x.y + dy }); }, `↔ ${devName(o)}을(를) 옮겼어요`));
+  devConfirm(devGuard(M, tiles, o), () => devCommit(() => { for (const x of grp) devSet(x, { x: x.x + dx, y: x.y + dy }); }, `↔ ${josa(devName(o), '을', '를')} 옮겼어요`));
 }
 function devRotate(o) {
   const lspr = typeof LSPR !== 'undefined' && LSPR[o.kind];
@@ -254,7 +254,7 @@ function devScale(o, f) { const s = Math.max(0.5, Math.min(2, Math.round(((o.sca
 function devDelete(o) {
   const why = DEV_PROTECT_KINDS.includes(o.kind) ? ['이벤트 · 활동에 쓰는 물건'] : [];
   if (Object.values(M.benches).some(bk => bk.seats.some(s => s[0] >= o.x && s[0] < o.x + (o.fw || 1) && s[1] >= o.y && s[1] < o.y + (o.fh || 1)))) why.push('앉는 자리가 함께 사라져요');
-  devConfirm(why, () => devCommit(() => { for (const x of devGroup(o)) devSet(x, { del: true }); G.dev.sel = null; }, `🗑 ${devName(o)}을(를) 지웠어요`));
+  devConfirm(why, () => devCommit(() => { for (const x of devGroup(o)) devSet(x, { del: true }); G.dev.sel = null; }, `🗑 ${josa(devName(o), '을', '를')} 지웠어요`));
 }
 function devDuplicate(o) {
   const m = M; let spot = null;

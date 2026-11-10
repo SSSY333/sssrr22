@@ -58,7 +58,7 @@ function wardrobeMenu(who = 'p') {
     body.querySelectorAll('.ptabs button').forEach(b => b.onclick = () => wardrobeMenu(b.dataset.w));
     body.querySelectorAll('.pcard').forEach(b => b.onclick = () => {
       const k = b.dataset.k || null;
-      if (who === 'p') { applyStyle(Object.assign({}, S.style, { clothes: k ? 'w_' + k : 'job', cc: S.style.cc })); memPref('outfit', k || 'job'); toast(k ? `${OUTFITS[k].icon} ${OUTFITS[k].name}(으)로 갈아입었어요` : '원래 옷으로 갈아입었어요'); S.rel.daily.styleChanged = true; }
+      if (who === 'p') { applyStyle(Object.assign({}, S.style, { clothes: k ? 'w_' + k : 'job', cc: S.style.cc })); memPref('outfit', k || 'job'); toast(k ? `${OUTFITS[k].icon} ${josaRo(OUTFITS[k].name)} 갈아입었어요` : '원래 옷으로 갈아입었어요'); S.rel.daily.styleChanged = true; }
       else { S.wear.d = k; toast(k ? `형사님 사복: ${OUTFITS[k].name}` : '형사님이 날마다 옷을 골라 입어요'); G.det.outfit = detDayOutfit(detPlan(S.min).duty ? 'work' : 'casual'); }
       save(); wardrobeMenu(who);
     });
@@ -379,7 +379,7 @@ function decorRotate() {
 function decorStore() {
   const d = G.decor; const f = d && d.sel && S.furn.placed.find(o => o.id === d.sel); if (!f) return;
   S.furn.placed = S.furn.placed.filter(o => o !== f); S.furn.store.push({ id: f.id, k: f.k, photo: f.photo }); d.sel = null;
-  setFurniture(MAPS.in_home, homeFurnList()); updateDecorBar(); toast(`📦 ${FURN[f.k].name}을(를) 보관함에 넣었어요`);
+  setFurniture(MAPS.in_home, homeFurnList()); updateDecorBar(); toast(`📦 ${josa(FURN[f.k].name, '을', '를')} 보관함에 넣었어요`);
 }
 decorStorage = function () {
   const groups = {}; for (const f of S.furn.store) (groups[f.k + (f.photo || '')] = groups[f.k + (f.photo || '')] || []).push(f);
@@ -443,7 +443,7 @@ async function furnAction(o) {
     }
     case 'eat': runEvent(async () => {
       const food = ['lunchbox', 'porridge', 'songpyeon', 'watermelon', 'tangerine', 'snack'].find(k => S.inv[k] > 0);
-      if (food) { S.inv[food]--; await say('narr', '', `🍽 ${ITEMS[food].icon} ${ITEMS[food].name}을(를) 맛있게 먹었다.`); memPref('food', food); if (withDet) { await say('det', 'laugh', c ? '나도 한 입만. …역시 같이 먹으니까 더 맛있다.' : '저도 한 입만요. 같이 먹으니까 더 맛있네요.'); if (!S.rel.daily.eatHome) { S.rel.daily.eatHome = true; addAff(2); } } }
+      if (food) { S.inv[food]--; await say('narr', '', `🍽 ${ITEMS[food].icon} ${josa(ITEMS[food].name, '을', '를')} 맛있게 먹었다.`); memPref('food', food); if (withDet) { await say('det', 'laugh', c ? '나도 한 입만. …역시 같이 먹으니까 더 맛있다.' : '저도 한 입만요. 같이 먹으니까 더 맛있네요.'); if (!S.rel.daily.eatHome) { S.rel.daily.eatHome = true; addAff(2); } } }
       else await say('narr', '', '식탁에 앉아 따뜻한 보리차를 한 잔 마셨다. (먹을 것이 있으면 식사할 수 있어요)');
       advanceTime(20);
     }); return;

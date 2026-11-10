@@ -96,7 +96,7 @@ shopMenu = function () {
   openSheet({ title: '마을 슈퍼', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 계절 한정: ${se === 'summer' ? '수박' : se === 'winter' ? '핫팩' : '없음'}</div>`, items, cols: 4 });
 };
 sellMenu = function () {
-  const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].sell > 0 && !SHOP.includes(k)).map(([k, n]) => ({ icon: imgTag(itemIcon(k)), label: ITEMS[k].name, note: `${fmtMoney(ITEMS[k].sell)} · ${n}개`, keep: true, onClick: () => { if (!(S.inv[k] > 0)) return; S.inv[k]--; S.money += ITEMS[k].sell; Sound.sfx('coin'); toast(`${ITEMS[k].name}을(를) 팔았다 +${fmtMoney(ITEMS[k].sell)}`); updateHUD(); save(); sellMenu(); } }));
+  const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].sell > 0 && !SHOP.includes(k)).map(([k, n]) => ({ icon: imgTag(itemIcon(k)), label: ITEMS[k].name, note: `${fmtMoney(ITEMS[k].sell)} · ${n}개`, keep: true, onClick: () => { if (!(S.inv[k] > 0)) return; S.inv[k]--; S.money += ITEMS[k].sell; Sound.sfx('coin'); toast(`${josa(ITEMS[k].name, '을', '를')} 팔았다 +${fmtMoney(ITEMS[k].sell)}`); updateHUD(); save(); sellMenu(); } }));
   openSheet({ title: '팔기', sub: `<div class="relneed">보유 ${fmtMoney(S.money)}</div>`, items: items.length ? items : [{ icon: imgTag(pxIcon('bag')), label: '팔 물건이 없어요', disabled: true, wide: true }], cols: 4 });
 };
 invMenu = function () {
@@ -127,7 +127,7 @@ clothesMenu = function () {
     colorMenu('색을 골라요 — ' + C.name, CLOTH_COLORS, (col, name) => {
       if (S.money < C.price) { toast('돈이 부족해요'); return; }
       S.money -= C.price; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { clothes: k, cc: col })); updateHUD();
-      toast(`${name} ${C.name}(으)로 갈아입었어요`); styleReaction();
+      toast(`${name} ${josaRo(C.name)} 갈아입었어요`); styleReaction();
     }, (col) => playerPreview({ clothes: k, cc: col }));
   } }));
   openSheet({ title: '해월 옷가게', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 옷을 고르면 색을 정할 수 있어요</div>`, items, cols: 4 });
@@ -135,11 +135,11 @@ clothesMenu = function () {
 salonMenu = function () {
   const items = Object.entries(HAIR_STYLES).map(([k, name]) => ({ icon: imgTag(playerPreview({ hair: k }), 'si-img chibi'), label: name, note: (S.style.hair === k ? '지금 머리 · ' : '') + fmtMoney(STYLE_PRICE.hair), onClick: () => {
     if (S.money < STYLE_PRICE.hair) { toast('돈이 부족해요'); return; }
-    S.money -= STYLE_PRICE.hair; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hair: k })); updateHUD(); toast(`${name}(으)로 바꿨어요`); styleReaction();
+    S.money -= STYLE_PRICE.hair; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hair: k })); updateHUD(); toast(`${josaRo(name)} 바꿨어요`); styleReaction();
   } }));
   items.push({ icon: imgTag(pxIcon('sw:' + S.style.hairC)), label: '머리 색 바꾸기', note: fmtMoney(STYLE_PRICE.color), onClick: () => colorMenu('머리 색 고르기', HAIR_COLORS, (col, name) => {
     if (S.money < STYLE_PRICE.color) { toast('돈이 부족해요'); return; }
-    S.money -= STYLE_PRICE.color; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hairC: col })); updateHUD(); toast(`${name}(으)로 염색했어요`); styleReaction();
+    S.money -= STYLE_PRICE.color; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hairC: col })); updateHUD(); toast(`${josaRo(name)} 염색했어요`); styleReaction();
   }, (col) => playerPreview({ hairC: col })) });
   openSheet({ title: '미용실 해바라기', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 머리 모양 ${fmtMoney(STYLE_PRICE.hair)} · 염색 ${fmtMoney(STYLE_PRICE.color)}</div>`, items, cols: 4 });
 };

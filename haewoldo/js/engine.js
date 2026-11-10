@@ -1,4 +1,7 @@
 'use strict';
+/* 받침에 맞는 조사 (와/과 · 을/를 · 이/가 · 은/는 · (으)로) */
+function josa(w, a, b) { const c = String(w).replace(/[^가-힣0-9]+$/, '').slice(-1).charCodeAt(0); const has = c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 > 0 : /[136780]$/.test(String.fromCharCode(c)); return w + (has ? a : b); }
+function josaRo(w) { const c = String(w).replace(/[^가-힣0-9]+$/, '').slice(-1).charCodeAt(0); const jong = c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 : 0; return w + (jong && jong !== 8 ? '으로' : '로'); }
 /* =========================================================
  *  해월도 다이어리 v2 — 엔진 (상태 · 캐릭터 · 렌더링 · 입력 · 시간)
  * ========================================================= */
@@ -280,7 +283,9 @@ function prect(g, wx, wy, w, h, col) { g.fillStyle = col; g.fillRect(SX(wx), SY(
 
 function render(dt) {
   const g = R.v, P = G.player, m = M;
-  const zm = G.zoom || 1, sc = (m.interior ? Math.min(R.scale, R.cssW / ((m.W + m.H) * 16 + 16), R.cssH / ((m.W + m.H) * 8 + 150)) : R.scale) * zm;
+  // 실내도 바깥과 같은 크기로 (방이 화면보다 크면 카메라가 따라다님)
+  const fitRoom = m.interior && G.decor;   // 꾸미기 중엔 방 전체가 한눈에 보이게
+  const zm = G.zoom || 1, sc = (fitRoom ? Math.min(R.scale, R.cssW / ((m.W + m.H) * 16 + 56), R.cssH / ((m.W + m.H) * 8 + 150)) : R.scale) * zm;
   if (sc !== R.cur) { const pinching = G.pinching; R.cur = sc; R.K = sc * R.dpr; R.lw = R.cssW / sc; R.lh = R.cssH / sc; if (!pinching) G.camSnap = true; else G.camSnap = true; }
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.imageSmoothingEnabled = false;
@@ -288,9 +293,16 @@ function render(dt) {
   // 카메라
   let fx, fy;
   if (G.camFocus) [fx, fy] = iso(G.camFocus.x, G.camFocus.y);
-  else if (m.interior) [fx, fy] = iso(m.W / 2, m.H / 2 + 0.6);
   else [fx, fy] = iso(P.x, P.y);
-  const tx = fx - R.lw / 2, ty = fy - 14 - R.lh * (m.interior ? 0.46 : 0.5);
+  let tx = fx - R.lw / 2, ty = fy - 14 - R.lh * 0.5;
+  if (fitRoom && !G.camFocus) { [fx, fy] = iso(m.W / 2, m.H / 2 + 0.6); tx = fx - R.lw / 2; ty = fy - 14 - R.lh * 0.46; }
+  else if (m.interior && !G.camFocus) {
+    // 방 테두리(벽 포함) 안에서만 움직이게: 방이 화면보다 작으면 가운데, 크면 내 위치를 따라가되 벽 밖은 안 보이게
+    const bx0 = iso(0, m.H)[0] - 10, bx1 = iso(m.W, 0)[0] + 10, by0 = iso(0, 0)[1] - 58, by1 = iso(m.W, m.H)[1] + 30;
+    const fit = (a0, a1, v, L, extra) => (a1 - a0 <= L ? (a0 + a1) / 2 - L / 2 : Math.max(a0, Math.min(a1 - L + extra, v)));
+    tx = fit(bx0, bx1, tx, R.lw, 0);
+    ty = fit(by0, by1, ty, R.lh, 90 / R.cur);  // 아래쪽은 행동 버튼 · 대화창 자리만큼 여유
+  }
   if (G.camSnap) { G.cam.x = tx; G.cam.y = ty; G.camSnap = false; }
   else { const k = 1 - Math.exp(-dt * 7); G.cam.x += (tx - G.cam.x) * k; G.cam.y += (ty - G.cam.y) * k; }
 

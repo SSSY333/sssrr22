@@ -163,7 +163,7 @@ function memoryLine() {
 const _giveGift0 = giveGift;
 giveGift = async function (k) {
   const top = memTop('gift');
-  memPref('gift', k); memRecent('gift', `${ITEMS[k].name}을(를) 선물했다`);
+  memPref('gift', k); memRecent('gift', `${josa(ITEMS[k].name, '을', '를')} 선물했다`);
   if (casualOn() && top === k && !S.rel.daily.gift) { G.det.talking = true; await say('det', 'blush', '또 이거야? 하하, 내가 이거 좋아하는 거 확실히 아는구나.'); }
   return _giveGift0(k);
 };
@@ -363,7 +363,7 @@ function endAuto() { const d = G.det; if (G.detAuto && G.detAuto.kind === 'cat')
 async function autoWorkVisit() {
   const d = G.det, P = G.player, c = casualOn(); scriptDet(); d.walkTo(P.x, P.y); if (d.path.length) d.path.pop(); await waitUntil(() => !d.path.length, 6); d.lookAt(P); P.lookAt(d);
   await say('det', 'smile', c ? pick(['일하는 모습 보러 왔어. 방해 안 할게, 진짜로.', '순찰 돌다가 잠깐 들렀어. 오늘 바빠?']) : pick(['순찰 중에 잠깐 들렀어요. 일하는 모습 보기 좋네요.', '잠깐 인사드리러 왔어요. 바쁘시죠?']));
-  if (S.rel.stage >= 4) { const k = season() === 'winter' ? 'hotpack' : 'coffee'; S.inv[k] = (S.inv[k] || 0) + 1; await say('det', 'tease', c ? `이거 마시면서 해. ${ITEMS[k].icon}` : `이거 드시면서 하세요. ${ITEMS[k].icon}`); toast(`${ITEMS[k].icon} ${ITEMS[k].name}을(를) 받았다`); }
+  if (S.rel.stage >= 4) { const k = season() === 'winter' ? 'hotpack' : 'coffee'; S.inv[k] = (S.inv[k] || 0) + 1; await say('det', 'tease', c ? `이거 마시면서 해. ${ITEMS[k].icon}` : `이거 드시면서 하세요. ${ITEMS[k].icon}`); toast(`${ITEMS[k].icon} ${josa(ITEMS[k].name, '을', '를')} 받았다`); }
   addAff(2); memRecent('visit', '형사님이 일터에 찾아왔다'); endAuto();
 }
 async function autoHomeVisit() {
@@ -585,7 +585,7 @@ interactWith = function (a) {
 };
 /* 반복 퀘스트: 일일 낚시 의뢰 · 주민 부탁 */
 QDEF.daily_fish = { title: '🎣 박 씨 아저씨의 일일 낚시 의뢰', kind: 'repeat', view: (q) => q.day !== S.day ? { hidden: true } : { desc: '오늘 횟집에 넣을 물고기가 모자라대요.', goal: '물고기 2마리 낚기', prog: [Math.min(2, (S.rel.daily.fish || 0)), 2], target: { map: 'island', x: P_('pierEnd')[0], y: P_('pierEnd')[1] }, place: '부두 낚시터', reward: '2,000원 (하루 한 번)' } };
-QDEF.v_favor = { title: '📝 주민 부탁', kind: 'repeat', view: (q) => q.day !== S.day ? { hidden: true } : { desc: `${NPC_LOOKS[q.who] ? NPC_LOOKS[q.who].name : '주민'}의 부탁: ${ITEMS[q.item].icon} ${ITEMS[q.item].name} 가져다주기`, goal: `${ITEMS[q.item].name}을(를) 들고 다시 말 걸기`, prog: [Math.min(1, S.inv[q.item] || 0), 1], target: (() => { const a = G.actors.find(x => x.id === q.who); return a ? { map: a.map, x: a.x, y: a.y } : null; })(), reward: '1,500원 · 평판 (하루 한 번)' } };
+QDEF.v_favor = { title: '📝 주민 부탁', kind: 'repeat', view: (q) => q.day !== S.day ? { hidden: true } : { desc: `${NPC_LOOKS[q.who] ? NPC_LOOKS[q.who].name : '주민'}의 부탁: ${ITEMS[q.item].icon} ${ITEMS[q.item].name} 가져다주기`, goal: `${josa(ITEMS[q.item].name, '을', '를')} 들고 다시 말 걸기`, prog: [Math.min(1, S.inv[q.item] || 0), 1], target: (() => { const a = G.actors.find(x => x.id === q.who); return a ? { map: a.map, x: a.x, y: a.y } : null; })(), reward: '1,500원 · 평판 (하루 한 번)' } };
 QDEF.v_photo = { title: '📸 사진작가의 노을', view: (q) => q.day !== S.day ? { hidden: true } : { desc: '사진작가가 등대 노을 명당을 알려 달래요.', goal: '17시 이후 등대 벤치에 가기', target: { map: 'island', x: P_('lighthouse')[0], y: P_('lighthouse')[1] }, place: '등대', reward: '등대 프레임' } };
 QDEF.v_request = { title: '✉️ 특별 의뢰 — 소라 한 개', view: (q) => q.day !== S.day ? { hidden: true } : { desc: '의뢰인의 어머니가 해월도 소라를 보고 싶어 하신대요.', goal: '소라를 구해 의뢰인에게 주기 (16:30 전)', prog: [Math.min(1, S.inv.conch || 0), 1], reward: '4,000원' } };
 QDEF.job = { title: () => `${JOBS[S.job].icon} ${JOBS[S.job].name}의 하루`, view: (q) => q.state === 'COMPLETED' ? { hidden: true } : { desc: { doctor: '보건지소 어르신들을 돌봐 드려요.', teacher: '아이들 수업을 맡아요.', traveler: '섬 곳곳을 여행 일지에 기록해요.', cafe: '카페 쉼터를 영업해요.', haenyeo: '바다에 나가 물질을 해요.' }[S.job], goal: `${JOBS[S.job].act} 5번`, prog: [Math.min(5, S.stats.works), 5], reward: '10,000원 · 직업 경험치' } };

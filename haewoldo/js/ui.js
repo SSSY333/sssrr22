@@ -57,7 +57,7 @@ function detOutingMenu() {
     const items = Object.entries(DATES).map(([k, D]) => { const lock = D.minStage && st < D.minStage; return { icon: D.icon, label: D.name, locked: lock, why: `「${lock ? STAGES[D.minStage - 1].name : ''}」 단계에서 열려요`, note: lock ? STAGES[D.minStage - 1].name : D.time && S.min < D.time ? `${fmtTime(D.time)}부터` : '', onClick: () => doDate(k) }; });
     detSub('데이트', items, 3); return;
   }
-  const go = (k, name) => () => { if (G.player.map !== 'island') { toast('밖으로 나가서 가요'); return; } if (!S.comp) startCompanion(); const [x, y] = P_(k); walkPlayer(x, y); toast(`${name}(으)로 같이 걸어가요` + (Math.hypot(G.player.x - x, G.player.y - y) > 40 ? ' · 멀면 🚌 마을버스가 빨라요' : '')); };
+  const go = (k, name) => () => { if (G.player.map !== 'island') { toast('밖으로 나가서 가요'); return; } if (!S.comp) startCompanion(); const [x, y] = P_(k); walkPlayer(x, y); toast(`${josaRo(name)} 같이 걸어가요` + (Math.hypot(G.player.x - x, G.player.y - y) > 40 ? ' · 멀면 🚌 마을버스가 빨라요' : '')); };
   detSub('같이 가기', OUTINGS.filter(([k]) => POI[k]).map(([k, i, n]) => ({ icon: i, label: n, onClick: go(k, n) })), 3);
 }
 detMenu = function () {

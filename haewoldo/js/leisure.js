@@ -328,7 +328,7 @@ async function leisureAct(k, act) {
       case 'rest': await say('narr', '', pick(['바람 소리를 들으며 잠시 눈을 감았다.', '아무 생각 없이 하늘을 올려다봤다. 마음이 느긋해진다.'])); advanceTime(30); break;
       case 'snack': { const food = ['snack', 'tangerine', 'lunchbox', 'watermelon', 'candy', 'chocolate', 'songpyeon'].find(f => S.inv[f] > 0 && f !== 'snack') || (S.inv.snack > 0 ? 'snack' : null);
         if (!food) { await say('narr', '', '먹을 게 없다. 마을 슈퍼에서 간식을 사 오자.'); break; }
-        S.inv[food]--; P.prop = food; await say('narr', '', `${ITEMS[food].name}을(를) 꺼내 먹었다. 밖에서 먹으니 더 맛있다.`); memPref('food', food);
+        S.inv[food]--; P.prop = food; await say('narr', '', `${josa(ITEMS[food].name, '을', '를')} 꺼내 먹었다. 밖에서 먹으니 더 맛있다.`); memPref('food', food);
         if (withDet) { d.prop = food; await say('det', 'laugh', c ? '나도 하나만. …역시 밖에서 먹으면 다 맛있어.' : '저도 하나만요. 밖에서 먹으니까 더 맛있네요.'); addAff(1); }
         P.prop = null; d.prop = null; advanceTime(15); break; }
       case 'tea': P.prop = 'tea'; await say('narr', '', kind === 'camp' ? '보온병에 담긴 따뜻한 보리차를 따랐다. 김이 모락모락.' : '정자 마루에 앉아 따뜻한 차를 홀짝였다.'); if (withDet) { d.prop = 'tea'; await say('det', 'smile', c ? '차 맛 좋다. 이런 게 쉬는 거지.' : '차 맛 좋네요. 이런 게 쉬는 거죠.'); } P.prop = null; d.prop = null; advanceTime(20); break;

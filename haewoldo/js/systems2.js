@@ -113,7 +113,7 @@ async function caseDeduce(id) {
   if (S.stats.cases === 1) treasureFrag('case');
   qSet('case_' + id, { state: 'COMPLETED' });
   addRumor('case', { case: C.name, truth: C.truth }, { key: 'case' + id, days: 9 });
-  memPerm('case_' + id, { name: C.name }); memRecent('case', `${C.name}을(를) 함께 해결했다`);
+  memPerm('case_' + id, { name: C.name }); memRecent('case', `${josa(C.name, '을', '를')} 함께 해결했다`);
   S.rel.daily.caseSolved = id;
   if (id === 'cat') { const cat = G.pets.find(p => p.vid === 'cheese'); if (cat) cat.visible = true; }
   if (id === 'orange') unlockHidden('h_cellar', true);
@@ -142,7 +142,7 @@ function unlockHidden(id, quiet) {
   S.hidden[id] = { day: S.day, visited: false };
   toast(`🗺 숨겨진 장소 발견 — ${HIDDEN_DEFS[id].icon} ${HIDDEN_DEFS[id].name}${quiet ? ' (지도에 등록)' : ''}`);
   qSet('hidden_' + id, { state: 'ACTIVE' });
-  memRecent('explore', `${HIDDEN_DEFS[id].name}을(를) 발견했다`);
+  memRecent('explore', `${josa(HIDDEN_DEFS[id].name, '을', '를')} 발견했다`);
   return true;
 }
 for (const id of Object.keys(HIDDEN_DEFS)) QDEF['hidden_' + id] = { title: () => `${HIDDEN_DEFS[id].icon} ${HIDDEN_DEFS[id].name} 탐험`, view: () => {

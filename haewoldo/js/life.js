@@ -400,7 +400,7 @@ Object.assign(PLACE_ACTS, {
   ],
   pier: [
     { icon: '⛴', label: '여객선 구경', run: async () => { const fp = ferryPhase(S.min); await say('narr', '', fp.phase === 'docked' ? '⛴ 여객선이 정박해 있다. 손님들이 짐을 들고 내린다.' : fp.phase === 'arriving' ? '⛴ 수평선 너머로 여객선이 천천히 다가온다.' : fp.phase === 'cancel' ? '오늘은 결항이라 부두가 한산하다.' : `여객선은 지금 없다. ${nextFerryText()}`); await withDetLine('배 들어오는 시간엔 저도 꼭 나와 봐요. 손님 안내하려고요.', '배 들어올 때 나 여기 꼭 있지? 길 안내 담당이라.'); } },
-    { icon: '🐱', label: '항구고양이 찾기', ui: true, run: async () => { const cat = G.pets.find(p => p.pet && p.pet.kind === 'cat' && p.visible && p.map === G.player.map); const near = cat && dist(cat, G.player) < 12; await runEvent(async () => { await say('narr', '', near ? `${cat.pet.name || '고양이'}이(가) 그물 더미 위에서 하품을 한다.` : '고양이들이 어디 숨었는지 보이지 않는다. 창고 쪽에 있으려나?'); }); if (near) approach(cat); } },
+    { icon: '🐱', label: '항구고양이 찾기', ui: true, run: async () => { const cat = G.pets.find(p => p.pet && p.pet.kind === 'cat' && p.visible && p.map === G.player.map); const near = cat && dist(cat, G.player) < 12; await runEvent(async () => { await say('narr', '', near ? `${josa(cat.pet.name || '고양이', '이', '가')} 그물 더미 위에서 하품을 한다.` : '고양이들이 어디 숨었는지 보이지 않는다. 창고 쪽에 있으려나?'); }); if (near) approach(cat); } },
     { icon: '🌊', label: '바다 구경', run: async () => { await say('narr', '', '부두 끝에 서서 파도 소리를 들었다. 갈매기가 머리 위를 맴돈다.'); advanceTime(15); } },
     { icon: '📷', label: '사진 찍기', ui: true, run: () => cameraMenu() },
   ],
@@ -441,7 +441,7 @@ Object.assign(PLACE_ACTS, {
   ],
   rocks: [
     { icon: '🧰', label: '낚시 용품 구경', run: async () => { await say('narr', '', '만복 아저씨의 도구 상자에는 찌, 바늘, 그리고 왜인지 사탕이 한가득 들어 있다.'); } },
-    { icon: '🐟', label: '잡은 물고기 자랑', cond: () => Object.keys(S.inv).some(k => k.startsWith('f_') && S.inv[k] > 0), run: async () => { const k = Object.keys(S.inv).find(x => x.startsWith('f_') && S.inv[x] > 0); if (!k) return; const mb = G.villagers.find(v => v.id === 'manbok' && v.visible && dist(v, G.player) < 10); await say('narr', '', `${ITEMS[k].name}을(를) 번쩍 들어 보였다!`); if (mb) await say('manbok', 'laugh', '오오! 제법인데? 그래도 내가 어제 잡은 놈이 두 배는 컸어. 진짜여!'); await withDetLine('오, 대단하시네요! 저는 오늘도 꽝인데.', '오, 대박! 나 오늘도 꽝인데. 비결 좀.'); } },
+    { icon: '🐟', label: '잡은 물고기 자랑', cond: () => Object.keys(S.inv).some(k => k.startsWith('f_') && S.inv[k] > 0), run: async () => { const k = Object.keys(S.inv).find(x => x.startsWith('f_') && S.inv[x] > 0); if (!k) return; const mb = G.villagers.find(v => v.id === 'manbok' && v.visible && dist(v, G.player) < 10); await say('narr', '', `${josa(ITEMS[k].name, '을', '를')} 번쩍 들어 보였다!`); if (mb) await say('manbok', 'laugh', '오오! 제법인데? 그래도 내가 어제 잡은 놈이 두 배는 컸어. 진짜여!'); await withDetLine('오, 대단하시네요! 저는 오늘도 꽝인데.', '오, 대박! 나 오늘도 꽝인데. 비결 좀.'); } },
   ],
   pavilion: [{ icon: '🍃', label: '바람 쐬기', run: async () => { await say('narr', '', '정자 처마 아래로 시원한 숲 바람이 지나간다. 땀이 싹 식는다.'); await withDetLine('바람 좋네요. 여기가 섬에서 제일 시원한 데예요.', '바람 좋다. 여기 우리 비밀 피서지 할까?'); advanceTime(15); } }],
   orchard: [{ icon: '🍊', label: '귤나무 보기', run: async () => { await say('narr', '', ({ spring: '하얀 귤꽃 향기가 진하다.', summer: '초록 풋귤이 조롱조롱 달렸다.', autumn: '귤이 노랗게 물들어 간다.', winter: '주황색 귤이 주렁주렁! 지금이 수확 철이다.' })[season()]); } }],

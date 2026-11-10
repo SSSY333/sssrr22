@@ -73,7 +73,7 @@ async function detApproach() {
   const st = S.rel.stage; S.rel.daily.met = true;
   await say('det', st >= 4 ? 'blush' : 'smile', st >= 8 ? '여보! 여기 있었네. 찾았잖아요.' : st >= 5 ? '찾았다. 보고 싶어서 일부러 이쪽으로 왔어요.' : st >= 4 ? '저기서부터 보였어요. 그래서… 왔어요.' : '멀리서 보여서 왔어요. 오늘 어땠어요?');
   addAff(1);
-  if (st >= 4 && S.day % 2 === 0) { const k = season() === 'winter' ? 'hotpack' : pick(['tangerine', 'coffee']); await say('det', 'tease', `이거, 지나가다 생각나서요. ${ITEMS[k].icon}`); S.inv[k] = (S.inv[k] || 0) + 1; toast(`${ITEMS[k].icon} 형사님에게 ${ITEMS[k].name}을(를) 받았다`); }
+  if (st >= 4 && S.day % 2 === 0) { const k = season() === 'winter' ? 'hotpack' : pick(['tangerine', 'coffee']); await say('det', 'tease', `이거, 지나가다 생각나서요. ${ITEMS[k].icon}`); S.inv[k] = (S.inv[k] || 0) + 1; toast(`${ITEMS[k].icon} 형사님에게 ${josa(ITEMS[k].name, '을', '를')} 받았다`); }
   if (st >= 3 && !S.comp && detPlan(S.min).k !== 'goHome') {
     await say('det', st >= 5 ? 'smile' : 'normal', st >= 5 ? '오늘 저녁, 같이 있을래요?' : '시간 있으면 좀 걸을래요?');
     const c = await choose(['좋아요', '오늘은 바빠요']);
@@ -344,7 +344,7 @@ async function seasonEvent(ev) {
     await say('det', 'smile', ev.choice[c][2]);
     addAff(ev.choice[c][1], { event: true });
   } else await say('narr', '', pick(['마을 사람들이 모두 모여 웃고 있다.', '섬 전체가 들뜬 분위기다.', '이런 날엔 누군가와 함께 있고 싶어진다.']));
-  if (ev.reward) { S.inv[ev.reward] = (S.inv[ev.reward] || 0) + 1; toast(`${ITEMS[ev.reward].icon} ${ITEMS[ev.reward].name}을(를) 받았다`); }
+  if (ev.reward) { S.inv[ev.reward] = (S.inv[ev.reward] || 0) + 1; toast(`${ITEMS[ev.reward].icon} ${josa(ITEMS[ev.reward].name, '을', '를')} 받았다`); }
   await addAlbum(ev.name, 'season');
 }
 
@@ -368,7 +368,7 @@ async function sitTogether(benchKey) {
     if (!k) { toast('여기엔 앉을 벤치가 없어요'); return; }
     const bk = M.benches[k];
     scriptDet();
-    if (Math.hypot(P.x - bk.stand[0][0] - 0.5, P.y - bk.stand[0][1] - 0.5) > 1.2) toast(`🪑 ${bk.name}(으)로 같이 가요`);
+    if (Math.hypot(P.x - bk.stand[0][0] - 0.5, P.y - bk.stand[0][1] - 0.5) > 1.2) toast(`🪑 ${josaRo(bk.name)} 같이 가요`);
     await walkBothTo([bk.stand[0][0] + 0.5, bk.stand[0][1] + 0.5], [bk.stand[1][0] + 0.5, bk.stand[1][1] + 0.5]);
     P.sitAt(k, 0); d.sitAt(k, 1);
     await sleep(500);
@@ -465,7 +465,7 @@ async function endFish(ok) {
   if (ok) {
     r = rollFish(f.spot); S.inv[r.item] = (S.inv[r.item] || 0) + 1; burst(G.player, 'spark', 5); Sound.sfx('coin');
     if (r.id) { const prev = S.dex[r.id] || 0; if (r.size > prev) S.dex[r.id] = r.size; await say('narr', '', `🐟 ${FISH[r.id].name} ${r.size}cm${prev ? (r.size > prev ? ' — 신기록!' : '') : ' — 도감에 새로 등록!'}`); }
-    else await say('narr', '', `…${ITEMS[r.item].icon} ${ITEMS[r.item].name}이(가) 걸려 올라왔다.`);
+    else await say('narr', '', `…${ITEMS[r.item].icon} ${josa(ITEMS[r.item].name, '이', '가')} 걸려 올라왔다.`);
   } else await say('narr', '', '…아, 놓쳐 버렸다.');
   f.res(r);
 }
@@ -491,7 +491,7 @@ async function doDate(k) {
   await runEvent(async () => {
     const D = DATES[k], P = G.player, d = G.det;
     if (S.min >= 23 * 60) { await say('det', 'smile', '오늘은 너무 늦었어요. 내일 꼭 가요. 약속.'); return; }
-    if (D.time && S.min < D.time) { await say('det', 'tease', `${D.name}은(는) ${fmtTime(D.time)}쯤이 제일 좋아요. 그때까지 같이 있어요.`); S.min = D.time; }
+    if (D.time && S.min < D.time) { await say('det', 'tease', `${josa(D.name, '은', '는')} ${fmtTime(D.time)}쯤이 제일 좋아요. 그때까지 같이 있어요.`); S.min = D.time; }
     if (!S.comp) startCompanion();
     scriptDet();
     const DP = typeof D.pos === 'string' ? P_(D.pos) : D.pos;
@@ -693,7 +693,7 @@ function leaveInterior() {
 function doWork() {
   const J = JOBS[S.job];
   const end = S.job === 'cafe' || S.job === 'traveler' ? 20 * 60 : 18.5 * 60;
-  if (S.min < 7.5 * 60 || S.min >= end) { toast(`${J.act}은(는) ${fmtTime(end)} 전까지만 할 수 있어요`); return; }
+  if (S.min < 7.5 * 60 || S.min >= end) { toast(`${josa(J.act, '은', '는')} ${fmtTime(end)} 전까지만 할 수 있어요`); return; }
   if (S.weather === 'storm' && S.job === 'haenyeo') { toast('태풍이라 오늘은 물질을 쉬어요'); return; }
   const P = G.player; P.stop(); if (P.seat) P.standUp();
   G.working = { t: 0, dur: 2.2, mins: 60 };
@@ -712,7 +712,7 @@ function workUpdate(dt) {
     floatText(G.player, '+' + fmtMoney(pay), '#ffe37a');
     toast(`${J.icon} ${pick(J.work)}`);
     if (S.job === 'traveler') S.spots[curPlace()] = true;
-    if (J.loot && Math.random() < 0.45) { const it = pick(['abalone', 'conch', 'urchin', 'seaweed']); S.inv[it] = (S.inv[it] || 0) + 1; toast(`${ITEMS[it].icon} ${ITEMS[it].name}을(를) 얻었다`); }
+    if (J.loot && Math.random() < 0.45) { const it = pick(['abalone', 'conch', 'urchin', 'seaweed']); S.inv[it] = (S.inv[it] || 0) + 1; toast(`${ITEMS[it].icon} ${josa(ITEMS[it].name, '을', '를')} 얻었다`); }
     if (S.jobExp >= S.jobLv * 4) { S.jobExp = 0; S.jobLv++; toast(`⭐ 직업 레벨 업! ${J.name} Lv.${S.jobLv}`); burst(G.player, 'spark', 10); }
     updateHUD();
     const d = G.det;
@@ -742,7 +742,7 @@ function gatherShell() {
     const it = Math.random() < 0.25 ? null : pick(SHELL_TABLE[islet ? 'islet' : 'beach']);
     if (!it) { await say('narr', '', '…모래만 한 줌. 다시 찾아보자.'); return; }
     S.inv[it] = (S.inv[it] || 0) + 1; burst(P, 'spark', 4); Sound.sfx('coin');
-    await say('narr', '', `${ITEMS[it].icon} ${ITEMS[it].name}을(를) 주웠다!${ITEMS[it].furn ? ' (집 꾸미기 소품으로도 쓸 수 있어요)' : ''}`);
+    await say('narr', '', `${ITEMS[it].icon} ${josa(ITEMS[it].name, '을', '를')} 주웠다!${ITEMS[it].furn ? ' (집 꾸미기 소품으로도 쓸 수 있어요)' : ''}`);
     if (ITEMS[it].furn) S.furnInv[ITEMS[it].furn] = (S.furnInv[ITEMS[it].furn] || 0) + 1;
     if (S.comp && dist(G.det, P) < 3 && Math.random() < 0.5) { await say('det', 'smile', pick(['오, 잘 찾는다. 저는 아까부터 조약돌만 나와요.', '그거 저 주면 안 돼요? 책상에 둘래요.', '물 들어오기 전에 조금만 더 찾아요.'])); }
   });
@@ -815,7 +815,7 @@ function homeSleep() { endDay(false); }
 function lostBox() {
   runEvent(async () => {
     const r = S.rel, L = r.daily.lost;
-    if (L && L.found && !L.returned) { await say('narr', '', `${L.item}은(는) ${NPC_LOOKS[L.owner].name}께 직접 돌려드리자.`); return; }
+    if (L && L.found && !L.returned) { await say('narr', '', `${josa(L.item, '은', '는')} ${NPC_LOOKS[L.owner].name}께 직접 돌려드리자.`); return; }
     if (L && !L.found) { await say('narr', '', `📦 분실물 신고: ${NPC_LOOKS[L.owner].name}의 ${L.item}. ${L.hint} 근처에서 잃어버렸대요. (반짝이는 곳을 찾아보세요)`); return; }
     if (L && L.returned) { await say('narr', '', '오늘 분실물은 모두 주인을 찾았다.'); return; }
     const owners = ['halmeoni', 'kid', 'kid2', 'fisher', 'okja', 'grandpa'], items = ['머리끈', '돋보기', '낚시찌', '손수건', '열쇠고리', '털장갑'];
@@ -823,7 +823,7 @@ function lostBox() {
     const [hint, at] = pick(spots), i = Math.floor(Math.random() * owners.length);
     const [x, y] = nearestWalkable(at[0] + rand(-2, 2), at[1] + rand(-2, 2), MAPS.island);
     r.daily.lost = { owner: owners[i], item: items[i], hint, x, y, found: false };
-    await say('narr', '', `📦 분실물 상자에 쪽지가 있다: "${NPC_LOOKS[owners[i]].name}의 ${items[i]}을(를) ${hint} 근처에서 잃어버렸어요."`);
+    await say('narr', '', `📦 분실물 상자에 쪽지가 있다: "${NPC_LOOKS[owners[i]].name}의 ${josa(items[i], '을', '를')} ${hint} 근처에서 잃어버렸어요."`);
     toast('🔍 반짝이는 곳을 찾아 분실물을 주워요');
   });
 }
@@ -847,7 +847,7 @@ function computeAction() {
     return { label: '나가기', icon: '🚪', fn: leaveInterior };
   }
   const L = S.rel.daily.lost;
-  if (L && !L.found && P.map === 'island' && Math.hypot(P.x - L.x, P.y - L.y) < 1.3) return { label: '줍기', icon: '✨', hot: true, fn: () => { L.found = true; G.tempObjs = G.tempObjs.filter(o => !o.lostItem); toast(`✨ ${L.item}을(를) 찾았다! ${NPC_LOOKS[L.owner].name}께 돌려드려요`); Sound.sfx('coin'); } };
+  if (L && !L.found && P.map === 'island' && Math.hypot(P.x - L.x, P.y - L.y) < 1.3) return { label: '줍기', icon: '✨', hot: true, fn: () => { L.found = true; G.tempObjs = G.tempObjs.filter(o => !o.lostItem); toast(`✨ ${josa(L.item, '을', '를')} 찾았다! ${NPC_LOOKS[L.owner].name}께 돌려드려요`); Sound.sfx('coin'); } };
   const fs = fishSpot(); if (fs) return { label: S.comp && S.rel.stage >= 3 && fs === 'pier' ? '같이 낚시' : '낚시하기', icon: '🎣', fn: () => (S.comp && S.rel.stage >= 3 && fs === 'pier' ? fishTogether() : soloFish(fs)) };
   if (M.boatSpot && Math.hypot(P.x - M.boatSpot[0], P.y - M.boatSpot[1]) < 1.4) return { label: P.map === 'island' ? '무인도 가기' : '해월도로', icon: '🚤', hot: true, fn: rideBoat };
   const stop = M.id === 'island' && M.objects.find(o => o.kind === 'busstop' && Math.hypot(P.x - o.x - 0.5, P.y - o.y - 0.5) < 1.8);
@@ -879,7 +879,7 @@ async function rideBus(k) {
   if (S.min >= 22 * 60) { toast('막차가 끊겼어요'); return; }
   S.money -= 1000; G.busy++;
   await fade(true);
-  $('#boatScene').classList.remove('hidden'); $('#boatScene .boat').textContent = '🚌'; $('#boatScene p').textContent = `덜컹덜컹… ${BUS_NAMES[k]}(으)로 가는 중`;
+  $('#boatScene').classList.remove('hidden'); $('#boatScene .boat').textContent = '🚌'; $('#boatScene p').textContent = `덜컹덜컹… ${josaRo(BUS_NAMES[k])} 가는 중`;
   await sleep(1100);
   $('#boatScene').classList.add('hidden'); $('#boatScene .boat').textContent = '🚤'; $('#boatScene p').textContent = '통통통… 바다를 건너는 중';
   const P = G.player, [x, y] = MAPS.island.stops[k];
@@ -937,7 +937,7 @@ function clothesMenu() {
     colorMenu('색을 골라요 — ' + C.name, CLOTH_COLORS, (col, name) => {
       if (S.money < C.price) { toast('돈이 부족해요'); return; }
       S.money -= C.price; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { clothes: k, cc: col })); updateHUD();
-      toast(`👗 ${name} ${C.name}(으)로 갈아입었어요`); styleReaction();
+      toast(`👗 ${name} ${josaRo(C.name)} 갈아입었어요`); styleReaction();
     });
   } }));
   openSheet({ title: '👗 해월 옷가게', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 옷을 고르면 색을 정할 수 있어요</div>`, items, cols: 3 });
@@ -949,11 +949,11 @@ function colorMenu(title, colors, done) {
 function salonMenu() {
   const items = Object.entries(HAIR_STYLES).map(([k, name]) => ({ icon: '💇', label: name, note: (S.style.hair === k ? '지금 머리 · ' : '') + fmtMoney(STYLE_PRICE.hair), onClick: () => {
     if (S.money < STYLE_PRICE.hair) { toast('돈이 부족해요'); return; }
-    S.money -= STYLE_PRICE.hair; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hair: k })); updateHUD(); toast(`💇 ${name}(으)로 바꿨어요`); styleReaction();
+    S.money -= STYLE_PRICE.hair; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hair: k })); updateHUD(); toast(`💇 ${josaRo(name)} 바꿨어요`); styleReaction();
   } }));
   items.push({ icon: '🎨', label: '머리 색 바꾸기', note: fmtMoney(STYLE_PRICE.color), wide: true, onClick: () => colorMenu('머리 색 고르기', HAIR_COLORS, (col, name) => {
     if (S.money < STYLE_PRICE.color) { toast('돈이 부족해요'); return; }
-    S.money -= STYLE_PRICE.color; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hairC: col })); updateHUD(); toast(`🎨 ${name}(으)로 염색했어요`); styleReaction();
+    S.money -= STYLE_PRICE.color; Sound.sfx('coin'); applyStyle(Object.assign({}, S.style, { hairC: col })); updateHUD(); toast(`🎨 ${josaRo(name)} 염색했어요`); styleReaction();
   }) });
   openSheet({ title: '💇 미용실 해바라기', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 머리 모양 ${fmtMoney(STYLE_PRICE.hair)} · 염색 ${fmtMoney(STYLE_PRICE.color)}</div>`, items, cols: 3 });
 }
@@ -965,7 +965,7 @@ function shopMenu() {
   openSheet({ title: '마을 슈퍼', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 계절 한정: ${se === 'summer' ? '수박' : se === 'winter' ? '핫팩' : '없음'}</div>`, items, cols: 3 });
 }
 function sellMenu() {
-  const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].sell > 0 && !SHOP.includes(k)).map(([k, n]) => ({ icon: ITEMS[k].icon, label: ITEMS[k].name, note: `${fmtMoney(ITEMS[k].sell)} · ${n}개`, keep: true, onClick: () => { if (!(S.inv[k] > 0)) return; S.inv[k]--; S.money += ITEMS[k].sell; Sound.sfx('coin'); toast(`${ITEMS[k].name}을(를) 팔았다 +${fmtMoney(ITEMS[k].sell)}`); updateHUD(); save(); } }));
+  const items = Object.entries(S.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].sell > 0 && !SHOP.includes(k)).map(([k, n]) => ({ icon: ITEMS[k].icon, label: ITEMS[k].name, note: `${fmtMoney(ITEMS[k].sell)} · ${n}개`, keep: true, onClick: () => { if (!(S.inv[k] > 0)) return; S.inv[k]--; S.money += ITEMS[k].sell; Sound.sfx('coin'); toast(`${josa(ITEMS[k].name, '을', '를')} 팔았다 +${fmtMoney(ITEMS[k].sell)}`); updateHUD(); save(); } }));
   openSheet({ title: '팔기', sub: `<div class="relneed">보유 ${fmtMoney(S.money)}</div>`, items: items.length ? items : [{ icon: '🫙', label: '팔 물건이 없어요', disabled: true, wide: true }], cols: 3 });
 }
 function furnShopMenu() {
