@@ -1,0 +1,2382 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}[hidden]{display:none!important}</style></head><body>
+<title>도트 보장원</title>
+<meta name="description" content="광화문 세종대로의 유리 빌딩 보장원 — 내 캐릭터로 돌아다니는 2D 도트 멀티플레이 오피스">
+<meta name="theme-color" content="#2b2340">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+/* 보장원 도트: 쿼터뷰 픽셀 화면 위에 종이 카드 HUD (해월도·개금역과 같은 결) */
+:root {
+  --ink: #2b2230; --ink2: #6e5f62; --paper: #fff7ec; --paper2: #ffeedd; --line: #2b2230;
+  --accent: #e0703c; --accent2: #f2b33d; --accent3: #ffe0c8; --navy: #2b2340; --mint: #7cc6b4; --pinkv: #e85d8a;
+  --font: 'Jua', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--navy); overflow: hidden; }
+body { font-family: var(--font); color: var(--ink); touch-action: none; user-select: none; -webkit-user-select: none; word-break: keep-all; overflow-wrap: break-word; }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent2); outline-offset: 2px; }
+.hidden { display: none !important; }
+[hidden] { display: none !important; }
+#game { position: relative; width: 100%; height: 100%; overflow: hidden; background: #6fa8d8; }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; display: block; }
+
+/* HUD */
+#hud { position: absolute; left: 0; right: 0; top: 0; padding: 8px max(10px, env(safe-area-inset-right, 0px)) 0 max(10px, env(safe-area-inset-left, 0px)); pointer-events: none; z-index: 10; display: flex; gap: 6px; align-items: flex-start; }
+.box { background: var(--paper); border: 3px solid var(--line); border-radius: 12px; box-shadow: 0 3px 0 var(--line); }
+#brand { pointer-events: auto; display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 15px; }
+#brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent2); border: 2px solid var(--line); }
+#brand small { color: var(--ink2); font-size: 12px; font-variant-numeric: tabular-nums; }
+#clockBox { display: flex; align-items: center; gap: 5px; padding: 4px 9px; font-size: 14px; font-variant-numeric: tabular-nums; }
+#clockBox small { color: var(--ink2); font-size: 11px; }
+#topbtns { margin-left: auto; display: flex; gap: 5px; pointer-events: auto; }
+#topbtns button { width: 38px; height: 38px; padding: 0; font-size: 17px; display: grid; place-items: center; }
+#topbtns button:active, .big:active, .chip:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+#music.off { opacity: .45; }
+
+#placeTag { position: absolute; left: 50%; top: 58px; transform: translate(-50%, -8px); opacity: 0; color: #fff; font-size: 16px; background: rgba(43,34,48,.75); padding: 5px 14px; border-radius: 99px; pointer-events: none; white-space: nowrap; z-index: 9; }
+#placeTag.show { animation: tag 2.4s ease forwards; }
+@keyframes tag { 10% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -6px); } }
+#hint { position: absolute; left: 50%; transform: translateX(-50%); top: 92px; margin: 0; padding: 5px 12px; border-radius: 99px; background: rgba(43,34,48,.6); color: var(--paper); font-size: 12.5px; white-space: nowrap; pointer-events: none; z-index: 9; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
+
+/* 조이스틱 */
+#joy { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); width: 112px; height: 112px; border-radius: 50%; background: rgba(43,34,48,.35); border: 3px solid rgba(255,247,236,.65); touch-action: none; z-index: 12; }
+#knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: var(--paper); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--line); pointer-events: none; }
+@media (pointer: fine) { #joy { opacity: .5; } }
+
+/* 행동 버튼 */
+#actBtn { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); width: 96px; height: 96px; border-radius: 50%; background: #fff0a8; border: 4px solid var(--line); box-shadow: 0 5px 0 var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px; z-index: 12; animation: pop .2s ease, pulse 1.3s ease-in-out infinite; }
+#actBtn span { font-size: 28px; line-height: 1; } #actBtn b { font-weight: 400; font-size: 12.5px; margin-top: 3px; line-height: 1.1; text-align: center; max-width: 86px; }
+#actBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--line); }
+@keyframes pop { from { transform: scale(.6); } }
+@keyframes pulse { 50% { transform: scale(1.05); } }
+#side { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 128px); z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+.chip { background: var(--paper); border: 3px solid var(--line); border-radius: 999px; box-shadow: 0 3px 0 var(--line); padding: 7px 13px; font-size: 14px; white-space: nowrap; }
+.chip.hot { background: var(--accent); color: #fff; }
+.chip.pink { background: var(--pinkv); color: #fff; }
+#talk[aria-expanded="true"] { background: #ffe7a8; }
+#phrases { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 140px); z-index: 13; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-height: 34vh; overflow-y: auto; touch-action: pan-y; padding: 2px; }
+#phrases .chip { font-size: 13.5px; padding: 6px 11px; animation: tin .18s ease both; }
+@keyframes tin { from { opacity: 0; transform: translateY(6px) scale(.96); } }
+@media (min-width: 760px) { #phrases { left: auto; width: min(640px, 70%); justify-content: flex-end; right: 130px; bottom: 30px; } }
+
+#toasts { position: absolute; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom, 0px) + 250px); display: flex; flex-direction: column-reverse; align-items: center; gap: 6px; pointer-events: none; z-index: 14; }
+.toast { background: var(--paper); border: 3px solid var(--line); border-radius: 12px; box-shadow: 0 3px 0 var(--line); padding: 6px 12px; font-size: 14px; text-align: center; animation: tin .25s ease; transition: opacity .4s, transform .4s; }
+.toast.out { opacity: 0; transform: translateY(-8px); }
+
+/* 시트 · 팝업 */
+.screen-pop { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)); background: rgba(30,22,40,.5); }
+.pop { background: var(--paper); border: 4px solid var(--line); border-radius: 20px; box-shadow: 0 5px 0 var(--line); padding: 16px; width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto; animation: pop .22s ease; touch-action: pan-y; display: flex; flex-direction: column; gap: 10px; }
+.pop h2 { margin: 0; font-weight: 400; font-size: 21px; text-align: center; }
+.pop p { margin: 0; color: var(--ink2); font-size: 14px; line-height: 1.5; text-align: center; }
+.big { display: block; width: 100%; font-size: 18px; background: var(--accent); color: #fff; border: 4px solid var(--line); border-radius: 16px; box-shadow: 0 4px 0 var(--line); padding: 11px; }
+.big.alt { background: #fff; color: var(--ink); }
+.big.pink { background: var(--pinkv); }
+.big:disabled { filter: grayscale(.6); opacity: .7; }
+.row { display: flex; gap: 8px; } .row .big { flex: 1; } .row .big.alt { flex: .6; }
+.vent-pop { background: #fff4f0; border-color: #6b2a44; box-shadow: 0 5px 0 #6b2a44; }
+.vent-pop h2 { color: #b23a62; }
+#ventText { width: 100%; min-height: 120px; resize: none; border: 3px solid #e7a9bc; border-radius: 14px; padding: 10px 12px; font: 16px var(--font); color: var(--ink); background: #fff; -webkit-user-select: text; user-select: text; }
+#ventText:focus { outline: none; border-color: var(--pinkv); }
+.shake { animation: shake .35s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+.designs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.design { background: #fff; border: 3px solid var(--line); border-radius: 12px; box-shadow: 0 3px 0 var(--line); padding: 4px 2px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.design canvas { width: 100%; max-width: 60px; image-rendering: pixelated; display: block; }
+.design span { font-size: 12px; color: var(--ink2); }
+.design.on { background: var(--accent3); border-color: var(--accent); box-shadow: 0 3px 0 var(--accent); }
+.tplist { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.tplist .chip { border-radius: 14px; font-size: 15px; padding: 10px 6px; }
+#shotImg { width: 100%; border: 3px solid var(--line); border-radius: 10px; image-rendering: pixelated; background: #222; max-height: 55vh; object-fit: contain; }
+.people { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
+.person { display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--line); border-radius: 12px; padding: 5px 10px; font-size: 14px; }
+.person canvas { width: 30px; image-rendering: pixelated; }
+.person small { margin-left: auto; color: var(--ink2); font-size: 12px; }
+.lbl { display: block; font-size: 14px; }
+.lbl input { display: block; width: 100%; margin-top: 5px; font-family: inherit; font-size: 17px; padding: 9px 12px; border: 3px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); outline: none; -webkit-user-select: text; user-select: text; }
+
+/* 타이틀 */
+#title { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 26px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); background: linear-gradient(rgba(43,35,64,.15), rgba(43,35,64,.55)); overflow-y: auto; touch-action: pan-y; }
+.logo { text-align: center; color: #fff; margin-top: 2vh; }
+.logo canvas { width: min(62vw, 250px); image-rendering: pixelated; display: block; margin: 0 auto; }
+.logo small { display: inline-block; font-size: 14px; background: var(--navy); padding: 3px 12px; border-radius: 99px; border: 3px solid var(--line); margin-top: 8px; }
+.logo h1 { margin: 6px 0 0; font-weight: 400; font-size: clamp(44px, 13vw, 64px); line-height: 1; letter-spacing: 2px; text-shadow: 0 4px 0 var(--line), 3px 0 0 var(--line), -3px 0 0 var(--line), 0 -3px 0 var(--line), 3px 3px 0 var(--line), -3px 3px 0 var(--line); }
+.logo h1 b { font-weight: 400; color: #ffd27a; }
+.title-card { width: 100%; max-width: 420px; }
+.credit { color: #fff; font-size: 12px; opacity: .85; text-align: center; margin: 6px 0 0; text-shadow: 0 1px 2px #000; }
+#fade { position: absolute; inset: 0; background: #1a1424; opacity: 0; pointer-events: none; transition: opacity .35s; z-index: 30; } #fade.on { opacity: 1; }
+#flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 45; } #flash.go { animation: flash .45s ease-out; }
+@keyframes flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+</style>
+
+<div id="game">
+  <canvas id="view"></canvas>
+  <div id="hud" class="hidden">
+    <button id="brand" class="box" type="button" aria-label="함께 있는 사람 보기"><span class="dot"></span>보장원 <small id="online">👥 1명</small></button>
+    <div id="clockBox" class="box"><span id="clockIc">☀️</span><b id="clock">--:--</b><small id="tod"></small></div>
+    <div id="topbtns">
+      <button id="charBtn" class="box" type="button" aria-label="캐릭터 바꾸기">👕</button>
+      <button id="tpBtn" class="box" type="button" aria-label="장소 이동">🧭</button>
+      <button id="shotBtn" class="box" type="button" aria-label="사진 찍기">📷</button>
+      <button id="music" class="box" type="button" aria-label="배경음악 켜기/끄기" aria-pressed="true">🎵</button>
+    </div>
+  </div>
+  <div id="placeTag"></div>
+  <p id="hint" class="hidden"></p>
+  <div id="toasts"></div>
+  <div id="joy" class="hidden" aria-label="이동 핸들"><div id="knob"></div></div>
+  <div id="phrases" hidden></div>
+  <div id="side" class="hidden">
+    <button id="act2" class="chip pink" type="button" hidden></button>
+    <button id="talk" class="chip" type="button" aria-expanded="false" aria-controls="phrases">💬 대화하기</button>
+  </div>
+  <button id="actBtn" type="button" hidden><span id="actIc"></span><b id="actTx"></b></button>
+
+  <section id="title">
+    <div class="logo">
+      <canvas id="logoArt" width="120" height="84"></canvas>
+      <small>서울 종로구 · 세종대로 광화문 거리</small>
+      <h1>보장원<b> 도트</b></h1>
+    </div>
+    <div class="title-card pop">
+      <label class="lbl" for="nick">닉네임<input id="nick" type="text" maxlength="10" placeholder="닉네임을 입력하세요" autocomplete="off" enterkeyhint="go"></label>
+      <div class="lbl">캐릭터</div>
+      <div id="designs" class="designs" role="radiogroup" aria-label="캐릭터 선택"></div>
+      <button id="enter" class="big" type="button">회사로 들어가기</button>
+      <p class="credit" style="color:var(--ink2);text-shadow:none">방향키·WASD 이동 · Shift 달리기 · E/Space 행동 · 숫자키 1~9 대사</p>
+    </div>
+  </section>
+
+  <div id="ventPop" class="screen-pop hidden">
+    <div class="pop vent-pop" role="dialog" aria-modal="true" aria-labelledby="ventTitle">
+      <h2 id="ventTitle">스트레스 적기</h2>
+      <p>🔒 여기 쓴 내용은 저장되지 않고, 누구에게도 보이지 않아요.</p>
+      <textarea id="ventText" maxlength="300" rows="5" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="내용"></textarea>
+      <div class="row"><button id="ventCancel" class="big alt" type="button">취소</button><button id="ventGo" class="big pink" type="button">🔥 벽난로에 던지기</button></div>
+    </div>
+  </div>
+  <div id="charPop" class="screen-pop hidden">
+    <div class="pop" role="dialog" aria-modal="true" aria-labelledby="charTitle">
+      <h2 id="charTitle">👕 캐릭터 바꾸기</h2>
+      <div id="charPick" class="designs" role="radiogroup" aria-label="캐릭터 선택"></div>
+      <button class="big alt closer" type="button">닫기</button>
+    </div>
+  </div>
+  <div id="tpPop" class="screen-pop hidden">
+    <div class="pop" role="dialog" aria-modal="true" aria-labelledby="tpTitle">
+      <h2 id="tpTitle">🧭 장소 이동</h2>
+      <div id="tpList" class="tplist"></div>
+      <button class="big alt closer" type="button">닫기</button>
+    </div>
+  </div>
+  <div id="shotPop" class="screen-pop hidden">
+    <div class="pop" role="dialog" aria-modal="true" aria-labelledby="shotTitle">
+      <h2 id="shotTitle">📷 찰칵!</h2>
+      <img id="shotImg" alt="방금 찍은 사진">
+      <p id="shotInfo" aria-live="polite"></p>
+      <div class="row"><button class="big alt closer" type="button">닫기</button><button id="shotSave" class="big" type="button">💾 사진 저장</button></div>
+    </div>
+  </div>
+  <div id="netPop" class="screen-pop hidden">
+    <div class="pop" role="dialog" aria-modal="true" aria-labelledby="netTitle">
+      <h2 id="netTitle">👥 지금 보장원에 있는 사람</h2>
+      <p id="netSum"></p>
+      <div id="people" class="people"></div>
+      <button class="big alt closer" type="button">닫기</button>
+    </div>
+  </div>
+  <div id="fade"></div>
+  <div id="flash"></div>
+</div>
+<script>
+'use strict';
+/* =========================================================
+ *  도트 보장원 — 모든 그림은 코드로 한 픽셀씩 그립니다 (외부 이미지 없음)
+ * ========================================================= */
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const rand = (a, b) => a + Math.random() * (b - a);
+function hash(a, b) { let h = (a * 374761393 + b * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h)); return c; }
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function shade(hex, f) {
+  const [r, g, b] = hexRgb(hex);
+  const m = (v) => Math.max(0, Math.min(255, Math.round(f > 1 ? v + (255 - v) * (f - 1) : v * f)));
+  return '#' + ((1 << 24) | (m(r) << 16) | (m(g) << 8) | m(b)).toString(16).slice(1);
+}
+function mix(a, b, t) { const A = hexRgb(a), B = hexRgb(b); return '#' + ((1 << 24) | (Math.round(lerp(A[0], B[0], t)) << 16) | (Math.round(lerp(A[1], B[1], t)) << 8) | Math.round(lerp(A[2], B[2], t))).toString(16).slice(1); }
+const OUT = '#2b2026';
+function autoOutline(c, col = OUT) {
+  const g = c.getContext('2d'), W = c.width, H = c.height;
+  const d = g.getImageData(0, 0, W, H), a = d.data;
+  const src = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) src[i] = a[i * 4 + 3] > 40 ? 1 : 0;
+  const [r, gg, b] = hexRgb(col);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; if (src[i]) continue;
+    if ((x > 0 && src[i - 1]) || (x < W - 1 && src[i + 1]) || (y > 0 && src[i - W]) || (y < H - 1 && src[i + W])) {
+      a[i * 4] = r; a[i * 4 + 1] = gg; a[i * 4 + 2] = b; a[i * 4 + 3] = 255;
+    }
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+function fillPoly(g, pts, col) {
+  g.fillStyle = col;
+  let minY = Infinity, maxY = -Infinity;
+  for (const p of pts) { minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); }
+  for (let y = Math.floor(minY); y <= Math.ceil(maxY); y++) {
+    const sy = y + 0.5, xs = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      if ((a[1] <= sy && b[1] > sy) || (b[1] <= sy && a[1] > sy)) xs.push(a[0] + (sy - a[1]) / (b[1] - a[1]) * (b[0] - a[0]));
+    }
+    xs.sort((p, q) => p - q);
+    for (let k = 0; k + 1 < xs.length; k += 2) {
+      const x0 = Math.round(xs[k]), x1 = Math.round(xs[k + 1]);
+      if (x1 > x0) g.fillRect(x0, y, x1 - x0, 1);
+    }
+  }
+}
+function fillEllipse(g, cx, cy, rx, ry, col) {
+  g.fillStyle = col;
+  for (let y = -ry; y < ry; y++) {
+    const t = (y + 0.5) / ry, w = Math.round(rx * Math.sqrt(Math.max(0, 1 - t * t)));
+    if (w > 0) g.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2, 1);
+  }
+}
+function pline(g, x0, y0, x1, y1, col) { // 픽셀 선
+  g.fillStyle = col;
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+  for (let i = 0; i <= n; i++) g.fillRect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1);
+}
+function flipX(c) { const o = mkCanvas(c.width, c.height), g = o.getContext('2d'); g.translate(c.width, 0); g.scale(-1, 1); g.drawImage(c, 0, 0); return o; }
+const iso = (x, y) => [(x - y) * 16, (x + y) * 8];
+
+/* ---------------------------------------------------------
+ *  캐릭터 5종 (성별 구분 없음) — 24×34 SD 도트
+ * --------------------------------------------------------- */
+const DESIGNS = [
+  { name: '비니', skin: '#f6d3b8', shirt: '#f08a4b', pants: '#4a3a5a', hair: '#5a3a28', shoe: '#f2efe8', acc: 'beanie', accC: '#f2c14e' },
+  { name: '안경', skin: '#efc3a2', shirt: '#7cc6b4', pants: '#2f3542', hair: '#231a16', shoe: '#2a2522', acc: 'glasses', long: true },
+  { name: '갈색머리', skin: '#f8ddc8', shirt: '#c89b6d', pants: '#6b5a4a', hair: '#6b4630', shoe: '#8a4b34', acc: 'none' },
+  { name: '정장', skin: '#e2ad8a', shirt: '#2c3446', pants: '#2c3446', hair: '#1a1512', shoe: '#141210', acc: 'suit' },
+  { name: '헤드폰', skin: '#f6dcc4', shirt: '#b49ad8', pants: '#2c3e66', hair: '#c08a5a', shoe: '#f2efe8', acc: 'phones', accC: '#f4efe6', long: true },
+];
+const BLUSH = '#f4a3a3', EYE = '#2a2130', MOUTH = '#b4545e';
+/* back: 뒷모습 / frame 0~3 걷기 / pose: stand|sit|type|write|lie(머리만)
+   opt: { blink, hold(컵), red(화남), arm('wave'|'up'|'swing'), tick } */
+function drawChibi(D, back, frame, pose, opt = {}) {
+  const W = 24, H = 34, c = mkCanvas(W, H), g = c.getContext('2d');
+  const P = (col, x, y, w = 1, h = 1) => { if (!col) return; g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const cx = 12, base = 32;
+  const sit = pose === 'sit' || pose === 'type' || pose === 'write';
+  const legH = sit ? 2 : 5, bodyH = 7;
+  const walking = frame === 1 || frame === 3;
+  const bob = walking ? -1 : 0;
+  const legTop = base - legH + 1;
+  const bodyTop = legTop - bodyH + bob;
+  const headTop = bodyTop - 12;
+  const hx = cx - 7;
+  const skin = opt.red ? mix(D.skin, '#ff4a3a', 0.45) : D.skin;
+  const H1 = D.hair, H2 = shade(D.hair, 1.35), sh = D.shirt, shS = shade(sh, 0.8);
+  const s = 1; // 3/4 시점 (오른쪽 앞을 봄)
+  // 뒤로 늘어지는 긴 머리
+  if (D.long && !back) { P(H1, hx, headTop + 5, 2, 11); P(H1, hx + 12, headTop + 5, 2, 10); }
+  if (pose !== 'lie') {
+    // 다리
+    if (sit) {
+      P(D.pants, cx - 4, legTop - 1, 9, 2); P(shade(D.pants, 0.8), cx - 4, legTop, 9, 1);
+      if (!back) { P(D.pants, cx + 4, legTop - 1, 3, 2); P(D.shoe, cx + 6, legTop - 1, 2, 3); }
+      else { P(D.shoe, cx - 4, legTop + 1, 3, 1); P(D.shoe, cx + 2, legTop + 1, 3, 1); }
+    } else {
+      const lUp = frame === 1 ? 1 : 0, rUp = frame === 3 ? 1 : 0;
+      P(D.pants, cx - 3, legTop, 3, legH - 1 - lUp); P(D.shoe, cx - 3, base - lUp, 3, 1);
+      P(D.pants, cx + 1, legTop, 3, legH - 1 - rUp); P(D.shoe, cx + 1, base - rUp, 3, 1);
+      P(shade(D.pants, 0.8), cx + 3, legTop, 1, legH - 2);
+    }
+    // 몸통
+    P(sh, cx - 4, bodyTop, 8, bodyH); P(shS, cx + 3, bodyTop, 1, bodyH);
+    if (D.acc === 'suit' && !back) { P('#ffffff', cx - 1 + s, bodyTop, 2, 3); P('#c8323c', cx - 1 + s, bodyTop + 1, 1, 4); P(shade(sh, 1.4), cx - 3, bodyTop + 4, 1, 1); }
+    else if (!back) { P(shade(sh, 1.2), cx - 2 + s, bodyTop, 4, 1); }
+    // 팔
+    const sw = walking ? (frame === 1 ? 1 : -1) : 0;
+    const arm = (x, dy, up) => {
+      if (up) { P(sh, x, bodyTop - 3, 2, 4); P(skin, x, bodyTop - 4, 2, 1); return; }
+      P(sh, x, bodyTop + 1 + dy, 2, 4); P(skin, x, bodyTop + 5 + dy, 2, 1);
+    };
+    if (pose === 'type' || pose === 'write') {
+      const t = opt.tick || 0;
+      P(sh, cx - 6, bodyTop + 1, 2, 3); P(sh, cx + 4, bodyTop + 1, 3, 3);
+      P(skin, cx + 6, bodyTop + 3 + (t % 2), 2, 1); P(skin, cx - 6, bodyTop + 4 - (t % 2), 2, 1);
+    } else {
+      arm(cx - 6, sw, opt.arm === 'up2');
+      arm(cx + 4, -sw, opt.arm === 'wave' || opt.arm === 'up' || opt.arm === 'up2');
+    }
+    if (opt.hold && !back) { P('#ffffff', cx + 5, bodyTop + 3 + (opt.arm === 'up' ? -6 : 0), 3, 3); P('#8a5a3a', cx + 5, bodyTop + 3 + (opt.arm === 'up' ? -6 : 0), 3, 1); }
+  }
+  // 머리
+  P(skin, hx + 1, headTop + 2, 12, 10); P(skin, hx + 2, headTop + 1, 10, 1); P(skin, hx + 2, headTop + 12, 10, 1);
+  P(shade(skin, 0.92), hx + 12, headTop + 4, 1, 7);
+  // 머리카락
+  P(H1, hx + 1, headTop, 12, 3); P(H1, hx, headTop + 1, 14, 3); P(H2, hx + 3, headTop, 5, 1);
+  if (back) {
+    P(H1, hx, headTop + 3, 14, D.long ? 10 : 8); P(H1, hx + 1, headTop + (D.long ? 13 : 11), 12, D.long ? 4 : 1);
+    P(H2, hx + 4, headTop + 3, 2, 4);
+    if (D.long) { P(H1, hx + 2, headTop + 13, 10, 5); }
+  } else {
+    P(H1, hx, headTop + 3, 3, 4); P(H1, hx + 3 + s, headTop + 3, 4, 2); P(H1, hx + 8 + s, headTop + 3, 3, 1); P(H1, hx + 11, headTop + 3, 3, 5);
+    if (D.long) { P(H1, hx, headTop + 3, 2, 8); P(H1, hx + 12, headTop + 3, 2, 8); }
+    // 얼굴
+    const ey = headTop + 6;
+    if (opt.blink || pose === 'lie' || opt.sleep) { P(EYE, cx - 4 + s, ey + 2, 2, 1); P(EYE, cx + 2 + s, ey + 2, 2, 1); }
+    else { P(EYE, cx - 4 + s, ey, 2, 3); P(EYE, cx + 2 + s, ey, 2, 3); P('#ffffff', cx - 4 + s, ey, 1, 1); P('#ffffff', cx + 2 + s, ey, 1, 1); }
+    if (opt.red) { P('#e2483a', cx - 5 + s, ey - 1, 3, 1); P('#e2483a', cx + 2 + s, ey - 1, 3, 1); }
+    P(opt.red ? '#ff5a4a' : BLUSH, cx - 6 + s, ey + 3, 2, 1); P(opt.red ? '#ff5a4a' : BLUSH, cx + 4 + s, ey + 3, 2, 1);
+    if (opt.red) P(MOUTH, cx - 1 + s, ey + 4, 3, 1); else if (opt.happy) { P(MOUTH, cx - 1 + s, ey + 4, 2, 1); P(MOUTH, cx - 2 + s, ey + 3, 1, 1); P(MOUTH, cx + 1 + s, ey + 3, 1, 1); } else P(MOUTH, cx + s, ey + 4, 1, 1);
+    if (D.acc === 'glasses') {
+      const fr = '#3a2a2a';
+      for (const ex of [cx - 5 + s, cx + 1 + s]) { P(fr, ex, ey - 1, 4, 1); P(fr, ex, ey + 3, 4, 1); P(fr, ex, ey - 1, 1, 5); P(fr, ex + 3, ey - 1, 1, 5); }
+      P(fr, cx - 1 + s, ey, 2, 1);
+    }
+  }
+  if (D.acc === 'beanie') {
+    const b = D.accC, bS = shade(b, 0.78);
+    P(b, hx + 1, headTop - 3, 12, 6); P(b, hx + 3, headTop - 4, 8, 1); P(bS, hx, headTop + 2, 14, 2);
+    P(shade(b, 1.25), hx + 4, headTop - 3, 2, 3); P('#fff3cf', cx - 1, headTop - 6, 3, 2);
+  }
+  if (D.acc === 'phones') {
+    const b = D.accC;
+    P(b, hx + 1, headTop - 2, 12, 1); P(b, hx, headTop - 1, 1, 3); P(b, hx + 13, headTop - 1, 1, 3);
+    if (!back) { P('#e07a9a', hx - 1, headTop + 5, 3, 4); P('#e07a9a', hx + 12, headTop + 5, 3, 4); }
+    else { P('#e07a9a', hx - 1, headTop + 5, 2, 4); P('#e07a9a', hx + 13, headTop + 5, 2, 4); }
+  }
+  autoOutline(c, '#3a2618');
+  return c;
+}
+const chibiCache = new Map();
+function chibi(di, back, frame, pose, opt = {}) {
+  const k = `${di}|${back ? 1 : 0}|${frame}|${pose}|${opt.blink ? 1 : 0}|${opt.hold ? 1 : 0}|${opt.red ? 1 : 0}|${opt.arm || ''}|${(opt.tick || 0) % 2}|${opt.happy ? 1 : 0}|${opt.sleep ? 1 : 0}`;
+  let c = chibiCache.get(k);
+  if (!c) { c = drawChibi(DESIGNS[di], back, frame, pose, opt); chibiCache.set(k, c); }
+  return c;
+}
+const flipCache = new WeakMap();
+function flipped(c) { let f = flipCache.get(c); if (!f) { f = flipX(c); flipCache.set(c, f); } return f; }
+
+/* ---------------------------------------------------------
+ *  길고양이 7마리 — 16×12 도트
+ * --------------------------------------------------------- */
+const CAT_COATS = [
+  { name: '치즈', base: '#e9a35a', stripe: '#c9772f', belly: '#fbecd6', eye: '#9ac23c' },
+  { name: '고등어', base: '#8a8a86', stripe: '#4a4a48', belly: '#e8e4da', eye: '#c8b23a' },
+  { name: '까망', base: '#2f2a26', belly: '#2f2a26', socks: '#f4efe6', eye: '#d8b02a' },
+  { name: '하양', base: '#f6f2ea', belly: '#ffffff', eye: '#6fb2e0' },
+  { name: '삼색', base: '#f6f0e4', belly: '#ffffff', patches: ['#d98a3a', '#2a2420'], eye: '#b8a03a' },
+  { name: '턱시도', base: '#24201e', belly: '#f6f2ea', socks: '#f6f2ea', eye: '#8fc23c' },
+  { name: '갈색 줄무늬', base: '#a0764e', stripe: '#5e3f25', belly: '#f0dcc0', eye: '#9ac23c' },
+];
+function drawCat(ci, mode, frame, closed) {
+  const C = CAT_COATS[ci], c = mkCanvas(18, 13), g = c.getContext('2d');
+  const P = (col, x, y, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const b = C.base, bl = C.belly, st = C.stripe, sk = C.socks || b;
+  const eyeF = () => closed ? P('#2a2020', 14, 4, 2, 1) : (P(C.eye, 14, 3, 1, 2), P('#141010', 15, 3, 1, 2));
+  if (mode === 'walk') {
+    const l = frame % 2;
+    P(b, 2, 1, 1, 3); P(b, 1, 0, 1, 2); P(b, 3, 4, 1, 1); // 꼬리
+    P(b, 3, 5, 10, 4); P(bl, 5, 8, 7, 1);
+    P(sk, 4, 9, 1, 2 - l); P(sk, 6, 9, 1, 1 + l); P(sk, 10, 9, 1, 1 + l); P(sk, 12, 9, 1, 2 - l);
+    P(b, 11, 2, 5, 5); P(b, 11, 1, 1, 1); P(b, 15, 1, 1, 1); P('#f2a0a8', 16, 5, 1, 1); eyeF();
+    if (st) for (let x = 4; x < 12; x += 2) P(st, x, 5, 1, 2);
+  } else if (mode === 'loaf') {
+    P(b, 2, 8, 9, 2); P(b, 3, 5, 9, 5); P(b, 4, 4, 7, 1); P(bl, 10, 9, 3, 1);
+    P(b, 11, 3, 5, 5); P(b, 11, 2, 1, 1); P(b, 15, 2, 1, 1); P('#f2a0a8', 16, 6, 1, 1);
+    if (closed) P('#2a2020', 14, 5, 2, 1); else { P(C.eye, 14, 4, 1, 2); P('#141010', 15, 4, 1, 2); }
+    if (st) for (let x = 4; x < 11; x += 2) P(st, x, 5, 1, 2);
+    P(sk, 12, 9, 3, 1);
+  } else if (mode === 'groom') {
+    P(b, 1, 9, 6, 1); P(b, 5, 4, 6, 6); P(bl, 8, 5, 3, 4);
+    P(b, 7, 0, 6, 5); P(b, 7, -1, 1, 1); P(b, 12, 0, 1, 1);
+    P(sk, 11 + (frame % 2), 3, 2, 3); P('#f2a0a8', 12, 3, 1, 1);
+    P('#2a2020', 10, 2, 2, 1);
+    if (st) { P(st, 6, 5, 1, 3); P(st, 8, 1, 1, 1); }
+    P(sk, 8, 10, 3, 1);
+  } else { // sleep — 동그랗게
+    fillEllipse(g, 8, 8, 6, 4, b); P(bl, 10, 9, 3, 1);
+    P(b, 3, 10, 9, 1); P(sk, 11, 10, 3, 1);
+    P(b, 9, 4, 4, 2); P('#2a2020', 10, 6, 2, 1);
+    if (st) for (let x = 4; x < 12; x += 2) P(st, x, 5, 1, 2);
+  }
+  if (C.patches) { P(C.patches[0], 5, 5, 3, 2); P(C.patches[1], 9, 6, 2, 2); P(C.patches[0], 12, 2, 2, 1); }
+  autoOutline(c, '#2a1e1a');
+  return c;
+}
+const catCache = new Map();
+function catSprite(ci, mode, frame, closed) {
+  const k = `${ci}${mode}${frame % 2}${closed ? 1 : 0}`;
+  if (!catCache.has(k)) catCache.set(k, drawCat(ci, mode, frame, closed));
+  return catCache.get(k);
+}
+const HEART = (() => { const c = mkCanvas(9, 8), g = c.getContext('2d'); const P = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  P(1, 1, 3, 1, '#ff6f91'); P(5, 1, 3, 1, '#ff6f91'); P(0, 2, 9, 2, '#ff6f91'); P(1, 4, 7, 1, '#ff6f91'); P(2, 5, 5, 1, '#ff6f91'); P(3, 6, 3, 1, '#ff6f91'); P(1, 2, 1, 1, '#ffd3de'); return autoOutline(c, '#7a2440'); })();
+const ANGER = (() => { const c = mkCanvas(9, 9), g = c.getContext('2d'); g.fillStyle = '#ff3b3b';
+  for (const [x, y, w, h] of [[1, 3, 2, 1], [3, 1, 1, 2], [5, 1, 1, 2], [6, 3, 2, 1], [6, 5, 2, 1], [5, 6, 1, 2], [3, 6, 1, 2], [1, 5, 2, 1]]) g.fillRect(x, y, w, h); return c; })();
+const ZZZ = (() => { const c = mkCanvas(6, 6), g = c.getContext('2d'); g.fillStyle = '#c9d4ff'; g.fillRect(0, 0, 6, 1); g.fillRect(4, 1, 1, 1); g.fillRect(3, 2, 1, 1); g.fillRect(2, 3, 1, 1); g.fillRect(1, 4, 1, 1); g.fillRect(0, 5, 6, 1); return autoOutline(c, '#3a3a66'); })();
+const NOTE = (() => { const c = mkCanvas(6, 8), g = c.getContext('2d'); g.fillStyle = '#ff9ac0'; g.fillRect(3, 0, 3, 1); g.fillRect(3, 0, 1, 6); g.fillRect(1, 5, 3, 2); return autoOutline(c, '#5a2a40'); })();
+
+/* ---------------------------------------------------------
+ *  쿼터뷰 상자 — 모든 가구·건물의 바탕
+ *  S(u, v, z): u = x 방향, v = y 방향(타일), z = 높이(px)
+ * --------------------------------------------------------- */
+function box(w, d, h, top = 24, pad = 2) {
+  const W = (w + d) * 16 + pad * 2, Hh = (w + d) * 8 + h + top + pad * 2;
+  const c = mkCanvas(W, Hh), g = c.getContext('2d');
+  const ax = d * 16 + pad, ay = h + top + pad;
+  const S = (u, v, z = 0) => [ax + (u - v) * 16, ay + (u + v) * 8 - z];
+  const B = { c, g, S, ax, ay, w, d, h };
+  B.quad = (a, b, cc, dd, col) => fillPoly(g, [a, b, cc, dd], col);
+  B.block = (u0, v0, u1, v1, z0, z1, col, lc, rc) => { // 작은 상자
+    const tcol = col, l = lc || shade(col, 0.82), r = rc || shade(col, 0.68);
+    fillPoly(g, [S(u0, v1, z0), S(u1, v1, z0), S(u1, v1, z1), S(u0, v1, z1)], l);
+    fillPoly(g, [S(u1, v0, z0), S(u1, v1, z0), S(u1, v1, z1), S(u1, v0, z1)], r);
+    fillPoly(g, [S(u0, v0, z1), S(u1, v0, z1), S(u1, v1, z1), S(u0, v1, z1)], tcol);
+  };
+  B.onY = (u0, u1, z0, z1, col, v = d) => fillPoly(g, [S(u0, v, z0), S(u1, v, z0), S(u1, v, z1), S(u0, v, z1)], col);
+  B.onX = (v0, v1, z0, z1, col, u = w) => fillPoly(g, [S(u, v0, z0), S(u, v1, z0), S(u, v1, z1), S(u, v0, z1)], col);
+  B.onTop = (u0, u1, v0, v1, z, col) => fillPoly(g, [S(u0, v0, z), S(u1, v0, z), S(u1, v1, z), S(u0, v1, z)], col);
+  B.px = (p, col, w2 = 1, h2 = 1) => { g.fillStyle = col; g.fillRect(Math.round(p[0]), Math.round(p[1]), w2, h2); };
+  B.done = (outline = true, col) => { if (outline) autoOutline(c, col || OUT); return { c, ax, ay }; };
+  return B;
+}
+function ellipseOnTop(B, cu, cv, r, z, col) { // 바닥면 위 원(마름모 비율)
+  const [x, y] = B.S(cu, cv, z); fillEllipse(B.g, x, y, Math.round(r * 16), Math.round(r * 8), col);
+}
+
+/* ---------------------------------------------------------
+ *  맞은편 맛집 거리 10곳 (보장원 3D와 같은 가게)
+ * --------------------------------------------------------- */
+const SHOPS = [
+  { name: '종로 칼국수', sub: '손칼국수 · 만두', wall: '#d9c3a5', brick: true, awn: ['#2f6b4f', '#f3ead8'], sign: '#2f6b4f', menu: ['바지락 칼국수', '왕만두', '비빔국수'], scene: 'kor' },
+  { name: '광화문 빵집', sub: 'BAKERY', wall: '#f0e2cf', awn: ['#c0503a', '#fbf3e6'], sign: '#8a3b2a', menu: ['갓 구운 소금빵', '크루아상', '단팥빵'], scene: 'bakery', terrace: true },
+  { name: '세종 떡볶이', sub: '분식', wall: '#f2cf5b', awn: ['#d6452f', '#ffffff'], sign: '#d6452f', menu: ['국물 떡볶이', '김말이 튀김', '순대'], scene: 'snack' },
+  { name: '은행나무 커피', sub: 'COFFEE & DESSERT', wall: '#7a4e3a', brick: true, awn: ['#3b2a22', '#e9c46a'], sign: '#3b2a22', menu: ['은행잎 라떼', '바닐라 빈 라떼', '당근 케이크'], scene: 'cafe', terrace: true },
+  { name: '달콤 디저트', sub: '케이크 · 마카롱', wall: '#f6d5d8', awn: ['#e889a0', '#fff6f8'], sign: '#c95c78', menu: ['딸기 생크림 케이크', '마카롱 세트', '푸딩'], scene: 'dessert', terrace: true },
+  { name: '불판 고깃집', sub: '숯불구이', wall: '#3a3030', awn: ['#8a1f2a', '#2a1f1f'], sign: '#8a1f2a', menu: ['숯불 삼겹살', '된장찌개', '냉면'], scene: 'bbq' },
+  { name: '브런치 하우스', sub: 'BRUNCH', wall: '#e6efe8', awn: ['#6aa7a0', '#ffffff'], sign: '#3e7c74', menu: ['팬케이크', '에그 베네딕트', '오렌지 주스'], scene: 'brunch', terrace: true },
+  { name: '광장 피자', sub: 'PIZZA & PASTA', wall: '#e9d2b4', brick: true, awn: ['#2e7d32', '#f5f1e8', '#c62828'], sign: '#2e7d32', menu: ['마르게리타', '고르곤졸라', '토마토 파스타'], scene: 'pizza', terrace: true },
+  { name: '한그릇 국밥', sub: '24시간', wall: '#c9b79c', awn: ['#1f4fa0', '#f3ead8'], sign: '#1f4fa0', menu: ['돼지국밥', '순대국밥', '수육'], scene: 'kor' },
+  { name: '아이스크림 가게', sub: 'GELATO', wall: '#cfe6f2', awn: ['#7cc6e8', '#ffffff'], sign: '#3d8fb8', menu: ['피스타치오', '흑임자', '딸기 소르베'], scene: 'dessert', terrace: true },
+];
+const SCREENS = ['code', 'chart', 'sheet', 'call', 'cat', 'sea'];
+const DECOR = ['none', 'plant', 'cactus', 'bear', 'duck', 'cat', 'frame', 'trophy', 'books', 'flower'];
+const MUGS = [null, '#ffffff', '#e8774a', '#f2b84b', '#6aa7a0', '#8f6fb5', '#e06b7a'];
+const CHAIRS = ['#33363b', '#d2693c', '#3e7c74', '#e9b949', '#6a9be0', '#e889a0'];
+const POSTERS = [
+  { t: '오늘도 수고했어요', c: '#fff3d6', a: '#e0703c' },
+  { t: '점심 투표', c: '#ffffff', a: '#4a8ad8' },
+  { t: '체육대회', c: '#d8f0c8', a: '#3e8a4a' },
+  { t: '공지', c: '#ffe27a', a: '#c0503a' },
+];
+
+/* 의자 모양 (dir: 앉은 사람이 보는 방향 0:+x 1:+y 2:-x 3:-y) */
+function chairShape(B, col, dir, seatZ = 7, back = 9, wide = 0.7) {
+  const a = (1 - wide) / 2, b = 1 - a;
+  B.block(a + 0.1, a + 0.1, b - 0.1, b - 0.1, 0, seatZ - 2, '#44403c');
+  B.block(a, a, b, b, seatZ - 2, seatZ, col);
+  const bz = seatZ + back;
+  if (dir === 0) B.block(a, a, a + 0.14, b, seatZ, bz, col);
+  if (dir === 1) B.block(a, a, b, a + 0.14, seatZ, bz, col);
+  if (dir === 2) B.block(b - 0.14, a, b, b, seatZ, seatZ + 4, col);
+  if (dir === 3) B.block(a, b - 0.14, b, b, seatZ, seatZ + 4, col);
+}
+function tinyDecor(B, kind, u, v, z) {
+  const p = B.S(u, v, z), P = (dx, dy, w, h, col) => B.px([p[0] + dx, p[1] + dy], col, w, h);
+  switch (kind) {
+    case 'plant': P(-1, -2, 3, 2, '#b8643a'); P(-2, -5, 5, 3, '#4a9a4a'); P(-1, -6, 2, 1, '#6ac06a'); break;
+    case 'cactus': P(-1, -2, 3, 2, '#d28a5a'); P(0, -7, 1, 5, '#3e8a4a'); P(-1, -5, 1, 2, '#3e8a4a'); P(1, -6, 1, 2, '#3e8a4a'); break;
+    case 'bear': P(-2, -5, 4, 5, '#b07a4e'); P(-2, -6, 1, 1, '#b07a4e'); P(1, -6, 1, 1, '#b07a4e'); P(-1, -4, 1, 1, '#2a1a10'); break;
+    case 'duck': P(-2, -3, 4, 3, '#f8d838'); P(0, -5, 2, 2, '#f8d838'); P(2, -4, 1, 1, '#f08a28'); break;
+    case 'cat': P(-2, -4, 4, 4, '#f6f2ea'); P(-2, -5, 1, 1, '#f6f2ea'); P(1, -5, 1, 1, '#f6f2ea'); P(-1, -3, 1, 1, '#2a2020'); break;
+    case 'frame': P(-2, -6, 4, 6, '#a07040'); P(-1, -5, 2, 3, '#9ad0f0'); break;
+    case 'trophy': P(-1, -1, 3, 1, '#b98a1c'); P(0, -3, 1, 2, '#f0c13e'); P(-2, -6, 5, 3, '#f0c13e'); break;
+    case 'books': P(-2, -2, 5, 2, '#c0503a'); P(-2, -4, 4, 2, '#4a8ad8'); P(-1, -5, 4, 1, '#f2b33d'); break;
+    case 'flower': P(-1, -3, 2, 3, '#9ad0f0'); P(-2, -6, 2, 2, '#ff6f91'); P(0, -7, 2, 2, '#ffd23a'); P(1, -5, 2, 2, '#e889a0'); break;
+  }
+}
+function screenArt(B, kind, u0, u1, z0, z1, v) {
+  const col = { code: '#1e2433', chart: '#f6f6f2', sheet: '#eaf6e6', call: '#2a3242', cat: '#ffe8c8', sea: '#4aa8d8' }[kind];
+  B.onY(u0, u1, z0, z1, col, v);
+  const P = (u, z, c) => B.px(B.S(u, v, z), c);
+  for (let i = 0; i < 5; i++) {
+    const u = lerp(u0 + 0.05, u1 - 0.08, i / 4);
+    if (kind === 'code') { P(u, z1 - 2 - (i % 3) * 2, ['#7ce0a0', '#f2b33d', '#8ab8ff'][i % 3]); }
+    if (kind === 'chart') { for (let k = 0; k < 1 + (i * 7) % 4; k++) P(u, z0 + 1 + k, '#e0703c'); }
+    if (kind === 'sheet') { P(u, z0 + 2, '#6aa06a'); P(u, z0 + 4, '#6aa06a'); }
+    if (kind === 'call' && i % 2 === 0) { P(u, z0 + 3, '#f6d3b8'); P(u, z0 + 2, '#8a6a4a'); }
+    if (kind === 'cat' && i === 2) { P(u, z0 + 2, '#e9a35a'); P(u - 0.06, z0 + 3, '#e9a35a'); P(u + 0.06, z0 + 3, '#e9a35a'); }
+    if (kind === 'sea') { P(u, z0 + 2 + (i % 2), '#ffffff'); P(u, z1 - 2, '#ffe27a'); }
+  }
+}
+
+/* --------------------------------------------------------- 오브젝트 그림 */
+function objSpriteRaw(o, night) {
+  const k = o.k;
+  if (k === 'wall') {
+    const B = box(1, 1, o.h);
+    const base = o.col || '#efe6da';
+    if (o.glass) {
+      const g = B.g; g.globalAlpha = 0.42;
+      B.onY(0, 1, 0, o.h, '#bfe6f2'); B.onX(0, 1, 0, o.h, '#a8d6e8'); B.onTop(0, 1, 0, 1, o.h, '#e8f8ff');
+      g.globalAlpha = 1;
+      B.onTop(0, 1, 0, 1, o.h, '#d8eef6'); B.onY(0, 1, o.h - 2, o.h, '#8ab0c0'); B.onX(0, 1, o.h - 2, o.h, '#7aa0b0'); B.onY(0, 1, 0, 2, '#8ab0c0'); B.onX(0, 1, 0, 2, '#7aa0b0');
+      return B.done(false);
+    }
+    B.block(0, 0, 1, 1, 0, o.h, shade(base, 0.86), base, shade(base, 0.92));
+    B.onTop(0, 1, 0, 1, o.h, shade(base, 0.7));
+    const deco = (face, kind) => {
+      const F = face === 'y' ? B.onY : B.onX, P = (a, z, c) => B.px(face === 'y' ? B.S(a, 1, z) : B.S(1, a, z), c);
+      const h = o.h;
+      if (kind === 'win') {
+        F(0.08, 0.92, 8, h - 6, night ? '#26305a' : '#a8daf2');
+        F(0.08, 0.92, 8, 10, night ? '#1a2244' : '#cfeeff');
+        if (night) { P(0.3, h - 12, '#fff7c0'); P(0.7, h - 18, '#ffffff'); }
+        else { for (let z = 12; z < h - 8; z += 3) P(0.2 + (z % 7) * 0.05, z, '#e8f8ff'); }
+        F(0.48, 0.52, 8, h - 6, '#e8e4dc');
+      } else if (kind === 'brick') {
+        F(0, 1, 0, h, '#b5523a');
+        for (let z = 2; z < h; z += 4) { F(0, 1, z, z + 1, '#d9c4b0'); for (let a = (z % 8 ? 0.12 : 0.37); a < 1; a += 0.5) F(a, a + 0.04, z + 1, z + 4, '#d9c4b0'); }
+      } else if (kind === 'heart') {
+        F(0, 1, 0, h, '#f8c8d6');
+        for (let z = 5; z < h; z += 8) for (let a = 0.15; a < 1; a += 0.35) { const hp = face === 'y' ? B.S(a + ((z / 8) % 2) * 0.15, 1, z) : B.S(1, a + ((z / 8) % 2) * 0.15, z); B.g.drawImage(z % 16 === 5 ? HEART : STAR_S, Math.round(hp[0]) - 2, Math.round(hp[1]) - 2, 5, 4); }
+      } else if (kind === 'screen') {
+        F(0.05, 0.95, 14, h - 8, '#ffffff');
+        for (let i = 0; i < 4; i++) F(0.15 + i * 0.2, 0.27 + i * 0.2, 16, 18 + i * 3 + (i % 2) * 2, ['#e0703c', '#f2b33d', '#6aa7a0', '#8f6fb5'][i]);
+      }
+      if (kind === 'poster' || o.p != null) {
+        const ps = POSTERS[o.p || 0];
+        F(0.12, 0.88, 14, 34, ps.c); F(0.12, 0.88, 30, 34, ps.a);
+        P(0.5, 22, ps.a); P(0.45, 23, ps.a); P(0.55, 23, ps.a); P(0.3, 18, ps.a); P(0.6, 18, ps.a); P(0.7, 18, ps.a);
+        P(0.2, 33, '#e04040'); // 압정
+      }
+    };
+    if (o.dy) deco('y', o.dy);
+    if (o.dx) deco('x', o.dx);
+    if (o.lights) for (let i = 0; i < 4; i++) { const col = ['#ff9ac0', '#ffe27a', '#9ae0ff', '#c9a0ff'][i]; const z = o.h - 3 - (i % 2); if (o.lights.includes('y')) B.px(B.S(0.12 + i * 0.25, 1, z), col, 1, 1); if (o.lights.includes('x')) B.px(B.S(1, 0.12 + i * 0.25, z), col, 1, 1); }
+    return B.done(true, '#4a3a34');
+  }
+  if (k === 'tower') return towerSprite(o, night);
+  if (k === 'bldg') {
+    const B = box(o.w, o.d, o.h);
+    const col = o.col;
+    B.block(0, 0, o.w, o.d, 0, o.h, shade(col, 1.08), col, shade(col, 0.8));
+    for (let z = 10; z < o.h - 6; z += 12) for (let u = 0.3; u < o.w - 0.2; u += 0.8) {
+      const lit = night && hash(Math.round(u * 10) + o.x, z) < 0.45;
+      B.onY(u, u + 0.45, z, z + 7, lit ? '#ffd27a' : night ? '#2a3150' : o.glass ? '#9ccbe6' : '#6a8aa6');
+    }
+    for (let z = 10; z < o.h - 6; z += 12) for (let v = 0.3; v < o.d - 0.2; v += 0.8) {
+      const lit = night && hash(Math.round(v * 10) + o.x + 7, z) < 0.45;
+      B.onX(v, v + 0.45, z, z + 7, lit ? '#f0c060' : night ? '#222844' : o.glass ? '#7aaccc' : '#55718a');
+    }
+    B.onTop(0, o.w, 0, o.d, o.h, shade(col, 0.85)); B.onTop(0.3, o.w - 0.3, 0.3, o.d - 0.3, o.h, shade(col, 0.7));
+    return B.done();
+  }
+  if (k === 'gate') {
+    const B = box(3, 4, 64);
+    const st = '#cfc6b2';
+    B.block(0, 0, 3, 4, 0, 26, shade(st, 1.05), st, shade(st, 0.85));
+    for (let z = 5; z < 26; z += 5) { B.onX(0, 4, z, z + 1, shade(st, 0.72)); B.onY(0, 3, z, z + 1, shade(st, 0.78)); }
+    for (const v of [0.6, 1.65, 2.7]) { B.onX(v, v + 0.7, 0, 15, '#2a2220'); B.onX(v + 0.1, v + 0.6, 15, 18, '#2a2220'); }
+    // 누각
+    B.block(0.3, 0.3, 2.7, 3.7, 26, 40, '#5aa088', '#a83a2e', '#8a2e24');
+    for (let v = 0.5; v < 3.7; v += 0.6) B.onX(v, v + 0.12, 26, 40, '#6a2018', 2.7);
+    B.onX(0.3, 3.7, 36, 40, '#3e8a6a', 2.7); B.onY(0.3, 2.7, 36, 40, '#4a9a7a', 3.7);
+    // 지붕 (팔작)
+    const S = B.S;
+    fillPoly(B.g, [S(3.4, -0.4, 40), S(3.4, 4.4, 40), S(1.5, 3.0, 60), S(1.5, 1.0, 60)], '#4a5560');
+    fillPoly(B.g, [S(-0.4, 4.4, 40), S(3.4, 4.4, 40), S(1.5, 3.0, 60)], '#5a6772');
+    for (let t = 0.1; t < 1; t += 0.12) pline(B.g, ...S(3.4, lerp(-0.4, 4.4, t), 40), ...S(1.5, lerp(1, 3, t), 60), '#3a434c');
+    pline(B.g, ...S(1.5, 1, 61), ...S(1.5, 3, 61), '#2a3038');
+    B.px(S(3.5, -0.5, 42), '#4a5560', 2, 2); B.px(S(3.5, 4.5, 42), '#4a5560', 2, 2);
+    return B.done();
+  }
+  if (k === 'tree') {
+    const B = box(1, 1, 52);
+    const [x, y] = B.S(0.5, 0.5, 0), g = B.g;
+    g.fillStyle = '#6a4a32'; g.fillRect(x - 1, y - 18, 3, 18);
+    fillEllipse(g, x, y + 1, 7, 3, 'rgba(60,40,30,.25)');
+    const Y = night ? ['#a88a2a', '#c8a43a', '#7a6a2a'] : ['#f2c230', '#ffe27a', '#d99a1a'];
+    fillEllipse(g, x, y - 26, 11, 9, Y[2]); fillEllipse(g, x - 1, y - 30, 10, 9, Y[0]); fillEllipse(g, x + 1, y - 38, 8, 7, Y[0]);
+    fillEllipse(g, x - 2, y - 40, 5, 4, Y[1]); fillEllipse(g, x - 5, y - 30, 3, 3, Y[1]); fillEllipse(g, x + 4, y - 26, 4, 3, Y[2]);
+    return B.done(true, '#4a3a18');
+  }
+  if (k === 'lamp') {
+    const B = box(1, 1, 46);
+    const [x, y] = B.S(0.5, 0.5, 0), g = B.g;
+    g.fillStyle = '#3a3f48'; g.fillRect(x, y - 40, 2, 40); g.fillRect(x - 1, y - 2, 4, 2);
+    g.fillRect(x - 3, y - 43, 8, 3); g.fillStyle = night ? '#fff2b0' : '#e8e4d0'; g.fillRect(x - 2, y - 40, 6, 2);
+    return B.done();
+  }
+  if (k === 'busstop') {
+    const B = box(2, 1, 30);
+    B.block(0.1, 0.1, 1.9, 0.2, 0, 24, '#bfe6f2', '#9ccbe0', '#8ab8d0');
+    B.block(0, 0, 2, 0.9, 24, 26, '#2f6b9f');
+    B.block(0.3, 0.2, 1.7, 0.5, 5, 7, '#c89a6a');
+    B.block(1.85, 0.7, 1.95, 0.8, 0, 30, '#3a3f48'); B.block(1.8, 0.65, 2, 0.85, 26, 32, '#2fa060');
+    return B.done();
+  }
+  if (k === 'bench') {
+    const B = box(1, 1, 14);
+    B.block(0.1, 0.25, 0.9, 0.75, 0, 4, '#3a3f48'); B.block(0.05, 0.2, 0.95, 0.8, 4, 6, '#c08a5a');
+    B.block(0.05, 0.15, 0.95, 0.25, 6, 11, '#a8744a');
+    return B.done();
+  }
+  if (k === 'planter') {
+    const B = box(o.w || 1, o.d || 1, 14);
+    B.block(0, 0, o.w || 1, o.d || 1, 0, 7, '#b8b0a0', '#a8a090', '#958d7e'); B.onTop(0.1, (o.w || 1) - 0.1, 0.1, (o.d || 1) - 0.1, 7, '#5a8a3a');
+    for (let i = 0; i < 6 * (o.w || 1) * (o.d || 1); i++) B.px(B.S(0.15 + hash(i, 3) * ((o.w || 1) - 0.3), 0.15 + hash(i, 9) * ((o.d || 1) - 0.3), 8 + (i % 2)), ['#ff6f91', '#ffd23a', '#f8f8f8', '#e8774a'][i % 4], 2, 1);
+    return B.done();
+  }
+  if (k === 'hedge') {
+    const B = box(o.w || 1, o.d || 1, 12);
+    B.block(0, 0, o.w || 1, o.d || 1, 0, 10, '#5a9a4a', '#4a8a3e', '#3e7434');
+    for (let i = 0; i < 8 * (o.w || 1); i++) B.px(B.S(hash(i, 1) * (o.w || 1), hash(i, 2) * (o.d || 1), 10), '#7aba5a');
+    return B.done();
+  }
+  if (k === 'shop') return shopSprite(o, night);
+  if (k === 'menu') {
+    const B = box(1, 1, 16);
+    B.block(0.25, 0.4, 0.75, 0.55, 0, 13, '#2a3a32', '#2a3a32', '#a8744a');
+    B.onY(0.28, 0.72, 2, 12, '#2a3a32', 0.55); B.onY(0.28, 0.72, 11, 13, '#a8744a', 0.55);
+    for (let z = 4; z < 10; z += 2) B.onY(0.33, 0.33 + hash(z, o.s) * 0.35, z, z + 1, ['#ffffff', '#ffd27a', '#ff9ac0'][z % 3], 0.551);
+    return B.done();
+  }
+  if (k === 'ctable') {
+    const B = box(1, 1, 40);
+    ellipseOnTop(B, 0.5, 0.5, 0.3, 10, '#f6f2ea'); B.block(0.47, 0.47, 0.53, 0.53, 0, 10, '#5a5a5a');
+    B.block(0.48, 0.48, 0.52, 0.52, 10, 30, '#8a8a8a');
+    const [a, b] = o.awn || ['#e0703c', '#ffffff'];
+    const [cx, cy] = B.S(0.5, 0.5, 32);
+    for (let r = 0; r < 4; r++) fillEllipse(B.g, cx, cy + r, 16 - r * 3, 8 - r * 2, r % 2 ? b : a);
+    B.px([cx - 1, cy - 2], a, 2, 2);
+    return B.done();
+  }
+  if (k === 'tchair') { const B = box(1, 1, 18); chairShape(B, o.col || '#3b2a22', o.dir, 7, 7, 0.5); return B.done(); }
+  /* ---- 실내 ---- */
+  if (k === 'desk') {
+    const B = box(1, 1, 32);
+    B.block(0.05, 0.05, 0.12, 0.95, 0, 12, '#8a8a8a'); B.block(0.88, 0.05, 0.95, 0.95, 0, 12, '#8a8a8a');
+    B.block(0, 0, 1, 1, 12, 14, '#e8dcc6', '#d2c2a6', '#bfae92');
+    const f = o.f;
+    const mv = f > 0 ? 0.25 : 0.72;
+    B.block(0.42, mv - 0.03, 0.58, mv + 0.03, 14, 16, '#3a3a40');
+    B.block(0.2, mv - 0.06, 0.8, mv + 0.04, 16, 25, '#2a2a30');
+    if (f > 0) screenArt(B, SCREENS[o.scr], 0.25, 0.75, 17, 24, mv + 0.041);
+    if (f > 0) B.block(0.3, 0.55, 0.7, 0.75, 14, 15, '#f0f0f0'); else B.block(0.3, 0.2, 0.7, 0.4, 14, 15, '#f0f0f0');
+    // 스탠드
+    const lv = f > 0 ? 0.2 : 0.8;
+    B.block(0.86, lv - 0.05, 0.94, lv + 0.05, 14, 15, '#3a3a40'); pline(B.g, ...B.S(0.9, lv, 15), ...B.S(0.84, lv, 23), '#3a3a40');
+    B.block(0.74, lv - 0.07, 0.88, lv + 0.07, 22, 25, '#f2b33d');
+    if (o.mug) B.block(0.1, 0.62, 0.2, 0.72, 14, 17, o.mug);
+    if (o.dec) tinyDecor(B, DECOR[o.dec], 0.15, f > 0 ? 0.3 : 0.75, 14);
+    return B.done();
+  }
+  if (k === 'ochair') { const B = box(1, 1, 22); chairShape(B, o.col, o.dir, 8, 9, 0.6); return B.done(); }
+  if (k === 'mtable') {
+    const B = box(2, 4, 16);
+    B.block(0.4, 0.4, 0.5, 3.6, 0, 11, '#5a5a5a'); B.block(1.5, 0.4, 1.6, 3.6, 0, 11, '#5a5a5a');
+    B.block(0, 0, 2, 4, 11, 13, '#b87a4a', '#9a6238', '#83522e');
+    for (const v of [0.6, 1.6, 2.6, 3.4]) { B.block(0.3, v, 0.5, v + 0.15, 13, 14, '#ffffff'); B.block(1.5, v, 1.7, v + 0.15, 13, 14, '#ffffff'); }
+    B.block(0.85, 1.8, 1.15, 2.2, 13, 15, '#3a3a40');
+    return B.done();
+  }
+  if (k === 'mchair') { const B = box(1, 1, 22); chairShape(B, '#2c3446', o.dir, 8, 10, 0.6); return B.done(); }
+  if (k === 'appl') return applSprite(o, night);
+  if (k === 'printer') {
+    const B = box(1, 1, 24);
+    B.block(0.12, 0.12, 0.88, 0.88, 0, 16, '#e6e6e2', '#d4d4cf', '#bcbcb6');
+    B.block(0.2, 0.15, 0.8, 0.7, 16, 18, '#9a9a96');
+    B.onY(0.2, 0.8, 9, 11, '#3a3a40', 0.88); B.block(0.25, 0.7, 0.75, 1.0, 9, 10, '#ffffff');
+    const lc = o.light === 'r' ? '#ff3b3b' : o.light === 'o' ? '#ffb040' : '#60ff8a';
+    B.px(B.S(0.75, 0.88, 14), lc, 2, 1); B.onY(0.25, 0.55, 13, 15, '#4a6a8a', 0.881);
+    return B.done();
+  }
+  if (k === 'shredder') {
+    const B = box(1, 1, 22);
+    B.block(0.2, 0.2, 0.8, 0.8, 0, 12, '#c8d8e0', '#b0c4d0', '#9ab0bc');
+    for (let i = 0; i < Math.min(5, o.lv || 0) * 4; i++) B.px(B.S(0.25 + hash(i, 5) * 0.5, 0.8, 1 + (i >> 2) * 2 + (i % 2)), ['#ffffff', '#e8e8f0', '#fff3d6'][i % 3], 2, 1);
+    B.block(0.15, 0.15, 0.85, 0.85, 12, 16, '#3a3a40'); B.onTop(0.25, 0.75, 0.45, 0.55, 16, '#111111');
+    B.px(B.S(0.7, 0.85, 14), '#60ff8a');
+    return B.done();
+  }
+  if (k === 'plant') {
+    const B = box(1, 1, 38);
+    const [x, y] = B.S(0.5, 0.5, 0), g = B.g, big = o.big;
+    B.block(0.3, 0.3, 0.7, 0.7, 0, 8, '#e8e4dc', '#d0ccc4', '#bab5ac');
+    const L = ['#3e8a4a', '#5aaa5a', '#2e6a3a'];
+    for (let i = 0; i < (big ? 9 : 6); i++) { const a = i / (big ? 9 : 6) * Math.PI * 2; fillEllipse(g, x + Math.round(Math.cos(a) * (big ? 6 : 4)), y - 14 - Math.round(Math.sin(a) * 3) - (big ? 6 : 0) - (i % 3) * 2, 3, 2, L[i % 3]); }
+    fillEllipse(g, x, y - (big ? 24 : 18), 3, 3, L[1]);
+    return B.done();
+  }
+  if (k === 'sofa' || k === 'lsofa') {
+    const B = box(1, 1, 20);
+    const col = o.col || (k === 'lsofa' ? '#6aa7a0' : '#e8774a');
+    B.block(0.05, 0.05, 0.95, 0.95, 0, 6, shade(col, 0.85));
+    const d = o.dir;
+    if (d === 1) B.block(0.05, 0.05, 0.95, 0.3, 6, 14, col); if (d === 0) B.block(0.05, 0.05, 0.3, 0.95, 6, 14, col);
+    if (d === 3) B.block(0.05, 0.75, 0.95, 0.95, 6, 9, col); if (d === 2) B.block(0.75, 0.05, 0.95, 0.95, 6, 9, col);
+    B.onTop(0.15, 0.85, 0.15, 0.85, 6, shade(col, 1.15));
+    return B.done();
+  }
+  if (k === 'rtable') {
+    const B = box(2, 2, 14);
+    ellipseOnTop(B, 1, 1, 0.75, 0, 'rgba(0,0,0,.15)'); B.block(0.85, 0.85, 1.15, 1.15, 0, 8, '#8a6a4a');
+    ellipseOnTop(B, 1, 1, 0.7, 8, '#c08a5a'); ellipseOnTop(B, 1, 1, 0.62, 9, '#d8a070');
+    B.block(0.6, 0.7, 0.85, 0.9, 9, 11, '#ffd27a'); B.block(1.2, 1.1, 1.35, 1.25, 9, 12, '#ffffff'); B.block(0.9, 1.3, 1.2, 1.5, 9, 10, '#e0703c');
+    return B.done(false);
+  }
+  if (k === 'rug') {
+    const B = box(o.w, o.d, 2);
+    B.onTop(0, o.w, 0, o.d, 0, o.col); B.onTop(0.15, o.w - 0.15, 0.15, o.d - 0.15, 0, shade(o.col, 1.15));
+    return B.done(false);
+  }
+  if (k === 'mark') {
+    const B = box(1, 1, 2);
+    ellipseOnTop(B, 0.5, 0.5, 0.36, 0, o.col || 'rgba(255,255,255,.55)');
+    return B.done(false);
+  }
+  if (k === 'bean') {
+    const B = box(1, 1, 16);
+    const [x, y] = B.S(0.5, 0.5, 0);
+    fillEllipse(B.g, x, y - 3, 11, 6, shade(o.col, 0.8)); fillEllipse(B.g, x - 1, y - 6, 9, 5, o.col); fillEllipse(B.g, x - 3, y - 8, 3, 2, shade(o.col, 1.25));
+    return B.done();
+  }
+  if (k === 'pptable') {
+    const B = box(3, 2, 22);
+    for (const [u, v] of [[0.3, 0.3], [2.7, 0.3], [0.3, 1.7], [2.7, 1.7]]) B.block(u - 0.05, v - 0.05, u + 0.05, v + 0.05, 0, 11, '#3a3a40');
+    B.block(0, 0, 3, 2, 11, 12, '#2e7d5a', '#24684a', '#1e5a40');
+    B.onTop(0.05, 2.95, 0.98, 1.02, 12, '#ffffff'); B.onTop(1.48, 1.52, 0.05, 1.95, 12, '#ffffff');
+    B.onTop(0.02, 2.98, 0.02, 0.06, 12, '#ffffff'); B.onTop(0.02, 2.98, 1.94, 1.98, 12, '#ffffff');
+    B.block(1.47, 0, 1.53, 2, 12, 16, 'rgba(240,240,240,.8)');
+    return B.done();
+  }
+  if (k === 'bed') {
+    const B = box(1, 2, 18);
+    B.block(0.05, 0.05, 0.95, 1.95, 0, 6, '#a87a54'); B.block(0.05, 0.05, 0.95, 0.18, 6, 16, '#a87a54');
+    B.block(0.1, 0.1, 0.9, 1.9, 6, 9, '#ffffff');
+    B.block(0.2, 0.22, 0.8, 0.6, 9, 11, '#f4f0ff');
+    B.block(0.1, 0.7, 0.9, 1.9, 9, 11, o.col || '#9ab0e8');
+    for (let v = 0.9; v < 1.9; v += 0.3) B.onTop(0.15, 0.85, v, v + 0.04, 11, shade(o.col || '#9ab0e8', 1.2));
+    return B.done();
+  }
+  if (k === 'recliner') { const B = box(1, 1, 22); chairShape(B, '#8f6fb5', o.dir, 7, 12, 0.8); return B.done(); }
+  if (k === 'floorlamp') {
+    const B = box(1, 1, 44);
+    B.block(0.4, 0.4, 0.6, 0.6, 0, 2, '#3a3a40'); B.block(0.48, 0.48, 0.52, 0.52, 2, 32, '#3a3a40');
+    const [x, y] = B.S(0.5, 0.5, 38); fillPoly(B.g, [[x - 4, y + 5], [x + 5, y + 5], [x + 3, y - 3], [x - 2, y - 3]], '#fff0c8');
+    return B.done();
+  }
+  if (k === 'nightstand') {
+    const B = box(1, 1, 26);
+    B.block(0.2, 0.2, 0.8, 0.8, 0, 10, '#c8a07a'); B.onY(0.3, 0.7, 4, 5, '#8a6a4a', 0.8);
+    const [x, y] = B.S(0.5, 0.5, 16); fillEllipse(B.g, x, y, 4, 4, '#fff2b0'); fillEllipse(B.g, x + 2, y - 1, 3, 3, 'rgba(0,0,0,0)');
+    B.g.clearRect(x + 1, y - 4, 4, 5); B.px([x - 1, y + 4], '#c8a07a', 3, 2);
+    return B.done();
+  }
+  if (k === 'pendant') {
+    const B = box(1, 1, 80, 0);
+    const [x, y] = B.S(0.5, 0.5, 52); B.g.fillStyle = '#5a5a5a'; B.g.fillRect(x, y - 28, 1, 28);
+    fillEllipse(B.g, x, y + 3, 6, 5, '#fff2d8'); for (let i = -4; i <= 4; i += 2) B.px([x + i, y], '#f0d8b0', 1, 6);
+    return B.done(true, '#8a6a4a');
+  }
+  if (k === 'ltable') { const B = box(1, 1, 12); B.block(0.15, 0.15, 0.85, 0.85, 0, 7, '#5a4a3a'); B.onTop(0.2, 0.8, 0.2, 0.8, 7, '#7a6a5a'); B.block(0.4, 0.3, 0.6, 0.5, 7, 10, '#ffffff'); return B.done(); }
+  if (k === 'water') { const B = box(1, 1, 28); B.block(0.25, 0.25, 0.75, 0.75, 0, 16, '#e8e8e8'); B.block(0.3, 0.3, 0.7, 0.7, 16, 26, '#9ad0f0'); B.px(B.S(0.5, 0.75, 10), '#4a8ad8', 2, 1); return B.done(); }
+  if (k === 'fireplace') {
+    const B = box(1, 2, 40);
+    B.block(0, 0, 0.7, 2, 0, 30, '#e8d4c8', '#d8bcb0', '#c9a9a0');
+    for (let z = 4; z < 30; z += 5) B.onX(0, 2, z, z + 1, '#b89488', 0.7);
+    B.onX(0.45, 1.55, 2, 18, '#2a1512', 0.7); B.onX(0.5, 1.5, 2, 4, '#4a2a1a', 0.7);
+    B.block(0, -0.05, 0.85, 2.05, 22, 25, '#fff4ea', '#f0dcd0', '#e0c8bc');
+    tinyDecor(B, 'bear', 0.4, 0.4, 25); tinyDecor(B, 'flower', 0.4, 1.6, 25);
+    return B.done();
+  }
+  if (k === 'wdesk') {
+    const B = box(1, 1, 22);
+    B.block(0.1, 0.1, 0.9, 0.9, 0, 12, '#f2d0dc', '#e2b8c6', '#d0a2b2'); B.onTop(0.1, 0.9, 0.1, 0.9, 12, '#fff0f4');
+    B.block(0.3, 0.3, 0.7, 0.6, 12, 13, '#ffffff'); pline(B.g, ...B.S(0.6, 0.6, 13), ...B.S(0.75, 0.45, 16), '#f2b33d');
+    B.block(0.15, 0.7, 0.3, 0.85, 12, 16, '#c9a0ff');
+    return B.done();
+  }
+  if (k === 'wchair') { const B = box(1, 1, 22); chairShape(B, '#e889a0', o.dir, 7, 9, 0.6); return B.done(); }
+  if (k === 'bamboo') {
+    const B = box(1, 1, 56);
+    const [x, y] = B.S(0.5, 0.5, 0), g = B.g;
+    fillEllipse(g, x, y - 2, 12, 6, '#7a5a3a'); fillEllipse(g, x, y - 3, 10, 5, '#8a6a46'); fillEllipse(g, x + 1, y - 3, 5, 3, '#1a0e08');
+    for (const [dx, h] of [[-10, 50], [-6, 44], [8, 48], [11, 40], [-12, 36]]) {
+      g.fillStyle = '#5aa04a'; g.fillRect(x + dx, y - h, 2, h - 4); g.fillStyle = '#3e7a34'; for (let z = 8; z < h; z += 8) g.fillRect(x + dx, y - z, 2, 1);
+      fillEllipse(g, x + dx + 3, y - h + 4, 3, 1, '#6ac05a'); fillEllipse(g, x + dx - 2, y - h + 10, 3, 1, '#6ac05a');
+    }
+    return B.done(true, '#2a3a1a');
+  }
+  if (k === 'bigbear' || k === 'bear') {
+    const s = k === 'bigbear' ? 1 : 0.45, B = box(1, 1, 34);
+    const [x, y] = B.S(0.5, 0.5, 0), g = B.g, c1 = o.col || '#b07a4e', c2 = shade(c1, 1.3);
+    const R = (n) => Math.max(1, Math.round(n * s));
+    fillEllipse(g, x, y - R(8), R(10), R(8), c1); fillEllipse(g, x, y - R(7), R(6), R(5), c2);
+    fillEllipse(g, x - R(8), y - R(2), R(4), R(3), c1); fillEllipse(g, x + R(8), y - R(2), R(4), R(3), c1);
+    fillEllipse(g, x, y - R(21), R(8), R(7), c1);
+    fillEllipse(g, x - R(7), y - R(27), R(3), R(3), c1); fillEllipse(g, x + R(7), y - R(27), R(3), R(3), c1);
+    fillEllipse(g, x, y - R(18), R(3), R(2), c2);
+    g.fillStyle = '#1a1010'; g.fillRect(x - R(4), y - R(23), 1, 1); g.fillRect(x + R(3), y - R(23), 1, 1); g.fillRect(x, y - R(19), 1, 1);
+    if (k === 'bigbear') { g.fillStyle = '#ff6f91'; g.fillRect(x - 3, y - 14, 7, 2); }
+    return B.done(true, '#3a2418');
+  }
+  if (k === 'cushion') { const B = box(1, 1, 10); const [x, y] = B.S(0.5, 0.5, 0); fillEllipse(B.g, x, y - 3, 9, 4, o.col); fillEllipse(B.g, x - 2, y - 4, 3, 2, shade(o.col, 1.25)); return B.done(); }
+  if (k === 'curtain') {
+    const B = box(1, 2, 30);
+    for (let v = 0.05; v < 2; v += 0.12) for (let z = 1; z < 28; z += 2) {
+      const i = Math.round(v * 40 + z);
+      if (hash(i, 7) < 0.2) continue;
+      B.px(B.S(0.5, v, z), ['#ff9ac0', '#ffe27a', '#e8e8ff', '#c9a0ff', '#ffffff'][i % 5]);
+    }
+    B.block(0.45, 0, 0.55, 2, 28, 30, '#c9a0ff');
+    return B.done(false);
+  }
+  if (k === 'mat') { const B = box(o.w, o.d, 2); B.onTop(0.1, o.w - 0.1, 0.1, o.d - 0.1, 0, '#4a3a34'); B.onTop(0.2, o.w - 0.2, 0.2, o.d - 0.2, 0, '#e0703c'); return B.done(false); }
+  if (k === 'fridge') { const B = box(1, 1, 40); B.block(0.15, 0.15, 0.85, 0.85, 0, 34, '#f0f0f0', '#dedede', '#c8c8c8'); B.onX(0.2, 0.8, 22, 23, '#aaaaaa', 0.85); B.px(B.S(0.85, 0.3, 28), '#888888', 1, 4); return B.done(); }
+  if (k === 'counter') { const B = box(o.w || 1, o.d || 1, 26); B.block(0, 0, o.w || 1, o.d || 1, 0, 12, '#c8a07a', '#b8906a', '#a07a58'); B.onTop(0, o.w || 1, 0, o.d || 1, 12, '#f0ece4'); if (o.micro) B.block(0.2, 0.2, 0.8, 0.7, 12, 20, '#3a3a40'); return B.done(); }
+  // 알 수 없는 종류
+  const B = box(1, 1, 10); B.block(0.2, 0.2, 0.8, 0.8, 0, 8, '#ff00ff'); return B.done();
+}
+const STAR_S = (() => { const c = mkCanvas(5, 5), g = c.getContext('2d'); g.fillStyle = '#ffe27a'; g.fillRect(2, 0, 1, 5); g.fillRect(0, 2, 5, 1); g.fillRect(1, 1, 3, 3); return c; })();
+
+function applSprite(o, night) { // 커피 머신 · 간식 · 사과 · 쓰레기통 (fx: 앞면이 +x)
+  const B = box(1, 1, 30);
+  const F = o.fx ? (a, b, z0, z1, col) => B.onX(a, b, z0, z1, col) : (a, b, z0, z1, col) => B.onY(a, b, z0, z1, col);
+  const t = o.t;
+  if (t !== 'bin') B.block(0, 0, 1, 1, 0, 12, '#c8a07a', '#b8906a', '#a07a58'), B.onTop(0, 1, 0, 1, 12, '#f0ece4');
+  if (t === 'coffee') {
+    B.block(0.15, 0.15, 0.85, 0.85, 12, 28, '#3a3a40', '#4a4a52', '#2e2e34');
+    const Fm = o.fx ? (a, b, z0, z1, col) => B.onX(a, b, z0, z1, col, 0.85) : (a, b, z0, z1, col) => B.onY(a, b, z0, z1, col, 0.85);
+    Fm(0.3, 0.7, 14, 20, '#1a1a1e'); Fm(0.42, 0.58, 14, 16, '#ffffff');
+    Fm(0.3, 0.42, 24, 26, o.light === 'o' ? '#ffb040' : '#60ff8a'); Fm(0.5, 0.7, 23, 26, '#9ad0f0');
+  } else if (t === 'snack') {
+    const [x, y] = B.S(0.5, 0.5, 12); B.g.globalAlpha = 0.85; fillEllipse(B.g, x, y - 5, 6, 6, '#d8eef6'); B.g.globalAlpha = 1;
+    for (let i = 0; i < 6; i++) fillEllipse(B.g, x - 3 + (i % 3) * 3, y - 2 - Math.floor(i / 3) * 3, 2, 1, ['#c8904a', '#8a5a2a', '#e8b878'][i % 3]);
+    B.px([x - 5, y - 12], '#e0703c', 11, 2);
+  } else if (t === 'apple') {
+    const [x, y] = B.S(0.5, 0.5, 12); fillEllipse(B.g, x, y - 2, 8, 4, '#b8864a'); fillEllipse(B.g, x, y - 3, 7, 3, '#d8a868');
+    for (const [dx, dy, c] of [[-4, -5, '#e0303a'], [0, -6, '#e84a3a'], [4, -5, '#8ac040'], [-2, -8, '#e84a3a'], [2, -8, '#e0303a']]) { fillEllipse(B.g, x + dx, y + dy, 2, 2, c); B.px([x + dx, y + dy - 3], '#5a3a1a'); }
+  } else if (t === 'bin') {
+    B.block(0.25, 0.25, 0.75, 0.75, 0, 13, '#6a8a9a', '#5a7a8a', '#4a6a7a'); B.onTop(0.28, 0.72, 0.28, 0.72, 13, '#2a3a44');
+    B.px(B.S(0.5, 0.75, 7), '#ffffff', 2, 2);
+  }
+  void F;
+  return B.done();
+}
+
+function towerSprite(o, night) {
+  const W = o.w, D = o.d, H = o.h, B = box(W, D, H, 30);
+  const glass = night ? '#24304e' : '#8cc4e8', glass2 = night ? '#1c2640' : '#6aa8d4', mull = night ? '#4a5a72' : '#e4eef6', span = night ? '#2a3448' : '#4a6a88';
+  B.block(0, 0, W, D, 0, H, '#c8d8e4', glass, glass2);
+  // 층·창 격자
+  for (let z = 22; z < H - 10; z += 10) {
+    B.onY(0, W, z, z + 2, span); B.onX(0, D, z, z + 2, shade(span, 0.85));
+    for (let u = 0; u < W; u += 0.5) {
+      const lit = night && hash(Math.round(u * 2) * 31 + z, 5) < 0.5;
+      if (lit) B.onY(u + 0.05, u + 0.45, z + 2, z + 10, hash(u * 7, z) < 0.5 ? '#ffd27a' : '#ffe8a8');
+      else if (!night && (u * 2 + z / 10) % 5 < 1.2) B.onY(u + 0.05, u + 0.45, z + 2, z + 10, '#b8e0f8');
+    }
+    for (let v = 0; v < D; v += 0.5) {
+      const lit = night && hash(Math.round(v * 2) * 17 + z, 9) < 0.45;
+      if (lit) B.onX(v + 0.05, v + 0.45, z + 2, z + 10, '#f0c060');
+      else if (!night && (v * 2 + z / 10) % 4 < 1) B.onX(v + 0.05, v + 0.45, z + 2, z + 10, '#8ab8dc');
+    }
+  }
+  for (let u = 0.5; u < W; u += 0.5) B.onY(u - 0.02, u + 0.02, 20, H - 8, mull);
+  for (let v = 0.5; v < D; v += 0.5) B.onX(v - 0.02, v + 0.02, 20, H - 8, shade(mull, 0.85));
+  // 반사광
+  if (!night) for (let i = 0; i < 3; i++) { const u0 = 1 + i * 4.5; fillPoly(B.g, [B.S(u0, D, H - 20), B.S(u0 + 1.2, D, H - 20), B.S(u0 + 0.2, D, 30), B.S(u0 - 1, D, 30)].map((p) => p), 'rgba(255,255,255,.18)'); }
+  // 1층 로비 (높은 유리)
+  B.onY(0, W, 0, 20, night ? '#ffe0a0' : '#bfe6f2'); B.onX(0, D, 0, 20, night ? '#e8c890' : '#9ccde0');
+  for (let u = 0; u <= W; u += 1) B.onY(u - 0.03, u + 0.03, 0, 20, '#3a4250');
+  for (let v = 0; v <= D; v += 1) B.onX(v - 0.03, v + 0.03, 0, 20, '#3a4250');
+  B.onY(0, W, 20, 22, '#3a4250'); B.onX(0, D, 20, 22, '#323a46');
+  if (night) for (let u = 0.6; u < W; u += 1.3) B.onY(u, u + 0.2, 10, 18, '#ffd27a');
+  // 꼭대기
+  B.onY(0, W, H - 8, H, '#d8e4ec'); B.onX(0, D, H - 8, H, '#b8c8d4');
+  B.onTop(0, W, 0, D, H, '#9aa8b4'); B.block(W / 2 - 1, D / 2 - 1, W / 2 + 1, D / 2 + 1, H, H + 8, '#c8d0d8');
+  B.block(W / 2 - 0.05, D / 2 - 0.05, W / 2 + 0.05, D / 2 + 0.05, H + 8, H + 26, '#8a9098');
+  B.px(B.S(W / 2, D / 2, H + 27), '#ff4a3a', 2, 2);
+  // 출입구 캐노피 (u 5.5~8.5)
+  B.block(5.4, D, 8.6, D + 0.6, 22, 25, '#3a4250', '#4a5260', '#2e3440');
+  B.onY(5.6, 8.4, 25, 31, '#e0703c', D + 0.3);
+  B.onY(5.9, 8.1, 0, 21, '#2a3442'); // 문틀
+  return B.done(true, '#2a3040');
+}
+
+function shopSprite(o, night) {
+  const s = SHOPS[o.s], W = o.w, D = 4, H = 46;
+  const B = box(W, D + 0.7, H, 6);
+  const wall = s.wall, wl = shade(wall, 0.92), wr = shade(wall, 0.76);
+  B.block(0, 0, W, D, 0, H, shade(wall, 0.8), wl, wr);
+  if (s.brick) for (let z = 2; z < H; z += 4) { B.onY(0, W, z, z + 1, shade(wall, 0.72)); B.onX(0, D, z, z + 1, shade(wall, 0.62)); }
+  B.onTop(0, W, 0, D, H, shade(wall, 0.6)); B.onTop(0.15, W - 0.15, 0.15, D - 0.15, H, shade(wall, 0.5));
+  // 진열창 · 문
+  const winC = night ? '#ffd890' : '#fff0d0', winD = night ? '#e8b060' : '#d8e8f0';
+  B.onY(0.25, W * 0.5, 4, 22, winD); B.onY(0.3, W * 0.5 - 0.05, 5, 21, winC);
+  B.onY(W * 0.5 + 0.2, W * 0.5 + 1.0, 0, 23, '#4a3a30'); B.onY(W * 0.5 + 0.28, W * 0.5 + 0.92, 0, 21, night ? '#ffe0a0' : '#c8e0ea');
+  B.onY(W * 0.5 + 1.2, W - 0.25, 4, 22, winD); B.onY(W * 0.5 + 1.25, W - 0.3, 5, 21, winC);
+  // 가게 안 풍경
+  const P = (u, z, c, w = 1, h = 1) => B.px(B.S(u, D, z), c, w, h);
+  const item = { bakery: ['#c8904a', '#e8b878'], cafe: ['#6a4a3a', '#ffffff'], dessert: ['#ff9ac0', '#ffffff'], snack: ['#e0303a', '#ffb040'], kor: ['#f6f2ea', '#c0503a'], bbq: ['#ff5a2a', '#3a2a2a'], brunch: ['#ffd23a', '#ffffff'], pizza: ['#f0b040', '#c62828'] }[s.scene];
+  for (let u = 0.45; u < W * 0.5 - 0.1; u += 0.32) { P(u, 9, item[0], 3, 2); P(u + 0.05, 11, item[1], 2, 1); }
+  for (let u = W * 0.5 + 1.4; u < W - 0.35; u += 0.32) { P(u, 9, item[0], 3, 2); P(u + 0.05, 11, item[1], 2, 1); }
+  P(0.4, 6, shade(item[0], 0.7), 8, 1);
+  // 줄무늬 차양
+  const awn = s.awn, n = Math.round(W * 4);
+  for (let i = 0; i < n; i++) {
+    const u0 = i / 4, u1 = (i + 1) / 4, col = awn[i % awn.length];
+    fillPoly(B.g, [B.S(u0, D, 29), B.S(u1, D, 29), B.S(u1, D + 0.6, 23), B.S(u0, D + 0.6, 23)], col);
+    fillPoly(B.g, [B.S(u0, D + 0.6, 23), B.S(u1, D + 0.6, 23), B.S((u0 + u1) / 2, D + 0.6, 20)], col);
+  }
+  fillPoly(B.g, [B.S(W, D, 29), B.S(W, D + 0.6, 23), B.S(W, D + 0.6, 20), B.S(W, D, 26)], shade(awn[0], 0.7));
+  // 줄조명
+  for (let i = 0; i < n; i++) { const p = B.S(i / 4 + 0.12, D + 0.6, 20); B.px([p[0], p[1] + 1], night ? ['#fff2b0', '#ffd27a'][i % 2] : '#f8f0d8'); }
+  // 간판
+  B.onY(0.3, W - 0.3, 31, 41, s.sign); B.onY(0.4, W - 0.4, 32, 40, shade(s.sign, night ? 1.3 : 1.1));
+  return B.done(true, '#2a2020');
+}
+
+const spriteCache = new Map();
+function objSprite(o, night) {
+  const key = o.k + '|' + (o.key || '') + (night ? '|n' : '');
+  let s = spriteCache.get(key);
+  if (!s) { s = objSpriteRaw(o, night); spriteCache.set(key, s); }
+  return s;
+}
+
+/* =========================================================
+ *  지도 — 광화문 거리(out) · 보장원 실내(in)
+ * ========================================================= */
+const FLOORS = {
+  pave: ['#cbbfae', '#b8ab98', '#d8cdbc'], road: ['#4a4d55', '#43464d', '#55585f'], plaza: ['#ddd5c6', '#cbc2b2', '#e8e1d4'],
+  lane: ['#c99a7a', '#b5866a', '#d8ac8c'], curb: ['#a7a296', '#959084', '#b8b3a8'],
+  carpet: ['#8e9bb0', '#7f8ca2', '#9aa7bc'], wood: ['#c58f5c', '#ad7a4a', '#d29e6c'], herring: ['#b87a4a', '#a06a3e', '#c88a58'],
+  tile: ['#e8e2d6', '#d4cdc0', '#f2ede4'], soft: ['#b8a8d8', '#a898c8', '#c8b8e4'], lobby: ['#efe3cf', '#ddd0ba', '#f8eedc'], pinkc: ['#f3b6c8', '#e6a2b6', '#fac8d6'],
+};
+const SEAT_INFO = {
+  desk: { label: '💻 앉아서 일하기', ic: '💻', tx: '일하기', pose: 'type', ph: 'work', z: 8 },
+  lounge: { label: '🛋️ 둘러앉기', ic: '🛋️', tx: '둘러앉기', pose: 'sit', ph: 'lounge', z: 6 },
+  bean: { label: '🫘 빈백에 앉기', ic: '🫘', tx: '빈백에 앉기', pose: 'sit', ph: 'lounge', z: 4 },
+  pp: { label: '🏓 탁구 치기', ic: '🏓', tx: '탁구 치기', pose: 'stand', ph: 'pingpong', z: 0 },
+  bed: { label: '🛏️ 눕기', ic: '🛏️', tx: '눕기', pose: 'lie', ph: 'nap', z: 11 },
+  recline: { label: '😌 기대 쉬기', ic: '😌', tx: '기대 쉬기', pose: 'sit', ph: 'nap', z: 7, doze: true },
+  cafe: { label: '☕ 테라스에 앉기', ic: '☕', tx: '테라스에 앉기', pose: 'sit', ph: 'cafe', z: 7 },
+  meeting: { label: '💼 회의 자리에 앉기', ic: '💼', tx: '회의 자리에 앉기', pose: 'sit', ph: 'meeting', z: 8 },
+  write: { label: '✍️ 책상에 앉기', ic: '✍️', tx: '책상에 앉기', pose: 'write', ph: 'vent', z: 7 },
+  rant: { label: '🎋 대나무숲 앞에 서기', ic: '🎋', tx: '대나무숲 앞에 서기', pose: 'stand', ph: 'vent', z: 0 },
+  bear: { label: '🧸 곰인형 꼭 안기', ic: '🧸', tx: '곰인형 꼭 안기', pose: 'stand', ph: 'vent', z: 0, hug: true },
+  lobby: { label: '🛋️ 쇼파에 앉기', ic: '🛋️', tx: '쇼파에 앉기', pose: 'sit', ph: 'lobby', z: 6 },
+};
+const MAPS = {};
+function newMap(id, W, H) {
+  const m = { id, W, H, floor: new Array(W * H).fill('pave'), solid: new Uint8Array(W * H), objects: [], seats: [], stations: [], labels: [], lights: [], ground: null };
+  MAPS[id] = m; return m;
+}
+function setFloor(m, x0, y0, x1, y1, t) { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x >= 0 && y >= 0 && x < m.W && y < m.H) m.floor[y * m.W + x] = t; }
+function setSolid(m, x, y, v = 1) { if (x >= 0 && y >= 0 && x < m.W && y < m.H) m.solid[y * m.W + x] = v; }
+function isSolid(m, x, y) { if (x < 0 || y < 0 || x >= m.W || y >= m.H) return true; return m.solid[y * m.W + x] === 1; }
+const NOKEY = new Set(['x', 'y', 'seat', 'st', 'solid', 'flat', 'hang', 'lightP', 'desk', 'menu', 'key']);
+function add(m, o) {
+  o.w = o.w || 1; o.d = o.d || 1;
+  if (o.key == null) { const p = {}; for (const k in o) if (!NOKEY.has(k)) p[k] = o[k]; o.key = JSON.stringify(p); }
+  m.objects.push(o);
+  if (o.solid !== false && !o.flat && !o.hang) for (let y = o.y; y < o.y + o.d; y++) for (let x = o.x; x < o.x + o.w; x++) setSolid(m, x, y);
+  return o;
+}
+function seat(m, o, kind, dir, sx, sy) {
+  const s = { kind, dir, x: (sx ?? o.x) + 0.5, y: (sy ?? o.y) + 0.5, obj: o, id: m.id + m.seats.length, map: m.id, z: SEAT_INFO[kind].z };
+  o.seat = s; m.seats.push(s); return s;
+}
+function station(m, o, kind, extra = {}) { const s = { kind, x: o.x + 0.5, y: o.y + 0.5, obj: o, id: m.id + 's' + m.stations.length, map: m.id, busyUntil: 0, ...extra }; o.st = s; m.stations.push(s); return s; }
+function label(m, x, y, z, text, o = {}) { m.labels.push({ x, y, z, text, ...o }); }
+function light(m, x, y, z, r, col, o = {}) { m.lights.push({ x, y, z, r, col, ...o }); }
+
+/* ---------------- 광화문 거리 ---------------- */
+const CROSS = [[19, 21], [36, 38]];
+const ROADS = [[11, 14], [19, 22]];
+const isCross = (x) => CROSS.some(([a, b]) => x >= a && x <= b);
+function buildOutdoor() {
+  const m = newMap('out', 46, 34);
+  setFloor(m, 0, 0, 45, 33, 'pave');
+  setFloor(m, 0, 10, 45, 10, 'curb'); setFloor(m, 0, 23, 45, 23, 'curb');
+  for (const [a, b] of ROADS) { setFloor(m, 0, a, 45, b, 'road'); for (let y = a; y <= b; y++) for (let x = 0; x < 46; x++) if (!isCross(x)) setSolid(m, x, y); }
+  setFloor(m, 0, 15, 45, 18, 'plaza'); setFloor(m, 0, 29, 45, 32, 'lane'); setFloor(m, 13, 25, 14, 28, 'lane'); setFloor(m, 31, 25, 32, 28, 'lane');
+  // 건물
+  const tw = add(m, { k: 'tower', x: 14, y: 0, w: 14, d: 6, h: 150 });
+  tw.solid = true;
+  add(m, { k: 'bldg', x: 1, y: 0, w: 12, d: 6, h: 96, col: '#d8cdb8' });
+  add(m, { k: 'bldg', x: 29, y: 0, w: 16, d: 6, h: 118, col: '#7a8ea8', glass: true });
+  label(m, 21, 6.6, 28, '보장원', { sign: true, col: '#ffffff', size: 7 });
+  // 길가 나무 · 가로등 · 정류장
+  for (const x of [3, 7, 11, 16, 25, 29, 33, 41, 44]) add(m, { k: 'tree', x, y: 10 });
+  for (const x of [5, 13, 23, 31, 40]) { add(m, { k: 'lamp', x, y: 10 }); light(m, x + 0.5, 10.5, 40, 46, '#ffd890', { night: true }); }
+  add(m, { k: 'busstop', x: 26, y: 7, w: 2, d: 1 }); label(m, 27.9, 7.7, 34, '🚌 광화문', { col: '#ffffff', bg: '#2fa060', size: 4 });
+  add(m, { k: 'bench', x: 9, y: 7 }); add(m, { k: 'bench', x: 34, y: 7 }); add(m, { k: 'planter', x: 1, y: 7, w: 2, d: 1 }); add(m, { k: 'planter', x: 43, y: 7, w: 2, d: 1 });
+  // 광장
+  add(m, { k: 'gate', x: 0, y: 15, w: 3, d: 4 }); label(m, 3, 17, 46, '광화문', { col: '#fff3c8', bg: '#3a2a20', size: 5 });
+  for (const [x, y, w, d] of [[6, 16, 3, 2], [25, 16, 3, 2], [41, 16, 3, 2]]) add(m, { k: 'planter', x, y, w, d });
+  for (const [x, y] of [[10, 15], [15, 18], [28, 15], [32, 18], [44, 15], [13, 15], [34, 15]]) add(m, { k: 'tree', x, y });
+  add(m, { k: 'bench', x: 16, y: 16 }); add(m, { k: 'bench', x: 30, y: 17 }); add(m, { k: 'bench', x: 40, y: 18 });
+  for (const x of [9, 23, 39]) { add(m, { k: 'lamp', x, y: 18 }); light(m, x + 0.5, 18.5, 40, 46, '#ffd890', { night: true }); }
+  // 남쪽 인도
+  for (const x of [3, 8, 17, 24, 29, 34, 43]) add(m, { k: 'tree', x, y: 23 });
+  for (const x of [12, 27, 41]) { add(m, { k: 'lamp', x, y: 23 }); light(m, x + 0.5, 23.5, 40, 46, '#ffd890', { night: true }); }
+  // 맛집 거리 10곳
+  const xs = [1, 5, 9, 15, 19, 23, 27, 33, 37, 41];
+  SHOPS.forEach((s, i) => {
+    const x = xs[i];
+    s.x = x;
+    add(m, { k: 'shop', x, y: 25, w: 4, d: 4, s: i });
+    label(m, x + 2, 29, 36, s.name, { sign: true, col: '#ffffff', size: 5 });
+    const mb = add(m, { k: 'menu', x: x + 3, y: 30, s: i }); mb.menu = i;
+    light(m, x + 1, 29.2, 12, 34, '#ffcf80', { night: true, shop: true }); light(m, x + 3.2, 29.2, 12, 30, '#ffcf80', { night: true, shop: true });
+    light(m, x + 2, 29.6, 21, 40, '#fff0b0', { night: true, weak: true });
+    if (s.terrace) {
+      add(m, { k: 'ctable', x: x + 1, y: 31, awn: s.awn });
+      const col = shade(s.awn[0], 0.9);
+      seat(m, add(m, { k: 'tchair', x, y: 31, dir: 0, col }), 'cafe', 0);
+      seat(m, add(m, { k: 'tchair', x: x + 2, y: 31, dir: 2, col }), 'cafe', 2);
+      seat(m, add(m, { k: 'tchair', x: x + 1, y: 30, dir: 1, col }), 'cafe', 1);
+      seat(m, add(m, { k: 'tchair', x: x + 1, y: 32, dir: 3, col }), 'cafe', 3);
+    }
+  });
+  for (let x = 0; x < 46; x += 3) add(m, { k: 'hedge', x, y: 33, w: Math.min(3, 46 - x), d: 1 });
+  return m;
+}
+
+/* ---------------- 보장원 실내 ---------------- */
+function buildInterior() {
+  const m = newMap('in', 30, 26);
+  setFloor(m, 0, 0, 29, 25, 'carpet');
+  setFloor(m, 1, 1, 6, 6, 'wood'); setFloor(m, 1, 8, 6, 13, 'tile');
+  setFloor(m, 19, 1, 28, 11, 'herring'); setFloor(m, 19, 13, 28, 19, 'soft');
+  setFloor(m, 8, 15, 28, 24, 'lobby'); setFloor(m, 1, 15, 6, 24, 'pinkc');
+  const WALL = '#efe6da', HI = 44, IN = 12;
+  const wall = (x, y, h, o = {}) => add(m, { k: 'wall', x, y, h, col: o.col || WALL, ...o });
+  // 바깥벽 (뒤는 높게, 앞은 낮게 잘라서 안이 보이게)
+  for (let x = 0; x < 30; x++) {
+    let o = {};
+    if (x === 0) o = { dy: 'win', dx: 'win' };
+    else if (x >= 1 && x <= 6) o = { dy: x === 3 || x === 4 ? 'screen' : 'win' };
+    else if (x >= 8 && x <= 17) o = { dy: 'brick', ...([9, 11, 13, 15].includes(x) ? { p: [9, 11, 13, 15].indexOf(x) } : {}) };
+    else if (x >= 19) o = { dy: 'win' };
+    wall(x, 0, HI, o);
+  }
+  for (let y = 1; y < 26; y++) {
+    let o = {};
+    if (y <= 6) o = { dx: 'win' }; else if (y >= 8 && y <= 13) o = { dx: 'win' }; else if (y >= 15) o = { dx: 'heart', col: '#f8c8d6', lights: 'x' };
+    wall(0, y, HI, o);
+  }
+  for (let x = 1; x < 30; x++) if (x !== 12 && x !== 13) wall(x, 25, 5);
+  for (let y = 1; y < 25; y++) wall(29, y, 5);
+  // 회의실 유리벽
+  for (let y = 1; y <= 7; y++) wall(7, y, 22, { glass: true });
+  for (let x = 1; x <= 6; x++) if (x !== 5) wall(x, 7, 22, { glass: true });
+  // 업무공간/로비 사이, 로비/불만창고 사이
+  for (let x = 1; x <= 17; x++) if (x !== 10 && x !== 11) wall(x, 14, IN, x <= 6 ? { dy: 'heart', col: '#f8c8d6', lights: 'y' } : {});
+  for (let y = 15; y <= 24; y++) if (y !== 19 && y !== 20) wall(7, y, IN, { dx: '', col: '#f3d8e0' });
+  for (let y = 1; y <= 19; y++) if (y !== 5 && y !== 6) wall(18, y, IN);
+  for (let x = 19; x <= 28; x++) if (x !== 22 && x !== 23) wall(x, 12, IN);
+  for (let x = 19; x <= 28; x++) if (x !== 25 && x !== 26) wall(x, 20, IN);
+  // 문
+  add(m, { k: 'mat', x: 12, y: 23, w: 2, d: 2, flat: true });
+  // 회의실
+  add(m, { k: 'mtable', x: 3, y: 2, w: 2, d: 4 });
+  for (let y = 2; y <= 5; y++) { seat(m, add(m, { k: 'mchair', x: 2, y, dir: 0 }), 'meeting', 0); seat(m, add(m, { k: 'mchair', x: 5, y, dir: 2 }), 'meeting', 2); }
+  add(m, { k: 'plant', x: 1, y: 1 }); add(m, { k: 'plant', x: 6, y: 6 });
+  label(m, 3.6, 7.2, 24, '회의실', { plaque: true });
+  // 업무공간 24석
+  let n = 0;
+  for (const py of [2, 8]) for (const px of [9, 12, 15]) for (const [dx, row] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+    const x = px + dx, f = row ? 1 : -1, y = py + row, h = hash(x * 7 + y, 11);
+    const d = add(m, { k: 'desk', x, y, f, scr: Math.floor(hash(x, y * 3) * 6), dec: Math.floor(h * 10), mug: MUGS[Math.floor(hash(y, x * 5) * 7)] });
+    const cy = row ? y + 1 : y - 1, dir = row ? 3 : 1;
+    const ch = add(m, { k: 'ochair', x, y: cy, dir, col: CHAIRS[Math.floor(hash(x * 3, cy) * 6)] });
+    seat(m, ch, 'desk', dir); ch.desk = d;
+    light(m, x + (f > 0 ? 0.8 : 0.8), y + (f > 0 ? 0.2 : 0.8), 22, 16, '#ffe0a0', { lamp: true });
+    n++;
+  }
+  for (const [x, y] of [[8, 1], [17, 1], [17, 7], [8, 7]]) add(m, { k: 'plant', x, y, big: true });
+  label(m, 12.5, 0.95, 40, '업무공간', { plaque: true });
+  // 프린터 3대 · 파쇄기
+  [9, 12, 15].forEach((x, i) => { const o = add(m, { k: 'printer', x, y: 13, light: 'g' }); station(m, o, 'printer', { pi: i }); label(m, x + 0.5, 13.9, 18, `프린터 ${i + 1}`, { tiny: true }); });
+  station(m, add(m, { k: 'shredder', x: 17, y: 13, lv: 0 }), 'shredder');
+  // 탕비 코너
+  add(m, { k: 'fridge', x: 1, y: 8 });
+  station(m, add(m, { k: 'appl', t: 'coffee', x: 1, y: 9, fx: true }), 'coffee');
+  station(m, add(m, { k: 'appl', t: 'snack', x: 1, y: 10, fx: true }), 'snack', { food: 'cookie' });
+  station(m, add(m, { k: 'appl', t: 'apple', x: 1, y: 11, fx: true }), 'snack', { food: 'apple' });
+  add(m, { k: 'counter', x: 1, y: 12, micro: true });
+  station(m, add(m, { k: 'appl', t: 'bin', x: 2, y: 13 }), 'bin');
+  add(m, { k: 'plant', x: 6, y: 13 });
+  label(m, 1.1, 10.5, 40, '탕비 코너', { plaque: true });
+  // 휴게실
+  add(m, { k: 'rug', x: 21, y: 1, w: 6, d: 6, col: '#e8c890', flat: true });
+  add(m, { k: 'rtable', x: 23, y: 3, w: 2, d: 2 });
+  const L = '#e8774a';
+  for (const [x, y, dir] of [[23, 2, 1], [24, 2, 1], [23, 5, 3], [24, 5, 3], [22, 3, 0], [22, 4, 0], [25, 3, 2], [25, 4, 2], [22, 2, 1], [25, 2, 1]]) seat(m, add(m, { k: 'sofa', x, y, dir, col: L }), 'lounge', dir);
+  seat(m, add(m, { k: 'bean', x: 27, y: 4, col: '#6a9be0' }), 'bean', 2);
+  seat(m, add(m, { k: 'bean', x: 27, y: 7, col: '#e9b949' }), 'bean', 2);
+  add(m, { k: 'pptable', x: 21, y: 8, w: 3, d: 2 });
+  const pp1 = seat(m, add(m, { k: 'mark', x: 20, y: 8, flat: true, col: 'rgba(255,255,255,.45)' }), 'pp', 0);
+  const pp2 = seat(m, add(m, { k: 'mark', x: 24, y: 9, flat: true, col: 'rgba(255,255,255,.45)' }), 'pp', 2);
+  m.pp = [pp1, pp2];
+  station(m, add(m, { k: 'appl', t: 'coffee', x: 26, y: 1 }), 'coffee');
+  station(m, add(m, { k: 'appl', t: 'snack', x: 27, y: 1 }), 'snack', { food: 'cookie' });
+  station(m, add(m, { k: 'appl', t: 'apple', x: 28, y: 1 }), 'snack', { food: 'apple' });
+  station(m, add(m, { k: 'appl', t: 'bin', x: 25, y: 1 }), 'bin');
+  add(m, { k: 'plant', x: 19, y: 1, big: true }); add(m, { k: 'plant', x: 28, y: 10, big: true }); add(m, { k: 'plant', x: 19, y: 11 });
+  label(m, 23.5, 0.95, 40, '휴게실', { plaque: true });
+  // 수면실
+  const bedC = ['#9ab0e8', '#e8a0b8', '#a0d0b8', '#e8c890'];
+  [20, 22, 24, 26].forEach((x, i) => { const b = add(m, { k: 'bed', x, y: 14, w: 1, d: 2, col: bedC[i] }); seat(m, b, 'bed', 1, x, 14); b.seat.y = 14.75; light(m, x + 0.5, 15, 1, 22, '#c8a0ff', { always: true, soft: true }); });
+  add(m, { k: 'nightstand', x: 21, y: 14 }); add(m, { k: 'nightstand', x: 25, y: 14 }); add(m, { k: 'plant', x: 23, y: 14 });
+  light(m, 21.5, 14.5, 16, 26, '#fff2b0', { always: true }); light(m, 25.5, 14.5, 16, 26, '#fff2b0', { always: true });
+  add(m, { k: 'floorlamp', x: 28, y: 14 }); light(m, 28.5, 14.5, 36, 40, '#ffe0a0', { always: true });
+  add(m, { k: 'pendant', x: 21, y: 17, hang: true }); add(m, { k: 'pendant', x: 25, y: 17, hang: true });
+  light(m, 21.5, 17.5, 52, 40, '#ffe8c0', { always: true }); light(m, 25.5, 17.5, 52, 40, '#ffe8c0', { always: true });
+  seat(m, add(m, { k: 'recliner', x: 20, y: 18, dir: 1 }), 'recline', 1);
+  seat(m, add(m, { k: 'recliner', x: 22, y: 18, dir: 1 }), 'recline', 1);
+  seat(m, add(m, { k: 'bean', x: 27, y: 18, col: '#c9a0ff' }), 'bean', 2);
+  label(m, 23.5, 12.95, 20, '수면실', { plaque: true });
+  m.dimRooms = [{ x0: 19, y0: 13, x1: 29, y1: 20, a: 0.3 }, { x0: 1, y0: 15, x1: 7, y1: 25, a: 0.18 }];
+  // 로비
+  for (const [x, y, dir] of [[9, 17, 1], [10, 17, 1], [15, 17, 1], [16, 17, 1], [20, 22, 1], [21, 22, 1], [22, 22, 1]]) seat(m, add(m, { k: 'lsofa', x, y, dir }), 'lobby', dir);
+  add(m, { k: 'ltable', x: 9, y: 18 }); add(m, { k: 'ltable', x: 16, y: 18 }); add(m, { k: 'ltable', x: 21, y: 23 });
+  for (const [x, y] of [[8, 15], [17, 15], [8, 24], [17, 22], [28, 21], [28, 24]]) add(m, { k: 'plant', x, y, big: true });
+  add(m, { k: 'water', x: 19, y: 21 });
+  label(m, 12.5, 14.95, 18, '로비', { plaque: true });
+  // 불만창고
+  const fp = add(m, { k: 'fireplace', x: 1, y: 17, w: 1, d: 2 }); m.fire = { x: 1.72, y: 18, z: 3 };
+  light(m, 2.2, 18, 8, 60, '#ff9a4a', { always: true, fire: true });
+  const wd = add(m, { k: 'wdesk', x: 3, y: 16 }); void wd; void fp;
+  seat(m, add(m, { k: 'wchair', x: 4, y: 16, dir: 2 }), 'write', 2);
+  add(m, { k: 'bamboo', x: 2, y: 23 });
+  seat(m, add(m, { k: 'mark', x: 3, y: 22, flat: true, col: 'rgba(120,200,120,.5)' }), 'rant', 3);
+  add(m, { k: 'bigbear', x: 5, y: 23, col: '#b07a4e' });
+  seat(m, add(m, { k: 'mark', x: 4, y: 23, flat: true, col: 'rgba(255,150,190,.55)' }), 'bear', 0);
+  add(m, { k: 'bear', x: 6, y: 15, col: '#e8c8a0' }); add(m, { k: 'bear', x: 1, y: 20, col: '#f0a0b8' });
+  for (const [x, y, c] of [[6, 18, '#ff9ac0'], [5, 20, '#c9a0ff'], [2, 15, '#ffe27a']]) add(m, { k: 'cushion', x, y, col: c });
+  add(m, { k: 'curtain', x: 7, y: 19, w: 1, d: 2, solid: false });
+  for (const [x, y] of [[0.5, 16], [0.5, 19], [0.5, 22], [3, 14.5], [5.5, 14.5]]) light(m, x + 0.2, y, 34, 14, pick(['#ff9ac0', '#ffe27a', '#9ae0ff']), { always: true, twinkle: true });
+  label(m, 3.6, 14.95, 18, '불만창고', { plaque: true, pink: true });
+  return m;
+}
+
+/* --------------------------------------------------------- 바닥 그림 */
+function buildGround(m) {
+  const W = (m.W + m.H) * 16 + 32, H = (m.W + m.H) * 8 + 32;
+  const c = mkCanvas(W, H), g = c.getContext('2d');
+  const ox = m.H * 16 + 16, oy = 16;
+  m.gOX = ox; m.gOY = oy;
+  const S = (x, y) => { const [a, b] = iso(x, y); return [a + ox, b + oy]; };
+  for (let y = 0; y < m.H; y++) for (let x = 0; x < m.W; x++) {
+    const t = m.floor[y * m.W + x], [c0, c1, c2] = FLOORS[t];
+    fillPoly(g, [S(x, y), S(x + 1, y), S(x + 1, y + 1), S(x, y + 1)], c0);
+    const h = hash(x, y);
+    const dot = (u, v, col) => { const p = S(x + u, y + v); g.fillStyle = col; g.fillRect(Math.round(p[0]), Math.round(p[1]), 1, 1); };
+    if (t === 'wood' || t === 'lobby' || t === 'tile' || t === 'plaza' || t === 'pave' || t === 'lane') {
+      pline(g, ...S(x, y + 1), ...S(x + 1, y + 1), c1); pline(g, ...S(x + 1, y), ...S(x + 1, y + 1), c1);
+    }
+    if (t === 'wood') for (const v of [0.33, 0.66]) pline(g, ...S(x, y + v), ...S(x + 1, y + v), c1);
+    if (t === 'pave' || t === 'lane') { pline(g, ...S(x + 0.5, y), ...S(x + 0.5, y + 1), c1); }
+    if (t === 'herring') for (let i = 0; i < 4; i++) pline(g, ...S(x + i / 4, y), ...S(x + i / 4 + 0.25, y + 1), c1);
+    for (let i = 0; i < 4; i++) dot(hash(x * 3 + i, y), hash(x, y * 3 + i), i % 2 ? c2 : c1);
+    if (t === 'pinkc' && h < 0.35) { const p = S(x + 0.5, y + 0.5); g.drawImage(HEART, Math.round(p[0]) - 2, Math.round(p[1]) - 2, 5, 4); }
+  }
+  // 차선 · 횡단보도
+  if (m.id === 'out') {
+    for (const [a, b] of ROADS) {
+      const mid = (a + b + 1) / 2;
+      for (let x = 0; x < m.W; x += 0.5) {
+        if (isCross(Math.floor(x)) || isCross(Math.floor(x + 0.4))) continue;
+        fillPoly(g, [S(x, mid - 0.04), S(x + 0.5, mid - 0.04), S(x + 0.5, mid + 0.04), S(x, mid + 0.04)], '#f2c230');
+        if ((x * 2) % 2 === 0) for (const yy of [a + 1, b]) fillPoly(g, [S(x, yy - 0.03), S(x + 0.35, yy - 0.03), S(x + 0.35, yy + 0.03), S(x, yy + 0.03)], 'rgba(255,255,255,.7)');
+      }
+      for (const [c0, c1] of CROSS) for (let x = c0 + 0.1; x < c1 + 0.9; x += 0.5)
+        fillPoly(g, [S(x, a + 0.1), S(x + 0.28, a + 0.1), S(x + 0.28, b + 0.9), S(x, b + 0.9)], '#f4f4f0');
+      // 연석
+      pline(g, ...S(0, a), ...S(m.W, a), '#8a857a'); pline(g, ...S(0, b + 1), ...S(m.W, b + 1), '#8a857a');
+    }
+  }
+  if (m.id === 'in') {
+    // 문 앞 빛
+    fillPoly(g, [S(12, 25), S(14, 25), S(14, 26), S(12, 26)], '#cfeaf2');
+  }
+  m.ground = c;
+}
+
+/* =========================================================
+ *  소리 — 배경음악(장소·시간별 8곡)과 효과음, 브라우저가 직접 연주 (파일 0 KB)
+ * ========================================================= */
+const AU = { ctx: null, master: null, music: null, sfx: null, on: true, inst: [], want: '', timer: 0, pulse: null, noise: null };
+const MT = (n) => 440 * Math.pow(2, (n - 69) / 12);
+const CH = { maj: [0, 4, 7, 12], maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10], d7: [0, 4, 7, 10], m: [0, 3, 7, 12], m9: [0, 3, 7, 14], maj9: [0, 4, 11, 14], sus: [0, 5, 7, 10] };
+// 곡: 화음 진행(근음 MIDI, 종류), 템포, 악기 구성
+const TRACKS = {
+  day:    { name: '세종대로 햇살', bpm: 104, swing: 0, prog: [[65, 'maj7'], [64, 'm7'], [62, 'm7'], [60, 'maj7'], [65, 'maj7'], [64, 'm7'], [62, 'm7'], [67, 'd7']], lead: 'pulse', bass: 'oct', drum: 'pop', dens: 0.55, oct: 12, vol: 1 },
+  night:  { name: '밤의 광화문', bpm: 74, swing: 0.18, prog: [[62, 'm9'], [67, 'd7'], [60, 'maj9'], [57, 'm7']], lead: 'soft', bass: 'root', drum: 'lofi', dens: 0.32, oct: 12, vol: 1 },
+  food:   { name: '맛집 거리 보사노바', bpm: 124, swing: 0, prog: [[67, 'maj7'], [67, 'm7'], [66, 'm7'], [71, 'd7'], [64, 'm7'], [69, 'd7'], [69, 'm7'], [62, 'd7']], lead: 'flute', bass: 'bossa', drum: 'shaker', comp: 'bossa', dens: 0.42, oct: 12, vol: 0.95 },
+  lobby:  { name: '보장원 로비', bpm: 112, swing: 0, prog: [[60, 'maj'], [67, 'maj'], [69, 'm'], [65, 'maj']], lead: 'marimba', bass: 'root', drum: 'light', comp: 'arp', dens: 0.6, oct: 12, vol: 0.9 },
+  work:   { name: '집중 모드', bpm: 80, swing: 0, prog: [[57, 'm7'], [65, 'maj7'], [60, 'maj7'], [67, 'sus']], lead: 'keys', bass: 'root', drum: 'kick', comp: 'pad', dens: 0.25, oct: 12, vol: 0.8 },
+  lounge: { name: '휴게실 스윙', bpm: 138, swing: 0.33, prog: [[62, 'm7'], [67, 'd7'], [60, 'maj7'], [69, 'd7']], lead: 'pulse', bass: 'walk', drum: 'swing', dens: 0.45, oct: 12, vol: 0.9 },
+  nap:    { name: '꿀잠 오르골', bpm: 66, swing: 0, prog: [[60, 'maj'], [57, 'm'], [65, 'maj'], [67, 'maj']], lead: 'box', bass: 'none', drum: 'none', comp: 'arp', dens: 0.5, oct: 24, vol: 0.75 },
+  vent:   { name: '불만창고 벽난로', bpm: 72, swing: 0, prog: [[65, 'maj7'], [64, 'm7'], [62, 'm7'], [70, 'maj7']], lead: 'box', bass: 'root', drum: 'none', comp: 'chime', dens: 0.42, oct: 24, vol: 0.8 },
+};
+function audioInit() {
+  if (AU.ctx) return;
+  const C = window.AudioContext || window.webkitAudioContext;
+  if (!C) return;
+  const ctx = new C(); AU.ctx = ctx;
+  AU.master = ctx.createGain(); AU.master.gain.value = 0.9;
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3;
+  AU.master.connect(comp); comp.connect(ctx.destination);
+  AU.music = ctx.createGain(); AU.music.gain.value = AU.on ? 0.3 : 0; AU.music.connect(AU.master);
+  AU.sfx = ctx.createGain(); AU.sfx.gain.value = 0.55; AU.sfx.connect(AU.master);
+  // 잔향 (짧은 방 울림)
+  const len = ctx.sampleRate * 1.6, buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  AU.rev = ctx.createConvolver(); AU.rev.buffer = buf; AU.revG = ctx.createGain(); AU.revG.gain.value = 0.22; AU.rev.connect(AU.revG); AU.revG.connect(AU.music);
+  const nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1; AU.noise = nb;
+  const re = new Float32Array(16), im = new Float32Array(16); for (let k = 1; k < 16; k++) im[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * 0.25); AU.pulse = ctx.createPeriodicWave(re, im);
+  AU.timer = setInterval(musicTick, 30);
+}
+function env(t, peak, a, d, g) { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
+function tone(out, t, f, dur, o = {}) {
+  const ctx = AU.ctx, osc = ctx.createOscillator(), g = ctx.createGain();
+  if (o.type === 'pulse') osc.setPeriodicWave(AU.pulse); else osc.type = o.type || 'sine';
+  osc.frequency.setValueAtTime(f, t);
+  if (o.slide) osc.frequency.exponentialRampToValueAtTime(f * o.slide, t + dur);
+  if (o.vib) { const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = 5.5; lg.gain.value = f * 0.012; l.connect(lg); lg.connect(osc.frequency); l.start(t + 0.08); l.stop(t + dur + 0.3); }
+  env(t, o.v || 0.2, o.a || 0.005, dur, g);
+  let node = osc;
+  if (o.lp) { const fl = ctx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = o.lp; osc.connect(fl); node = fl; }
+  node.connect(g); g.connect(out);
+  if (o.rev && AU.rev) g.connect(AU.rev);
+  osc.start(t); osc.stop(t + (o.a || 0.005) + dur + 0.05);
+}
+function noise(out, t, dur, o = {}) {
+  const ctx = AU.ctx, s = ctx.createBufferSource(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+  s.buffer = AU.noise; f.type = o.ft || 'highpass'; f.frequency.value = o.f || 6000; if (o.q) f.Q.value = o.q;
+  if (o.sweep) f.frequency.exponentialRampToValueAtTime(o.sweep, t + dur);
+  env(t, o.v || 0.1, o.a || 0.002, dur, g);
+  s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * 0.5, dur + 0.1);
+}
+// 마디마다 같은 씨앗으로 선율을 만들어 반복해도 같은 곡이 되게
+function seeded(n) { return hash(n, 77); }
+function scheduleStep(I, step, t) {
+  const T = TRACKS[I.name], out = I.g, sd = 60 / T.bpm / 2;
+  const bar = Math.floor(step / 8) % T.prog.length, s8 = step % 8;
+  const [root, kind] = T.prog[bar], chord = CH[kind];
+  const seed = (bar * 8 + s8) * 13 + I.name.length;
+  // 리드
+  if (T.lead !== 'none' && seeded(seed) < T.dens) {
+    const deg = chord[Math.floor(seeded(seed + 1) * chord.length)] + (seeded(seed + 2) < 0.3 ? 2 : 0);
+    const f = MT(root + deg + T.oct), dur = sd * (seeded(seed + 3) < 0.3 ? 2 : 1);
+    const L = { pulse: { type: 'pulse', v: 0.07, lp: 2600 }, soft: { type: 'sine', v: 0.12, a: 0.02, rev: true }, flute: { type: 'sine', v: 0.11, a: 0.04, vib: true, rev: true },
+      marimba: { type: 'sine', v: 0.16, a: 0.002 }, keys: { type: 'triangle', v: 0.1, a: 0.01, rev: true }, box: { type: 'sine', v: 0.09, a: 0.002, rev: true } }[T.lead];
+    tone(out, t, f, T.lead === 'marimba' || T.lead === 'box' ? 0.35 : dur * 0.9, L);
+    if (T.lead === 'marimba') tone(out, t, f * 4, 0.08, { v: 0.03 });
+    if (T.lead === 'box') tone(out, t, f * 2, 0.25, { v: 0.03, rev: true });
+  }
+  // 반주
+  if (T.comp === 'arp') { const f = MT(root + chord[s8 % chord.length] + (T.oct > 12 ? 12 : 0)); tone(out, t, f, sd * 1.6, { type: 'triangle', v: 0.045, rev: true }); }
+  if (T.comp === 'pad' && s8 === 0) for (const n of chord.slice(0, 3)) tone(out, t, MT(root + n), sd * 7.5, { type: 'triangle', v: 0.035, a: 0.4, rev: true });
+  if (T.comp === 'bossa' && [0, 3, 6].includes(s8)) for (const n of chord.slice(1)) tone(out, t, MT(root + n - 12), 0.22, { type: 'triangle', v: 0.05, lp: 1800 });
+  if (T.comp === 'chime' && seeded(seed + 9) < 0.18) tone(out, t, MT(root + 36 + chord[s8 % 4]), 0.9, { v: 0.025, rev: true });
+  if (!T.comp && s8 % 4 === 0 && I.name !== 'nap') for (const n of chord.slice(1, 4)) tone(out, t, MT(root + n), sd * 3.5, { type: T.lead === 'pulse' ? 'pulse' : 'triangle', v: 0.022, lp: 1500 });
+  // 베이스
+  const bf = MT(root - 24);
+  if (T.bass === 'oct' && s8 % 2 === 0) tone(out, t, s8 % 4 ? bf * 2 : bf, sd * 0.9, { type: 'triangle', v: 0.16 });
+  if (T.bass === 'root' && s8 % 4 === 0) tone(out, t, bf, sd * 3, { type: 'triangle', v: 0.14 });
+  if (T.bass === 'bossa' && [0, 3, 4, 7].includes(s8)) tone(out, t, s8 >= 4 ? bf * 1.5 : bf, sd * 0.9, { type: 'triangle', v: 0.15 });
+  if (T.bass === 'walk' && s8 % 2 === 0) tone(out, t, MT(root - 24 + [0, 4, 7, 9][s8 / 2]), sd * 1.7, { type: 'triangle', v: 0.16 });
+  // 드럼
+  const D = T.drum;
+  if (D === 'pop' || D === 'light' || D === 'lofi' || D === 'kick') {
+    if (s8 === 0 || (D === 'pop' && s8 === 5)) tone(out, t, 120, 0.16, { slide: 0.35, v: D === 'kick' ? 0.18 : 0.3 });
+    if ((s8 === 2 || s8 === 6) && D !== 'kick') noise(out, t, D === 'lofi' ? 0.12 : 0.09, { f: 1800, v: D === 'lofi' ? 0.06 : 0.08 });
+    if (D !== 'kick' && D !== 'lofi') noise(out, t, 0.03, { f: 8000, v: 0.025 });
+    if (D === 'lofi' && s8 % 2 === 1) noise(out, t, 0.04, { f: 7000, v: 0.018 });
+  }
+  if (D === 'shaker') noise(out, t, 0.05, { f: 6000, v: s8 % 2 ? 0.02 : 0.035 });
+  if (D === 'swing') { if (s8 % 2 === 0 || s8 === 3 || s8 === 7) noise(out, t, 0.12, { f: 9000, v: 0.022 }); if (s8 === 2 || s8 === 6) noise(out, t, 0.05, { f: 3000, v: 0.02 }); }
+}
+function musicTick() {
+  const ctx = AU.ctx; if (!ctx) return;
+  const now = ctx.currentTime;
+  for (const I of AU.inst) {
+    const T = TRACKS[I.name], sd = 60 / T.bpm / 2;
+    while (I.next < now + 0.2) {
+      const st = I.step, t = I.next + (st % 2 ? T.swing * sd : 0);
+      if (I.alive) scheduleStep(I, st, Math.max(t, now));
+      I.step++; I.next += sd;
+    }
+  }
+  AU.inst = AU.inst.filter((I) => I.alive || now < I.dieAt);
+}
+function musicSet(name) {
+  if (!AU.ctx || AU.want === name) return;
+  AU.want = name;
+  const now = AU.ctx.currentTime;
+  for (const I of AU.inst) if (I.alive) { I.alive = false; I.dieAt = now + 2; I.g.gain.cancelScheduledValues(now); I.g.gain.setValueAtTime(I.g.gain.value, now); I.g.gain.linearRampToValueAtTime(0.0001, now + 1.6); }
+  const g = AU.ctx.createGain(); g.gain.setValueAtTime(0.0001, now); g.gain.linearRampToValueAtTime(TRACKS[name].vol, now + 1.6); g.connect(AU.music);
+  AU.inst.push({ name, g, step: 0, next: now + 0.05, alive: true });
+}
+function setMusicOn(v) {
+  AU.on = v;
+  const b = $('#music'); b.classList.toggle('off', !v); b.setAttribute('aria-pressed', v ? 'true' : 'false');
+  if (AU.ctx) { const n = AU.ctx.currentTime; AU.music.gain.cancelScheduledValues(n); AU.music.gain.setValueAtTime(AU.music.gain.value, n); AU.music.gain.linearRampToValueAtTime(v ? 0.3 : 0, n + 0.4); }
+}
+/* 효과음 — v: 거리 감쇠 */
+const SFX = {
+  pop(v = 1, p = 1) { const t = AU.ctx.currentTime; tone(AU.sfx, t, 880 * p, 0.09, { slide: 0.5, v: 0.22 * v }); tone(AU.sfx, t + 0.03, 1320 * p, 0.06, { v: 0.08 * v }); },
+  whoosh(v = 1) { const t = AU.ctx.currentTime; noise(AU.sfx, t, 0.35, { ft: 'bandpass', f: 600, sweep: 3000, q: 2, v: 0.25 * v, a: 0.08 }); },
+  fwoomp(v = 1) { const t = AU.ctx.currentTime; noise(AU.sfx, t, 0.7, { ft: 'lowpass', f: 1600, sweep: 300, v: 0.35 * v, a: 0.02 }); tone(AU.sfx, t, 90, 0.4, { slide: 0.6, v: 0.25 * v }); },
+  bubble(v = 1, dur = 1) { const t = AU.ctx.currentTime; for (let i = 0; i < dur * 9; i++) tone(AU.sfx, t + i * 0.11, rand(300, 700), 0.07, { slide: 1.8, v: 0.1 * v }); },
+  meow(v = 1) { const t = AU.ctx.currentTime; tone(AU.sfx, t, 620, 0.32, { slide: 1.5, v: 0.12 * v, type: 'triangle', vib: true }); tone(AU.sfx, t + 0.34, 900, 0.25, { slide: 0.7, v: 0.1 * v, type: 'triangle' }); for (let i = 0; i < 10; i++) tone(AU.sfx, t + 0.6 + i * 0.09, 70, 0.07, { type: 'sawtooth', v: 0.04 * v, lp: 300 }); },
+  brew(v = 1) { const t = AU.ctx.currentTime; noise(AU.sfx, t, 0.9, { ft: 'bandpass', f: 1200, q: 3, v: 0.14 * v }); for (let i = 0; i < 9; i++) tone(AU.sfx, t + 1.0 + i * 0.16, rand(900, 1400), 0.05, { slide: 0.6, v: 0.06 * v }); tone(AU.sfx, t + 2.6, 1568, 0.6, { v: 0.14 * v }); },
+  crunch(v = 1) { const t = AU.ctx.currentTime; for (let i = 0; i < 5; i++) noise(AU.sfx, t + i * 0.28, 0.08, { f: 2500, v: 0.16 * v }); },
+  thunk(v = 1) { const t = AU.ctx.currentTime; tone(AU.sfx, t, 160, 0.15, { slide: 0.5, v: 0.25 * v }); noise(AU.sfx, t, 0.08, { ft: 'lowpass', f: 900, v: 0.12 * v }); },
+  print(v = 1, r = 'ok') { const t = AU.ctx.currentTime; tone(AU.sfx, t, 110, r === 'ok' ? 1.8 : 1.0, { type: 'sawtooth', v: 0.05 * v, lp: 600 }); if (r === 'ok') tone(AU.sfx, t + 2.0, 1320, 0.25, { v: 0.12 * v }); if (r === 'jam') for (let i = 0; i < 4; i++) tone(AU.sfx, t + 1.1 + i * 0.3, 1800, 0.12, { type: 'square', v: 0.05 * v }); if (r === 'run') for (let i = 0; i < 14; i++) noise(AU.sfx, t + 0.8 + i * 0.12, 0.06, { f: 3000, v: 0.08 * v }); },
+  shred(v = 1) { const t = AU.ctx.currentTime; noise(AU.sfx, t, 1.4, { ft: 'bandpass', f: 400, q: 4, v: 0.2 * v }); tone(AU.sfx, t, 60, 1.4, { type: 'sawtooth', v: 0.05 * v, lp: 400 }); },
+  sip(v = 1) { const t = AU.ctx.currentTime; noise(AU.sfx, t, 0.3, { ft: 'bandpass', f: 1500, sweep: 700, q: 6, v: 0.12 * v, a: 0.05 }); },
+  tok(v = 1) { const t = AU.ctx.currentTime; tone(AU.sfx, t, 1900, 0.04, { v: 0.12 * v }); },
+  type(v = 1) { const t = AU.ctx.currentTime; noise(AU.sfx, t, 0.02, { f: 4000, v: 0.05 * v }); },
+  ding(v = 1) { const t = AU.ctx.currentTime; tone(AU.sfx, t, 1046, 0.3, { v: 0.12 * v }); tone(AU.sfx, t + 0.12, 1318, 0.4, { v: 0.12 * v }); },
+};
+function sfx(name, A, ...args) {
+  if (!AU.ctx) return;
+  let v = 1;
+  if (A && G.me && A !== G.me) { if (A.map !== G.me.map) return; v = clamp(1.15 - Math.hypot(A.x - G.me.x, A.y - G.me.y) / 12, 0, 1); if (v <= 0.02) return; }
+  try { SFX[name](v, ...args); } catch (e) { /* 소리는 실패해도 괜찮아요 */ }
+}
+
+/* =========================================================
+ *  게임
+ * ========================================================= */
+const PHRASES = {
+  work: ['회의 5분 전!', '배포 성공 🎉', '커피 수혈 필요…☕', '이거 버그 아니고 기능이에요....!', 'PPT 한 장만 더!', '오늘 칼퇴 가능?', '타닥타닥 ⌨️', '메일 확인했어요!', '아이디어 있어요 💡', '엑셀 왜 이래…', '숫자 맞췄다!', '네? 제가요?'],
+  lobby: ['어서오세요! 😊', '좋은 하루 보내세요!', '이 쇼파 푹신하다~', '점심 뭐 먹지?', '오늘 날씨 좋네요!'],
+  lounge: ['ㅋㅋㅋㅋㅋ', '이 과자 맛있다!', '주말에 뭐 해요?', '하하하 😂', '피자 한 조각 더!', '생일 축하해요 🎂', '진짜요?!', '우리 팀 최고 👍', '나도 나도!', '아 배불러~'],
+  pingpong: ['나이스! 🏓', '한 판 더!', '스매시!', '으앗!', '11 : 9!', '봐주는 거야~'],
+  nap: ['Zzz…', '5분만 더…', '💤', '음냐음냐…', 'Zzz…😇…', '깨우지 마세요 🤫'],
+  food: ['맛있겠다! 😋', '여기 줄 서 있네!', '빵 냄새 너무 좋다 🥐', '떡볶이 먹고 싶다 🌶️', '커피 한 잔 할까? ☕', '디저트 배는 따로 있지', '오늘 점심은 여기다!', '냄새 미쳤다…'],
+  cafe: ['맛있겠다! 😋', '이 집 라떼 맛집이래 ☕', '케이크 하나 더 시킬까? 🍰', '여기 분위기 좋다!', '한 입만~', '사진 먼저 찍고 먹자 📸', '배불러… 행복해', '잘 먹겠습니다!'],
+  street: ['광화문 도착!', '은행잎 진짜 예쁘다 🍂', '점심 먹으러 가자', '버스 왔다!', '산책하기 딱 좋네', '퇴근하자!'],
+  meeting: ['회의 시작할게요!', '다음 안건이요', '좋은 의견이네요 👍', '그건 다음 회의 때…', '결론 내 볼까요?', '오늘 회의는 여기까지!', '자료 공유할게요 📊', '잠깐, 질문 있어요 🙋'],
+  vent: ['후련하다~', '다 타버려라! 🔥', '오늘도 버텼다 💪', '곰돌아 고마워 🧸', '힐링된다…', '내일은 괜찮을 거야', '심호흡… 후—'],
+  office: ['안녕하세요! 👋', '반가워요!', '커피 한잔 하실래요?', '오늘도 화이팅! 💪', '같이 놀아요!', '헤헤 😊'],
+};
+const POKE_FROM = ['콕! 👉', '안녕~ 콕콕!', '나 여기 있어요!', '뭐 해~?', '톡톡!'];
+const POKE_TO = ['앗, 깜짝이야! 😳', '누구야~?', '간지러워 ㅋㅋㅋ', '반가워요! 👋', '헉!', '왜 불러~?', '히힛 😆'];
+const GRAWLIX = ['#@$%&!!', '%$#@!!', '@#$%^&*!', '!@#$%!!', '&%#@!?', '$#@%&*!!', '#$%!!!', '@!#$%&'];
+const SPOTS = {
+  street: { m: 'out', x: 20.5, y: 8.6, dir: 1, label: '🏙️ 광화문 거리' },
+  lobby: { m: 'in', x: 12.5, y: 21.5, dir: 3, label: '🚪 로비' },
+  work: { m: 'in', x: 11.5, y: 6, dir: 0, label: '💻 업무공간' },
+  lounge: { m: 'in', x: 21, y: 6.5, dir: 0, label: '🛋️ 휴게실' },
+  nap: { m: 'in', x: 23.5, y: 17, dir: 1, label: '🛏️ 수면실' },
+  food: { m: 'out', x: 21.5, y: 29.6, dir: 1, label: '🍰 맛집 거리' },
+  vent: { m: 'in', x: 4.5, y: 19.5, dir: 2, label: '🔥 불만창고' },
+};
+const G = { t: 0, map: null, cam: { x: 0, y: 0 }, zoom: 1, actors: new Map(), me: null, playing: false, modal: false, parts: [], cars: [], cats: [], fireBoost: 0, shredLv: 0, tap: null, path: null, onArrive: null, auto: false, zone: '', ctx: '', tod: null };
+const keys = new Set(), joy = { x: 0, y: 0, active: false };
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 무시 */ } } };
+
+function newActor(id, di, name, isMe) {
+  return { id, di, name, me: isMe, map: 'out', x: 0, y: 0, tx: 0, ty: 0, dir: 1, moving: false, walkT: 0, seat: null, hold: false, bubble: null, act: '', actT: 0, rantT: 0, rantNext: 0, shakeT: 0, hopT: 0, waveT: 0, blinkT: rand(1, 4), petT: 0, tick: 0, tickT: 0, stand: null };
+}
+const MAPID = (id) => MAPS[id];
+function seatById(id) { for (const m of Object.values(MAPS)) { const s = m.seats.find((q) => q.id === id); if (s) return s; } return null; }
+function stationById(id) { for (const m of Object.values(MAPS)) { const s = m.stations.find((q) => q.id === id); if (s) return s; } return null; }
+function seatTaken(s, except) { for (const A of G.actors.values()) if (A !== except && A.seat === s) return true; return false; }
+function dirFrom(vx, vy) { return Math.abs(vx) > Math.abs(vy) ? (vx > 0 ? 0 : 2) : (vy > 0 ? 1 : 3); }
+function dirTo(A, x, y) { return dirFrom(x - A.x, y - A.y); }
+
+/* ---------------- 장소 · 시간 ---------------- */
+function zoneOf(map, x, y) {
+  if (map === 'out') return y < 23 ? 'street' : 'food';
+  if (x < 7 && y >= 15) return 'vent';
+  if (x < 7 && y < 7.5) return 'meeting';
+  if (x < 7 && y < 14) return 'pantry';
+  if (x < 18 && y < 14) return 'work';
+  if (x >= 18 && y < 12) return 'lounge';
+  if (x >= 18 && y < 20) return 'nap';
+  return 'lobby';
+}
+const ZONE_LABEL = { street: '🏙️ 광화문 거리', food: '🍰 맛집 거리', vent: '🔥 불만창고', meeting: '💼 회의실', pantry: '☕ 탕비 코너', work: '💻 업무공간', lounge: '🛋️ 휴게실', nap: '🛏️ 수면실', lobby: '🚪 보장원 로비' };
+function seoulHour() {
+  if (G.hourOverride != null) return G.hourOverride;
+  try {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+    return Number(p.hour) + Number(p.minute) / 60;
+  } catch (e) { const d = new Date(); return d.getHours() + d.getMinutes() / 60; }
+}
+const TOD_KEYS = [[0, '#4a52a0', 1, '#141a38'], [4.6, '#4a52a0', 1, '#141a38'], [5.6, '#8a7ab0', 0.7, '#4a4a80'], [6.6, '#ffd8c0', 0.2, '#f0b8a0'], [7.5, '#ffffff', 0, '#8ec4ea'], [16.6, '#ffffff', 0, '#8ec4ea'], [17.5, '#ffc890', 0.15, '#f4a070'], [18.4, '#d88a8a', 0.42, '#b86a8a'], [19.2, '#6a5a9a', 0.78, '#3e3a70'], [20.1, '#4a52a0', 1, '#141a38'], [24, '#4a52a0', 1, '#141a38']];
+function timeOfDay() {
+  const h = seoulHour();
+  let i = 0; while (i < TOD_KEYS.length - 2 && h >= TOD_KEYS[i + 1][0]) i++;
+  const a = TOD_KEYS[i], b = TOD_KEYS[i + 1], t = clamp((h - a[0]) / (b[0] - a[0]), 0, 1);
+  const label = h >= 5 && h < 7 ? '새벽' : h >= 7 && h < 17 ? '낮' : h >= 17 && h < 18.5 ? '노을' : h >= 18.5 && h < 19.5 ? '해 질 녘' : '밤';
+  const icon = { 새벽: '🌅', 낮: '☀️', 노을: '🌇', '해 질 녘': '🌆', 밤: '🌙' }[label];
+  return { h, tint: mix(a[1], b[1], t), dark: lerp(a[2], b[2], t), sky: mix(a[3], b[3], t), label, icon };
+}
+
+/* ---------------- 충돌 · 이동 ---------------- */
+const RAD = 0.27;
+function blocked(m, x, y) {
+  for (const [dx, dy] of [[-RAD, -RAD], [RAD, -RAD], [-RAD, RAD], [RAD, RAD]]) if (isSolid(m, Math.floor(x + dx), Math.floor(y + dy))) return true;
+  return false;
+}
+function tryMove(A, dx, dy) {
+  const m = MAPID(A.map);
+  let moved = false;
+  if (dx && !blocked(m, A.x + dx, A.y)) { A.x += dx; moved = true; }
+  if (dy && !blocked(m, A.x, A.y + dy)) { A.y += dy; moved = true; }
+  return moved;
+}
+function bfs(m, sx, sy, tx, ty) {
+  const W = m.W, H = m.H, start = sy * W + sx, prev = new Int32Array(W * H).fill(-1);
+  const goal = new Set();
+  if (!isSolid(m, tx, ty)) goal.add(ty * W + tx);
+  else for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) if (!isSolid(m, tx + dx, ty + dy)) goal.add((ty + dy) * W + tx + dx);
+  if (!goal.size) return null;
+  const q = [start]; prev[start] = start;
+  let found = -1;
+  for (let qi = 0; qi < q.length; qi++) {
+    const c = q[qi]; if (goal.has(c)) { found = c; break; }
+    const cx = c % W, cy = (c / W) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy; if (isSolid(m, nx, ny)) continue;
+      const n = ny * W + nx; if (prev[n] !== -1) continue; prev[n] = c; q.push(n);
+    }
+    if (q.length > 4000) break;
+  }
+  if (found < 0) return null;
+  const path = []; for (let c = found; c !== start; c = prev[c]) path.push([(c % W) + 0.5, ((c / W) | 0) + 0.5]);
+  path.reverse();
+  // 지름길로 줄이기
+  const out = []; let cur = [sx + 0.5, sy + 0.5];
+  for (let i = 0; i < path.length; i++) {
+    const nxt = path[i + 1];
+    if (nxt && lineClear(m, cur, nxt)) continue;
+    out.push(path[i]); cur = path[i];
+  }
+  return out;
+}
+function lineClear(m, a, b) { const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) * 4); for (let i = 1; i <= n; i++) { const t = i / n; if (blocked(m, lerp(a[0], b[0], t), lerp(a[1], b[1], t))) return false; } return true; }
+function walkTo(x, y, onArrive, exact) {
+  const A = G.me, m = MAPID(A.map);
+  if (A.seat) leaveSeat(A);
+  const p = bfs(m, Math.floor(A.x), Math.floor(A.y), Math.floor(x), Math.floor(y));
+  if (!p) { G.path = null; return false; }
+  if (exact && p.length && !blocked(m, x, y)) p[p.length - 1] = [x, y];
+  G.path = p; G.onArrive = onArrive || null;
+  G.tapMark = { map: A.map, x, y, t: 1 };
+  return true;
+}
+
+/* ---------------- 앉기 · 행동 ---------------- */
+function placeOnSeat(A, s) {
+  A.stand = [A.x, A.y];
+  A.seat = s; A.map = s.map; A.x = s.x; A.y = s.y; A.dir = s.dir; A.moving = false;
+  if (A.me) { G.path = null; sfx('pop', A, 0.8); }
+}
+function leaveSeat(A) {
+  const s = A.seat; if (!s) return;
+  A.seat = null;
+  const m = MAPID(s.map);
+  let best = A.stand && !blocked(m, A.stand[0], A.stand[1]) ? A.stand : null;
+  if (!best) for (const [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0], [1, 1], [-1, 1]]) { const x = Math.floor(s.x) + dx + 0.5, y = Math.floor(s.y) + dy + 0.5; if (!blocked(m, x, y)) { best = [x, y]; break; } }
+  if (best) { A.x = best[0]; A.y = best[1]; }
+  A.rantT = 0; A.act = '';
+}
+function near(A, list, max, filter) { let b = null, bd = max; for (const s of list) { if (filter && !filter(s)) continue; const d = Math.hypot(A.x - s.x, A.y - s.y); if (d < bd) { bd = d; b = s; } } return b; }
+function nearestFreeSeat(A) { const m = MAPID(A.map); return near(A, m.seats, 1.45, (s) => !seatTaken(s, A)); }
+function nearestStation(A) { const m = MAPID(A.map); return near(A, m.stations, 1.35, (s) => (A.hold ? s.kind === 'bin' : s.kind !== 'bin') && !(s.kind === 'printer' && performance.now() < s.busyUntil) && !(s.kind === 'shredder' && performance.now() < s.busyUntil)); }
+function nearestRemote(A, max = 1.9) { let b = null, bd = max; for (const R of G.actors.values()) { if (R.me || R.map !== A.map) continue; const d = Math.hypot(R.x - A.x, R.y - A.y); if (d < bd) { bd = d; b = R; } } return b; }
+function nearestCat(A, max = 1.4) { if (A.map !== 'out') return null; let b = null, bd = max; for (const C of G.cats) { const d = Math.hypot(C.x - A.x, C.y - A.y); if (d < bd) { bd = d; b = C; } } return b; }
+const STATION_LABEL = { coffee: ['☕', '커피 뽑기'], bin: ['🗑️', '컵 버리기'], printer: ['🖨️', '출력하기'], shredder: ['✂️', '문서 파쇄하기'] };
+function stationLabel(s) { if (s.kind === 'snack') return s.food === 'apple' ? ['🍎', '사과 먹기'] : ['🍪', '간식 먹기']; if (s.kind === 'printer') return ['🖨️', `프린터 ${s.pi + 1}로 출력하기`]; return STATION_LABEL[s.kind]; }
+function startAct(A, act, dur) { A.act = act; A.actT = dur; }
+
+function runStation(A, st, r, local) {
+  if (local) A.dir = dirTo(A, st.x, st.y);
+  if (st.kind === 'coffee') {
+    startAct(A, 'brew', 2.8); sfx('brew', A); setObjKey(st.obj, 'light', 'o');
+    setTimeout(() => { setObjKey(st.obj, 'light', ''); A.hold = true; if (local) { mySay(pick(['커피 나왔다 ☕', '향 좋다~', '오늘 첫 잔!', '카페인 충전 완료'])); sendPresence(true); } }, 2700);
+  } else if (st.kind === 'snack') {
+    startAct(A, 'eat', 2.1); sfx('crunch', A);
+    if (local) setTimeout(() => mySay(pick(st.food === 'apple' ? ['아삭아삭 🍎', '사과 달다!', '비타민 충전~'] : ['냠냠 😋', '바삭바삭!', '하나만 더…', '당 충전 완료!'])), 300);
+  } else if (st.kind === 'bin') {
+    A.hold = false; sfx('thunk', A);
+    if (local) { mySay(pick(['잘 마셨다~', '분리수거 완료 ♻️'])); sendPresence(true); }
+  } else if (st.kind === 'printer') {
+    st.busyUntil = performance.now() + (r === 'run' ? 4500 : 3000);
+    startAct(A, 'print', r === 'ok' ? 2.6 : 1.4); sfx('print', A, r);
+    if (r === 'run') A.shakeT = 3.6;
+    printerAnim(st, r);
+    if (local) setTimeout(() => mySay(r === 'ok' ? pick(['출력 완료!', '오 빠르다', '서류 챙겼어요 📄']) : r === 'jam' ? pick(['종이 걸림!! 😱', '왜 빈종이가 나와....', '왜 나한테만!']) : pick(['멈춰!!! 😵', '종이가 날아다녀요!', '누가 100장 눌렀어?!'])), r === 'ok' ? 2400 : 1000);
+  } else if (st.kind === 'shredder') {
+    st.busyUntil = performance.now() + 2400;
+    startAct(A, 'print', 1.2); sfx('shred', A);
+    for (let i = 0; i < 18; i++) setTimeout(() => G.parts.push({ map: st.map, x: st.x + rand(-0.15, 0.15), y: st.y + 0.3, z: 16, vx: 0, vy: 0, vz: -10, life: 0.6, k: 'conf', col: pick(['#ffffff', '#fff3d6', '#e8e8f0']) }), i * 70);
+    setTimeout(() => { G.shredLv = (G.shredLv + 1) % 6; setObjKey(st.obj, 'lv', G.shredLv); }, 1300);
+    if (local) setTimeout(() => mySay(pick(['갈갈갈~', '증거 인멸 완료 🤫', '속이 다 시원하네', '잘 가라 보고서야', '아 봉투 비워야겠다'])), 1400);
+  }
+}
+function setObjKey(o, k, v) { o[k] = v; const p = {}; for (const kk in o) if (!NOKEY.has(kk) && kk !== 'key') p[kk] = o[kk]; o.key = JSON.stringify(p); }
+function printerAnim(st, r) {
+  const o = st.obj;
+  if (r === 'ok') { for (let i = 0; i < 3; i++) setTimeout(() => G.parts.push({ map: st.map, x: st.x, y: st.y + 0.45, z: 10, vx: 0, vy: 0.35, vz: 0, life: 0.9, k: 'paper', g: 0 }), 600 + i * 450); }
+  if (r === 'jam') { let n = 0; const iv = setInterval(() => { setObjKey(o, 'light', n % 2 ? 'g' : 'r'); if (++n > 12) { clearInterval(iv); setObjKey(o, 'light', 'g'); } }, 230); }
+  if (r === 'run') {
+    setObjKey(o, 'light', 'o');
+    for (let i = 0; i < 40; i++) setTimeout(() => G.parts.push({ map: st.map, x: st.x, y: st.y + 0.4, z: 12, vx: rand(-2, 2), vy: rand(0.5, 2.5), vz: rand(20, 55), life: 2.6, k: 'paper', g: 60, spin: rand(0, 6) }), 500 + i * 80);
+    setTimeout(() => setObjKey(o, 'light', 'g'), 4200);
+  }
+}
+function throwPaper(A) {
+  const f = MAPID('in').fire;
+  startAct(A, 'throw', 0.6); sfx('whoosh', A);
+  G.parts.push({ map: 'in', k: 'crumple', x0: A.x, y0: A.y, x1: f.x + 0.2, y1: f.y, t: 0, dur: 0.85, life: 0.85, x: A.x, y: A.y, z: 14 });
+  setTimeout(() => { G.fireBoost = 2.2; sfx('fwoomp', A); for (let i = 0; i < 26; i++) G.parts.push({ map: 'in', x: f.x + 0.15, y: f.y + rand(-0.4, 0.4), z: rand(6, 14), vx: rand(0.2, 1.4), vy: rand(-0.4, 0.4), vz: rand(25, 60), life: rand(0.6, 1.3), k: 'spark', g: 30 }); }, 850);
+}
+function startRant(A, dur) { A.rantT = dur; A.rantNext = 0; sfx('bubble', A, Math.min(dur, 6)); }
+function petCat(C, local, A) {
+  C.petT = 4.5; if (local) sfx('meow', A); else sfx('meow', A);
+  for (let k = 0; k < 4; k++) setTimeout(() => G.parts.push({ map: 'out', x: C.x + rand(-0.2, 0.2), y: C.y, z: 12, vx: 0, vy: 0, vz: 12, life: 1.4, k: 'heart', g: 0 }), k * 380);
+}
+
+function doAction() {
+  const A = G.me; if (!A || !G.playing || G.modal) return;
+  if (A.seat) { leaveSeat(A); sendPresence(true); refreshContext(true); return; }
+  const stn = nearestStation(A);
+  const buddy = stn ? null : nearestRemote(A);
+  if (buddy) { poke(buddy); return; }
+  if (stn) {
+    G.path = null;
+    const r = stn.kind === 'printer' ? (Math.random() < 0.5 ? 'ok' : Math.random() < 0.5 ? 'jam' : 'run') : '';
+    runStation(A, stn, r, true);
+    G.fx = { k: 'st', s: stn.id, r, n: (G.fx?.n || 0) + 1 };
+    sendPresence(true); refreshContext(false);
+    return;
+  }
+  const s = nearestFreeSeat(A), cat = nearestCat(A);
+  if (cat && (!s || Math.hypot(A.x - cat.x, A.y - cat.y) < Math.hypot(A.x - s.x, A.y - s.y))) {
+    G.path = null; A.dir = dirTo(A, cat.x, cat.y); A.petT = 3.6;
+    petCat(cat, true, A);
+    G.pet = { c: cat.i, n: (G.pet?.n || 0) + 1 };
+    sendPresence(true);
+    setTimeout(() => mySay(pick(['귀여워 😻', '말랑말랑 🐾', '착하다 착해', '냐옹~'])), 600);
+    return;
+  }
+  if (s) { placeOnSeat(A, s); sendPresence(true); refreshContext(true); }
+}
+function say(A, text, dur = 3.4, style = 'normal') { A.bubble = { text, t: dur, style }; }
+function mySay(text, style = 'normal') {
+  const A = G.me; if (!A) return;
+  say(A, text, 3.4, style); sfx('pop', A);
+  G.say = { t: text, n: (G.say?.n || 0) + 1, s: style };
+  sendPresence(true);
+}
+function poke(R) {
+  G.poke = { to: R.peer, n: (G.poke?.n || 0) + 1 };
+  R.hopT = 0.45; G.me.dir = dirTo(G.me, R.x, R.y); G.me.waveT = 0.9;
+  mySay(pick(POKE_FROM), 'poke');
+  setTimeout(() => sfx('pop', null, 1.5), 110);
+}
+
+/* ---------------- 지도 전환 ---------------- */
+function goMap(id, x, y, dir) {
+  const A = G.me;
+  if (A.seat) leaveSeat(A);
+  $('#fade').classList.add('on');
+  G.busy = true;
+  setTimeout(() => {
+    A.map = id; A.x = x; A.y = y; if (dir != null) A.dir = dir;
+    G.map = MAPID(id); G.camSnap = true; G.path = null;
+    $('#fade').classList.remove('on'); G.busy = false;
+    sendPresence(true); refreshContext(true);
+  }, 330);
+}
+function teleport(key) {
+  const s = SPOTS[key]; if (!s) return;
+  closePop('#tpPop');
+  goMap(s.m, s.x, s.y, s.dir);
+}
+
+/* ---------------- 고양이 (시계로 계산 — 모두에게 같은 곳) ---------------- */
+const CAT_ROUTES = [[2, 18, 8.5], [23, 44, 8.6], [14.5, 27.5, 15.5], [35, 40.5, 15.5], [1, 18, 24.5], [15, 30, 29.5], [33, 45, 29.5]];
+function catPlan(i, b) { const [x0, x1] = CAT_ROUTES[i]; const r = hash(i + 3, b); return { x: x0 + hash(i, b) * (x1 - x0), mode: r < 0.5 ? 'loaf' : r < 0.75 ? 'groom' : 'sleep' }; }
+function buildCats() { for (let i = 0; i < CAT_COATS.length; i++) G.cats.push({ i, x: 0, y: CAT_ROUTES[i][2], mode: 'loaf', dir: 1, petT: 0, frame: 0 }); }
+function updateCats(dt) {
+  const T = Date.now() / 1000;
+  for (const C of G.cats) {
+    const seg = 24, u0 = T / seg + C.i * 0.31, b = Math.floor(u0), u = (u0 - b) * seg;
+    const A = catPlan(C.i, b - 1), B = catPlan(C.i, b), wt = Math.abs(B.x - A.x) / 0.8;
+    if (C.petT > 0) { C.petT -= dt; C.mode = C.mode === 'walk' ? 'loaf' : C.mode; continue; }
+    if (u < wt) { C.x = lerp(A.x, B.x, u / wt); C.mode = 'walk'; C.dir = B.x > A.x ? 1 : -1; C.frame = Math.floor(T * 6) % 2; }
+    else { C.x = B.x; C.mode = B.mode; C.frame = Math.floor(T * 2) % 2; }
+  }
+}
+
+/* ---------------- 차 (횡단보도에 사람이 있으면 멈춰요) ---------------- */
+const LANES = [{ y: 12, dir: -1, road: 0 }, { y: 14, dir: 1, road: 0 }, { y: 20, dir: -1, road: 1 }, { y: 22, dir: 1, road: 1 }];
+const CAR_TYPES = [{ c: '#f08a28', len: 2, taxi: true }, { c: '#f4f4f0', len: 2 }, { c: '#b8bcc4', len: 2 }, { c: '#2c4a8a', len: 2 }, { c: '#3a7ad8', len: 3.4, bus: true }, { c: '#5ab04a', len: 3.2, bus: true }, { c: '#c8323c', len: 2 }];
+function buildCars() {
+  LANES.forEach((L, li) => { for (let k = 0; k < 3; k++) { const T = CAR_TYPES[Math.floor(hash(li, k) * CAR_TYPES.length)]; G.cars.push({ L, T, x: k * 16 + li * 5, v: 4.5, vmax: rand(3.8, 5.2), key: `${li}${k}` }); } });
+}
+function updateCars(dt) {
+  const m = MAPS.out;
+  const onCross = [];
+  for (const A of G.actors.values()) if (A.map === 'out') onCross.push(A);
+  for (const c of G.cars) {
+    const [ra, rb] = ROADS[c.L.road], front = c.x + c.L.dir * c.T.len / 2;
+    let stop = false;
+    for (const [c0, c1] of CROSS) {
+      const edge = c.L.dir > 0 ? c0 - 0.2 : c1 + 1.2, ahead = (edge - front) * c.L.dir;
+      if (ahead < -0.1 || ahead > 2.6) continue;
+      if (onCross.some((A) => A.x > c0 - 0.4 && A.x < c1 + 1.4 && A.y > ra - 0.4 && A.y < rb + 1.4)) stop = true;
+    }
+    for (const o of G.cars) { if (o === c || o.L !== c.L) continue; const gap = (o.x - c.x) * c.L.dir; if (gap > 0 && gap < (o.T.len + c.T.len) / 2 + 1.2) stop = true; }
+    c.v = lerp(c.v, stop ? 0 : c.vmax, 1 - Math.exp(-dt * (stop ? 5 : 1.5)));
+    c.x += c.v * c.L.dir * dt;
+    if (c.L.dir > 0 && c.x > m.W + 5) c.x = -5; if (c.L.dir < 0 && c.x < -5) c.x = m.W + 5;
+  }
+}
+const carCache = new Map();
+function carSprite(c, night) {
+  const k = c.T.c + c.T.len + (c.L.dir > 0 ? 'f' : 'b') + (night ? 'n' : '');
+  if (carCache.has(k)) return carCache.get(k);
+  const T = c.T, B = box(T.len, 1, 24);
+  for (const u of [0.35, T.len - 0.45]) { B.block(u, 0.05, u + 0.25, 0.15, 0, 4, '#1a1a1e'); B.block(u, 0.85, u + 0.25, 0.95, 0, 4, '#1a1a1e'); }
+  if (T.bus) {
+    B.block(0, 0.1, T.len, 0.9, 2, 20, shade(T.c, 1.1), T.c, shade(T.c, 0.75));
+    B.onY(0.2, T.len - 0.2, 11, 17, '#9ad0f0', 0.9); for (let u = 0.6; u < T.len; u += 0.5) B.onY(u, u + 0.04, 11, 17, '#e8e8e8', 0.9);
+    B.onX(0.2, 0.8, 11, 17, c.L.dir > 0 ? '#9ad0f0' : shade(T.c, 0.6), T.len);
+  } else {
+    B.block(0, 0.12, T.len, 0.88, 2, 8, shade(T.c, 1.05), T.c, shade(T.c, 0.75));
+    B.block(T.len * 0.25, 0.18, T.len * 0.78, 0.82, 8, 13, shade(T.c, 1.1), '#7ab0d0', '#6a9ac0');
+    if (T.taxi) B.block(T.len * 0.45, 0.4, T.len * 0.6, 0.6, 13, 15, '#ffe27a');
+  }
+  const fl = c.L.dir > 0;
+  B.onX(0.18, 0.32, 4, 6, fl ? (night ? '#fff8c8' : '#f8f0c0') : '#e83a3a', T.len); B.onX(0.68, 0.82, 4, 6, fl ? (night ? '#fff8c8' : '#f8f0c0') : '#e83a3a', T.len);
+  const s = B.done(); carCache.set(k, s); return s;
+}
+
+/* ---------------- 플레이어 갱신 ---------------- */
+function updatePlayer(dt) {
+  const A = G.me; if (!A) return;
+  let ix = 0, iy = 0;
+  if (!G.modal && !G.busy) {
+    if (keys.has('ArrowLeft') || keys.has('KeyA')) ix -= 1;
+    if (keys.has('ArrowRight') || keys.has('KeyD')) ix += 1;
+    if (keys.has('ArrowUp') || keys.has('KeyW')) iy -= 1;
+    if (keys.has('ArrowDown') || keys.has('KeyS')) iy += 1;
+    if (joy.active) { ix = joy.x; iy = -joy.y; }
+  }
+  const run = keys.has('ShiftLeft') || keys.has('ShiftRight') || (joy.active && Math.hypot(joy.x, joy.y) > 0.95);
+  let vx = 0, vy = 0;
+  if ((ix || iy) && !G.auto) {
+    G.path = null;
+    if (A.seat) { leaveSeat(A); refreshContext(true); }
+    vx = ix + iy; vy = -ix + iy;
+    const l = Math.hypot(vx, vy); const mag = Math.min(1, Math.hypot(ix, iy));
+    vx = vx / l * mag; vy = vy / l * mag;
+  } else if (G.path && G.path.length) {
+    const [px, py] = G.path[0], dx = px - A.x, dy = py - A.y, d = Math.hypot(dx, dy);
+    if (d < 0.08) { G.path.shift(); if (!G.path.length) { G.path = null; const f = G.onArrive; G.onArrive = null; if (f) f(); } }
+    else { vx = dx / d; vy = dy / d; }
+  }
+  const sp = (run ? 5.4 : 3.1) * dt;
+  A.moving = false;
+  if (vx || vy) {
+    const ox = A.x, oy = A.y;
+    tryMove(A, vx * sp, vy * sp);
+    if (Math.hypot(A.x - ox, A.y - oy) > 0.001) { A.moving = true; A.dir = dirFrom(vx, vy); A.walkT += dt * (run ? 11 : 8); sendPresence(); }
+    else if (G.path) { G.path = null; G.onArrive = null; }
+  }
+  // 문
+  if (!G.busy && A.map === 'out' && A.y < 6.6 && A.x > 20 && A.x < 22) { const ex = 12 + (A.x - 20); G.auto = false; toast('🚪 자동문이 스르륵 열려요'); goMap('in', ex, 24.6, 3); setTimeout(() => { if (G.me.map === 'in' && !G.path) walkTo(ex, 22.6, null, true); }, 420); }
+  if (!G.busy && A.map === 'in' && A.y > 25.25 && A.x > 12 && A.x < 14) { goMap('out', 20 + (A.x - 12), 6.9, 1); }
+  // 장소 바뀜
+  const z = zoneOf(A.map, A.x, A.y);
+  if (z !== G.zone) { G.zone = z; placeTag(ZONE_LABEL[z]); refreshContext(true); }
+}
+function placeTag(t) { const el = $('#placeTag'); el.textContent = t; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+function toast(t) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; $('#toasts').appendChild(el); setTimeout(() => el.classList.add('out'), 2200); setTimeout(() => el.remove(), 2700); }
+
+function updateActor(A, dt) {
+  if (!A.me) {
+    if (!A.seat) {
+      const dx = A.tx - A.x, dy = A.ty - A.y, d = Math.hypot(dx, dy);
+      if (d > 4) { A.x = A.tx; A.y = A.ty; }
+      else if (d > 0.01) { const k = Math.min(1, dt * 9); A.x += dx * k; A.y += dy * k; }
+      A.moving = d > 0.04 || A.netMoving;
+      if (A.moving) A.walkT += dt * 8;
+    } else { A.x = A.seat.x; A.y = A.seat.y; A.moving = false; }
+  }
+  A.blinkT -= dt; if (A.blinkT < -0.14) A.blinkT = rand(2, 5);
+  if (A.bubble) { A.bubble.t -= dt; if (A.bubble.t <= 0) A.bubble = null; }
+  A.actT = Math.max(0, A.actT - dt); if (!A.actT) A.act = '';
+  A.shakeT = Math.max(0, A.shakeT - dt); A.hopT = Math.max(0, A.hopT - dt); A.waveT = Math.max(0, A.waveT - dt); A.petT = Math.max(0, A.petT - dt);
+  if (A.rantT > 0) {
+    A.rantT -= dt; A.rantNext -= dt;
+    if (A.rantNext <= 0 && A.rantT > 0.3) { A.rantNext = 0.48; say(A, pick(GRAWLIX), 0.62, 'angry'); }
+    if (Math.random() < dt * 6) G.parts.push({ map: A.map, x: A.x + rand(-0.2, 0.2), y: A.y, z: 30, vx: 0, vy: 0, vz: 14, life: 0.8, k: 'steam' });
+  }
+  A.tickT += dt; if (A.tickT > 0.18) { A.tickT = 0; A.tick++; if (A.seat?.kind === 'desk' && A.map === G.me?.map && Math.random() < 0.5) sfx('type', A); }
+  if (A.seat && (A.seat.kind === 'bed' || A.seat.kind === 'recline') && Math.random() < dt * 0.7) G.parts.push({ map: A.map, x: A.x + 0.1, y: A.y - 0.2, z: 24, vx: 0.3, vy: -0.3, vz: 8, life: 1.8, k: 'zzz' });
+  if (A.seat?.kind === 'bear' && Math.random() < dt * 1.4) G.parts.push({ map: A.map, x: A.x + 0.4, y: A.y, z: 22, vx: 0, vy: 0, vz: 10, life: 1.3, k: 'heart' });
+}
+
+/* ---------------- 파티클 · 분위기 ---------------- */
+function updateParts(dt) {
+  for (const p of G.parts) {
+    p.life -= dt;
+    if (p.k === 'crumple') { p.t += dt; const u = clamp(p.t / p.dur, 0, 1); p.x = lerp(p.x0, p.x1, u); p.y = lerp(p.y0, p.y1, u); p.z = 14 + Math.sin(u * Math.PI) * 26 - u * 8; continue; }
+    p.x += (p.vx || 0) * dt; p.y += (p.vy || 0) * dt; p.z += (p.vz || 0) * dt; p.vz -= (p.g || 0) * dt;
+    if (p.k === 'paper' && p.z < 0) { p.z = 0; p.vx *= 0.3; p.vy *= 0.3; p.vz = 0; }
+    if (p.k === 'leaf') { p.vx = Math.sin(G.t * 2 + p.ph) * 0.4; if (p.z <= 0) { p.z = 0; p.vz = 0; p.vx = 0; p.vy = 0; } }
+  }
+  G.parts = G.parts.filter((p) => p.life > 0);
+  // 은행잎
+  const m = G.map;
+  if (m && m.id === 'out' && G.parts.length < 160 && Math.random() < dt * 3) {
+    const trees = m.objects.filter((o) => o.k === 'tree'); const t = pick(trees);
+    if (t && (!G.me || Math.hypot(t.x - G.me.x, t.y - G.me.y) < 16)) G.parts.push({ map: 'out', x: t.x + rand(0.1, 0.9), y: t.y + rand(0.1, 0.9), z: rand(24, 44), vx: 0, vy: 0.15, vz: -9, g: 0, life: 6, k: 'leaf', ph: rand(0, 6) });
+  }
+  // 불만창고 반짝이
+  if (m && m.id === 'in' && Math.random() < dt * 4) G.parts.push({ map: 'in', x: rand(1, 7), y: rand(15, 25), z: rand(4, 36), vx: 0, vy: 0, vz: rand(1, 4), life: rand(1.5, 3), k: 'sparkle', col: pick(['#ffffff', '#ffe27a', '#ff9ac0', '#c9a0ff']) });
+  G.fireBoost = Math.max(0, G.fireBoost - dt);
+}
+
+/* ---------------- 멀티플레이 (room 캡ability, 없으면 혼자) ---------------- */
+let room = null, myPeer = null, presDirty = false, presT = 0;
+function sendPresence(force) { presDirty = true; if (force) presT = 1; }
+function flushPresence(dt) {
+  presT += dt;
+  if (!room || !G.me || !presDirty || presT < 0.1) return;
+  presT = 0; presDirty = false;
+  const A = G.me;
+  const data = { n: A.name, d: A.di, m: A.map, x: Math.round(A.x * 100) / 100, y: Math.round(A.y * 100) / 100, r: A.dir, mv: A.moving ? 1 : 0, st: A.seat ? A.seat.id : null, h: A.hold ? 1 : 0, sy: G.say || null, fx: G.fx || null, pk: G.poke || null, pt: G.pet || null };
+  room.presence(data).catch(() => {});
+}
+function applyRemote(peer) {
+  if (peer.sameTab) { myPeer = peer.peer; return; }
+  if (peer.kind !== 'viewer') return;
+  const pr = peer.presence || {};
+  if (typeof pr.x !== 'number' || typeof pr.y !== 'number' || (pr.m !== 'out' && pr.m !== 'in')) return;
+  let R = G.actors.get(peer.peer);
+  const di = clamp(pr.d | 0, 0, DESIGNS.length - 1);
+  const name = String(pr.n || '손님').slice(0, 10);
+  if (!R) { R = newActor(peer.peer, di, name, false); R.peer = peer.peer; R.map = pr.m; R.x = R.tx = pr.x; R.y = R.ty = pr.y; R.seen = {}; G.actors.set(peer.peer, R); }
+  if (R.di !== di) R.di = di;
+  R.name = name;
+  if (R.map !== pr.m) { R.map = pr.m; R.x = pr.x; R.y = pr.y; }
+  R.tx = clamp(pr.x, 0, 46); R.ty = clamp(pr.y, 0, 34); R.dir = clamp(pr.r | 0, 0, 3); R.netMoving = !!pr.mv; R.hold = !!pr.h;
+  const s = pr.st ? seatById(String(pr.st)) : null;
+  if (s !== R.seat) { if (s) { R.seat = s; R.x = s.x; R.y = s.y; } else { R.seat = null; R.x = R.tx; R.y = R.ty; R.rantT = 0; } }
+  const first = !R.init; R.init = true;
+  const fresh = (k, v) => { if (!v || typeof v.n !== 'number') return false; const old = R.seen[k]; R.seen[k] = v.n; return !first && old !== v.n; };
+  if (fresh('sy', pr.sy) && typeof pr.sy.t === 'string') { say(R, pr.sy.t.slice(0, 60), 3.4, pr.sy.s === 'poke' ? 'poke' : 'normal'); sfx('pop', R); }
+  if (fresh('fx', pr.fx)) {
+    const f = pr.fx;
+    if (f.k === 'st') { const st = stationById(String(f.s)); if (st) runStation(R, st, ['ok', 'jam', 'run'].includes(f.r) ? f.r : 'ok', false); }
+    else if (f.k === 'sip') { startAct(R, 'sip', 1.2); sfx('sip', R); }
+    else if (f.k === 'burn') throwPaper(R);
+    else if (f.k === 'rant') startRant(R, clamp(Number(f.d) || 3, 1, 12));
+  }
+  if (fresh('pk', pr.pk) && pr.pk.to === myPeer && G.me) { G.me.hopT = 0.45; R.waveT = 0.9; setTimeout(() => mySay(pick(POKE_TO), 'poke'), 350); }
+  if (fresh('pt', pr.pt)) { const C = G.cats[pr.pt.c | 0]; if (C) { R.petT = 3.6; petCat(C, false, R); } }
+}
+function onPeers(ch) {
+  for (const p of ch.left) { G.actors.delete(p.peer); }
+  for (const p of [...ch.joined, ...ch.updated]) applyRemote(p);
+  updateOnline();
+}
+function updateOnline() { const n = [...G.actors.values()].length; $('#online').textContent = `👥 ${Math.max(1, n)}명`; }
+async function connectRoom() {
+  try {
+    if (!window.claude?.use) return;
+    room = await window.claude.use('room');
+    if (!room) return;
+    room.onPeers(onPeers, () => { room = null; });
+    sendPresence(true);
+  } catch (e) { room = null; }
+}
+
+/* ---------------- 상황에 맞는 버튼 · 대사 ---------------- */
+function phraseKey() {
+  const A = G.me; if (!A) return '';
+  if (A.seat) return SEAT_INFO[A.seat.kind].ph;
+  const z = zoneOf(A.map, A.x, A.y);
+  if (z === 'vent') return 'vent';
+  if (A.map === 'in') return 'office';
+  return z === 'food' ? 'food' : 'street';
+}
+function refreshContext(force) {
+  const A = G.me; if (!A) return;
+  const s = A.seat ? null : nearestFreeSeat(A);
+  const cat = A.seat ? null : nearestCat(A);
+  const catFirst = cat && (!s || Math.hypot(A.x - cat.x, A.y - cat.y) < Math.hypot(A.x - s.x, A.y - s.y));
+  const stn = A.seat ? null : nearestStation(A);
+  const buddy = A.seat || stn ? null : nearestRemote(A);
+  let ic = '', tx = '';
+  if (A.seat) [ic, tx] = ['🚶', '일어나기'];
+  else if (stn) [ic, tx] = stationLabel(stn);
+  else if (buddy) [ic, tx] = ['👉', `${buddy.name} 콕 찌르기`];
+  else if (catFirst) [ic, tx] = ['🐱', '쓰다듬기'];
+  else if (s) [ic, tx] = [SEAT_INFO[s.kind].ic, SEAT_INFO[s.kind].tx];
+  const b = $('#actBtn');
+  if ($('#actTx').textContent !== tx) { $('#actTx').textContent = tx; $('#actIc').textContent = ic; }
+  b.hidden = !tx || G.modal;
+  const k2 = A.seat?.kind === 'write' ? 'burn' : A.seat?.kind === 'rant' ? 'rant' : A.hold ? 'sip' : '';
+  const a2 = $('#act2');
+  if (a2.dataset.k !== k2) { a2.dataset.k = k2; a2.textContent = { burn: '✍️ 스트레스 적기', rant: '🗯️ 마구 외치기', sip: '☕ 한 모금' }[k2] || ''; }
+  a2.hidden = !k2;
+  const k = phraseKey();
+  if (!force && k === G.ctx) return;
+  G.ctx = k;
+  const box = $('#phrases'); box.replaceChildren();
+  (PHRASES[k] || []).forEach((t, i) => {
+    const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'chip'; bt.textContent = t;
+    if (i < 9) bt.title = `키보드 ${i + 1}`;
+    bt.addEventListener('click', () => mySay(t)); box.appendChild(bt);
+  });
+}
+
+/* =========================================================
+ *  그리기
+ * ========================================================= */
+const R = { view: $('#view'), g: null, dpr: 1, cssW: 1, cssH: 1, base: 2, scale: 2, K: 2, lw: 1, lh: 1 };
+R.g = R.view.getContext('2d');
+function resize() {
+  R.dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const r = $('#game').getBoundingClientRect();
+  R.cssW = Math.max(1, r.width); R.cssH = Math.max(1, r.height);
+  R.view.width = Math.round(R.cssW * R.dpr); R.view.height = Math.round(R.cssH * R.dpr);
+  R.base = clamp(Math.round(Math.min(R.cssW / 230, R.cssH / 330) * 2) / 2, 1.5, 4);
+  G.camSnap = true;
+}
+addEventListener('resize', resize);
+function blit(g, c, x, y) { g.drawImage(c, Math.round(x), Math.round(y)); }
+function drawFire(g, m) {
+  const f = m.fire, boost = G.fireBoost, t = G.t;
+  for (let i = 0; i < 9; i++) {
+    const v = f.y - 0.45 + i * 0.11, [sx, sy] = iso(f.x, v);
+    const h = 5 + Math.abs(Math.sin(t * 9 + i * 1.7)) * 5 + (i > 2 && i < 7 ? 3 : 0) + boost * 5;
+    for (let z = 0; z < h; z++) {
+      const k = z / h, col = k < 0.35 ? '#ffe27a' : k < 0.7 ? '#ff9a3a' : '#e8483a';
+      g.fillStyle = col; g.fillRect(Math.round(sx + Math.sin(t * 11 + z + i) * (k * 1.2)), Math.round(sy - 3 - z), 1, 1);
+    }
+  }
+  const [lx, ly] = iso(f.x, f.y); g.fillStyle = '#5a2a1a'; g.fillRect(Math.round(lx) - 6, Math.round(ly) - 3, 12, 2);
+}
+function drawDoor(g) { // 보장원 자동문
+  let open = 0;
+  for (const A of G.actors.values()) if (A.map === 'out' && Math.abs(A.x - 21) < 1.6 && A.y < 8.4 && A.y > 5.5) open = 1;
+  G.doorOpen = lerp(G.doorOpen || 0, open, 0.15);
+  const o = G.doorOpen * 0.42, z1 = 20;
+  for (const [u0, u1] of [[20.1 - o, 21 - o], [21 + o, 21.9 + o]]) {
+    const a = iso(u0, 6), b = iso(u1, 6);
+    g.globalAlpha = 0.85;
+    fillPoly(g, [[a[0], a[1]], [b[0], b[1]], [b[0], b[1] - z1], [a[0], a[1] - z1]], '#cdeefa');
+    g.globalAlpha = 1;
+    pline(g, a[0], a[1], a[0], a[1] - z1, '#3a4250'); pline(g, b[0], b[1], b[0], b[1] - z1, '#3a4250');
+  }
+}
+function actorPose(A) {
+  if (A.seat) return SEAT_INFO[A.seat.kind].pose;
+  return 'stand';
+}
+function drawActor(g, A, sx, sy) {
+  const pose = actorPose(A);
+  const back = A.dir === 2 || A.dir === 3, flip = A.dir === 1 || A.dir === 2;
+  const frame = A.moving ? Math.floor(A.walkT) % 4 : 0;
+  let arm = '';
+  if (A.act === 'brew' || A.act === 'print' || A.act === 'throw') arm = 'up';
+  if (A.act === 'eat' || A.act === 'sip') arm = 'up';
+  if (A.waveT > 0 || A.petT > 0) arm = Math.floor(G.t * 8) % 2 ? 'wave' : '';
+  if (A.seat?.kind === 'bear') arm = 'up2';
+  if (A.seat?.kind === 'pp') arm = Math.floor(G.t * 3 + (A.seat === MAPS.in.pp[0] ? 0 : 1.5)) % 2 ? 'up' : '';
+  if (A.rantT > 0) arm = Math.floor(G.t * 10) % 2 ? 'up2' : 'up';
+  const doze = A.seat && (A.seat.kind === 'recline');
+  const opt = { blink: A.blinkT < 0, hold: A.hold, red: A.rantT > 0, arm, tick: A.tick, happy: A.petT > 0 || A.seat?.kind === 'bear' || A.hopT > 0, sleep: doze };
+  let x = sx, y = sy;
+  if (A.rantT > 0 || A.shakeT > 0) x += Math.sin(G.t * 70) > 0 ? 1 : 0;
+  if (A.hopT > 0) y -= Math.round(Math.sin(A.hopT / 0.45 * Math.PI) * 5);
+  if (pose === 'lie') {
+    const c = chibi(A.di, false, 0, 'lie', { sleep: true });
+    const [hx, hy] = iso(A.seat.x, A.seat.obj.y + 0.36);
+    g.drawImage(c, 0, 4, 24, 18, Math.round(hx - 12), Math.round(hy - 11 - 17), 24, 18);
+    return;
+  }
+  if (A.seat) y -= A.seat.z - 2;
+  else { g.fillStyle = 'rgba(30,20,30,.22)'; g.fillRect(Math.round(x - 5), Math.round(y - 1), 10, 2); g.fillRect(Math.round(x - 4), Math.round(y - 2), 8, 4); }
+  let c = chibi(A.di, back, frame, pose, opt);
+  if (flip) c = flipped(c);
+  blit(g, c, x - 12, y - 32);
+  if (A.rantT > 0) g.drawImage(ANGER, Math.round(x + 4), Math.round(y - 32));
+}
+function drawCatActor(g, C) {
+  const [sx, sy] = iso(C.x, C.y);
+  const closed = C.mode === 'sleep' || C.mode === 'groom' || C.petT > 0;
+  let c = catSprite(C.i, C.mode, C.frame, closed); if (C.dir < 0) c = flipped(c);
+  g.fillStyle = 'rgba(30,20,30,.2)'; g.fillRect(Math.round(sx - 6), Math.round(sy - 1), 12, 2);
+  blit(g, c, sx - 9, sy - 11);
+}
+function drawParticle(g, p) {
+  const [sx, sy0] = iso(p.x, p.y), sy = sy0 - p.z;
+  const X = Math.round(sx), Y = Math.round(sy);
+  switch (p.k) {
+    case 'heart': g.globalAlpha = clamp(p.life, 0, 1); g.drawImage(HEART, X - 4, Y - 4); g.globalAlpha = 1; break;
+    case 'zzz': g.globalAlpha = clamp(p.life, 0, 1); g.drawImage(ZZZ, X, Y); g.globalAlpha = 1; break;
+    case 'leaf': g.fillStyle = '#f2c230'; g.fillRect(X, Y, 2, 1); g.fillStyle = '#d99a1a'; g.fillRect(X + 1, Y + 1, 1, 1); break;
+    case 'paper': g.fillStyle = '#ffffff'; g.fillRect(X - 1, Y - 1, (p.spin && Math.sin(G.t * 9 + p.spin) > 0) ? 4 : 3, 3); g.fillStyle = '#c8c8d0'; g.fillRect(X - 1, Y + 1, 3, 1); break;
+    case 'conf': g.fillStyle = p.col; g.fillRect(X, Y, 1, 2); break;
+    case 'spark': g.fillStyle = p.life > 0.5 ? '#ffe27a' : '#ff7a3a'; g.fillRect(X, Y, 1, 1); break;
+    case 'steam': g.globalAlpha = clamp(p.life, 0, 0.7); g.fillStyle = '#ffffff'; g.fillRect(X - 1, Y, 3, 2); g.fillRect(X, Y - 1, 1, 1); g.globalAlpha = 1; break;
+    case 'sparkle': if (Math.sin(G.t * 8 + p.x * 9) > -0.2) { g.fillStyle = p.col; g.fillRect(X, Y, 1, 1); if (p.life > 1.2) { g.fillRect(X - 1, Y, 3, 1); g.fillRect(X, Y - 1, 1, 3); } } break;
+    case 'crumple': g.fillStyle = '#f6f2ea'; g.fillRect(X - 2, Y - 2, 4, 4); g.fillStyle = '#c8c0b0'; g.fillRect(X - 1, Y - 1, 1, 1); g.fillRect(X + 1, Y, 1, 1); break;
+  }
+}
+function wrapText(g, text, max) {
+  const out = []; let line = '';
+  for (const ch of text) { const t = line + ch; if (g.measureText(t).width > max && line) { out.push(line); line = ch; } else line = t; }
+  if (line) out.push(line); return out.slice(0, 3);
+}
+function rrect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+
+function render(dt) {
+  const g = R.g, m = G.map;
+  const tod = G.tod || timeOfDay();
+  const night = tod.dark > 0.5;
+  R.scale = R.base * G.zoom; R.K = R.scale * R.dpr; R.lw = R.cssW / R.scale; R.lh = R.cssH / R.scale;
+  // 카메라
+  let fx, fy;
+  if (G.me) [fx, fy] = iso(G.me.x, G.me.y); else [fx, fy] = iso(21, 9.5);
+  const tx = fx - R.lw / 2, ty = fy - 18 - R.lh * 0.5;
+  if (G.camSnap) { G.cam.x = tx; G.cam.y = ty; G.camSnap = false; }
+  else { const k = 1 - Math.exp(-dt * 6); G.cam.x += (tx - G.cam.x) * k; G.cam.y += (ty - G.cam.y) * k; }
+  g.setTransform(1, 0, 0, 1, 0, 0); g.imageSmoothingEnabled = false;
+  g.globalCompositeOperation = 'source-over';
+  g.fillStyle = m.id === 'out' ? tod.sky : '#2b2340'; g.fillRect(0, 0, R.view.width, R.view.height);
+  const cx = Math.round(G.cam.x * R.K) / R.K, cy = Math.round(G.cam.y * R.K) / R.K;
+  g.setTransform(R.K, 0, 0, R.K, -cx * R.K, -cy * R.K);
+  if (!m.ground) buildGround(m);
+  g.drawImage(m.ground, -m.gOX, -m.gOY);
+  // 탭 표시
+  if (G.tapMark && G.tapMark.t > 0 && G.tapMark.map === m.id) {
+    G.tapMark.t -= dt * 1.5;
+    const [sx, sy] = iso(G.tapMark.x, G.tapMark.y), r = Math.round(6 + (1 - G.tapMark.t) * 4);
+    g.globalAlpha = clamp(G.tapMark.t * 2, 0, 1);
+    for (let i = -r; i <= r; i++) { const h = Math.round((r - Math.abs(i)) / 2); g.fillStyle = '#ffffff'; g.fillRect(Math.round(sx + i), Math.round(sy - h), 1, 1); g.fillRect(Math.round(sx + i), Math.round(sy + h), 1, 1); }
+    g.globalAlpha = 1;
+  }
+  const inView = (sx, sy, mg = 60, up = 80) => sx - cx > -mg && sx - cx < R.lw + mg && sy - cy > -mg && sy - cy < R.lh + mg + up;
+  const flats = [], list = [], hangs = [], solids = [];
+  for (const o of m.objects) {
+    const sp = objSprite(o, night);
+    const [ox, oy] = iso(o.x, o.y), x0 = ox - sp.ax, y0 = oy - sp.ay;
+    if (x0 - cx > R.lw + 10 || x0 + sp.c.width - cx < -10 || y0 - cy > R.lh + 10 || y0 + sp.c.height - cy < -10) continue;
+    const key = o.x + o.w / 2 + o.y + o.d / 2;
+    const draw = () => { blit(g, sp.c, x0, y0); if (o.k === 'fireplace') drawFire(g, m); if (o.k === 'tower') drawDoor(g); };
+    if (o.flat) flats.push({ d: key, f: draw }); else if (o.hang) hangs.push({ d: key, f: draw });
+    else { list.push({ d: key, f: draw }); if (o.w * o.d > 1 || o.k === 'wall') solids.push({ o, key, sx0: x0, sx1: x0 + sp.c.width }); }
+  }
+  if (m.id === 'out') {
+    for (const c of G.cars) {
+      const sp = carSprite(c, night), [ox, oy] = iso(c.x - c.T.len / 2, c.L.y - 0.5);
+      if (!inView(ox, oy, 80)) continue;
+      list.push({ d: c.x + c.L.y, f: () => blit(g, sp.c, ox - sp.ax, oy - sp.ay) });
+    }
+    for (const C of G.cats) { const [sx, sy] = iso(C.x, C.y); if (inView(sx, sy)) list.push({ d: C.x + C.y, f: () => drawCatActor(g, C) }); }
+  }
+  for (const A of G.actors.values()) {
+    if (A.map !== m.id) continue;
+    const [sx, sy] = iso(A.x, A.y); if (!inView(sx, sy)) continue;
+    let d = A.x + A.y;
+    if (A.seat) d = A.seat.obj.x + A.seat.obj.w / 2 + A.seat.obj.y + A.seat.obj.d / 2 + 0.05;
+    else for (const s of solids) {
+      if (sx + 8 < s.sx0 || sx - 8 > s.sx1) continue;
+      const o = s.o; if (Math.abs(A.x - (o.x + o.w / 2)) > o.w / 2 + 3 || Math.abs(A.y - (o.y + o.d / 2)) > o.d / 2 + 3) continue;
+      if (A.x >= o.x + o.w || A.y >= o.y + o.d) d = Math.max(d, s.key + 0.01);
+    }
+    list.push({ d, f: () => drawActor(g, A, sx, sy) });
+  }
+  flats.sort((a, b) => a.d - b.d); for (const it of flats) it.f();
+  list.sort((a, b) => a.d - b.d); for (const it of list) it.f();
+  hangs.sort((a, b) => a.d - b.d); for (const it of hangs) it.f();
+  // 탁구공
+  if (m.id === 'in') {
+    const pp = m.pp.filter((s) => seatTaken(s));
+    if (pp.length) {
+      const per = 0.9, u = (Date.now() / 1000 % (2 * per)) / per, s = u < 1 ? u : 2 - u;
+      const bx = lerp(20.95, 24.05, s), by = lerp(8.6, 9.4, s), bz = 13 + Math.abs(Math.sin(s * Math.PI * 2)) * 9;
+      const [px, py] = iso(bx, by); g.fillStyle = '#ffffff'; g.fillRect(Math.round(px), Math.round(py - bz), 2, 2); g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(Math.round(px), Math.round(py - 12), 2, 1);
+      const side = s < 0.04 ? 0 : s > 0.96 ? 1 : -1;
+      if (side >= 0 && G.ppSide !== side) { G.ppSide = side; if (G.me?.seat?.kind === 'pp') sfx('tok', G.me); } else if (side < 0) G.ppSide = -1;
+    }
+  }
+  for (const p of G.parts) if (p.map === m.id) drawParticle(g, p);
+  // 빛과 시간
+  const tint = m.id === 'out' ? tod.tint : mix(tod.tint, '#ffffff', 0.72);
+  if (tint !== '#ffffff') { g.globalCompositeOperation = 'multiply'; g.fillStyle = tint; g.fillRect(cx - 2, cy - 2, R.lw + 4, R.lh + 4); }
+  if (m.dimRooms) {
+    g.globalCompositeOperation = 'multiply';
+    for (const r of m.dimRooms) {
+      g.globalAlpha = r.a; const P = (x, y, z = 0) => { const [a, b] = iso(x, y); return [a, b - z]; };
+      fillPoly(g, [P(r.x0, r.y0, 46), P(r.x1, r.y0, 46), P(r.x1, r.y0), P(r.x1, r.y1), P(r.x0, r.y1), P(r.x0, r.y0)], '#5a4a8a');
+    }
+    g.globalAlpha = 1;
+  }
+  g.globalCompositeOperation = 'lighter';
+  const dark = m.id === 'out' ? tod.dark : 0.15 + tod.dark * 0.3;
+  for (const L of m.lights) {
+    let a;
+    if (L.night) a = tod.dark * (L.weak ? 0.5 : 1); else if (L.lamp) a = 0.15 + dark * 0.6; else if (L.fire) a = 0.55 + Math.sin(G.t * 13) * 0.08 + Math.sin(G.t * 5.3) * 0.06 + G.fireBoost * 0.25; else if (L.twinkle) a = 0.35 + Math.sin(G.t * 3 + L.x * 7) * 0.25; else a = 0.35 + dark * 0.6;
+    if (a <= 0.02) continue;
+    const [sx, sy0] = iso(L.x, L.y), sy = sy0 - L.z;
+    if (!inView(sx, sy, L.r)) continue;
+    const gr = g.createRadialGradient(sx, sy, 0, sx, sy, L.r);
+    const [r, gg, b] = hexRgb(L.col);
+    gr.addColorStop(0, `rgba(${r},${gg},${b},${0.42 * a})`); gr.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+    g.fillStyle = gr; g.fillRect(sx - L.r, sy - L.r, L.r * 2, L.r * 2);
+  }
+  if (m.id === 'out' && tod.dark > 0.3) for (const c of G.cars) if (c.L.dir > 0) {
+    const [sx, sy0] = iso(c.x + c.T.len / 2 + 0.6, c.L.y), sy = sy0 - 4, gr = g.createRadialGradient(sx, sy, 0, sx, sy, 22);
+    gr.addColorStop(0, `rgba(255,240,190,${0.5 * tod.dark})`); gr.addColorStop(1, 'rgba(255,240,190,0)'); g.fillStyle = gr; g.fillRect(sx - 22, sy - 22, 44, 44);
+  }
+  g.globalCompositeOperation = 'source-over';
+  drawOverlay(g, m, cx, cy);
+}
+function drawOverlay(g, m, cx, cy) {
+  const sc = R.scale;
+  g.setTransform(R.dpr, 0, 0, R.dpr, 0, 0);
+  const css = (x, y, z = 0) => { const [a, b] = iso(x, y); return [(a - cx) * sc, (b - z - cy) * sc]; };
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const L of m.labels) {
+    const [x, y] = css(L.x, L.y, L.z);
+    if (x < -80 || x > R.cssW + 80 || y < -30 || y > R.cssH + 30) continue;
+    const fs = Math.round((L.size || (L.tiny ? 3.4 : 4.4)) * sc);
+    g.font = `${fs}px Jua, sans-serif`;
+    if (L.sign) { g.lineWidth = Math.max(2, sc); g.strokeStyle = 'rgba(30,20,20,.7)'; g.strokeText(L.text, x, y); g.fillStyle = L.col || '#fff'; g.fillText(L.text, x, y); continue; }
+    if (L.tiny) { g.fillStyle = 'rgba(43,34,48,.85)'; g.fillText(L.text, x, y); continue; }
+    const w = g.measureText(L.text).width + fs * 0.9, h = fs * 1.5;
+    rrect(g, x - w / 2, y - h / 2, w, h, h / 2.5);
+    g.fillStyle = L.bg || (L.pink ? '#c95c78' : L.plaque ? '#8a5a3a' : '#2b2340'); g.fill();
+    g.lineWidth = Math.max(1.5, sc * 0.6); g.strokeStyle = '#2b2230'; g.stroke();
+    g.fillStyle = L.col || '#fff7ec'; g.fillText(L.text, x, y + 1);
+  }
+  // 오늘의 메뉴 (가까이 가면)
+  if (G.me && m.id === 'out') for (const o of m.objects) if (o.k === 'menu' && Math.hypot(G.me.x - o.x - 0.5, G.me.y - o.y - 0.5) < 2.2) {
+    const s = SHOPS[o.menu], day = Math.floor(Date.now() / 86400000), t = `오늘의 메뉴 · ${s.menu[(day + o.menu) % 3]}`;
+    const [x, y] = css(o.x + 0.5, o.y + 0.5, 24); bubble(g, x, y, t, 'menu', sc);
+  }
+  // 이름표 · 말풍선
+  for (const A of G.actors.values()) {
+    if (A.map !== m.id) continue;
+    let z = 38; if (A.seat) z = 38 - (SEAT_INFO[A.seat.kind].pose === 'lie' ? 16 : A.seat.z - 2 + 2);
+    const pos = A.seat && SEAT_INFO[A.seat.kind].pose === 'lie' ? css(A.seat.x, A.seat.obj.y + 0.36, 30) : css(A.x, A.y, A.seat ? 36 + A.seat.z - 2 : 36);
+    void z;
+    const [x, y] = pos;
+    if (x < -100 || x > R.cssW + 100 || y < -60 || y > R.cssH + 60) continue;
+    const fs = Math.round(clamp(3.6 * sc, 10, 14));
+    g.font = `${fs}px Jua, sans-serif`;
+    const w = g.measureText(A.name).width + 10, h = fs + 5;
+    rrect(g, x - w / 2, y - h / 2, w, h, h / 2); g.fillStyle = A.me ? 'rgba(224,112,60,.92)' : 'rgba(43,34,48,.72)'; g.fill();
+    g.fillStyle = '#ffffff'; g.fillText(A.name, x, y + 1);
+    if (A.bubble) bubble(g, x, y - h / 2 - 4, A.bubble.text, A.bubble.style, sc, A.bubble.t);
+  }
+}
+function bubble(g, x, y, text, style, sc, life = 9) {
+  const fs = Math.round(clamp(4 * sc, 12, 16));
+  g.font = `${fs}px Jua, sans-serif`;
+  const lines = wrapText(g, text, Math.min(190, R.cssW * 0.5));
+  const w = Math.max(...lines.map((l) => g.measureText(l).width)) + 16, lh = fs * 1.25, h = lines.length * lh + 10;
+  const pop = style === 'menu' ? 1 : clamp((3.4 - life) * 8 + 0.6, 0.6, 1);
+  const bx = clamp(x - w / 2, 4, R.cssW - w - 4), by = y - h - 6;
+  g.save(); g.translate(x, y); g.scale(pop, pop); g.translate(-x, -y);
+  const col = style === 'angry' ? '#ff5a4a' : style === 'poke' ? '#fff0a8' : style === 'menu' ? '#2a3a32' : '#ffffff';
+  rrect(g, bx, by, w, h, 10); g.fillStyle = col; g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#2b2230'; g.stroke();
+  g.beginPath(); g.moveTo(x - 5, by + h - 1); g.lineTo(x, by + h + 6); g.lineTo(x + 5, by + h - 1); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle = col; g.fillRect(x - 4, by + h - 3, 8, 3);
+  g.fillStyle = style === 'angry' || style === 'menu' ? '#ffffff' : '#2b2230';
+  lines.forEach((l, i) => g.fillText(l, bx + w / 2, by + 5 + lh * (i + 0.5) + 1));
+  g.restore();
+}
+
+/* =========================================================
+ *  입력
+ * ========================================================= */
+function screenToWorld(px, py) {
+  const sx = px / R.scale + G.cam.x, sy = py / R.scale + G.cam.y;
+  return [(sx / 16 + sy / 8) / 2, (sy / 8 - sx / 16) / 2, sx, sy];
+}
+function onTap(px, py) {
+  if (!G.playing || G.modal || G.busy) return;
+  const A = G.me, m = G.map;
+  const [wx, wy, sx, sy] = screenToWorld(px, py);
+  // 다른 사람
+  for (const Rr of G.actors.values()) {
+    if (Rr.me || Rr.map !== m.id) continue;
+    const [ax, ay] = iso(Rr.x, Rr.y);
+    if (Math.abs(sx - ax) < 9 && sy > ay - 32 && sy < ay + 4) {
+      if (Math.hypot(Rr.x - A.x, Rr.y - A.y) < 2.4) { if (A.seat) leaveSeat(A); poke(Rr); }
+      else walkTo(Rr.x, Rr.y, () => { if (Math.hypot(Rr.x - A.x, Rr.y - A.y) < 2.4) poke(Rr); });
+      return;
+    }
+  }
+  // 고양이
+  if (m.id === 'out') for (const C of G.cats) {
+    const [ax, ay] = iso(C.x, C.y);
+    if (Math.abs(sx - ax) < 10 && sy > ay - 12 && sy < ay + 4) { walkTo(C.x, C.y + 0.8, () => { refreshContext(false); doAction(); }, true); return; }
+  }
+  const tx = Math.floor(wx), ty = Math.floor(wy);
+  const o = m.objects.find((q) => (q.seat || q.st) && tx >= q.x && tx < q.x + q.w && ty >= q.y && ty < q.y + q.d);
+  if (o) {
+    if (o.seat) {
+      const s = o.seat;
+      if (seatTaken(s, A)) { toast('앗, 누가 앉아 있어요'); return; }
+      const go = () => { if (!seatTaken(s, A)) { placeOnSeat(A, s); sendPresence(true); refreshContext(true); } };
+      if (Math.hypot(A.x - s.x, A.y - s.y) < 1.45 && !A.seat) { go(); return; }
+      if (o.flat) walkTo(s.x, s.y, go, true); else walkTo(s.x, s.y, go);
+      return;
+    }
+    if (o.st) {
+      const st = o.st;
+      const go = () => { refreshContext(false); if (Math.hypot(A.x - st.x, A.y - st.y) < 1.35) doAction(); };
+      if (Math.hypot(A.x - st.x, A.y - st.y) < 1.35) { if (A.seat) leaveSeat(A); go(); } else walkTo(st.x, st.y, go);
+      return;
+    }
+  }
+  walkTo(wx, wy, null, true);
+}
+{
+  const v = R.view, pts = new Map();
+  let pinch = null, downAt = null;
+  v.addEventListener('pointerdown', (e) => {
+    v.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: G.zoom }; downAt = null; }
+    else downAt = { x: e.clientX, y: e.clientY, t: performance.now() };
+  });
+  v.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && pts.size === 2) { const [a, b] = [...pts.values()]; G.zoom = clamp(pinch.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d, 0.6, 2.2); }
+  });
+  const up = (e) => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) < 12 && performance.now() - downAt.t < 600) { const r = v.getBoundingClientRect(); onTap(e.clientX - r.left, e.clientY - r.top); }
+    downAt = null;
+  };
+  v.addEventListener('pointerup', up); v.addEventListener('pointercancel', (e) => { pts.delete(e.pointerId); pinch = null; downAt = null; });
+  v.addEventListener('wheel', (e) => { e.preventDefault(); G.zoom = clamp(G.zoom * (e.deltaY > 0 ? 0.9 : 1.1), 0.6, 2.2); }, { passive: false });
+}
+{
+  const pad = $('#joy'), knob = $('#knob'); let id = null, cx = 0, cy = 0; const RR = 42;
+  const move = (e) => {
+    if (e.pointerId !== id) return;
+    let dx = e.clientX - cx, dy = e.clientY - cy; const d = Math.hypot(dx, dy);
+    if (d > RR) { dx *= RR / d; dy *= RR / d; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    joy.x = dx / RR; joy.y = -dy / RR; joy.active = Math.hypot(joy.x, joy.y) > 0.12;
+  };
+  pad.addEventListener('pointerdown', (e) => { id = e.pointerId; pad.setPointerCapture(id); const r = pad.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; move(e); });
+  const end = (e) => { if (e.pointerId !== id) return; id = null; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; };
+  pad.addEventListener('pointermove', move); pad.addEventListener('pointerup', end); pad.addEventListener('pointercancel', end);
+}
+addEventListener('keydown', (e) => {
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  if (!G.playing || G.modal) { if (e.key === 'Escape') closeAllPops(); return; }
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+  if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') { if (!e.repeat) doAction(); return; }
+  if (/^Digit[1-9]$/.test(e.code)) { const b = document.querySelectorAll('#phrases button')[Number(e.code.slice(5)) - 1]; if (b) b.click(); else { const list = PHRASES[phraseKey()] || []; const t = list[Number(e.code.slice(5)) - 1]; if (t) mySay(t); } return; }
+  keys.add(e.code);
+});
+addEventListener('keyup', (e) => keys.delete(e.code));
+addEventListener('blur', () => keys.clear());
+
+/* =========================================================
+ *  화면 (팝업 · 버튼)
+ * ========================================================= */
+function openPop(sel) { $(sel).classList.remove('hidden'); G.modal = true; keys.clear(); $('#actBtn').hidden = true; }
+function closePop(sel) { $(sel).classList.add('hidden'); G.modal = [...document.querySelectorAll('.screen-pop')].some((p) => !p.classList.contains('hidden')); refreshContext(false); }
+function closeAllPops() { document.querySelectorAll('.screen-pop').forEach((p) => p.classList.add('hidden')); G.modal = false; $('#ventText').value = ''; refreshContext(false); }
+document.querySelectorAll('.screen-pop').forEach((p) => {
+  p.addEventListener('click', (e) => { if (e.target === p) { if (p.id === 'ventPop') closeVent(); else closePop('#' + p.id); } });
+  p.querySelectorAll('.closer').forEach((b) => b.addEventListener('click', () => closePop('#' + p.id)));
+});
+$('#talk').addEventListener('click', () => { const ph = $('#phrases'), open = ph.hidden; ph.hidden = !open; $('#talk').setAttribute('aria-expanded', open ? 'true' : 'false'); });
+$('#actBtn').addEventListener('click', () => doAction());
+$('#music').addEventListener('click', () => { audioInit(); setMusicOn(!AU.on); });
+// 불만창고: 적은 내용은 어디에도 저장·전송되지 않고 바로 지워져요
+let ventKind = 'burn';
+function openVent(kind) {
+  ventKind = kind;
+  $('#ventTitle').textContent = kind === 'burn' ? '스트레스 적기' : '임금님 귀는 당나귀 귀';
+  $('#ventGo').textContent = kind === 'burn' ? '🔥 벽난로에 던지기' : '🗯️ 마구 외치기';
+  $('#ventText').placeholder = kind === 'burn' ? '오늘 나를 힘들게 한 일을 적어 보세요' : '하고 싶은 말을 마구 쏟아내세요';
+  $('#ventText').value = '';
+  openPop('#ventPop');
+  setTimeout(() => $('#ventText').focus(), 30);
+}
+function closeVent() { $('#ventText').value = ''; $('#ventText').blur(); closePop('#ventPop'); }
+function submitVent() {
+  const len = $('#ventText').value.trim().length;
+  if (!len) { const sh = $('#ventPop .pop'); sh.classList.remove('shake'); void sh.offsetWidth; sh.classList.add('shake'); return; }
+  closeVent(); // 내용 즉시 삭제
+  if (ventKind === 'burn') { throwPaper(G.me); G.fx = { k: 'burn', n: (G.fx?.n || 0) + 1 }; setTimeout(() => mySay('활활 타라~ 🔥'), 900); }
+  else { const d = clamp(len * 0.12, 2.5, 12); startRant(G.me, d); G.fx = { k: 'rant', n: (G.fx?.n || 0) + 1, d: Math.round(d * 10) / 10 }; }
+  sendPresence(true);
+}
+$('#ventGo').addEventListener('click', submitVent);
+$('#ventCancel').addEventListener('click', closeVent);
+$('#ventText').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeVent(); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitVent(); });
+$('#act2').addEventListener('click', () => {
+  const k = $('#act2').dataset.k;
+  if (k === 'sip') { startAct(G.me, 'sip', 1.2); sfx('sip', G.me); G.fx = { k: 'sip', n: (G.fx?.n || 0) + 1 }; sendPresence(true); if (Math.random() < 0.5) setTimeout(() => mySay(pick(['캬~ 좋다', '후루룩 ☕', '살 것 같다'])), 700); }
+  else if (k) openVent(k);
+});
+// 캐릭터 고르기
+function thumb(i, scale = 3) { const c = mkCanvas(24 * scale, 34 * scale), g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(chibi(i, false, 0, 'stand', { happy: true }), 0, 0, 24 * scale, 34 * scale); return c; }
+function renderDesigns(el, cur, onPick) {
+  el.replaceChildren();
+  DESIGNS.forEach((D, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'design' + (i === cur ? ' on' : ''); b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', i === cur ? 'true' : 'false');
+    b.append(thumb(i)); const s = document.createElement('span'); s.textContent = D.name; b.append(s);
+    b.addEventListener('click', () => onPick(i)); el.append(b);
+  });
+}
+let pickDi = clamp(parseInt(store.get('bjw.design') ?? '', 10) || 0, 0, DESIGNS.length - 1);
+$('#nick').value = store.get('bjw.nick') || '';
+function pickTitle(i) { pickDi = i; renderDesigns($('#designs'), pickDi, pickTitle); }
+renderDesigns($('#designs'), pickDi, pickTitle);
+$('#charBtn').addEventListener('click', () => { renderDesigns($('#charPick'), G.me.di, changeChar); openPop('#charPop'); });
+function changeChar(i) {
+  G.me.di = i; store.set('bjw.design', String(i)); renderDesigns($('#charPick'), i, changeChar);
+  closePop('#charPop'); mySay(pick(['짜잔! ✨', '변신 완료!', '어때요? 😎'])); sendPresence(true);
+}
+$('#tpBtn').addEventListener('click', () => {
+  const el = $('#tpList'); el.replaceChildren();
+  for (const [k, s] of Object.entries(SPOTS)) { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = s.label; b.addEventListener('click', () => teleport(k)); el.append(b); }
+  openPop('#tpPop');
+});
+$('#brand').addEventListener('click', () => {
+  const el = $('#people'); el.replaceChildren();
+  const all = [...G.actors.values()].sort((a, b) => (b.me ? 1 : 0) - (a.me ? 1 : 0));
+  for (const A of all) {
+    const row = document.createElement('div'); row.className = 'person'; row.append(thumb(A.di, 1));
+    const n = document.createElement('span'); n.textContent = A.name + (A.me ? ' (나)' : ''); row.append(n);
+    const z = document.createElement('small'); z.textContent = ZONE_LABEL[zoneOf(A.map, A.x, A.y)]; row.append(z); el.append(row);
+  }
+  $('#netSum').textContent = room ? `지금 ${all.length}명이 함께 있어요. 다른 사람을 누르면 콕 찌를 수 있어요.` : '멀티플레이에 연결되어 있지 않아요 (혼자 모드). claude.ai에서 열면 같이 접속한 사람이 보여요.';
+  openPop('#netPop');
+});
+// 사진
+let shotBlob = null;
+$('#shotBtn').addEventListener('click', () => {
+  render(0);
+  const fl = $('#flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+  sfx('pop', null, 2);
+  R.view.toBlob((b) => {
+    if (!b) return; shotBlob = b;
+    const old = $('#shotImg').src; if (old.startsWith('blob:')) URL.revokeObjectURL(old);
+    $('#shotImg').src = URL.createObjectURL(b); $('#shotInfo').textContent = `${ZONE_LABEL[G.zone] || ''} · ${$('#clock').textContent}`;
+    openPop('#shotPop');
+  }, 'image/png');
+});
+$('#shotSave').addEventListener('click', async () => {
+  if (!shotBlob) return;
+  const d = new Date(), p = (n) => String(n).padStart(2, '0');
+  const name = `보장원-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.png`;
+  try {
+    const dl = window.claude?.use ? await window.claude.use('downloads') : null;
+    if (!dl) { $('#shotInfo').textContent = '여기서는 바로 저장할 수 없어요. 사진을 길게 누르거나 오른쪽 클릭해서 저장해 주세요.'; return; }
+    await dl.save({ filename: name, data: shotBlob });
+    $('#shotInfo').textContent = '💾 저장했어요!';
+  } catch (e) { $('#shotInfo').textContent = e && e.code === 'declined' ? '저장을 취소했어요.' : '저장하지 못했어요. 사진을 길게 눌러 저장해 주세요.'; }
+});
+
+/* ---------------- 타이틀 그림 ---------------- */
+function drawLogo() {
+  const c = $('#logoArt'), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  const t = towerSprite({ w: 4, d: 2, h: 56 }, false);
+  g.drawImage(t.c, 60 - t.ax - 16, 74 - t.ay - 8);
+  for (const [i, x] of [[0, 18], [4, 34], [1, 80], [3, 96]]) g.drawImage(chibi(i, false, 0, 'stand', { happy: true }), x, 48);
+  g.fillStyle = '#f2c230'; fillEllipse(g, 12, 16, 6, 6, '#ffd23a');
+}
+
+/* =========================================================
+ *  시작
+ * ========================================================= */
+function enterGame() {
+  const nick = ($('#nick').value.trim() || '사원' + Math.floor(rand(100, 999))).slice(0, 10);
+  store.set('bjw.nick', nick); store.set('bjw.design', String(pickDi));
+  audioInit(); if (AU.ctx && AU.ctx.state === 'suspended') AU.ctx.resume();
+  const A = newActor('me', pickDi, nick, true);
+  A.map = 'out'; A.x = 20.6; A.y = 10.6; A.dir = 3;
+  G.me = A; G.actors.set('me', A); G.map = MAPS.out; G.camSnap = true; G.playing = true;
+  $('#title').classList.add('hidden');
+  for (const s of ['#hud', '#joy', '#side']) $(s).classList.remove('hidden');
+  const hint = $('#hint'); hint.textContent = matchMedia('(pointer: coarse)').matches ? '핸들로 걷고, 바닥이나 의자를 톡 누르면 그 자리로 가요' : '방향키·WASD로 걷고, 바닥을 클릭하면 그 자리로 가요 · E 행동';
+  hint.classList.remove('hidden'); setTimeout(() => hint.classList.add('hidden'), 7000);
+  // 횡단보도 앞에서 시작해 자동문을 지나 로비로
+  walkTo(20.9, 6.45, null, true);
+  updateOnline(); refreshContext(true);
+  connectRoom();
+}
+$('#enter').addEventListener('click', enterGame);
+$('#nick').addEventListener('keydown', (e) => { if (e.key === 'Enter') enterGame(); });
+
+let last = performance.now(), slowT = 0, ctxT = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; G.t += dt;
+  slowT -= dt;
+  if (slowT <= 0) {
+    slowT = 1; G.tod = timeOfDay();
+    const h = G.tod.h, hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
+    $('#clock').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; $('#tod').textContent = G.tod.label; $('#clockIc').textContent = G.tod.icon;
+  }
+  updateCats(dt); updateCars(dt);
+  if (G.playing) {
+    updatePlayer(dt);
+    for (const A of G.actors.values()) updateActor(A, dt);
+    updateParts(dt);
+    flushPresence(dt);
+    ctxT -= dt; if (ctxT <= 0) { ctxT = 0.2; refreshContext(false); }
+    const z = G.zone, mk = G.me.map === 'out' ? (z === 'food' ? 'food' : G.tod && G.tod.dark > 0.5 ? 'night' : 'day') : ({ work: 'work', meeting: 'work', pantry: 'work' }[z] || z);
+    musicSet(mk);
+  } else updateParts(dt);
+  try { render(dt); } catch (e) { console.error(e); }
+  requestAnimationFrame(frame);
+}
+function boot() {
+  buildOutdoor(); buildInterior(); buildCats(); buildCars();
+  G.map = MAPS.out; G.tod = timeOfDay();
+  resize(); drawLogo();
+  requestAnimationFrame(frame);
+  window.__bjw = G;
+}
+boot();
+</script>
+</body></html>
