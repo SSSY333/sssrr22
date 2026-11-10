@@ -574,7 +574,7 @@ interactWith = function (a) {
       if (await caseTalk(a)) { closeDialog(); a.talking = false; return; }
       if (a.isVillager && await festDonate(a)) { closeDialog(); a.talking = false; return; }
       const rm = a.isVillager && rumorFor(a.vid);
-      if (rm && Math.random() < 0.6) { rm.told.push(a.vid); await say(a.id, 'laugh', rm.text); }
+      if (rm && Math.random() < 0.6) { const said = typeof rumorSpeak === 'function' ? rumorSpeak(rm, a.vid) : rm.text; if (!rm.told.length) rm.text = said; rm.told.push(a.vid); await say(a.id, 'laugh', said); }
       if (a.isVillager && !S.rel.daily['vf_' + a.vid] && villagerFavorTalk) { if (await villagerFavorTalk(a)) { closeDialog(); a.talking = false; return; } }
       a.talking = false;
       if (a.isStaff) await staffTalk(a); else await villagerTalk(a);

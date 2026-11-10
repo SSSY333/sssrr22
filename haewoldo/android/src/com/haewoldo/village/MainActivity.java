@@ -43,15 +43,22 @@ public class MainActivity extends Activity implements android.webkit.ValueCallba
   @Override public void onWindowFocusChanged(boolean f) { super.onWindowFocusChanged(f); if (f) hideBars(); }
   @Override protected void onSaveInstanceState(Bundle o) { super.onSaveInstanceState(o); web.saveState(o); }
   /* 앱을 내리면 게임이 스스로 저장(visibilitychange) — 웹뷰도 잠시 멈춤 */
-  @Override protected void onPause() { web.evaluateJavascript("try{HW&&HW.save&&HW.save()}catch(e){}", null); web.onPause(); super.onPause(); }
-  @Override protected void onResume() { super.onResume(); web.onResume(); hideBars(); }
+  /* 앱을 내리면: 저장 + 소리 멈춤 + 게임 타이머 정지 (배경에서 음악이 계속 나던 문제) */
+  @Override protected void onPause() {
+    if (web != null) { web.evaluateJavascript("try{appPause()}catch(e){try{HW.save()}catch(e2){}}", null); web.onPause(); web.pauseTimers(); }
+    super.onPause();
+  }
+  @Override protected void onResume() { super.onResume(); if (web != null) { web.resumeTimers(); web.onResume(); web.evaluateJavascript("try{appResume()}catch(e){}", null); } hideBars(); }
+  @Override protected void onDestroy() { if (web != null) { web.stopLoading(); web.destroy(); web = null; } super.onDestroy(); }
   /* 뒤로 가기: 열린 창이 있으면 닫고, 없으면 앱을 백그라운드로 */
   @Override public void onBackPressed() {
     web.evaluateJavascript("(function(){try{var q=function(s){return document.querySelector(s)};var vis=function(s){var e=q(s);return e&&!e.classList.contains('hidden')};"
       + "if(vis('#panel')){closePanel();return 1}if(vis('#sheet')){closeSheet();return 1}if(vis('#mapView')){closeBigMap();return 1}if(vis('#rel')){closeRel();return 1}"
       + "if(vis('#questPanel')){toggleQuestPanel(false);return 1}if(vis('#zoom')){q('#zoom').classList.add('hidden');return 1}if(vis('#help')){q('#helpOk').click();return 1}"
-      + "if(vis('#newgame')){q('#btnBack').click();return 1}if(typeof G!=='undefined'&&G.dev){devExit();return 1}return 0}catch(e){return 0}})()", this);
+      + "if(vis('#newgame')){q('#btnBack').click();return 1}if(typeof G!=='undefined'&&G.dev){devExit();return 1}return appBackQuit()?2:1}catch(e){return 2}})()", this);
   }
-  @Override public void onReceiveValue(String v) { if (!"1".equals(v)) moveTaskToBack(true);
+  /* 1 = 창을 닫았거나 종료 안내만 함, 2 = 저장 끝 → 앱 완전히 종료 */
+  @Override public void onReceiveValue(String v) {
+    if ("2".equals(v)) { if (web != null) web.postDelayed(new Quitter(this), 400); }
   }
 }

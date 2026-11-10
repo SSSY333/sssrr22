@@ -435,7 +435,7 @@ function leisUpdate(a, dt) {
   }
   L.t += dt;
   if (L.act === 'couple' && L.partner && L.partner.seat && L.partner.seat.bench === L.b) { if (!a.ox) { const sx = iso(L.partner.x, L.partner.y)[0] - iso(a.x, a.y)[0]; a.ox = sx > 0 ? 3 : -3; } if (Math.random() < dt * 0.15) burst(a, 'heart', 1); }
-  if (Math.random() < dt * 0.05 && !a.bubble) { a.say(pick(LEIS_TALK[L.act] || LEIS_TALK.rest), 3); if (L.partner) setTimeout(() => L.partner && L.partner.leis && L.partner.say(pick(LEIS_TALK[L.act] || ['그러게~']), 3), 1500); }
+  if (Math.random() < dt * 0.05 && !a.bubble) { a.say(typeof leisLine === 'function' ? leisLine(a, L.act) : pick(LEIS_TALK[L.act] || LEIS_TALK.rest), 3); if (L.partner) setTimeout(() => L.partner && L.partner.leis && L.partner.say(typeof leisLine === 'function' ? leisLine(L.partner, L.act) : pick(LEIS_TALK[L.act] || ['그러게~']), 3), 1500); }
   if (S.min > L.until) endLeis(a);
 }
 const _villagerUpdateL = villagerUpdate;
