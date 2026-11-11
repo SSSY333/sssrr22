@@ -547,7 +547,7 @@ computeAction = function () {
   const a = _computeAction0();
   if (a && a.label !== '나가기' && a.icon !== '🚪') { /* 사람 · 낚시 등 기존 우선 */ }
   if (d.visible && d.map === P.map && dist(d, P) < 1.9) return a;
-  for (const v of G.visitors) if (v.visible && v.map === P.map && dist(v, P) < 1.6) return { label: '말 걸기', icon: VISITOR_TYPES[v.vt].icon, fn: () => runEvent(() => visitorTalk(v)) };
+  for (const v of G.visitors) if (v.visible && v.map === P.map && dist(v, P) < 1.6) return { label: '말 걸기', icon: '💬', fn: () => runEvent(() => visitorTalk(v)) };
   if (M.id === 'island' && Math.hypot(P.x - P_('ticket')[0], P.y - P_('ticket')[1]) < 1.2) return { label: '배 시간표', icon: '⛴', fn: ferryInfo };
   if (a && a.label === '나가기' && M.exit && Math.floor(P.x) === M.exit[0] && Math.floor(P.y) === M.exit[1]) return a;
   if (M.id === 'in_home') {

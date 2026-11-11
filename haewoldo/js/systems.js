@@ -52,7 +52,8 @@ function ensureV4(s) {
   if (s.rel.flags.met && !s.fm) s.fm = { id: 'legacy', place: '해월도', day: s.rel.metDay || 1 };
   if (s.rel.flags.met && !s.mem.perm.firstMeet) s.mem.perm.firstMeet = { day: s.rel.metDay || 1, place: s.fm ? s.fm.place : '해월도', id: s.fm ? s.fm.id : 'legacy', date: dateLabel(s.rel.metDay || 1) };
   for (const a of s.album) { a.id = a.id || 'a' + Math.random().toString(36).slice(2, 8); a.cat = a.cat || albumCat(a.kind); }
-  if (was3) s._migratedFrom = 3;
+  if (was3 && s._migrated) s._migratedFrom = 3;   // 진짜 예전(v3) 저장을 불러왔을 때만 「업데이트」 안내
+  delete s._migrated;
   return s;
 }
 

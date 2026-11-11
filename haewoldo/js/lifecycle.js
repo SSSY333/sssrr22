@@ -21,3 +21,6 @@ function appBackQuit() {
   if (now - _quitAsk < 2200) { appPause(); return 1; }
   _quitAsk = now; toast('뒤로 가기를 한 번 더 누르면 저장하고 종료해요'); return 0;
 }
+
+/* 앱(안드로이드)이 부르는 HW.save 가 예전(v3) 저장 함수를 가리키던 것을 지금 저장 함수로 */
+if (window.HW) window.HW.save = () => save();

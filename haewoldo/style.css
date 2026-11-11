@@ -379,3 +379,7 @@ body.talking #actChips, body.devOn #actChips { display: none; }
 #title .title-btns { margin: 0 auto 13vh; }
 #title .title-btns .big { box-shadow: 0 4px 0 var(--line), 0 6px 18px rgba(40, 30, 60, .35); }
 #titleFx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; image-rendering: pixelated; }
+/* 섬 꾸미기 막대 */
+#yardBar { position: absolute; left: 10px; right: 10px; bottom: 12px; z-index: 15; background: var(--paper); border: 4px solid var(--line); border-radius: 16px; box-shadow: 0 4px 0 var(--line); padding: 10px; }
+#yardInfo { font-size: 14px; margin-bottom: 8px; text-align: center; word-break: keep-all; }
+body.yardOn #actBtn, body.yardOn #actChips, body.yardOn #decorBtn { display: none !important; }
