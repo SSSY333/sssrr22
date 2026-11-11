@@ -176,7 +176,7 @@ function yardShop(cat = 'flower') {
   const st = yardState();
   const tabs = `<div class="ptabs">${Object.entries(YARD_CATS).map(([k, v]) => `<button data-c="${k}" class="${k === cat ? 'on' : ''}">${v}</button>`).join('')}</div>`;
   const keys = Object.keys(YARD).filter(k => YARD[k].cat === cat);
-  openPanel('🌳 섬 꾸미기 가게', tabs + `<p class="psub">보유 <b>${fmtMoney(S.money)}</b> · 산 장식은 「섬 꾸미기」(메뉴 → 집)에서 섬 곳곳에 놓아요</p><div class="pgrid">${keys.map(k => `<button class="pcard" data-k="${k}"><img src="${yardPreview(k, 2)}"><b>${YARD[k].name}</b><small>${fmtMoney(YARD[k].price)}${st.inv[k] ? ` · 보관 ${st.inv[k]}` : ''}${YARD[k].light ? ' · 밤에 빛남' : ''}</small></button>`).join('')}</div>`, (body) => {
+  openPanel('🌳 섬 꾸미기 가게', tabs + `<p class="psub">보유 <b>${fmtMoney(S.money)}</b> · 산 장식은 메뉴 → 🎨 꾸미기에서 섬 곳곳(실내 장식은 내 일터 안)에 놓아요</p><div class="pgrid">${keys.map(k => `<button class="pcard" data-k="${k}"><img src="${yardPreview(k, 2)}"><b>${YARD[k].name}</b><small>${fmtMoney(YARD[k].price)}${st.inv[k] ? ` · 보관 ${st.inv[k]}` : ''}${YARD[k].light ? ' · 밤에 빛남' : ''}</small></button>`).join('')}</div>`, (body) => {
     body.querySelectorAll('.ptabs button').forEach(b => b.onclick = () => yardShop(b.dataset.c));
     body.querySelectorAll('.pcard').forEach(b => b.onclick = () => { const k = b.dataset.k, F = YARD[k], [fw, fh] = yardFoot(k, 0); confirmBuy(F.name, F.price, yardPreview(k, 4), `${fw}×${fh}칸 · 섬(야외) 장식${F.light ? ' · 밤에 불이 켜져요' : ''}${F.solid === false ? ' · 밟고 지나갈 수 있어요' : ''}`, () => { st.inv[k] = (st.inv[k] || 0) + 1; }, () => yardShop(cat)); });
   });

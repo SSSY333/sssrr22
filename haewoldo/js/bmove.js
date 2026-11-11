@@ -17,14 +17,17 @@ function bmApply(m) {
     const [ox, oy] = b.doorTile;
     for (const [k, p] of Object.entries(_bmPOI0)) { if (!Array.isArray(p) || typeof p[0] !== 'number') continue; if (Math.hypot(p[0] - ox - 0.5, p[1] - oy - 0.5) < 2.2 || (p[0] >= b.x - 0.5 && p[0] <= b.x + b.w + 0.5 && p[1] >= b.y - 0.5 && p[1] <= b.y + b.h + 0.5)) POI[k] = [p[0] + dx, p[1] + dy]; }
     b.x += dx; b.y += dy; b.doorTile = [ox + dx, oy + dy]; b.moved = true;
+    if (typeof b.extra === 'function' && !b._extraMoved) { const f = b.extra; b.extra = (g, S2, E) => f(g, S2, (x, y) => E(x + dx, y + dy)); b._extraMoved = true; }
     for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) if (inMap(x, y, m) && tileAt(x, y, m) === T.WATER) m.tiles[y * W + x] = T.SAND;
     // 새 문 앞이 물이면 모래로
     const [nx, ny] = b.doorTile; if (inMap(nx, ny, m) && tileAt(nx, ny, m) === T.WATER) m.tiles[ny * W + nx] = T.SAND;
   }
   if (m === MAPS.island) m.boatSpot = POI.boatSpot;
 }
+/* 건물 그림은 위치까지 미리 그려 두므로(캐시) 옮기거나 되돌릴 때마다 그 건물 그림을 지움 */
+function bmClearSprites() { if (typeof _bldCache !== 'undefined') _bldCache.clear(); }
 const _devApplyMapBM = devApplyMap;
-devApplyMap = function (m, md) { try { bmApply(m); } catch (e) { console.error('[bmove]', e); } return _devApplyMapBM(m, md); };
+devApplyMap = function (m, md) { try { if (m.id === 'island') bmClearSprites(); bmApply(m); } catch (e) { console.error('[bmove]', e); } return _devApplyMapBM(m, md); };
 const _devHasEditsBM = devHasEdits;
 devHasEdits = function (d = DEVDATA) { return _devHasEditsBM(d) || Object.values(d.maps).some(md => md.bmove && Object.keys(md.bmove).length); };
 
@@ -95,7 +98,7 @@ devBarTools = function () {
 };
 const _devToolClickBM = devToolClick;
 devToolClick = function (t) {
-  const d = G.dev;
+  const d = G.dev; if (!d) return;
   if (t === 'bld') { d.tool = 'bld'; d.sel = null; d.bsel = null; devBarSel(); devInfo(M.id === 'island' ? '🏠 옮길 건물을 눌러요 → 새 「문 앞」 자리를 눌러요' : '건물은 섬에서만 옮길 수 있어요'); devBarTools(); return; }
   if (d) d.bsel = null;
   return _devToolClickBM(t);
@@ -114,3 +117,6 @@ render = function (dt) {
     g.restore();
   } catch (e) { }
 };
+/* 맵을 다시 지을 때(편집 · 되돌리기 · 기본 복원)마다 건물 그림을 새로 그리게 */
+const _buildWorldBM = buildWorld;
+buildWorld = function () { bmClearSprites(); return _buildWorldBM(); };
