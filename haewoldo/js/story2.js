@@ -50,12 +50,12 @@ async function firstMeeting() {
     await topic({ t: [], c: [['첫 잔은 공짜예요', 4, '수리비로 받을게요. …이러면 매일 와서 고쳐야겠네.', 'blush'], ['우연이죠?', 2, '우연도 실력이에요. 형사는 운도 수사력이라서.', 'laugh'], ['다음에도 부탁해요', 3, '출장 수리 기사 겸 단골 1호. 접수했습니다.', 'smile']] });
     S.money += 4500; floatText(P, '+4,500원');
   } else {
-    await say('narr', '', '첫 물질. 바닷속에서 한참 숨을 참다가 수면 위로 "호오이—" 숨비소리를 내며 올라왔다.');
+    await say('narr', '', '첫 물질. 바닷속에서 한참 숨을 참다가 "후—" 하고 숨을 내쉬며 수면 위로 올라왔다.');
     await say('narr', '', '그런데 부두 끝에서 누군가 제복 재킷을 벗어 던지고 뛰어들 자세를 하고 있다.');
     await say('det', 'surprise', '괜찮아요?! 3분 넘게 안 올라와서… 지금 막 들어가려던 참이었어요!');
     await say('narr', '', '…형사님은 이미 신발 한 짝을 바다에 빠뜨린 상태였다.');
     await topic({ t: [], c: [['해녀는 원래 오래 참아요', 3, '…아. 그렇죠. 알고 있었어요. 알고는 있었는데 심장이 먼저 뛰어서.', 'blush'], ['신발… 빠졌어요', 2, '……못 본 척해 줄래요? 형사 인생 최대의 굴욕이에요.', 'sad'], ['걱정해 줘서 고마워요', 4, '고맙긴요. 바다는 당신 일터지만, 해안은 제 담당이니까요.', 'smile']] });
-    await say('narr', '', '망사리에서 소라 하나를 꺼내 건네자, 형사님이 젖은 신발 한 짝을 들고 멋쩍게 웃었다.');
+    await say('narr', '', '그물망에서 소라 하나를 꺼내 건네자, 형사님이 젖은 신발 한 짝을 들고 멋쩍게 웃었다.');
   }
   await say('det', 'normal', S.detName ? `인사가 늦었네요. 해월도 파출소 형사 ${S.detName}입니다. 다들 그냥 "형사님"이라고 불러요.` : '인사가 늦었네요. 해월도 파출소 형사예요. 다들 그냥 "형사님"이라고 불러요.');
   const nm = await choose([`저는 ${S.name}이에요`, '잘 부탁드려요, 형사님']);
@@ -791,13 +791,13 @@ async function interiorAction(act) {
       await say('narr', '', '📋 마을회관 행사 게시판'); await say('narr', '', up.length ? up.join('\n') : '당분간 행사가 없다.');
     }); return;
     case 'piano': runEvent(async () => { for (let i = 0; i < 4; i++) { Sound.sfx('heart'); burst(P, 'note', 1); await sleep(220); } await say('narr', '', '띵띵띵~ 서툴지만 즐거운 소리.'); }); return;
-    case 'snack': runEvent(async () => { await say('chief', 'smile', '잔치 국수 남았는데 한 그릇 해. 공짜여.'); await say('narr', '', '🍜 따끈한 국수를 먹었다.'); }); return;
+    case 'snack': runEvent(async () => { await say('chief', 'smile', '잔치 국수 남았는데 한 그릇 해. 공짜야.'); await say('narr', '', '🍜 따끈한 국수를 먹었다.'); }); return;
     case 'desk': runEvent(async () => { await say('narr', '', '형사님 책상. 서류 더미 위에 캔커피가 세 개 쌓여 있다.'); if (r.stage >= 4) await say('narr', '', '…수첩 한쪽에 내 이름이 적혀 있는 것 같다.'); }); return;
     case 'board': runEvent(async () => { await say('narr', '', `📋 파출소 게시판 — 형사님 일과: 07시 출근 · 08시반 순찰 · 12시 카페 점심 · 15시 부두·갯바위 순찰 · 17시 퇴근 산책 · 19시반 부두 낚시 · 22시 귀가`); await say('narr', '', `지금: ${TASK_LABEL[G.det.task] || '순찰 중'}`); }); return;
     case 'lost': lostBox(); return;
     case 'shop': shopMenu(); return;
     case 'furnShop': furnShopMenu(); return;
-    case 'gear': runEvent(async () => { await say('narr', '', '오리발, 수경, 테왁… 해녀 장비가 가지런히 걸려 있다.'); if (S.job === 'haenyeo') { await say('narr', '', '장비를 꼼꼼히 손질했다. 내일 물질이 조금 더 잘될 것 같다.'); S.jobExp++; } }); return;
+    case 'gear': runEvent(async () => { await say('narr', '', '오리발, 수경, 부표… 해녀 장비가 가지런히 걸려 있다.'); if (S.job === 'haenyeo') { await say('narr', '', '장비를 꼼꼼히 손질했다. 내일 물질이 조금 더 잘될 것 같다.'); S.jobExp++; } }); return;
     case 'prep': runEvent(async () => {
       if ((S.inv.abalone || 0) < 1) { await say('narr', '', '손질할 전복이 없다. (전복 1개 → 전복죽 1그릇)'); return; }
       S.inv.abalone--; S.inv.porridge = (S.inv.porridge || 0) + 1; await say('narr', '', '전복을 손질해 전복죽을 끓였다. 🥣 아플 때 주면 좋을 것 같다.');
@@ -1080,7 +1080,7 @@ function activityMenu() {
     { icon: '🌲', label: '동백숲', onClick: go('pavilion', '🌲 동백숲 정자로 걸어가요') },
     { icon: '🐴', label: '목장', onClick: go('ranchIn', '🐴 조랑말 목장으로 걸어가요') },
     { icon: '🌬️', label: '풍차 언덕', onClick: go('windmill', '🌬️ 풍차 언덕으로 걸어가요') },
-    { icon: '⭐', label: '오름 전망대', onClick: go('observatory', '⭐ 오름 전망대로 걸어가요') },
+    { icon: '⭐', label: '언덕 전망대', onClick: go('observatory', '⭐ 언덕 전망대로 걸어가요') },
     { icon: '🪨', label: '갯바위', onClick: go('rocks', '🪨 갯바위 낚시터로 걸어가요') },
     { icon: '🍊', label: '귤 농장', onClick: go('farm', '🍊 귤 농장 마을로 걸어가요') },
     { icon: '🚤', label: '무인도', onClick: go('boatSpot', '🚤 포구에서 배를 타요') },

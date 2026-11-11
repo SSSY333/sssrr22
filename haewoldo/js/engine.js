@@ -770,7 +770,7 @@ function drawBigMap() {
   g.textAlign = 'center'; g.textBaseline = 'middle';
   const fs = (big) => (big ? 12.5 : 10.5) * D * Math.min(1.25, Z);
   const label = (x, y, text, big) => { const [X, Y] = at(x, y); g.font = `${fs(big)}px Jua, sans-serif`; const w = g.measureText(text).width + 8 * D, h = fs(big) + 6 * D; g.fillStyle = 'rgba(255,253,246,0.94)'; roundRect(g, X - w / 2, Y - h / 2, w, h, h / 2); g.fill(); g.strokeStyle = '#3a2533'; g.lineWidth = 1.2 * D; g.stroke(); g.fillStyle = '#3a2533'; g.fillText(text, X, Y + 0.5 * D); };
-  const L = [['plaza', '해월 마을', 1], ['harbor', '동쪽 포구', 1], ['beach', '해수욕장', 1], ['farm', '귤 농장', 1], ['ranchIn', '조랑말 목장', 1], ['hill', '해월 오름', 1], ['rocks', '갯바위', 0], ['forest', '동백숲', 1], ['lighthouse', '등대', 0], ['windmill', '풍차 언덕', 0], ['field', '꽃밭', 0]];
+  const L = [['plaza', '해월 마을', 1], ['harbor', '동쪽 포구', 1], ['beach', '해수욕장', 1], ['farm', '귤 농장', 1], ['ranchIn', '조랑말 목장', 1], ['hill', '해월 언덕', 1], ['rocks', '갯바위', 0], ['forest', '동백숲', 1], ['lighthouse', '등대', 0], ['windmill', '풍차 언덕', 0], ['field', '꽃밭', 0]];
   if (Z > 1) L.push(['schoolFront', '학교', 0], ['cafeDoor', '카페', 0], ['police', '파출소', 0], ['homeDoor', '내 집', 0], ['hallFront', '회관', 0], ['sashimiDoor', '횟집', 0], ['storageDoor', '해녀창고', 0], ['sataekDoor', '사택', 0]);
   for (const [kk, t, big] of L) { const p = P_(kk); label(p[0], p[1] - (kk === 'plaza' && Z === 1 ? 5 : 0), t, big); }
   g.font = `${11 * D * Math.min(1.3, Z)}px sans-serif`;

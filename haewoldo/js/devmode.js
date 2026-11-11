@@ -27,7 +27,7 @@ const DEV_ADD = [
 const DEV_PROTECT_KINDS = ['busstop', 'booth', 'ticket', 'tankOut', 'stall', 'furnDisplay', 'boat', 'telescope', 'grill', 'tent', 'campfire', 'swingSet', 'slide', 'seesaw', 'merry', 'springRider'];
 const DEV_GROUPS = [['jeongjaBase', 'jeongjaRoof']];
 const DEV_KIND_NAME = Object.fromEntries(DEV_ADD.map(([k, n]) => [k, n]));
-Object.assign(DEV_KIND_NAME, { wall: '담장', board: '게시판', telescope: '망원경', hare: '돌하르방', fence: '울타리', windmill: '풍차', busstop: '버스 정류장', booth: '네컷 부스', boat: '보트', pavilion: '정자', tent: '텐트', campfire: '모닥불', grill: '바비큐 그릴', swingSet: '그네', slide: '미끄럼틀', seesaw: '시소', merry: '뺑뺑이', springRider: '스프링 놀이기구', playSign: '놀이터 표지판', mat: '돗자리', jeongjaBase: '정자', jeongjaRoof: '정자 지붕', campTable2: '바비큐 식탁', furn: '가구' });
+Object.assign(DEV_KIND_NAME, { wall: '담장', board: '게시판', telescope: '망원경', hare: '수호 석상', fence: '울타리', windmill: '풍차', busstop: '버스 정류장', booth: '네컷 부스', boat: '보트', pavilion: '정자', tent: '텐트', campfire: '모닥불', grill: '바비큐 그릴', swingSet: '그네', slide: '미끄럼틀', seesaw: '시소', merry: '뺑뺑이', springRider: '스프링 놀이기구', playSign: '놀이터 표지판', mat: '돗자리', jeongjaBase: '정자', jeongjaRoof: '정자 지붕', campTable2: '바비큐 식탁', furn: '가구' });
 const devName = (o) => o.kind === 'furn' ? (FURN[o.k] ? FURN[o.k].name : '가구') : DEV_KIND_NAME[o.kind] || o.kind;
 
 /* ---------------- 오브젝트 식별자 · 오버레이 적용 ---------------- */

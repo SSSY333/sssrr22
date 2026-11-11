@@ -199,7 +199,7 @@ function pushSwing(a) {
   runEvent(async () => {
     if (a === G.det) await say('det', 'laugh', casualOn() ? '어어, 너무 세! 하하, 무섭다고!' : '어어, 너무 세요! 하하!');
     else if (a.look.kid) a.say(pick(['꺄하하! 더 높이요!', '와아! 하늘 닿겠다!']), 3);
-    else a.say(pick(['아이고, 할미 날아가겠네!', '호호, 살살혀~']), 3);
+    else a.say(pick(['아이고, 할미 날아가겠네!', '호호, 살살해~']), 3);
     if (a.vid && !S.rel.daily['push_' + a.vid]) { S.rel.daily['push_' + a.vid] = true; S.rep += 1; }
   });
 }
@@ -222,7 +222,7 @@ LEISURE_PLANS.push(
 );
 // 아이들 놀이 계획이 먼저 잡히도록 앞쪽으로
 LEISURE_PLANS.sort((a, b) => (b.act === 'play') - (a.act === 'play'));
-Object.assign(LEIS_TALK, { play: ['더 높이! 더 높이!', '꺄하하!', '내 차례야!', '빙글빙글~', '형님 나 좀 밀어 줘!'], watch: ['아이고, 우리 손주 잘 탄다~', '조심혀, 떨어질라!', '애들 노는 거 보면 시간 가는 줄 몰라.', '저 집 손녀가 벌써 저렇게 컸어.'] });
+Object.assign(LEIS_TALK, { play: ['더 높이! 더 높이!', '꺄하하!', '내 차례야!', '빙글빙글~', '형님 나 좀 밀어 줘!'], watch: ['아이고, 우리 손주 잘 탄다~', '조심해, 떨어질라!', '애들 노는 거 보면 시간 가는 줄 몰라.', '저 집 손녀가 벌써 저렇게 컸어.'] });
 function playgroundTick() {
   // 아이들이 놀 때 뺑뺑이는 스스로 돌리고, 할머니는 손주 응원
   const kidsOnMerry = G.villagers.some(v => v.look.kid && v.seat && v.seat.bench === 'merry');

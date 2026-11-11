@@ -419,7 +419,7 @@ async function villagerTalk(a) {
   a.talking = true; a.stop(); a.lookAt(G.player); G.player.lookAt(a);
   await say(a.id, 'smile', villagerLine(a.vid));
   const lost = S.rel.daily.lost;
-  if (lost && lost.found && !lost.returned && lost.owner === a.vid) { lost.returned = true; S.money += 3000; floatText(G.player, '+3,000원'); await say(a.id, 'laugh', `어머, 내 ${lost.item}! 찾아 줬구나. 고마워라~ 이거 용돈이여.`); }
+  if (lost && lost.found && !lost.returned && lost.owner === a.vid) { lost.returned = true; S.money += 3000; floatText(G.player, '+3,000원'); await say(a.id, 'laugh', `어머, 내 ${lost.item}! 찾아 줬구나. 고마워라~ 이거 용돈이야.`); }
   if (a.vid === 'halmeoni' && !S.rel.daily.halmeoni) { S.rel.daily.halmeoni = true; S.inv.tangerine = (S.inv.tangerine || 0) + 1; await say(a.id, 'smile', '옜다, 귤 하나 줄게. 형사 양반 주든가~ 호호.'); toast('🍊 해월도 귤을 받았다'); }
   if (a.vid === 'grandpa' && season() === 'winter' && !S.rel.daily.grandpa) { S.rel.daily.grandpa = true; S.inv.tangerine = (S.inv.tangerine || 0) + 2; toast('🍊 귤 두 개를 받았다'); }
   closeDialog(); a.talking = false;

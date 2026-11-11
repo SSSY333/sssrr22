@@ -46,7 +46,7 @@ const ENTERABLE = ['school', 'clinic', 'hall', 'sataek', 'cafe', 'police', 'supe
 const PLACE_DEFS = {
   fishing: { name: '부두 낚시터' }, pier: { name: '동쪽 포구' }, rocks: { name: '갯바위 낚시터' }, cafe: { name: '카페 쉼터' }, police: { name: '파출소' },
   plaza: { name: '마을 광장' }, furniture: { name: '해월 가구점' }, booth: { name: '네컷사진 부스' }, dock: { name: '여객선 선착장' }, promenade: { name: '해안 산책로' }, clothes: { name: '해월 옷가게' }, salon: { name: '미용실 해바라기' }, super: { name: '마을 슈퍼' }, sashimi: { name: '해월 횟집' }, school: { name: '해월초등학교' }, clinic: { name: '보건지소' },
-  hall: { name: '마을회관' }, sataek: { name: '경찰 사택' }, observatory: { name: '오름 전망대' }, hill: { name: '해월 오름' }, home: { name: '내 집' },
+  hall: { name: '마을회관' }, sataek: { name: '경찰 사택' }, observatory: { name: '언덕 전망대' }, hill: { name: '해월 언덕' }, home: { name: '내 집' },
   storage: { name: '해녀창고' }, lighthouse: { name: '등대' }, pavilion: { name: '동백숲 정자' }, forest: { name: '동백숲' }, orchard: { name: '마을 귤밭' },
   farm: { name: '귤 농장 마을' }, ranch: { name: '조랑말 목장' }, windmill: { name: '풍차 언덕' }, field: { name: '꽃밭 들판' }, beach: { name: '해수욕장' }, coast: { name: '해안 산책로' },
 };
@@ -171,7 +171,7 @@ function buildIsland() {
     cafe: { name: '카페 테라스 벤치', place: 'cafe', seats: [[53, 63], [54, 63]], stand: [[53, 62], [54, 62]] },
     pier: { name: '포구 벤치', place: 'pier', seats: [[EX + 4, 61], [EX + 5, 61]], stand: [[EX + 4, 62], [EX + 5, 62]] },
     lighthouse: { name: '등대 벤치', place: 'lighthouse', seats: [[lx + 2, ly + 3], [lx + 3, ly + 3]], stand: [[lx + 2, ly + 4], [lx + 3, ly + 4]] },
-    observatory: { name: '오름 전망대 벤치', place: 'observatory', seats: [[63, 14], [64, 14]], stand: [[63, 15], [64, 15]] },
+    observatory: { name: '언덕 전망대 벤치', place: 'observatory', seats: [[63, 14], [64, 14]], stand: [[63, 15], [64, 15]] },
     pavilion: { name: '동백숲 정자', place: 'pavilion', seats: [[35, 84], [36, 84]], stand: [[35, 85], [36, 85]] },
     beach: { name: '해변 벤치', place: 'beach', seats: [[59, CE[59] - 5], [60, CE[59] - 5]], stand: [[59, CE[59] - 4], [60, CE[59] - 4]] },
     plaza: { name: '광장 벤치', place: 'plaza', seats: [[60, 64], [61, 64]], stand: [[60, 65], [61, 65]] },
@@ -273,7 +273,7 @@ function buildIsland() {
   m.stops = Object.fromEntries(Object.entries(stops).map(([k, [x, y]]) => [k, [x + 0.5, y + 1.5]]));
   for (const k of Object.keys(m.stops)) m.stops[k] = nearestWalkable(m.stops[k][0], m.stops[k][1], m);
 }
-const BUS_NAMES = { busVillage: '해월 마을', busHarbor: '동쪽 포구', busBeach: '해수욕장', busFarm: '귤 농장 마을', busRanch: '조랑말 목장', busHill: '해월 오름', busRocks: '갯바위', busForest: '동백숲', busLight: '등대 · 풍차 언덕' };
+const BUS_NAMES = { busVillage: '해월 마을', busHarbor: '동쪽 포구', busBeach: '해수욕장', busFarm: '귤 농장 마을', busRanch: '조랑말 목장', busHill: '해월 언덕', busRocks: '갯바위', busForest: '동백숲', busLight: '등대 · 풍차 언덕' };
 
 function buildIslet() {
   const W = 22, H = 18, m = makeMap('islet', W, H, { name: '작은 무인도', places: ISLET_PLACES, order: ['isletDock', 'isletHill', 'isletBeach'] });

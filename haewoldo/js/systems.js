@@ -67,13 +67,13 @@ function memLast(type) { return S.mem.recent.find(r => r.type === type) || null;
 /* ---------------- 소문 (실제 일어난 일만) ---------------- */
 const RUMOR_TEXT = {
   walk: ['두 분 요즘 자주 같이 다니시더라?', '형사 양반이 요즘 누구랑 그렇게 산책을 해~?', '어제 {place}에서 둘이 걷는 거 봤어. 호호.'],
-  lovers: ['형사 양반 연애한대! 상대가 누군지는… 다 알지?', '둘이 사귄다며? 섬이 좁아서 소문 금방이여.'],
+  lovers: ['형사 양반 연애한대! 상대가 누군지는… 다 알지?', '둘이 사귄다며? 섬이 좁아서 소문 금방이야.'],
   engaged: ['프로포즈 받았다며! 반지 좀 보여 줘 봐~', '형사 양반 장가간다더라!'],
   married: ['형사 양반이 요즘 퇴근하면 곧장 집에 간다면서?', '신혼집 불이 일찍 꺼진다던데~ 호호.'],
   photo: ['어머, 그 사진 부스에서 찍은 거예요?', '네컷사진 찍었다며? 나도 보여 줘~'],
   festival: ['이번 축제 준비를 아주 잘했다던데?', '{name} 덕분에 {fest}가 대성공이었대!'],
   case: ['{case} 사건, 형사 양반이랑 같이 해결했다며?', '{case} 범인이 {truth}였다고? 아이고 참.'],
-  fish: ['{fish}를 낚았다며? 대단한 솜씨여!', '{fish}가 걸렸다던데, 진짜야?'],
+  fish: ['{fish}를 낚았다며? 대단한 솜씨야!', '{fish}가 걸렸다던데, 진짜야?'],
   visitor: ['오늘 배로 {who}가 들어왔다더라.', '여객선 타고 손님들 왔던데 봤어?'],
   job: ['{name} {job} 솜씨가 늘었대. 칭찬 자자해.'],
   decor: ['{name} 집을 새로 꾸몄다며? 구경 가도 돼?', '집을 넓혔다던데, 집들이 언제 해?'],
@@ -426,15 +426,15 @@ function festBoardMenu() {
   const [key, st] = opens[0], F = FESTS[st.fid];
   runEvent(async () => {
     if (!st.joined) {
-      await say('chief', 'smile', `${F.name} 준비위원을 모집 중이여. 자네가 맡아 줄 텐가?`);
+      await say('chief', 'smile', `${F.name} 준비위원을 모집 중이야. 자네가 맡아 줄 텐가?`);
       const c = await choose(['준비위원 할게요!', '다음에요']);
       if (c !== 0) return;
       st.joined = true; st.step = 1; qSet('fest_' + key, { state: 'ACTIVE' });
-      await say('chief', 'laugh', '고맙구먼! 일단 예산부터 모아야 혀. 자네는 얼마나 보탤 텐가?');
+      await say('chief', 'laugh', '고맙구먼! 일단 예산부터 모아야 해. 자네는 얼마나 보탤 텐가?');
       const opts = [0, 3000, 8000].filter(v => v <= S.money);
       const k = await choose(opts.map(v => v ? `${fmtMoney(v)} 보태기` : '돈 대신 발로 뛸게요'));
       S.money -= opts[k]; st.budget = 4000 + opts[k]; if (opts[k]) S.rep += 1;
-      await say('chief', 'smile', '주민들한테도 후원을 받아 봐. 세 사람만 설득하면 넉넉할 거여.');
+      await say('chief', 'smile', '주민들한테도 후원을 받아 봐. 세 사람만 설득하면 넉넉할 거야.');
       if (casualOn() && G.det.visible && dist(G.det, G.player) < 6) await say('det', 'tease', '준비위원? 그럼 나는 안전 담당 할게. 축제 날 순찰은 원래 내 일이니까.');
       return;
     }
@@ -442,7 +442,7 @@ function festBoardMenu() {
       let gave = false;
       for (const [k, n] of Object.entries(F.mats)) { const need = n - (st.mats[k] || 0); const g2 = Math.min(need, S.inv[k] || 0); if (g2 > 0) { S.inv[k] -= g2; st.mats[k] = (st.mats[k] || 0) + g2; gave = true; } }
       const done = Object.entries(F.mats).every(([k, n]) => (st.mats[k] || 0) >= n);
-      await say('chief', gave ? 'smile' : 'normal', done ? '재료가 다 모였구먼! 이제 장식이랑 가판대를 정하자고.' : gave ? '받아 뒀어. 조금만 더 모으면 되겠어.' : '아직 재료가 부족혀. ' + Object.entries(F.mats).map(([k2, n]) => `${ITEMS[k2].name} ${st.mats[k2] || 0}/${n}`).join(', '));
+      await say('chief', gave ? 'smile' : 'normal', done ? '재료가 다 모였구먼! 이제 장식이랑 가판대를 정하자고.' : gave ? '받아 뒀어. 조금만 더 모으면 되겠어.' : '아직 재료가 부족해. ' + Object.entries(F.mats).map(([k2, n]) => `${ITEMS[k2].name} ${st.mats[k2] || 0}/${n}`).join(', '));
       if (done) st.step = 3; else return;
     }
     if (st.step === 3) {

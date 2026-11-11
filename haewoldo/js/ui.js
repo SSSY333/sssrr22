@@ -49,7 +49,7 @@ function detTogetherMenu() {
     Object.assign({ icon: '💭', label: '추억 이야기', onClick: () => runEvent(async () => { const m = memoryLine(); await say('det', 'smile', m || (casualOn() ? '음… 우리 아직 추억이 별로 없네. 오늘 하나 만들까?' : '아직 함께한 추억이 많지 않네요. 하나 만들어 봐요.')); }) }, L(3)),
   ]);
 }
-const OUTINGS = [['beach', '🐚', '해수욕장'], ['lighthouse', '🗼', '등대'], ['cafeDoor', '☕', '카페 쉼터'], ['harbor', '⚓', '동쪽 포구'], ['pavilion', '🌲', '동백숲 정자'], ['campCenter', '⛺', '캠핑존'], ['playground', '🛝', '놀이터'], ['ranchIn', '🐴', '조랑말 목장'], ['windmill', '🌬', '풍차 언덕'], ['observatory', '⭐', '오름 전망대'], ['rocks', '🪨', '갯바위'], ['farm', '🍊', '귤 농장']];
+const OUTINGS = [['beach', '🐚', '해수욕장'], ['lighthouse', '🗼', '등대'], ['cafeDoor', '☕', '카페 쉼터'], ['harbor', '⚓', '동쪽 포구'], ['pavilion', '🌲', '동백숲 정자'], ['campCenter', '⛺', '캠핑존'], ['playground', '🛝', '놀이터'], ['ranchIn', '🐴', '조랑말 목장'], ['windmill', '🌬', '풍차 언덕'], ['observatory', '⭐', '언덕 전망대'], ['rocks', '🪨', '갯바위'], ['farm', '🍊', '귤 농장']];
 function detOutingMenu() {
   const st = S.rel.stage;
   if (st >= 5) {

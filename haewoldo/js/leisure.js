@@ -402,7 +402,7 @@ const LEISURE_PLANS = [
   { h: [12, 17], who: ['tourist', 'tourist2'], b: 'picnicA', act: 'couple' }, { h: [16, 19.5], who: ['farmer', 'rancher'], b: 'camp', act: 'couple' },
   { h: [17, 20], who: ['chief', 'grandpa'], b: 'pavilion', act: 'chat' }, { h: [13, 17], who: ['keeper'], b: 'picnicB', act: 'nap' }, { h: [18, 20.5], who: ['postman'], b: 'camp', act: 'rest' },
 ];
-const LEIS_TALK = { chat: ['그 집 손주가 그렇게 컸다며?', '호호, 그러게 말이여.', '요즘 형사 양반 얼굴이 폈어.'], snack: ['과자 반 나눠 줄게!', '내가 더 많이 먹었다~'], couple: ['바다 예쁘다, 그치?', '당신이랑 오니까 더 좋다.'], read: ['📰 오늘 신문… 귤값이 올랐네.'], rest: ['아이고, 다리야.', '바람 좋다~'], nap: ['드르렁…'] };
+const LEIS_TALK = { chat: ['그 집 손주가 그렇게 컸다며?', '호호, 그러게 말이야.', '요즘 형사 양반 얼굴이 폈어.'], snack: ['과자 반 나눠 줄게!', '내가 더 많이 먹었다~'], couple: ['바다 예쁘다, 그치?', '당신이랑 오니까 더 좋다.'], read: ['📰 오늘 신문… 귤값이 올랐네.'], rest: ['아이고, 다리야.', '바람 좋다~'], nap: ['드르렁…'] };
 function leisureTick() {
   if (!S || !G.started) return;
   if (rainy()) { for (const a of G.villagers) if (a.leis && MAPS.island.benches[a.leis.b].leisure !== 'pavilion') endLeis(a); return; }
@@ -448,8 +448,8 @@ villagerUpdate = function (a, dt) {
 /* ---------------- 강만복 ---------------- */
 NPC_LOOKS.manbok = { name: '강만복 아저씨', hair: 'cap', hairC: '#2a2220', hairH: '#4a3a30', capC: '#6f8a4f', eyeC: '#4a3020', skin: '#e0a878', outfits: { base: { coat: '#6f8a4f', coatS: '#57703b', shirt: '#e9e2cf', vest: '#7a8a5a', pants: '#5a5a48', shoes: '#3a4a3a', scarf: '#ffffff', rolled: true } } };
 VILLAGERS.manbok = { spots: ['rocks', 'harbor', 'sashimiDoor', 'hallFront', 'plaza'], speed: 0.85, visits: [[18.5, 20, 'sashimi'], [20, 21.2, 'hall']], lines: { base: [] } };
-const MANBOK_LINES = ['어이구, 왔어? 오늘 물고기들이 아주 난리 났다니까!', '내가 어제 이만한 놈을 잡았거든? 진짜야! 두 팔로 안아야 했다니까!', '형사 양반은 낚시를 영 못해. 성질이 급해서 말이야. 허허!', '낚시는 기다림이여, 기다림! 인생이랑 똑같다니까.', '아이고, 또 미끼만 먹고 튀었네. 요즘 물고기들이 아주 영악해.', '거기 앉아봐. 내가 낚시 하나는 제대로 가르쳐줄게.', '뭐? 내가 맨날 빈손으로 간다고? 누가 그런 소릴 해!', '아이고, 이 녀석 봐라. 물고기보다 내가 더 놀랐네!', '형사 양반한테 말하지 마라. 오늘도 한 마리도 못 잡았다는 거.', '내가 젊었을 땐 말이야, 여기서 팔뚝만 한 놈들이 막 올라왔어!', '허허, 오늘은 바다가 나한테 좀 야박하네.', '저기 봐라! 찌 움직인다! 움직여! ...아, 파도였네.', '커피 한 잔 할래? 낚시는 원래 커피 마시면서 하는 거야.', '아이고, 이놈의 허리야. 낚시보다 일어나는 게 더 힘들어.', '오늘 잡은 거? 비밀이지. 하하! 뭐, 아직 없긴 한데.',
-  '미끼는 크릴이 최고여. 바다 고기들도 입맛이 고급이라.', '갯바위는 미끄러우니 장화 신고 다녀. 내 꼴 나지 말고. 허허.', '이 낚싯대가 말이야, 우리 할아버지 때부터… 아니다, 작년에 샀다.', '오늘 참돔 잡으면 횟집 이모한테 자랑하러 간다!'];
+const MANBOK_LINES = ['어이구, 왔어? 오늘 물고기들이 아주 난리 났다니까!', '내가 어제 이만한 놈을 잡았거든? 진짜야! 두 팔로 안아야 했다니까!', '형사 양반은 낚시를 영 못해. 성질이 급해서 말이야. 허허!', '낚시는 기다림이야, 기다림! 인생이랑 똑같다니까.', '아이고, 또 미끼만 먹고 튀었네. 요즘 물고기들이 아주 영악해.', '거기 앉아봐. 내가 낚시 하나는 제대로 가르쳐줄게.', '뭐? 내가 맨날 빈손으로 간다고? 누가 그런 소릴 해!', '아이고, 이 녀석 봐라. 물고기보다 내가 더 놀랐네!', '형사 양반한테 말하지 마라. 오늘도 한 마리도 못 잡았다는 거.', '내가 젊었을 땐 말이야, 여기서 팔뚝만 한 놈들이 막 올라왔어!', '허허, 오늘은 바다가 나한테 좀 야박하네.', '저기 봐라! 찌 움직인다! 움직여! ...아, 파도였네.', '커피 한 잔 할래? 낚시는 원래 커피 마시면서 하는 거야.', '아이고, 이놈의 허리야. 낚시보다 일어나는 게 더 힘들어.', '오늘 잡은 거? 비밀이지. 하하! 뭐, 아직 없긴 한데.',
+  '미끼는 크릴이 최고야. 바다 고기들도 입맛이 고급이라.', '갯바위는 미끄러우니 장화 신고 다녀. 내 꼴 나지 말고. 허허.', '이 낚싯대가 말이야, 우리 할아버지 때부터… 아니다, 작년에 샀다.', '오늘 참돔 잡으면 횟집 이모한테 자랑하러 간다!'];
 VILLAGERS.manbok.lines.base = MANBOK_LINES;
 function manbokFishing() { const h = S.min / 60; return h >= 7.5 && h < 15.3 && S.weather !== 'storm' && S.weather !== 'rain'; }
 function manbokUpdate(a, dt) {
@@ -475,14 +475,14 @@ function manbokUpdate(a, dt) {
     if (!a.path.length) { a.wait -= dt; if (a.wait <= 0) { a.wait = 3; a.walkTo(s[0] + 0.5, s[1] + 0.5); } }
     return;
   }
-  if (a.seat) { a.standUp(); a.pose = 'stand'; a.say(pick(['오늘은 이쯤 하자. 장비 정리 끝!', '허허, 오늘 조과는… 비밀이여.']), 3); }
+  if (a.seat) { a.standUp(); a.pose = 'stand'; a.say(pick(['오늘은 이쯤 하자. 장비 정리 끝!', '허허, 오늘 조과는… 비밀이야.']), 3); }
   a.pose = 'stand';
   _villagerUpdateL(a, dt);
 }
 async function manbokTalk(a) {
   const F = S.fishingNPC, c = casualOn(), d = G.det;
   a.talking = true; a.lookAt(G.player); G.player.lookAt(a);
-  if (!F.met) { F.met = S.day; await say(a.id, 'laugh', '어이구, 처음 보는 얼굴이네! 나 강만복이여. 이 갯바위의 터줏대감이지. 허허!'); await say(a.id, 'smile', '낚시 궁금하면 언제든 와. 내가 다 가르쳐 줄게. 물고기는… 내가 다 잡아 버려서 남은 게 없을 수도 있지만!'); F.friendship += 2; a.talking = false; return; }
+  if (!F.met) { F.met = S.day; await say(a.id, 'laugh', '어이구, 처음 보는 얼굴이네! 나 강만복이야. 이 갯바위의 터줏대감이지. 허허!'); await say(a.id, 'smile', '낚시 궁금하면 언제든 와. 내가 다 가르쳐 줄게. 물고기는… 내가 다 잡아 버려서 남은 게 없을 수도 있지만!'); F.friendship += 2; a.talking = false; return; }
   const ev = [];
   if (!F.completedEvents.includes('legend') && F.friendship >= 3) ev.push('legend');
   if (!F.completedEvents.includes('rod') && S.day >= 4 && S.rel.flags.met && S.rel.stage >= 2) ev.push('rod');
@@ -492,7 +492,7 @@ async function manbokTalk(a) {
   const opts = ['낚시 대결 해요!', '낚시 좀 알려주세요', '커피 드실래요?', '다음에 또 올게요'];
   const k = await choose(opts);
   if (k === 0) await manbokDuel(a);
-  else if (k === 1) { await say(a.id, 'smile', '찌가 쑥 들어가면 바로 챔질! 너무 빨라도 늦어도 안 돼. 기다림이여, 기다림!'); await say(a.id, 'tease', '그리고 갯바위에선 무늬오징어도 가끔 나와. 비밀이다?'); F.friendship++; }
+  else if (k === 1) { await say(a.id, 'smile', '찌가 쑥 들어가면 바로 챔질! 너무 빨라도 늦어도 안 돼. 기다림이야, 기다림!'); await say(a.id, 'tease', '그리고 갯바위에선 무늬오징어도 가끔 나와. 비밀이다?'); F.friendship++; }
   else if (k === 2) { if ((S.inv.coffee || 0) > 0) { S.inv.coffee--; await say(a.id, 'laugh', '아이고, 고맙구먼! 낚시는 원래 커피 마시면서 하는 거야. 옜다, 미끼 좀 가져가.'); S.inv.snack = (S.inv.snack || 0) + 1; F.friendship += 2; } else await say(a.id, 'smile', '허허, 마음만 받을게. 다음엔 캔커피 하나 들고 와.'); }
   F.friendship++; a.talking = false;
 }
@@ -502,7 +502,7 @@ async function manbokEvent(a, id) {
     await say(a.id, 'laugh', '야야, 이거 봐라! 어제 내가 잡은 전설의 대물! 한 1미터는 됐어!');
     await say('narr', '', '휴대폰 사진 속에는… 손바닥만 한 전갱이 한 마리가 찍혀 있다.');
     const k = await choose(['우와, 진짜 대물이네요!', '이거… 전갱이 아니에요?', '사진이 좀 작게 나왔네요']);
-    await say(a.id, k === 1 ? 'surprise' : 'laugh', k === 0 ? '그치?! 역시 보는 눈이 있어! 허허허!' : k === 1 ? '쉿! 사진이 원래 작게 나오는 거여! 실물은 이~만했다니까!' : '그려, 그려! 카메라가 대물을 못 담아. 허허!');
+    await say(a.id, k === 1 ? 'surprise' : 'laugh', k === 0 ? '그치?! 역시 보는 눈이 있어! 허허허!' : k === 1 ? '쉿! 사진이 원래 작게 나오는 거야! 실물은 이~만했다니까!' : '그래, 그래! 카메라가 대물을 못 담아. 허허!');
     F.friendship += 3; F.completedEvents.push('legend'); memRecent('leisure', '만복 아저씨의 전설의 대물 이야기');
   } else if (id === 'rod') {
     await say(a.id, 'surprise', '아이고, 큰일 났어! 내 낚싯대가 없어졌어! 누가 훔쳐 갔나 봐!');
@@ -532,7 +532,7 @@ async function manbokEvent(a, id) {
     await say(a.id, 'tease', '허허, 미끼 연구? 물고기는 연구한다고 안 잡혀! 성질부터 고쳐!');
     await say('narr', '', '두 사람이 나란히 낚싯대를 드리웠다…');
     const k = await choose(['나도 같이 할래요!', '옆에서 구경할게요']);
-    if (k === 0) { closeDialog(); const res = await fishMinigame('rocks'); await say(a.id, 'laugh', res ? '어이구, 손님이 제일 잘 잡네! 형사 양반 체면이 말이 아니여!' : '허허, 셋 다 꽝이구먼. 오늘 바다가 야박하네.'); }
+    if (k === 0) { closeDialog(); const res = await fishMinigame('rocks'); await say(a.id, 'laugh', res ? '어이구, 손님이 제일 잘 잡네! 형사 양반 체면이 말이 아니야!' : '허허, 셋 다 꽝이구먼. 오늘 바다가 야박하네.'); }
     else { await say('narr', '', '…형사님의 찌가 먼저 움직였다! 그런데 올라온 건 낡은 장화였다.'); await say(a.id, 'laugh', '푸하하! 형사 양반 장화 낚았네! 내가 이래서 형사 양반을 좋아한다니까!'); }
     G.rawSpeech = true; await say('det', 'laugh', casualOn() ? '하하… 아저씨, 오늘 일 비밀이에요. 특히 너도.' : '하하… 아저씨, 오늘 일은 비밀입니다.'); G.rawSpeech = false;
     F.completedEvents.push('withDet'); F.friendship += 2; addAff(2, { event: true }); memRecent('act', '형사님 · 만복 아저씨와 낚시');
@@ -540,8 +540,8 @@ async function manbokEvent(a, id) {
 }
 async function manbokDuel(a) {
   const F = S.fishingNPC;
-  if (F.lastDuel === S.day) { await say(a.id, 'smile', '오늘은 한 판 했잖여. 내일 또 붙자고! 허허.'); return; }
-  await say(a.id, 'laugh', '좋아! 세 번 던져서 큰 놈 잡는 사람이 이기는 거여. 진 사람이 커피 사기!');
+  if (F.lastDuel === S.day) { await say(a.id, 'smile', '오늘은 한 판 했잖아. 내일 또 붙자고! 허허.'); return; }
+  await say(a.id, 'laugh', '좋아! 세 번 던져서 큰 놈 잡는 사람이 이기는 거야. 진 사람이 커피 사기!');
   closeDialog();
   const P = G.player; P.pose = 'fish'; P.left = true;
   let mine = 0;
@@ -549,8 +549,8 @@ async function manbokDuel(a) {
   P.pose = 'stand';
   const his = Math.random() < 0.75 ? Math.round(rand(18, 48)) : 0;
   F.lastDuel = S.day;
-  if (mine > his) { await say(a.id, 'surprise', `내가 ${his ? his + 'cm' : '꽝'}… 자네가 ${mine}cm?! 아이고, 졌다 졌어! 약속은 약속이여.`); payOnce('manbokDuel' + S.day, () => { S.money += 2000; S.inv.snack = (S.inv.snack || 0) + 2; }); toast('🏆 승리! 2,000원과 미끼(간식) 2개'); F.friendship += 2; F.wins = (F.wins || 0) + 1; }
-  else await say(a.id, 'laugh', his ? `허허! 나는 ${his}cm, 자네는 ${mine ? mine + 'cm' : '꽝'}! 아직 멀었구먼. 커피는 다음에 사!` : '허허, 둘 다 꽝이구먼! 오늘은 바다가 야박하네. 무승부여!');
+  if (mine > his) { await say(a.id, 'surprise', `내가 ${his ? his + 'cm' : '꽝'}… 자네가 ${mine}cm?! 아이고, 졌다 졌어! 약속은 약속이야.`); payOnce('manbokDuel' + S.day, () => { S.money += 2000; S.inv.snack = (S.inv.snack || 0) + 2; }); toast('🏆 승리! 2,000원과 미끼(간식) 2개'); F.friendship += 2; F.wins = (F.wins || 0) + 1; }
+  else await say(a.id, 'laugh', his ? `허허! 나는 ${his}cm, 자네는 ${mine ? mine + 'cm' : '꽝'}! 아직 멀었구먼. 커피는 다음에 사!` : '허허, 둘 다 꽝이구먼! 오늘은 바다가 야박하네. 무승부야!');
   memRecent('act', '만복 아저씨와 낚시 대결');
 }
 const _interactWithL = interactWith;

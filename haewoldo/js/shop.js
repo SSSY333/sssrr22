@@ -18,7 +18,7 @@ const NEW_ITEMS = {
   sunscreen: { name: '선크림', icon: '🧴', price: 5000, gift: 3, sell: 1200, cat: 'life', season: 'summer', react: ['선크림… 제 얼굴 탄 거 티 났어요? 열심히 바를게요.', 'laugh'] },
   candle: { name: '귤 향초', icon: '🕯️', price: 7000, gift: 5, sell: 2000, cat: 'life', react: ['향초네요. 귤 향이 은은하게 나요. 사택에 켜 둘게요.', 'smile'] },
   postcard: { name: '해월도 엽서', icon: '💌', price: 800, gift: 3, sell: 200, cat: 'life', react: ['엽서에 뭐 써 줬어요? …지금 읽으면 안 되죠? 이따 몰래 볼게요.', 'blush'] },
-  keyring: { name: '돌하르방 키링', icon: '🗿', price: 3000, gift: 4, sell: 800, cat: 'life', react: ['돌하르방 키링! 파출소 열쇠에 달아야겠다. 든든하네요.', 'laugh'] },
+  keyring: { name: '등대 키링', icon: '🗼', price: 3000, gift: 4, sell: 800, cat: 'life', react: ['등대 키링! 파출소 열쇠에 달아야겠다. 귀엽네요.', 'laugh'] },
   sunflower: { name: '해바라기 한 송이', icon: '🌻', price: 4000, gift: 5, sell: 1000, cat: 'life', season: 'summer', react: ['해바라기요? 해만 보는 꽃이라던데… 무슨 뜻인지 생각해 봐도 돼요?', 'blush'] },
   cattoy: { name: '고양이 낚싯대 장난감', icon: '🧶', price: 2500, gift: 2, sell: 500, cat: 'life', react: ['노랑이 주려고요? 걔 이거 보면 정신 못 차릴 거예요.', 'laugh'] },
 };
@@ -86,7 +86,7 @@ function orderConfirm(k) {
   openSheet({ title: `📦 ${josa(it.name, '을', '를')} 주문할까요?`, sub: `<div class="relneed">${fmtMoney(it.price)} · ${dateLabel(S.day + ORDER_DAYS)} 도착 예정 · 돈은 지금 내요</div>`, cols: 2, items: [
     { icon: '✅', label: '주문하기', onClick: () => runEvent(async () => {
       S.money -= it.price; O.push({ k, at: S.day + ORDER_DAYS, day: S.day, got: false, told: false }); updateHUD(); Sound.sfx('coin');
-      await say('superman', 'smile', pick([`${josa(it.name, '이', '가')}? 그래, 육지에 연락해 둘게. 모레 배로 들어올 거여.`, `알았어, 주문 넣었어. 배 들어오면 내가 챙겨 둘 테니 걱정 말고.`, `허허, 좋은 거 사네. 모레쯤 들르면 돼.`]));
+      await say('superman', 'smile', pick([`${josa(it.name, '이', '가')}? 그래, 육지에 연락해 둘게. 모레 배로 들어올 거야.`, `알았어, 주문 넣었어. 배 들어오면 내가 챙겨 둘 테니 걱정 말고.`, `허허, 좋은 거 사네. 모레쯤 들르면 돼.`]));
       save();
     }) },
     { icon: '↩️', label: '그만두기', onClick: () => orderMenu() }] });
@@ -115,7 +115,7 @@ function orderHandOver() {
       if (it.give) for (const [g, n] of Object.entries(it.give)) S.inv[g] = (S.inv[g] || 0) + n; else S.inv[o.k] = (S.inv[o.k] || 0) + 1;
       await say('narr', '', `📦 ${it.icon} ${josa(it.name, '을', '를')} 받았다.${it.give ? ' (' + Object.entries(it.give).map(([g, n]) => `${ITEMS[g].name} ${n}개`).join(', ') + ')' : ''}`);
     }
-    if (ready.some(o => ITEMS[o.k].minStage >= 5 || o.k === 'rose' || o.k === 'perfume' || o.k === 'watch')) await say('superman', 'tease', '근데 이거 누구 줄 거여? 허허, 안 물어볼게. 형사 총각 얼굴 보면 다 알겠지.');
+    if (ready.some(o => ITEMS[o.k].minStage >= 5 || o.k === 'rose' || o.k === 'perfume' || o.k === 'watch')) await say('superman', 'tease', '근데 이거 누구 줄 거야? 허허, 안 물어볼게. 형사 총각 얼굴 보면 다 알겠지.');
     S.orders = O.filter(o => !o.got || S.day - o.at < 10);
     closeDialog(); save();
     setTimeout(() => { if (!G.busy) shopMenu(); }, 300);

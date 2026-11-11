@@ -546,7 +546,7 @@ function sprTree(kind, v, season = 'summer') {
 }
 function sprWall() {
   const c = mkCanvas(32, 24), g = c.getContext('2d');
-  // 제주 돌담 — 현무암
+  // 돌담 — 검은 돌
   const cols = ['#4c4f58', '#5b5f69', '#41444c', '#666a74'];
   for (let i = 0; i < 9; i++) {
     const x = 5 + (i % 3) * 8 + (Math.floor(i / 3) % 2) * 3, y = 6 + Math.floor(i / 3) * 4;
@@ -596,7 +596,7 @@ function sprTelescope() {
 }
 function sprHareubang() {
   const c = mkCanvas(20, 34), g = c.getContext('2d');
-  // 돌하르방 — 제주 현무암 석상
+  // 마을 수호 석상
   fillEllipse(g, 10, 30, 6, 2, 'rgba(0,0,0,0.2)');
   fillEllipse(g, 10, 22, 6, 8, '#5d616b');
   fillEllipse(g, 10, 10, 6, 7, '#666a74');
