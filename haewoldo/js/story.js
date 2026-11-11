@@ -630,7 +630,8 @@ async function giveGift(k) {
   r.lastGift[k] = S.day;
   const c = calendar(S.day);
   let bonus = 0;
-  if (k === 'chocolate' && c.month === 2 && c.dom === 4) bonus = 6;
+  if (k === 'chocolate' && c.month === 2 && c.dom === 14) bonus = 6;
+  if (k === 'candy' && c.month === 11 && c.dom === 11) bonus = 4;
   if (k === 'hotpack' && season() === 'winter') bonus = 2;
   await say('det', it.react[1], repeat ? '또 이거예요? 하하, 제가 좋아하는 거 확실히 아네요.' : it.react[0]);
   addAff(Math.max(1, Math.round((it.gift + bonus) * (repeat ? 0.4 : 1))));

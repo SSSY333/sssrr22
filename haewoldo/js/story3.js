@@ -216,12 +216,12 @@ async function apptMenu() {
 }
 function calendarMenu() {
   const rows = [];
-  for (let k = 0; k < 10; k++) {
+  for (let k = 0; k < 14; k++) {
     const day = S.day + k, c = calendar(day), items = [];
     for (const e of EVENTS) if (e.m === c.month && e.dom === undefined && e.d === c.dom) items.push(`${e.icon} ${e.name}`);
     for (const a of S.appts) if (a.day === day && a.status === 'set') items.push(`💌 ${fmtTime(a.min)} ${APPT_PLACES[a.place].name} <button class="mini" data-cancel="${a.id}">취소</button> <button class="mini" data-re="${a.id}">미루기</button>`);
     if (S.wedding === day) items.push('💒 결혼식');
-    if (S.rel.flags.married && S.rel.marriedDay && (day - S.rel.marriedDay) % 120 === 0 && day > S.rel.marriedDay) items.push('💍 결혼기념일');
+    if (S.rel.flags.married && S.rel.marriedDay && (day - S.rel.marriedDay) % 365 === 0 && day > S.rel.marriedDay) items.push('💍 결혼기념일');
     rows.push(`<li><b>${c.month}/${c.dom}</b> ${DOW[(day - 1) % 7]} ${k === 0 ? '<small>오늘</small>' : ''}<div>${items.join('<br>') || '<span class="muted">—</span>'}</div></li>`);
   }
   const hist = S.appts.filter(a => a.status !== 'set').slice(-5).reverse().map(a => `<li>${dateLabel(a.day)} ${APPT_PLACES[a.place].name} — ${{ met: '만남 ✔', late: '늦게 만남', missed: '못 만남', cancel: '취소' }[a.status]}</li>`).join('');
@@ -416,7 +416,7 @@ const SURPRISES = [
   { id: 'furnGift', st: 5, cd: 999, ok: () => !S.paid.furnGift, run: async (c) => { payOnce('furnGift', () => furnGive('catBed')); await say('det', 'tease', '이거 너희 집에 두라고. 노랑이 놀러 오면 앉으라고 산 방석이야. …핑계지만.'); toast('🛋 「고양이 방석」을 받았다 — 가구 보관함'); } },
   { id: 'festGift', st: 4, cd: 30, ok: () => !!festivalSoon(0), run: async (c) => { S.inv.candy = (S.inv.candy || 0) + 1; await say('det', 'smile', c ? '축제 기념품. 줄 서서 샀다? 하하.' : '축제 기념품이에요. 줄 서서 샀어요.'); } },
   { id: 'caseDinner', st: 3, cd: 2, ok: () => !!S.rel.daily.caseSolved, run: async (c) => { await say('det', 'laugh', c ? '사건도 풀었으니 밥 먹으러 가자. 오늘은 내가 산다.' : '사건도 풀었으니 식사하러 가요. 오늘은 제가 살게요.'); S.rel.daily.dinnerTreat = true; if (!S.comp) startCompanion(); } },
-  { id: 'anniv', st: 8, cd: 100, ok: () => S.rel.flags.married && S.rel.marriedDay && S.day > S.rel.marriedDay && (S.day - S.rel.marriedDay) % 120 === 0, run: async () => anniversaryMarried() },
+  { id: 'anniv', st: 8, cd: 100, ok: () => S.rel.flags.married && S.rel.marriedDay && S.day > S.rel.marriedDay && (S.day - S.rel.marriedDay) % 365 === 0, run: async () => anniversaryMarried() },
 ];
 function surpriseTick() {
   const r = S.rel, d = G.det, P = G.player;
@@ -437,7 +437,7 @@ function surpriseTick() {
 }
 /* 연계 이벤트 5 — 결혼기념일 */
 async function anniversaryMarried() {
-  const yrs = Math.round((S.day - S.rel.marriedDay) / 120);
+  const yrs = Math.round((S.day - S.rel.marriedDay) / 365);
   await say('det', 'blush', `여보, 오늘 무슨 날인지 알지? 우리 결혼기념일. ${yrs}년 됐다.`);
   await say('det', 'smile', '선물 준비했어. 그리고… 저녁에 사진 한 장 찍으러 가자. 기념일 프레임으로.');
   S.inv.flower = (S.inv.flower || 0) + 1;
@@ -670,7 +670,7 @@ function memoryMenu() {
 function visitorMenu() { openPanel('🧳 방문객', `<p class="psub">⛴ ${nextFerryText()} · 오늘 ${ferryPlan().cancel ? '결항' : '운항'}</p>${G.visitors.length ? `<ul class="req">${G.visitors.map(v => `<li>${VISITOR_TYPES[v.vt].icon} ${esc(v.look.name)} — ${v.leaving ? '배 타러 가는 중' : placeName(placeAt(v.x, v.y, MAPS.island)) || '마을'}</li>`).join('')}</ul>` : '<p class="psub">지금 섬에 온 방문객이 없어요. 배가 들어오면 손님이 내려요.</p>'}<p class="psub">누적 방문객 ${S.stats.visitors}명 · 마을 평판 ${S.rep}</p>`); }
 function rumorMenu() { const heard = S.rumors.filter(r => r.told.length); openPanel('🗣 마을 소문', heard.length ? `<ul class="req">${heard.slice().reverse().map(r => `<li>"${esc(r.text)}" <small>— ${dateLabel(r.day)}, ${r.told.map(v => NPC_LOOKS[v] ? NPC_LOOKS[v].name : v).slice(0, 2).join(', ')}</small></li>`).join('')}</ul>` : '<p class="psub">아직 들은 소문이 없어요. 주민들에게 말을 걸어 보세요.</p>'); }
 function festMenu() { const list = Object.values(S.fest).sort((a, b) => b.day - a.day); openPanel('🎪 축제', `${list.length ? list.map(st => { const F = FESTS[st.fid]; return `<div class="nb ${st.done ? 'solved' : ''}"><b>${F.icon} ${F.name}</b><small>${dateLabel(st.day)} · ${st.done ? '끝남' : st.joined ? `준비 ${Math.min(5, st.step)}/5단계 · 예산 ${fmtMoney(st.budget)}` : '준비위원 모집 중 (마을회관)'}</small></div>`; }).join('') : '<p class="psub">축제 일주일 전쯤 공고가 붙어요.</p>'}<h4>올해 축제</h4><ul class="req">${Object.entries(FESTS).map(([id, F]) => `<li>${F.icon} ${F.name} — ${dateLabel(festDay(id))}</li>`).join('')}</ul><p class="psub">축제 평판 누적 ${S.rep} · 참여한 축제 ${S.stats.festivals}회</p>`); }
-function annivMenu() { const r = S.rel, rows = []; if (r.flags.met) rows.push(`만난 날 — ${dateLabel(r.metDay)} (${daysKnown()}일째)`); if (r.flags.lovers) rows.push(`사귄 날 — ${dateLabel(r.loverDay)} (${loverDays()}일째)`); if (S.wedding) rows.push(`결혼식 — ${dateLabel(S.wedding)}`); if (r.flags.married && r.marriedDay) { const nx = r.marriedDay + Math.ceil((S.day - r.marriedDay + 1) / 120) * 120; rows.push(`다음 결혼기념일 — ${dateLabel(nx)}`); } openPanel('💍 기념일', rows.length ? `<ul class="req">${rows.map(x => `<li>${x}</li>`).join('')}</ul>` : '<p class="psub">아직 기념일이 없어요.</p>'); }
+function annivMenu() { const r = S.rel, rows = []; if (r.flags.met) rows.push(`만난 날 — ${dateLabel(r.metDay)} (${daysKnown()}일째)`); if (r.flags.lovers) rows.push(`사귄 날 — ${dateLabel(r.loverDay)} (${loverDays()}일째)`); if (S.wedding) rows.push(`결혼식 — ${dateLabel(S.wedding)}`); if (r.flags.married && r.marriedDay) { const nx = r.marriedDay + Math.ceil((S.day - r.marriedDay + 1) / 365) * 365; rows.push(`다음 결혼기념일 — ${dateLabel(nx)}`); } openPanel('💍 기념일', rows.length ? `<ul class="req">${rows.map(x => `<li>${x}</li>`).join('')}</ul>` : '<p class="psub">아직 기념일이 없어요.</p>'); }
 function homeLifeMenu() { openPanel('🏡 공동생활', S.rel.flags.married ? `<p class="psub">형사님이 집에서 함께 살아요. 아침엔 주방·식탁, 저녁엔 소파·TV·책장, 밤엔 침대를 써요. 새 가구를 놓으면 알아보고 이야기해요.</p><ul class="req"><li>집 단계: ${HOME_LV[S.homeLv].name}</li><li>배치한 가구: ${S.furn.placed.length}개 · 보관함 ${S.furn.store.length}개</li><li>형사님 지금: ${G.det.map === 'in_home' ? '집에 있어요' : TASK_LABEL[G.det.task] || '밖에 있어요'}</li></ul>` : '<p class="psub">결혼하면 형사님과 한집에서 살 수 있어요. 그 전에도 집을 넓히고 꾸밀 수 있어요.</p>'); }
 
 /* ---------------- 시작 · 하루 훅 ---------------- */

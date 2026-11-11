@@ -1,11 +1,11 @@
 /* =====================================================================
    특별한 날씨 · 계절 이벤트 — 정말 가끔만
    · 조건(계절 · 전날 날씨 · 오늘 날씨 · 날짜)이 맞는 날, 확률로만 열림
-   · 한 번 열리면 최소 6일은 다음 이벤트 없음 · 같은 이벤트는 1년(120일)에 한 번
+   · 한 번 열리면 최소 10일은 다음 이벤트 없음 · 같은 이벤트는 1년에 한 번
    · 아침에 「오늘 ○○ 쪽에 무슨 일이 있을 것 같아요」 힌트 → 그 시간 그 장소에 가면 장면
    · 형사님을 만난 뒤라면 형사님도 와서 단계별로 다른 말을 함 · 앨범에 남음
    ===================================================================== */
-const SEV_GAP = 6;
+const SEV_GAP = 10;
 const SEVENTS = {
   rainbow: { icon: '🌈', name: '비 갠 뒤 쌍무지개', at: 'observatory', from: 14, to: 17.5, p: 0.5,
     ok: (c, w, pw) => pw === 'rain' && w === 'sunny' && c.season !== 'winter',
@@ -34,7 +34,7 @@ const SEVENTS = {
     narr: ['✨ 숲길에 들어서자 작은 불빛들이 하나둘 떠오른다. 반딧불이다.', '깜빡, 깜빡— 숨을 쉬듯 켜졌다 꺼진다. 숲 전체가 천천히 숨 쉬는 것 같다.'],
     det: { low: '반딧불이네요. 어릴 때 이후로 처음 봐요. …조용히 해야 안 놀라겠죠.', mid: '(속삭이며) 손 내밀어 봐. 가만히— 앉았다! 너한테 앉았어.', high: '(손을 꼭 잡고 속삭인다) 이 순간 그대로 멈췄으면 좋겠다.' } },
   fullMoon: { icon: '🌕', name: '바다 위 보름달 길', at: 'pierEnd', from: 20, to: 23.5, p: 0.6,
-    ok: (c, w) => c.dom === 5 && (c.season === 'autumn' || c.month === 8) && w === 'sunny',
+    ok: (c, w) => c.dom >= 14 && c.dom <= 16 && (c.season === 'autumn' || c.month === 8) && w === 'sunny',
     hint: '오늘은 보름달이 가장 큰 날이래요. 밤에 부두 끝에 가 보세요.',
     narr: ['🌕 커다란 보름달이 떴다. 달빛이 바다 위로 길게 이어져 꼭 걸어갈 수 있는 길 같다.', '잔잔한 파도가 달빛 길을 조금씩 흔든다.'],
     det: { low: '달빛이 길처럼 보이네요. 저 끝에 뭐가 있을까요.', mid: '달 보면서 무슨 생각해? …나는 지금 옆에 있는 사람 생각.', high: '저 달빛 길 끝까지 같이 걸어갈래? …평생 걸리겠지만.' } },
@@ -50,7 +50,7 @@ const SEVENTS = {
     det: { low: '새해 복 많이 받으세요. 올해는… 더 자주 뵈었으면 좋겠어요.', mid: '새해 첫 해를 같이 봤네. 올해 첫 소원은 이미 이뤄졌다.', high: '올해도, 내년에도, 그 다음 해에도. 해돋이는 너랑 볼 거야. 약속.' },
     reward: () => { S.inv.ricecake = (S.inv.ricecake || 0) + 1; return '할머니가 나눠 준 떡'; } },
   blossom: { icon: '🌸', name: '꽃비 내리는 정자', at: 'pavilion', from: 10, to: 17, p: 0.4, fx: 'petals',
-    ok: (c, w) => c.season === 'spring' && c.dom >= 3 && c.dom <= 7 && w === 'sunny',
+    ok: (c, w) => c.month === 4 && c.dom >= 1 && c.dom <= 20 && w === 'sunny',
     hint: '정자 옆 벚나무가 활짝 폈대요. 바람 부는 낮에 가면 꽃비가 내려요.',
     narr: ['🌸 바람이 불자 꽃잎이 비처럼 쏟아진다. 정자 지붕 위에도, 머리 위에도.', '떨어지는 꽃잎을 잡으면 사랑이 이뤄진다는 말이 있다.'],
     det: { low: '머리에 꽃잎 붙었어요. …아, 제가 떼 드려도 될까요?', mid: '잡았다! 꽃잎. 이거 너 줄게. …의미는 묻지 마.', high: '꽃잎 잡았어. 이제 사랑 이뤄지는 거지? 이미 이뤄졌는데. 그럼 두 배로.' } },
@@ -69,10 +69,10 @@ function sevState() { if (!S.sev) S.sev = { done: {}, last: -99, prevW: null, to
 function sevRoll() {
   const st = sevState(), c = calendar(S.day), w = S.weather, pw = st.prevW;
   st.today = null;
-  const fixed = Object.entries(SEVENTS).filter(([id, E]) => E.p >= 1 && E.ok(c, w, pw) && !(st.done[id] && S.day - st.done[id] < 100));
+  const fixed = Object.entries(SEVENTS).filter(([id, E]) => E.p >= 1 && E.ok(c, w, pw) && !(st.done[id] && S.day - st.done[id] < 300));
   let pick1 = fixed[0];
   if (!pick1 && S.day - st.last >= SEV_GAP && S.day > 3) {
-    const cand = Object.entries(SEVENTS).filter(([id, E]) => E.p < 1 && E.ok(c, w, pw) && !(st.done[id] && S.day - st.done[id] < 100));
+    const cand = Object.entries(SEVENTS).filter(([id, E]) => E.p < 1 && E.ok(c, w, pw) && !(st.done[id] && S.day - st.done[id] < 300));
     if (cand.length && Math.random() < 0.55) { const [id, E] = pick(cand); if (Math.random() < E.p) pick1 = [id, E]; }
   }
   if (pick1) { st.today = { id: pick1[0], day: S.day, seen: false }; st.last = S.day; }

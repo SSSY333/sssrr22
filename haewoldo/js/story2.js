@@ -118,7 +118,7 @@ async function nameEvent() {
     const n = await askText('형사님 이름 (예: 도윤)', '', 6);
     S.detName = n || '도윤';
   }
-  await say('det', 'smile', `${S.detName}. 이제 그렇게 불러요. 저도 {me}라고 부를게요.`);
+  await say('det', 'smile', `${S.detName}. 이제 그렇게 불러요. 저도 ${josa(meCall(), "이라고", "라고")} 부를게요.`);
   const c = await choose([`${S.detName} 씨`, '…아직 쑥스러워요']);
   await say('det', c === 0 ? 'blush' : 'laugh', c === 0 ? '……와. 생각보다 훨씬 좋네요, 이거.' : '천천히 해요. 기다릴게요. 근데 한 번은 들어 보고 싶다.');
   S.rel.flags.named = true; addAff(4, { event: true });
@@ -231,7 +231,7 @@ async function proposalEvent() {
 async function playerPropose() {
   const r = S.rel;
   if ((S.inv.ring || 0) < 1) { await say('me', 'normal', '(반지가 없다. 마을 슈퍼에서 은반지를 살 수 있다.)'); return; }
-  if (S.day - r.metDay < 120 || r.aff < 900) { await say('me', 'blush', '(반지를 꺼내려다… 아직은 이른 것 같아 다시 넣었다. 만난 지 1년, 그리고 더 깊은 마음이 필요해.)'); await say('det', 'tease', '왜요? 주머니에 뭐 있어요? …수사해 볼까.'); return; }
+  if (S.day - r.metDay < 180 || r.aff < 900) { await say('me', 'blush', '(반지를 꺼내려다… 아직은 이른 것 같아 다시 넣었다. 만난 지 반년은 넘어야 하고, 더 깊은 마음이 필요해.)'); await say('det', 'tease', '왜요? 주머니에 뭐 있어요? …수사해 볼까.'); return; }
   S.inv.ring--;
   await say('me', 'blush', `${himCall()}, 저랑… 결혼해 줄래요?`);
   await say('det', 'surprise', '……');
@@ -251,7 +251,7 @@ function pickWeddingDate() {
     const opt = (days, label) => { const day = S.day + days; return { icon: '💒', label, note: `${dateLabel(day)} (${SEASON_KO[calendar(day).season]})`, onClick: () => { setWedding(day); res(); } }; };
     const ns = seasonStartDay(S.day);
     openSheet({ title: '결혼식 날짜 정하기', sub: '<div class="relneed">원하는 날을 골라요. 나중에 형사님 메뉴에서 바꿀 수 있어요.</div>', cols: 2, onClose: () => res(), items: [
-      opt(5, '5일 뒤'), opt(10, '10일 뒤'), opt(20, '20일 뒤'),
+      opt(7, '일주일 뒤'), opt(14, '2주 뒤'), opt(30, '한 달 뒤'),
       { icon: SEASON_ICON[calendar(ns).season], label: `다음 계절 첫날`, note: `${dateLabel(ns)} (${SEASON_KO[calendar(ns).season]})`, onClick: () => { setWedding(ns); res(); } },
       { icon: '📅', label: '직접 고르기', wide: true, keep: true, onClick: () => { closeSheet(); monthPicker(res); } },
     ] });
@@ -618,7 +618,7 @@ function planDay() {
   }
   if (r.flags.lovers && loverDays() >= 12 && !r.flags.fightDone && Math.random() < 0.18) d.fight = true;
   if (r.flags.lovers && loverDays() >= 6 && !r.flags.nursed && (S.weather === 'rain' || S.weather === 'snow') && Math.random() < 0.35) d.sick = true;
-  if (r.stage === 6 && !r.flags.engaged && !r.flags.proposeLater && r.aff >= 900 && S.day - r.metDay >= 120 && S.day - r.proposeDay >= 5) d.proposal = true;
+  if (r.stage === 6 && !r.flags.engaged && !r.flags.proposeLater && r.aff >= 900 && S.day - r.metDay >= 180 && S.day - r.proposeDay >= 7) d.proposal = true;
   // 축제 장식
   G.tempObjs = [];
   for (const ev of todayEvents()) if (ev.map === 'island' && !['typhoon', 'firstsnow'].includes(ev.id)) {
@@ -787,7 +787,7 @@ async function interiorAction(act) {
       if (withDet) { await say('det', 'laugh', pick(['다음은 제 차례. 18번 나갑니다.', '듀엣 해요. 마이크 하나 더!', '…노래 잘하네요. 반했어요. 원래 반했지만.'])); if (!r.daily.karaoke) { r.daily.karaoke = true; addAff(2); } if (!r.flags.karaoke) { r.flags.karaoke = true; await addAlbum('노래방 듀엣', 'karaoke'); } }
     }); return;
     case 'events': runEvent(async () => {
-      const up = []; for (let k = 0; k < 40 && up.length < 4; k++) { const c = calendar(S.day + k); for (const e of EVENTS) if (e.m === c.month && e.d === c.dom) up.push(`${e.icon} ${c.month}월 ${c.dom}일 ${e.name}`); }
+      const up = []; for (let k = 0; k < 75 && up.length < 5; k++) { const c = calendar(S.day + k); for (const e of EVENTS) if (e.m === c.month && e.d === c.dom) up.push(`${e.icon} ${c.month}월 ${c.dom}일 ${e.name}`); }
       await say('narr', '', '📋 마을회관 행사 게시판'); await say('narr', '', up.length ? up.join('\n') : '당분간 행사가 없다.');
     }); return;
     case 'piano': runEvent(async () => { for (let i = 0; i < 4; i++) { Sound.sfx('heart'); burst(P, 'note', 1); await sleep(220); } await say('narr', '', '띵띵띵~ 서툴지만 즐거운 소리.'); }); return;
@@ -1106,7 +1106,7 @@ function openRel(tab = 'profile') {
     for (const f of nd.flags || []) {
       let extra = '';
       if (f === 'lovers') extra = r.flags.declined ? ' — 「마음 전하기」로 다시' : ' — 호감도 400 · 만난 지 15일 · 저녁 바닷가 동행';
-      if (f === 'engaged') extra = ` — 만난 지 ${daysKnown()}/120일 · 호감도 ${r.aff}/900`;
+      if (f === 'engaged') extra = ` — 만난 지 ${daysKnown()}/180일 · 호감도 ${r.aff}/900`;
       if (f === 'married') extra = S.wedding ? ` — ${dateLabel(S.wedding)} 예정` : ' — 날짜를 정해요';
       rows.push([FLAG_LABELS[f] + extra, !!r.flags[f]]);
     }
