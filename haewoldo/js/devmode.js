@@ -446,8 +446,9 @@ function devExport() {
   });
 }
 function devImport() {
-  openPanel('📥 맵 편집 가져오기', `<p class="psub">내보낸 글을 붙여 넣거나 파일을 골라요. 지금 편집은 자동 백업돼요.</p><textarea id="devTxt" style="width:100%;height:160px;font-size:11px" placeholder='{"ver":1,"maps":{...}}'></textarea><input type="file" id="devFileIn" accept=".json,application/json" style="margin:6px 0"><div class="dbtns" style="grid-template-columns:1fr;margin-top:6px"><button id="devGo" class="ok">가져오기</button></div>`, (b) => {
-    b.querySelector('#devFileIn').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { b.querySelector('#devTxt').value = r.result; }; r.readAsText(f); };
+  openPanel('📥 맵 편집 가져오기', `<p class="psub">내보낸 글을 붙여 넣거나 파일을 골라요. 지금 편집은 자동 백업돼요.</p><textarea id="devTxt" style="width:100%;height:160px;font-size:11px" placeholder='{"ver":1,"maps":{...}}'></textarea><input type="file" id="devFileIn" accept=".json,application/json,text/plain,*/*" style="display:none"><div class="dbtns" style="grid-template-columns:1fr;margin-top:6px"><button id="devPick">📂 파일 고르기</button></div><p class="psub" id="devFileName"></p><div class="dbtns" style="grid-template-columns:1fr;margin-top:6px"><button id="devGo" class="ok">가져오기</button></div>`, (b) => {
+    b.querySelector('#devPick').onclick = () => { Sound.sfx('tap'); b.querySelector('#devFileIn').click(); };
+    b.querySelector('#devFileIn').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { b.querySelector('#devTxt').value = r.result; let ok = false; try { ok = devValid(JSON.parse(r.result)); } catch (er) { } b.querySelector('#devFileName').textContent = ok ? `📄 ${f.name} — 읽었어요. 아래 「가져오기」를 눌러요` : `⚠ ${f.name} — 해월도 맵 편집 파일이 아닌 것 같아요`; toast(ok ? '📄 파일을 읽었어요' : '⚠ 맵 편집 파일이 아니에요'); }; r.onerror = () => toast('파일을 읽지 못했어요'); r.readAsText(f); e.target.value = ''; };
     b.querySelector('#devGo').onclick = () => {
       let d; try { d = JSON.parse(b.querySelector('#devTxt').value); } catch (e) { toast('JSON 형식이 아니에요'); return; }
       if (!devValid(d)) { toast('해월도 맵 편집 파일이 아니에요'); return; }

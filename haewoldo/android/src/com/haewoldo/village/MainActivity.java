@@ -13,6 +13,9 @@ import android.webkit.WebViewClient;
 /* 해월도 다이어리 — 게임 HTML을 앱 안에서 전체 화면으로 실행. 저장(localStorage)은 앱 데이터에 남는다. */
 public class MainActivity extends Activity implements android.webkit.ValueCallback<String> {
   private WebView web;
+  /* 웹 페이지의 <input type=file> → 안드로이드 파일 고르기 창 (JSON 가져오기 등) */
+  private android.webkit.ValueCallback<android.net.Uri[]> fileCb;
+  private static final int REQ_FILE = 7;
 
   @Override protected void onCreate(Bundle b) {
     super.onCreate(b);
@@ -28,7 +31,18 @@ public class MainActivity extends Activity implements android.webkit.ValueCallba
     s.setTextZoom(100);
     web.setOverScrollMode(View.OVER_SCROLL_NEVER);
     web.setWebViewClient(new WebViewClient());
-    web.setWebChromeClient(new WebChromeClient());
+    web.setWebChromeClient(new WebChromeClient() {
+      @Override public boolean onShowFileChooser(WebView v, android.webkit.ValueCallback<android.net.Uri[]> cb, FileChooserParams p) {
+        if (fileCb != null) fileCb.onReceiveValue(null);
+        fileCb = cb;
+        android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+        i.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");   // .json은 기기마다 형식 이름이 달라서 모든 파일을 보여 줌
+        try { startActivityForResult(android.content.Intent.createChooser(i, "파일 고르기"), REQ_FILE); }
+        catch (Exception e) { fileCb = null; cb.onReceiveValue(null); return false; }
+        return true;
+      }
+    });
     web.addJavascriptInterface(new Bridge(this), "Android");
     web.setBackgroundColor(0xFF2B3550);
     setContentView(web);
@@ -49,6 +63,14 @@ public class MainActivity extends Activity implements android.webkit.ValueCallba
     super.onPause();
   }
   @Override protected void onResume() { super.onResume(); if (web != null) { web.resumeTimers(); web.onResume(); web.evaluateJavascript("try{appResume()}catch(e){}", null); } hideBars(); }
+  @Override protected void onActivityResult(int req, int res, android.content.Intent data) {
+    super.onActivityResult(req, res, data);
+    if (req == REQ_FILE && fileCb != null) {
+      android.net.Uri[] r = null;
+      if (res == RESULT_OK && data != null) { if (data.getData() != null) r = new android.net.Uri[] { data.getData() }; else r = WebChromeClient.FileChooserParams.parseResult(res, data); }
+      fileCb.onReceiveValue(r); fileCb = null;
+    }
+  }
   @Override protected void onDestroy() { if (web != null) { web.stopLoading(); web.destroy(); web = null; } super.onDestroy(); }
   /* 뒤로 가기: 열린 창이 있으면 닫고, 없으면 앱을 백그라운드로 */
   @Override public void onBackPressed() {
