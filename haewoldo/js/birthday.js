@@ -4,45 +4,59 @@
    · 내 생일: 주민들이 뜻밖의 선물 · 축하, 형사님은 관계 단계에 따라 전혀 다르게 챙김
    · 형사님 생일: 메뉴에 「생일 축하해요」, 선물은 두 배로 기뻐함, 케이크가 있으면 특별 장면
    ===================================================================== */
+/* 생일은 실제 날짜(1~31일)로 정하고, 해월도 달력(한 달 10일)에선 비율대로 그 달의 같은 무렵에 맞이함
+   예) 7월 23일 → 해월도 7월 8일. 예전 저장(1~10일로 정한 것)은 그대로 해월도 날짜 */
+const BDAY_MDAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const bdayGameDom = (b) => b.r ? Math.min(DAYS_PER_MONTH, Math.max(1, Math.ceil(b.d * DAYS_PER_MONTH / BDAY_MDAYS[b.m - 1]))) : b.d;
 const bdayStr = (b) => b ? `${b.m}월 ${b.d}일` : '아직 안 정함';
-const isBday = (b, day = S.day) => { if (!b) return false; const c = calendar(day); return c.month === b.m && c.dom === b.d; };
+const bdayGameStr = (b) => b ? (b.r && bdayGameDom(b) !== b.d ? `${b.m}월 ${b.d}일 (해월도 달력 ${b.m}월 ${bdayGameDom(b)}일)` : `${b.m}월 ${b.d}일`) : '아직 안 정함';
+const isBday = (b, day = S.day) => { if (!b) return false; const c = calendar(day); return c.month === b.m && c.dom === bdayGameDom(b); };
 const bdayKey = (who) => who + calendar(S.day).year;
 function bdayState() { if (!S.bdays) S.bdays = { me: null, det: null, done: {} }; return S.bdays; }
 
 /* ---------------- 정하기 UI ---------------- */
-function bdayPick(title, cur, cb) {
-  openSheet({ title: `🎂 ${title} — 몇 월?`, sub: `<div class="relneed">지금: ${bdayStr(cur)} · 해월도 달력은 한 달이 10일이에요</div>`, cols: 4, items: Array.from({ length: 12 }, (_, i) => ({ icon: ['❄️', '🌨️', '🌸', '🌷', '🌿', '☀️', '🌊', '🍉', '🍂', '🍁', '🍊', '🎄'][i], label: `${i + 1}월`, onClick: () => openSheet({ title: `🎂 ${title} — ${i + 1}월 며칠?`, cols: 5, items: Array.from({ length: 10 }, (_, d) => ({ icon: '📅', label: `${d + 1}일`, onClick: () => cb({ m: i + 1, d: d + 1 }) })) }) })) });
+const BDAY_MICON = ['❄️', '🌨️', '🌸', '🌷', '🌿', '☀️', '🌊', '🍉', '🍂', '🍁', '🍊', '🎄'];
+function bdayPick(title, cur, cb, back) {
+  const backIt = back ? [{ icon: '↩️', label: '뒤로', onClick: back }] : [];
+  openSheet({ title: `🎂 ${title} — 몇 월?`, sub: `<div class="relneed">지금: ${bdayGameStr(cur)}</div>`, cols: 4, items: [...Array.from({ length: 12 }, (_, i) => ({ icon: BDAY_MICON[i], label: `${i + 1}월`, onClick: () => openSheet({ title: `🎂 ${title} — ${i + 1}월 며칠?`, sub: '<div class="relneed">해월도 달력은 한 달이 10일이라, 그 달의 같은 무렵에 생일을 맞아요</div>', cols: 7, items: [...Array.from({ length: BDAY_MDAYS[i] }, (_, d) => ({ label: `${d + 1}`, onClick: () => cb({ m: i + 1, d: d + 1, r: true }) })), { icon: '↩️', label: '월 다시', onClick: () => bdayPick(title, cur, cb, back) }] }) })), ...backIt] });
 }
-function bdayMenu() {
-  const B = bdayState();
-  openSheet({ title: '🎂 생일', sub: `<div class="relneed">내 생일 ${bdayStr(B.me)} · ${himCall()} 생일 ${bdayStr(B.det)}</div>`, cols: 2, items: [
-    { icon: '🎂', label: '내 생일 정하기', note: bdayStr(B.me), onClick: () => bdayPick('내 생일', B.me, (b) => { B.me = b; save(); toast(`🎂 내 생일을 ${bdayStr(b)}로 정했어요`); }) },
-    { icon: '🎁', label: `${himCall()} 생일`, note: bdayStr(B.det), onClick: () => bdayPick(`${himCall()} 생일`, B.det, (b) => { B.det = b; save(); toast(`🎁 ${himCall()}의 생일을 ${bdayStr(b)}로 정했어요`); }) },
-  ] });
+function bdayMenu(opts = {}) {
+  const B = bdayState(), again = () => bdayMenu(opts);
+  const items = [
+    { icon: '🎂', label: '내 생일', note: bdayStr(B.me), onClick: () => bdayPick('내 생일', B.me, (b) => { B.me = b; save(); toast(`🎂 내 생일: ${bdayGameStr(b)}`); again(); }, again) },
+    { icon: '🎁', label: `${himCall()} 생일`, note: bdayStr(B.det), onClick: () => bdayPick(`${himCall()} 생일`, B.det, (b) => { B.det = b; save(); toast(`🎁 ${himCall()} 생일: ${bdayGameStr(b)}`); again(); }, again) },
+  ];
+  if (opts.done !== false) items.push({ icon: '✅', label: '다 정했어요', onClick: () => { } });
+  openSheet({ title: '🎂 생일', sub: `<div class="relneed">내 생일 ${bdayGameStr(B.me)}<br>${himCall()} 생일 ${bdayGameStr(B.det)}</div>`, cols: 3, items });
 }
-/* 새 게임 화면에 생일 칸 */
+/* 새 게임 화면에 생일 칸 (달마다 날짜 수가 바뀜) */
 function bdaySelects(id, label, def) {
   const opt = (n, v) => Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${i + 1 === v ? 'selected' : ''}>${i + 1}</option>`).join('');
-  return `<label class="lbl bday">${label}<span><select id="${id}M">${opt(12, def.m)}</select>월 <select id="${id}D">${opt(10, def.d)}</select>일</span></label>`;
+  return `<label class="lbl bday">${label}<span><select id="${id}M">${opt(12, def.m)}</select>월 <select id="${id}D">${opt(BDAY_MDAYS[def.m - 1], def.d)}</select>일</span></label>`;
 }
 window.addEventListener('DOMContentLoaded', () => {
   const det = $('#detIn'); if (!det || $('#bdMeM')) return;
   const wrap = document.createElement('section'); wrap.className = 'bdayRow';
-  wrap.innerHTML = bdaySelects('bdMe', '내 생일', { m: 7, d: 5 }) + bdaySelects('bdDet', '형사님 생일', { m: 1 + Math.floor(Math.random() * 12), d: 1 + Math.floor(Math.random() * 10) });
+  const rm = 1 + Math.floor(Math.random() * 12);
+  wrap.innerHTML = bdaySelects('bdMe', '내 생일', { m: 7, d: 5 }) + bdaySelects('bdDet', '형사님 생일', { m: rm, d: 1 + Math.floor(Math.random() * BDAY_MDAYS[rm - 1]) });
   det.closest('label').after(wrap);
+  for (const id of ['bdMe', 'bdDet']) {
+    const mS = $('#' + id + 'M'), dS = $('#' + id + 'D');
+    mS.addEventListener('change', () => { const n = BDAY_MDAYS[+mS.value - 1], cur = Math.min(+dS.value, n); dS.innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${i + 1 === cur ? 'selected' : ''}>${i + 1}</option>`).join(''); });
+  }
 });
 const _newStateBday = newState;
 newState = function (name, job, hair, detName) {
   const s = _newStateBday(name, job, hair, detName);
   const v = (id) => { const el = $('#' + id); return el ? +el.value : 0; };
-  s.bdays = { me: v('bdMeM') ? { m: v('bdMeM'), d: v('bdMeD') } : null, det: v('bdDetM') ? { m: v('bdDetM'), d: v('bdDetD') } : null, done: {} };
+  s.bdays = { me: v('bdMeM') ? { m: v('bdMeM'), d: v('bdMeD'), r: true } : null, det: v('bdDetM') ? { m: v('bdDetM'), d: v('bdDetD'), r: true } : null, done: {} };
   return s;
 };
 /* 형사님 이름 바꿀 때 생일도 */
 const _renameDetBday = renameDet;
 renameDet = function () {
   _renameDetBday();
-  const t = setInterval(() => { if (G.busy || G.dialog || G.sheet) return; clearInterval(t); const B = bdayState(); openSheet({ title: `🎁 ${himCall()} 생일도 정할까요?`, sub: `<div class="relneed">지금: ${bdayStr(B.det)}</div>`, cols: 2, items: [{ icon: '🎂', label: '생일 정하기', onClick: () => bdayPick(`${himCall()} 생일`, B.det, (b) => { B.det = b; save(); toast(`🎁 생일을 ${bdayStr(b)}로 정했어요`); }) }, { icon: '↩️', label: '그대로 두기', onClick: () => { } }] }); }, 400);
+  const t = setInterval(() => { if (G.busy || G.dialog || G.sheet) return; clearInterval(t); const B = bdayState(); openSheet({ title: `🎁 ${himCall()} 생일도 정할까요?`, sub: `<div class="relneed">지금: ${bdayGameStr(B.det)}</div>`, cols: 2, items: [{ icon: '🎂', label: '생일 정하기', onClick: () => bdayPick(`${himCall()} 생일`, B.det, (b) => { B.det = b; save(); toast(`🎁 ${himCall()} 생일: ${bdayGameStr(b)}`); }) }, { icon: '↩️', label: '그대로 두기', onClick: () => { } }] }); }, 400);
 };
 /* ---------------- 내 생일 ---------------- */
 const BDAY_GIFTS = {
