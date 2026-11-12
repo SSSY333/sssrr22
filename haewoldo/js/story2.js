@@ -558,7 +558,7 @@ async function addAlbum(title, kind) {
 }
 
 /* ---------------- 이벤트 트리거 ---------------- */
-function propNeed() { return S && S.romanceMode === 'SPICY' ? { days: 60, aff: 700 } : { days: 180, aff: 900 }; }
+function propNeed() { return { days: 180, aff: 900 }; }
 function confessReady() {
   const r = S.rel;
   return r.stage === 4 && r.aff >= 400 && daysKnown() >= 15 && !r.flags.lovers && !r.flags.declined && S.day - r.confessDay >= 3 && S.min >= 17 * 60;

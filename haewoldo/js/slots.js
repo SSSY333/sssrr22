@@ -1,7 +1,6 @@
 /* =====================================================================
    저장 칸 두 개 — 저장 1 · 저장 2 를 따로 이어 하기 · 새로 시작
    · 저장 1 = 예전 저장 그대로 (haewoldo-village-v4), 저장 2 = 새 칸
-   · 칸마다 연애 모드(🌷 일반 · 🥵 아찔한)가 따로 기록돼요
    ===================================================================== */
 const SLOT_KEYS = { 1: 'haewoldo-village-v4', 2: 'haewoldo-village-v4-s2' };
 const SLOT_LAST = 'haewoldo-slot-last';
@@ -31,8 +30,7 @@ save = function () {
 loadSave = function (n = G.slot) { return slotRead(n); };
 function slotInfo(s) {
   if (!s) return '비어 있어요';
-  const mode = s.romanceMode === 'SPICY' ? '🥵 아찔한' : '🌷 일반';
-  return `${mode} · ${s.name} · ${JOBS[s.job].name} · ${dateLabel(s.day)} · ${STAGES[Math.max(0, (s.rel && s.rel.stage || 1) - 1)].name}`;
+  return `${s.name} · ${JOBS[s.job].name} · ${dateLabel(s.day)} · ${STAGES[Math.max(0, (s.rel && s.rel.stage || 1) - 1)].name}`;
 }
 /* 타이틀: 저장 칸 고르기 */
 function slotPicker(kind) {
@@ -74,7 +72,10 @@ const _openSheetSlot = openSheet;
 openSheet = function (o) {
   if (o && o.items) {
     o = Object.assign({}, o, { items: o.items.map(i => /지우고 처음부터/.test(i.label) ? Object.assign({}, i, { label: `저장 ${G.slot} 지우고 처음부터`, onClick: () => { G.started = false; try { localStorage.removeItem(slotKey()); if (G.slot === 1) localStorage.removeItem(SAVE_KEY); } catch (e) { } location.reload(); } }) : i) });
-    if (o.title === '⚙ 설정') o.items.push({ icon: '💾', label: `저장 ${G.slot} 사용 중`, note: S && S.romanceMode === 'SPICY' ? '🥵 아찔한 모드' : '🌷 일반 모드', onClick: () => openSheet({ title: `💾 지금은 저장 ${G.slot}`, sub: '<div class="relneed">자동으로 저장되고 있어요. 다른 칸은 처음 화면에서 골라요.</div>', cols: 2, items: [{ icon: '🏠', label: '처음 화면으로', note: '저장하고 나가기', onClick: () => { save(); G.started = false; location.reload(); } }, { icon: '↩', label: '계속 플레이', onClick: () => { } }] }) });
+    if (o.title === '⚙ 설정') o.items.push({ icon: '💾', label: `저장 ${G.slot} 사용 중`, note: '자동 저장 중', onClick: () => openSheet({ title: `💾 지금은 저장 ${G.slot}`, sub: '<div class="relneed">자동으로 저장되고 있어요. 다른 칸은 처음 화면에서 골라요.</div>', cols: 2, items: [{ icon: '🏠', label: '처음 화면으로', note: '저장하고 나가기', onClick: () => { save(); G.started = false; location.reload(); } }, { icon: '↩', label: '계속 플레이', onClick: () => { } }] }) });
   }
   return _openSheetSlot(o);
 };
+/* 예전 실험 모드 기록 정리 */
+const _startGameSlot = startGame;
+startGame = function (state, isNew) { if (state) { delete state.romanceMode; delete state.spicy; } return _startGameSlot(state, isNew); };
