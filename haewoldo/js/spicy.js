@@ -290,7 +290,7 @@ const SP_EVENTS = [
     await spAct('🔥 형사님이 잘 익은 고기를 이쪽 접시에 먼저 올려 준다.');
     G.det.prop = null;
     await spDet('normal', spB('먹고 텐트에서 좀 쉴까?', '먹고 텐트에서 좀 쉴까요?'));
-    const i = await spChoose(['응, 쉬자', '여기서 불 보자'], 'tent');
+    const i = await spChoose(['네, 쉬어요', '여기서 불 봐요'], 'tent');
     if (i === 0 && MAPS.in_tentA) {
       if (S.comp) endCompanion(true); await spGoInside('in_tentA');
       spNear(3); await spDet('normal', spB('여기 생각보다 괜찮네.', '여기 생각보다 괜찮네요.'));
@@ -373,11 +373,11 @@ const SP_EVENTS = [
     spNear(5); await spAct('형사님이 손을 잡는다.');
     await spDet('normal', spB('오늘 자고 갈래?', '오늘 같이 있을래요?'));
     await spDet('normal', spB('부담 갖지는 말고. 네가 괜찮으면.', '부담 갖지는 말고요. 괜찮으면.'));
-    const c = await spChoose(['응, 같이 있을래', '역시 오늘은 아닌 것 같아요'], 'night1consent');
+    const c = await spChoose(['네, 같이 있을래요', '역시 오늘은 아닌 것 같아요'], 'night1consent');
     if (c === 1) { spReset(); s.nightDeclinedDay = S.day; await spDet('normal', spB('응. 말해 줘서 고마워. 내일 보자.', '네. 말해 줘서 고마워요. 내일 봐요.')); addAff(4, { event: true }); return; }
     await spAct('형사님이 다시 한번 얼굴을 살핀다.');
     await spDet('normal', spB('정말 괜찮아?', '정말 괜찮아요?'));
-    const c2 = await spChoose(['응', '…생각해 보니 오늘은 아니야'], 'night1confirm');
+    const c2 = await spChoose(['네', '…생각해 보니 오늘은 아니에요'], 'night1confirm');
     if (c2 === 1) { spReset(); s.nightDeclinedDay = S.day; await spDet('normal', spB('응. 괜찮아. 데려다줄게.', '괜찮아요. 데려다줄게요.')); return; }
     await kissAnim('♥'); S.rel.flags.kiss = true; S.rel.flags.cheek = true; S.rel.flags.hand = true;
     S.hold = true;
