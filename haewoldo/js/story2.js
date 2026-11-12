@@ -231,7 +231,7 @@ async function proposalEvent() {
 async function playerPropose() {
   const r = S.rel;
   if ((S.inv.ring || 0) < 1) { await say('me', 'normal', '(반지가 없다. 마을 슈퍼에서 은반지를 살 수 있다.)'); return; }
-  if (S.day - r.metDay < 180 || r.aff < 900) { await say('me', 'blush', '(반지를 꺼내려다… 아직은 이른 것 같아 다시 넣었다. 만난 지 반년은 넘어야 하고, 더 깊은 마음이 필요해.)'); await say('det', 'tease', '왜요? 주머니에 뭐 있어요? …수사해 볼까.'); return; }
+  if (S.day - r.metDay < propNeed().days || r.aff < propNeed().aff) { await say('me', 'blush', '(반지를 꺼내려다… 아직은 이른 것 같아 다시 넣었다. 함께한 시간이 조금 더 쌓여야 하고, 더 깊은 마음이 필요해.)'); await say('det', 'tease', '왜요? 주머니에 뭐 있어요? …수사해 볼까.'); return; }
   S.inv.ring--;
   await say('me', 'blush', `${himCall()}, 저랑… 결혼해 줄래요?`);
   await say('det', 'surprise', '……');
@@ -558,6 +558,7 @@ async function addAlbum(title, kind) {
 }
 
 /* ---------------- 이벤트 트리거 ---------------- */
+function propNeed() { return S && S.romanceMode === 'SPICY' ? { days: 60, aff: 700 } : { days: 180, aff: 900 }; }
 function confessReady() {
   const r = S.rel;
   return r.stage === 4 && r.aff >= 400 && daysKnown() >= 15 && !r.flags.lovers && !r.flags.declined && S.day - r.confessDay >= 3 && S.min >= 17 * 60;
@@ -618,7 +619,7 @@ function planDay() {
   }
   if (r.flags.lovers && loverDays() >= 12 && !r.flags.fightDone && Math.random() < 0.18) d.fight = true;
   if (r.flags.lovers && loverDays() >= 6 && !r.flags.nursed && (S.weather === 'rain' || S.weather === 'snow') && Math.random() < 0.35) d.sick = true;
-  if (r.stage === 6 && !r.flags.engaged && !r.flags.proposeLater && r.aff >= 900 && S.day - r.metDay >= 180 && S.day - r.proposeDay >= 7) d.proposal = true;
+  if (r.stage === 6 && !r.flags.engaged && !r.flags.proposeLater && r.aff >= propNeed().aff && S.day - r.metDay >= propNeed().days && S.day - r.proposeDay >= 7) d.proposal = true;
   // 축제 장식
   G.tempObjs = [];
   for (const ev of todayEvents()) if (ev.map === 'island' && !['typhoon', 'firstsnow'].includes(ev.id)) {
@@ -1106,7 +1107,7 @@ function openRel(tab = 'profile') {
     for (const f of nd.flags || []) {
       let extra = '';
       if (f === 'lovers') extra = r.flags.declined ? ' — 「마음 전하기」로 다시' : ' — 호감도 400 · 만난 지 15일 · 저녁 바닷가 동행';
-      if (f === 'engaged') extra = ` — 만난 지 ${daysKnown()}/180일 · 호감도 ${r.aff}/900`;
+      if (f === 'engaged') extra = ` — 만난 지 ${daysKnown()}/${propNeed().days}일 · 호감도 ${r.aff}/${propNeed().aff}`;
       if (f === 'married') extra = S.wedding ? ` — ${dateLabel(S.wedding)} 예정` : ' — 날짜를 정해요';
       rows.push([FLAG_LABELS[f] + extra, !!r.flags[f]]);
     }

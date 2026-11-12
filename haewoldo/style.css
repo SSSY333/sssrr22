@@ -410,3 +410,22 @@ body.wide #newgame .pop.wide > .ng-btns { grid-row: 7; }
 #mg .mgBtn.on { background: #ffe7a8; }
 #mg .mgBtn.ok { background: #ff9ec4; font-size: 17px; }
 #mg .mgHint { font-family: Jua, sans-serif; font-size: 13px; color: #5b4450; padding: 7px 10px; text-align: center; border-top: 2px dashed #e2cfb0; }
+
+/* ---------------- 저장 칸 · 연애 모드 ---------------- */
+#slotPick { position: absolute; inset: 0; z-index: 20; background: rgba(30,24,40,.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+#slotPick .pop { width: min(100%, 380px); display: flex; flex-direction: column; gap: 10px; }
+#slotPick h2 { margin: 0 0 4px; font-size: 20px; text-align: center; }
+.slotCard { text-align: left; background: #fff; border: 3px solid var(--line); border-radius: 14px; box-shadow: 0 3px 0 var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; font-family: inherit; color: var(--ink); }
+.slotCard b { font-size: 17px; font-weight: normal; }
+.slotCard small { font-size: 13px; color: var(--ink2); word-break: keep-all; }
+.slotCard em { font-style: normal; font-size: 12px; color: #c0475c; }
+.slotCard.empty { background: var(--paper2); }
+.slotCard.sure { background: #ffe3ea; }
+.modeRow .modes { display: flex; gap: 8px; }
+.modeRow .mode { flex: 1; text-align: left; background: #fff; border: 3px solid var(--line); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; font-family: inherit; color: var(--ink); box-shadow: 0 3px 0 var(--line); }
+.modeRow .mode b { font-weight: normal; font-size: 15px; }
+.modeRow .mode small { font-size: 12px; color: var(--ink2); line-height: 1.35; word-break: keep-all; }
+.modeRow .mode.on { background: #ffe7a8; }
+.modeRow .mode.on[data-m="SPICY"] { background: #ffd0dc; }
+body.wide #newgame .pop.wide > .modeRow { grid-column: 2; grid-row: 6; }
+body.spicyOn #relBtn::after { content: '🥵'; font-size: 13px; margin-left: 2px; }
