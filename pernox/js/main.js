@@ -127,6 +127,10 @@
   }
   function leaveRoom() {
     const m = W.maps[Game.mapId];
+    if (m.def.exitTo) { // 은밀숙소 객실 → 로비
+      const lb = W.maps[m.def.exitTo];
+      enterMap(lb.id, lb.exit.x + 0.5, lb.exit.y - 2.5); Game.player.dir = 2; return;
+    }
     const out = W.maps[m.def.parent];
     const d = out.doors.find(d => d.to === m.id);
     enterMap(out.id, d.x + 0.5, d.y + 0.5);
@@ -198,6 +202,7 @@
     switch (o.use) {
       case 'bed':
         if (home) return sleepMenu();
+        if (PX.MAPS[Game.mapId].innRoom) return PX.Act.innBed(o);
         return sit(o, '잠깐 눕기');
       case 'sit': return sit(o);
       case 'terminal': return UI.terminal();
@@ -549,7 +554,7 @@
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
       }
     }
-    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: '🚪 밖으로 나가기', fn: leaveRoom });
+    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
     for (const c of Game.critters || []) if (!c.hidden) list.push({ type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });

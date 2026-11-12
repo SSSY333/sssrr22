@@ -194,6 +194,17 @@
     furn: [['sofa', 1, 0, 0], ['sofa', 3, 0, 0], ['sofa', 0, 2, 3], ['cafetable', 2, 2, 0], ['tv', 7, 0, 0], ['lamp', 10, 0, 0], ['sidetable', 0, 4, 0]], walls: [['B', 5.6, 'screen', 1.2]] });
   room('inn', { name: '은밀숙소 로비', w: 11, h: 8, floor: 'carpet', wall: '#5a2f3f', exit: 5, amb: 0.25, adult: true,
     furn: [['shopcounter', 4, 1, 0, 'inn.desk'], ['@', 4, 0, 0, 'inn.clerk', 'stand'], ['sofa', 0, 4, 3], ['bigplant', 10, 0, 0], ['lamp', 0, 0, 0], ['mirror', 10, 4, 1]], walls: [['B', 7.0, 'board', 1.2]] });
+  // 은밀숙소 테마 객실: 로비 프런트에서 예약하면 올라감 (나가면 로비로)
+  const INN = { w: 10, h: 8, exit: 5, adult: true, date: true, innRoom: true, exitTo: 'inn', amb: 0.3, parent: 'rubyway' };
+  room('inn_mirror', Object.assign({}, INN, { name: '은밀숙소 · 거울 객실', floor: 'carpet', wall: '#3f2a4a',
+    furn: [['roundbed', 3, 0, 0, 'innm.bed'], ['sidetable', 2, 0, 0], ['sidetable', 5, 0, 0], ['vanity', 9, 2, 1], ['mirror', 0, 3, 3], ['sofa', 0, 6, 3], ['moodlamp', 9, 0, 0], ['candles', 6, 3, 0], ['rug', 3, 3, 0]],
+    walls: [['B', 0.6, 'mirrorw', 1.4], ['B', 7.0, 'mirrorw', 1.4], ['L', 1.2, 'mirrorw', 1.6]] }));
+  room('inn_bath', Object.assign({}, INN, { name: '은밀숙소 · 큰 욕조 객실', floor: 'tile', wall: '#2f4a5a',
+    furn: [['bigbed', 6, 0, 0, 'innb.bed'], ['sidetable', 8, 0, 0], ['bathtub', 1, 0, 0], ['candles', 3, 0, 0], ['candles', 0, 2, 0], ['plant', 0, 7, 0], ['moodlamp', 9, 3, 0], ['sofa', 9, 5, 1], ['vanity', 4, 0, 0]],
+    walls: [['B', 1.0, 'window', 1.6], ['L', 4.0, 'mirrorw', 1.2]] }));
+  room('inn_water', Object.assign({}, INN, { name: '은밀숙소 · 물침대 객실', floor: 'neonfloor', wall: '#1f2a4a', stars: true,
+    furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 9, 4, 1], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
+    walls: [['B', 2.0, 'window', 1.4], ['B', 7.0, 'window', 1.4]] }));
   room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.45, adult: true,
     furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0]], walls: [] });
   room('dawnshower', { name: '새벽 샤워실', w: 11, h: 8, floor: 'tile', wall: '#3f5a6a', exit: 5, adult: true,

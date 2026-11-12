@@ -974,6 +974,20 @@ PX.G = (() => {
   def('parasol', { name: '파라솔 테이블', w: 2, d: 2, cat: 'out', parts: [P(0.97, 0.97, 0, 0.06, 0.06, 30, '#e9eef2'), P(0.5, 0.5, 11, 1, 1, 2, '#f1e6d0'), P(0.1, 0.1, 30, 1.8, 1.8, 3, '#ff8b5e'), P(0.6, 0.6, 33, 0.8, 0.8, 2, '#ffd166')] });
   def('neonsign', { name: '네온 간판', cat: 'out', parts: [P(0.45, 0.45, 0, 0.1, 0.1, 24, '#3a3f45'), P(0.1, 0.4, 24, 0.8, 0.2, 12, '#2a1f4f')], det: [{ p: 1, f: 'S', u: [0.1, 0.7], v: [2, 10], c: '#ff6bd5' }], light: { r: 2, c: '#ff8bea', z: 30, night: true } });
 
+  // 은밀숙소 테마 객실 (LB83)
+  def('waterbed', { name: '물침대', w: 2, d: 2, cat: 'home', price: 900, use: 'bed', seats: [[0.6, 1.1, 0, 10], [1.4, 1.1, 0, 10]],
+    parts: [P(0, 0, 0, 2, 2, 5, '#3a2a4a'), P(0, 0, 0, 2, 0.16, 22, '#2e2140'), P(0.06, 0.16, 5, 1.88, 1.78, 5, '#7fb6e6'), P(0.1, 0.75, 9.5, 1.8, 1.15, 1, '#5b8fd0'), P(0.15, 0.24, 10, 0.75, 0.36, 3, '#f4ecff'), P(1.1, 0.24, 10, 0.75, 0.36, 3, '#f4ecff')],
+    det: [{ p: 2, f: 'T', r: [0.2, 0.3, 0.9, 0.36], c: '#bfe2ff' }, { p: 2, f: 'T', r: [0.5, 0.6, 0.62, 0.66], c: '#bfe2ff' }], light: { r: 2.2, c: '#7fb6ff', z: 6 } });
+  def('roundbed', { name: '원형 침대', w: 2, d: 2, cat: 'home', price: 900, use: 'bed', seats: [[0.6, 1.1, 0, 10], [1.4, 1.1, 0, 10]],
+    parts: [P(0.1, 0.1, 0, 1.8, 1.8, 6, '#5a2f3f'), P(0, 0, 0, 2, 0.16, 20, '#c9a0b4'), P(0.12, 0.2, 6, 1.76, 1.68, 4, '#f6e8ee'), P(0.12, 0.8, 9, 1.76, 1.08, 3, '#c2546f'), P(0.2, 0.26, 10, 0.7, 0.36, 3, '#ffffff'), P(1.1, 0.26, 10, 0.7, 0.36, 3, '#ffffff')] });
+  def('bathtub', { name: '큰 욕조', w: 2, d: 2, cat: 'home', price: 700, use: 'bath', seats: [[0.6, 1.1, 1, 1], [1.4, 0.9, 3, 1]],
+    parts: [P(0, 0, 0, 2, 2, 11, '#f2f4f6'), P(0.18, 0.18, 6, 1.64, 1.64, 5, '#9fd6ec'), P(0.3, 0.3, 11, 0.5, 0.4, 1.5, '#ffffff'), P(1.1, 1.2, 11, 0.6, 0.4, 1.5, '#ffffff'), P(0.85, 0.02, 11, 0.3, 0.12, 6, '#c9ced4')],
+    light: { r: 1.8, c: '#bfeaff', z: 8 } });
+  def('vanity', { name: '거울 화장대', cat: 'home', price: 260, use: 'vanity', parts: [P(0.05, 0.3, 0, 0.9, 0.6, 12, '#e6d6c8'), P(0.1, 0.32, 12, 0.8, 0.1, 22, '#c9a98a')],
+    det: [{ p: 1, f: 'S', u: [0.08, 0.92], v: [2, 20], c: '#d6ecf6' }, { p: 1, f: 'S', u: [0.15, 0.3], v: [12, 18], c: '#ffffff' }] });
+  def('moodlamp', { name: '무드등', cat: 'home', price: 110, parts: [P(0.3, 0.3, 0, 0.4, 0.4, 2, '#3a2a3a'), P(0.47, 0.47, 2, 0.06, 0.06, 14, '#3a2a3a'), P(0.25, 0.25, 16, 0.5, 0.5, 7, '#ff9fbf')], light: { r: 3.4, c: '#ff8fb8', z: 20 } });
+  def('candles', { name: '캔들', cat: 'home', price: 40, blocks: false, parts: [P(0.25, 0.3, 0, 0.18, 0.18, 4, '#f3d9e0'), P(0.3, 0.35, 4, 0.06, 0.06, 2.5, '#ffb347'), P(0.55, 0.45, 0, 0.18, 0.18, 6, '#f3d9e0'), P(0.6, 0.5, 6, 0.06, 0.06, 2.5, '#ffb347'), P(0.3, 0.62, 0, 0.18, 0.18, 3, '#f3d9e0'), P(0.35, 0.67, 3, 0.06, 0.06, 2.5, '#ffb347')], light: { r: 1.6, c: '#ffc070', z: 6 } });
+
   PX.FURN = F;
 })();
 
@@ -2156,6 +2170,17 @@ PX.S = (() => {
     furn: [['sofa', 1, 0, 0], ['sofa', 3, 0, 0], ['sofa', 0, 2, 3], ['cafetable', 2, 2, 0], ['tv', 7, 0, 0], ['lamp', 10, 0, 0], ['sidetable', 0, 4, 0]], walls: [['B', 5.6, 'screen', 1.2]] });
   room('inn', { name: '은밀숙소 로비', w: 11, h: 8, floor: 'carpet', wall: '#5a2f3f', exit: 5, amb: 0.25, adult: true,
     furn: [['shopcounter', 4, 1, 0, 'inn.desk'], ['@', 4, 0, 0, 'inn.clerk', 'stand'], ['sofa', 0, 4, 3], ['bigplant', 10, 0, 0], ['lamp', 0, 0, 0], ['mirror', 10, 4, 1]], walls: [['B', 7.0, 'board', 1.2]] });
+  // 은밀숙소 테마 객실: 로비 프런트에서 예약하면 올라감 (나가면 로비로)
+  const INN = { w: 10, h: 8, exit: 5, adult: true, date: true, innRoom: true, exitTo: 'inn', amb: 0.3, parent: 'rubyway' };
+  room('inn_mirror', Object.assign({}, INN, { name: '은밀숙소 · 거울 객실', floor: 'carpet', wall: '#3f2a4a',
+    furn: [['roundbed', 3, 0, 0, 'innm.bed'], ['sidetable', 2, 0, 0], ['sidetable', 5, 0, 0], ['vanity', 9, 2, 1], ['mirror', 0, 3, 3], ['sofa', 0, 6, 3], ['moodlamp', 9, 0, 0], ['candles', 6, 3, 0], ['rug', 3, 3, 0]],
+    walls: [['B', 0.6, 'mirrorw', 1.4], ['B', 7.0, 'mirrorw', 1.4], ['L', 1.2, 'mirrorw', 1.6]] }));
+  room('inn_bath', Object.assign({}, INN, { name: '은밀숙소 · 큰 욕조 객실', floor: 'tile', wall: '#2f4a5a',
+    furn: [['bigbed', 6, 0, 0, 'innb.bed'], ['sidetable', 8, 0, 0], ['bathtub', 1, 0, 0], ['candles', 3, 0, 0], ['candles', 0, 2, 0], ['plant', 0, 7, 0], ['moodlamp', 9, 3, 0], ['sofa', 9, 5, 1], ['vanity', 4, 0, 0]],
+    walls: [['B', 1.0, 'window', 1.6], ['L', 4.0, 'mirrorw', 1.2]] }));
+  room('inn_water', Object.assign({}, INN, { name: '은밀숙소 · 물침대 객실', floor: 'neonfloor', wall: '#1f2a4a', stars: true,
+    furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 9, 4, 1], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
+    walls: [['B', 2.0, 'window', 1.4], ['B', 7.0, 'window', 1.4]] }));
   room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.45, adult: true,
     furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0]], walls: [] });
   room('dawnshower', { name: '새벽 샤워실', w: 11, h: 8, floor: 'tile', wall: '#3f5a6a', exit: 5, adult: true,
@@ -5856,19 +5881,110 @@ PX.Act = (() => {
   // ---------- 상점 매대 ----------
   H.stall = async () => { const md = PX.MAPS[G().mapId]; PX.UI.shop((md.shops && md.shops.stall) || 'festival'); };
 
-  // ---------- 은밀숙소 프런트 (연인 이상 · 대위와 함께) ----------
-  async function innDesk() {
-    const S = St.S;
-    if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설이다. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
-    await lines(['C*:예약 화면 봤어? …물침대 방도 있대.', { q: [['하룻밤 묵어요.', 5, ['C!:…진짜?', 'C^:무르기 없다.']], ['구경만 해요.', 0, ['C:응. 구경만. 화면 끌게.']]] }]);
-    if (!S.done.innAskDay || S.done.innAskDay !== S.day) S.done.innAskDay = S.day;
-    const yes = await PX.UI.ask('은밀숙소', '하룻밤 예약할까요? (₢120 · 다음 날 아침까지)', '예약하기', '그만두기');
-    if (!yes) return;
-    if (!St.spend(120)) { PX.UI.toast('돈이 모자라요'); return; }
-    S.cap.stay = 'bed'; PX.Cap.mode = 'stay';
-    if (once('inn')) G().memory('은밀숙소', '루비웨이의 밤. 다음 날 아침, 대위가 먼저 좋은 아침이라고 말했다.', true);
-    await G().sleepUntil(8);
+  // ---------- 은밀숙소 (LB83) · 연인 이상 · 대위와 함께 · 성인 요소는 암시만 ----------
+  const INN_ROOMS = [
+    { id: 'inn_mirror', t: '🪞 거울 객실', sub: '거울 벽 · 원형 침대 · 무드등', price: 120 },
+    { id: 'inn_bath', t: '🛁 큰 욕조 객실', sub: '거품 욕조 · 캔들 · 큰 침대', price: 140 },
+    { id: 'inn_water', t: '🌊 물침대 객실', sub: '물침대 · 별빛 창 · 냉장고', price: 160 },
+  ];
+  const innBooked = () => { const b = St.S.done.innBook; return b && St.absMin() < b.until ? b : null; };
+  async function goInnRoom(id) {
+    const g = G(), m = W.maps[id];
+    const f = document.getElementById('fade'); f.classList.add('on');
+    await U.sleep(450);
+    g.enterMap(id, m.exit.x + 0.5, m.exit.y - 1.5);
+    g.player.dir = 2;
+    await U.sleep(250); f.classList.remove('on');
   }
+  async function innDesk() {
+    const S = St.S, b = innBooked();
+    if (b) { const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return; }
+    if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
+    G().cap.setDirTo(G().player.x, G().player.y);
+    await lines([U.pick(['C*:예약 화면 봤어? …물침대 방도 있대.', 'C^:고르는 건 네가 해. 난 따라갈게.', 'C*:어느 방이든. 근데 욕조 큰 방은 좀 궁금하긴 하다.'])]);
+    const it = await PX.UI.menu('은밀숙소 · 객실 예약 (다음 날 정오까지)', INN_ROOMS.map(r => ({ t: `${r.t} · ₢${r.price}`, sub: r.sub, k: r })).concat([{ t: '구경만 할래요', k: null }]));
+    if (!it || !it.k) { await lines(['C:응. 구경만. 화면 끌게.']); return; }
+    const r = it.k;
+    if (!St.spend(r.price)) { PX.UI.toast('돈이 모자라요'); return; }
+    const until = (S.day + 1) * 1440 + 12 * 60;
+    S.done.innBook = { room: r.id, until };
+    await lines([U.pick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
+    await goInnRoom(r.id);
+    if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(INN_ARRIVE[r.id])), 600);
+  }
+  const INN_ARRIVE = {
+    inn_mirror: ['N:사방이 거울이다. 어디를 봐도 우리 둘이 보인다.', 'C*:…이거 좀 민망한데. 어딜 봐도 내 얼굴이야.', 'C^:근데 네가 여러 명이라 그건 좋다.'],
+    inn_bath: ['N:캔들 불빛이 욕조 물 위에서 흔들린다.', 'C*:욕조 진짜 크네. 둘이 들어가도 남겠다.', 'C:물 받아 놓을까? 온도는 네가 정해.'],
+    inn_water: ['N:창밖으로 루비웨이 불빛이 별처럼 번진다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'],
+  };
+  // 객실 침대: 같이 눕기 / 아침까지 (화면은 암전, 묘사는 하지 않음)
+  async function innBed(o) {
+    const g = G(), S = St.S;
+    const water = o.fid === 'waterbed';
+    const it = await PX.UI.menu(o.f.name, [{ t: '🛏️ 잠깐 눕기', k: 'lie' }, ...(withCap() ? [{ t: '🤍 같이 누워 이야기하기', k: 'talk' }, { t: '🌙 불 끄고 아침까지', k: 'night' }] : [{ t: '😴 혼자 아침까지 자기', k: 'solo' }])]);
+    if (!it) return;
+    goSit(o);
+    if (it.k === 'lie') { if (water) PX.UI.toast('🌊 침대가 출렁인다'); return; }
+    if (it.k === 'solo') { await g.sleepUntil(9); return; }
+    PX.Cap.sitNear(g);
+    if (it.k === 'talk') {
+      await U.sleep(600);
+      await lines([U.pick([
+        ['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:왜요?', 'C^:너만 보느라 잠 못 자지.'],
+        ['C:…이렇게 가만히 누워 있는 거, 작전 나가면 제일 생각나.', 'C*:별거 아닌데. 옆에 네가 숨 쉬는 소리.'],
+        ['C*:팔 베고 누울래? 저려도 말 안 할게.', { q: [['그럼 실례할게요.', 4, ['C^:실례는 무슨. 원래 네 자리야.']], ['조금만 이대로 있어요.', 3, ['C:응. 조금만. …아니, 많이.']]] }],
+        ['C:우리 처음 만났을 때 기억나? 너 나 엄청 경계했잖아.', 'C*:지금은 내 옆에서 하품하고. 많이 컸다, 우리.'],
+      ]).concat(water ? ['N:침대가 둘의 숨에 맞춰 천천히 출렁인다.'] : [])]);
+      St.addAff(4); St.advance(30);
+      if (once('innTalk')) g.memory('은밀숙소의 밤', '같이 누워 천장을 보며 아무 얘기나 했다.', true);
+      return;
+    }
+    // 아침까지: 대위는 먼저 묻고, 거절하면 존중한다
+    await lines(['C*:불 끌까?']);
+    const ok = await PX.UI.ask('🌙 불 끄고 아침까지', '대위와 함께 아침까지 있을까요?', '응, 꺼요', '조금만 더 이야기해요');
+    if (!ok) { await lines(['C:그래. 서두를 거 하나도 없어.', 'C*:네가 좋은 속도가 내 속도야.']); return; }
+    await lines(['N:대위가 손을 뻗어 무드등을 끈다. 창밖 불빛만 남는다.', 'C*:…잘 자. 아니, 아직 자지 마.']);
+    S.cap.stay = 'bed'; PX.Cap.mode = 'stay';
+    St.addAff(6);
+    if (once('innNight')) g.memory('은밀숙소', '루비웨이의 밤. 다음 날 아침, 대위가 먼저 좋은 아침이라고 말했다.', true);
+    await g.sleepUntil(9);
+  }
+  H.bath = async (o) => {
+    const g = G(), S = St.S;
+    const it = await PX.UI.menu('🛁 큰 욕조', [{ t: '🫧 거품 목욕 (40분)', k: 'solo' }, ...(withCap() ? [{ t: '🛁 같이 들어가기', k: 'both' }] : [])]);
+    if (!it) return;
+    goSit(o);
+    if (it.k === 'both') {
+      await lines(['C*:…진짜? 나 들어가면 물 넘친다.']);
+      const ok = await PX.UI.ask('🛁 같이 들어가기', '대위와 함께 욕조에 들어갈까요?', '같이 들어가요', '역시 혼자 할게요');
+      if (!ok) { await lines(['C:응, 알았어. 밖에서 기다릴게. 천천히 해.']); }
+      else {
+        PX.Cap.sitNear(g);
+        g.fade(); St.advance(40);
+        await lines([U.pick([
+          ['N:거품이 어깨까지 차오른다. 대위가 내 등 뒤에 기대 앉는다.', 'C*:…이래서 사람들이 욕조 큰 방을 고르는구나.', 'C^:작전 끝나고 이거 하나만 생각날 것 같다.'],
+          ['N:캔들 불빛 아래, 대위가 거품을 한 줌 떠서 내 머리 위에 올린다.', 'C^:왕관이다. 잘 어울려.', 'C*:…가만있어. 사진 찍고 싶은데 단말이 저기 있네.'],
+        ])]);
+        S.energy = Math.min(100, S.energy + 35); St.addAff(5);
+        if (once('innBath')) g.memory('큰 욕조', '대위가 거품으로 왕관을 만들어 줬다.', true);
+        return;
+      }
+    }
+    g.fade(); St.advance(40); S.energy = Math.min(100, S.energy + 30);
+    PX.UI.toast('🫧 거품 목욕을 했다 (기력 +30)');
+  };
+  H.vanity = async () => {
+    const g = G();
+    if (!withCap()) { PX.UI.toast('🪞 거울 속의 나. 오늘 좀 괜찮은데?'); return; }
+    PX.Cap.sitNear(g);
+    await lines([U.pick([
+      ['N:거울 앞에 나란히 선다.', 'C*:이렇게 보니까 우리, 좀 잘 어울리지 않냐.', 'C^:아니다. 네가 너무 예뻐서 내가 손해다.'],
+      ['C:머리 묶어 줄까? 매듭은 내가 전문이야. 로프 매듭.', 'C*:…포니테일은 처음인데. 가만있어 봐.'],
+      ['N:대위가 거울 너머로 나를 보며 넥타이 없는 칼라를 괜히 고친다.', 'C^:뭘 봐. 잘생겼지.'],
+    ])]);
+    St.addAff(2);
+    if (once('innMirror')) g.memory('거울 앞의 우리', '거울 속 두 사람이 꽤 잘 어울렸다.', true);
+  };
 
   // ---------- 부대 행사 ----------
   const BASE_EV = ['LB38', 'LB46', 'LB49', 'LB47', 'LB44', 'LB48', 'LB42', 'LB45', 'LB43', 'LB40', 'LB41', 'LB52', 'LB55', 'LB56', 'LB39'];
@@ -5943,8 +6059,8 @@ PX.Act = (() => {
     if (H[o.use]) { await H[o.use](o); return true; }
     return false;
   }
-  const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
-  return { use, LABEL, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
+  const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
+  return { use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();
 
 </script>
@@ -6259,6 +6375,10 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   }
   function leaveRoom() {
     const m = W.maps[Game.mapId];
+    if (m.def.exitTo) { // 은밀숙소 객실 → 로비
+      const lb = W.maps[m.def.exitTo];
+      enterMap(lb.id, lb.exit.x + 0.5, lb.exit.y - 2.5); Game.player.dir = 2; return;
+    }
     const out = W.maps[m.def.parent];
     const d = out.doors.find(d => d.to === m.id);
     enterMap(out.id, d.x + 0.5, d.y + 0.5);
@@ -6330,6 +6450,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     switch (o.use) {
       case 'bed':
         if (home) return sleepMenu();
+        if (PX.MAPS[Game.mapId].innRoom) return PX.Act.innBed(o);
         return sit(o, '잠깐 눕기');
       case 'sit': return sit(o);
       case 'terminal': return UI.terminal();
@@ -6681,7 +6802,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
       }
     }
-    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: '🚪 밖으로 나가기', fn: leaveRoom });
+    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
     for (const c of Game.critters || []) if (!c.hidden) list.push({ type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });

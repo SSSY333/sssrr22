@@ -277,19 +277,110 @@ PX.Act = (() => {
   // ---------- 상점 매대 ----------
   H.stall = async () => { const md = PX.MAPS[G().mapId]; PX.UI.shop((md.shops && md.shops.stall) || 'festival'); };
 
-  // ---------- 은밀숙소 프런트 (연인 이상 · 대위와 함께) ----------
-  async function innDesk() {
-    const S = St.S;
-    if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설이다. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
-    await lines(['C*:예약 화면 봤어? …물침대 방도 있대.', { q: [['하룻밤 묵어요.', 5, ['C!:…진짜?', 'C^:무르기 없다.']], ['구경만 해요.', 0, ['C:응. 구경만. 화면 끌게.']]] }]);
-    if (!S.done.innAskDay || S.done.innAskDay !== S.day) S.done.innAskDay = S.day;
-    const yes = await PX.UI.ask('은밀숙소', '하룻밤 예약할까요? (₢120 · 다음 날 아침까지)', '예약하기', '그만두기');
-    if (!yes) return;
-    if (!St.spend(120)) { PX.UI.toast('돈이 모자라요'); return; }
-    S.cap.stay = 'bed'; PX.Cap.mode = 'stay';
-    if (once('inn')) G().memory('은밀숙소', '루비웨이의 밤. 다음 날 아침, 대위가 먼저 좋은 아침이라고 말했다.', true);
-    await G().sleepUntil(8);
+  // ---------- 은밀숙소 (LB83) · 연인 이상 · 대위와 함께 · 성인 요소는 암시만 ----------
+  const INN_ROOMS = [
+    { id: 'inn_mirror', t: '🪞 거울 객실', sub: '거울 벽 · 원형 침대 · 무드등', price: 120 },
+    { id: 'inn_bath', t: '🛁 큰 욕조 객실', sub: '거품 욕조 · 캔들 · 큰 침대', price: 140 },
+    { id: 'inn_water', t: '🌊 물침대 객실', sub: '물침대 · 별빛 창 · 냉장고', price: 160 },
+  ];
+  const innBooked = () => { const b = St.S.done.innBook; return b && St.absMin() < b.until ? b : null; };
+  async function goInnRoom(id) {
+    const g = G(), m = W.maps[id];
+    const f = document.getElementById('fade'); f.classList.add('on');
+    await U.sleep(450);
+    g.enterMap(id, m.exit.x + 0.5, m.exit.y - 1.5);
+    g.player.dir = 2;
+    await U.sleep(250); f.classList.remove('on');
   }
+  async function innDesk() {
+    const S = St.S, b = innBooked();
+    if (b) { const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return; }
+    if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
+    G().cap.setDirTo(G().player.x, G().player.y);
+    await lines([U.pick(['C*:예약 화면 봤어? …물침대 방도 있대.', 'C^:고르는 건 네가 해. 난 따라갈게.', 'C*:어느 방이든. 근데 욕조 큰 방은 좀 궁금하긴 하다.'])]);
+    const it = await PX.UI.menu('은밀숙소 · 객실 예약 (다음 날 정오까지)', INN_ROOMS.map(r => ({ t: `${r.t} · ₢${r.price}`, sub: r.sub, k: r })).concat([{ t: '구경만 할래요', k: null }]));
+    if (!it || !it.k) { await lines(['C:응. 구경만. 화면 끌게.']); return; }
+    const r = it.k;
+    if (!St.spend(r.price)) { PX.UI.toast('돈이 모자라요'); return; }
+    const until = (S.day + 1) * 1440 + 12 * 60;
+    S.done.innBook = { room: r.id, until };
+    await lines([U.pick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
+    await goInnRoom(r.id);
+    if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(INN_ARRIVE[r.id])), 600);
+  }
+  const INN_ARRIVE = {
+    inn_mirror: ['N:사방이 거울이다. 어디를 봐도 우리 둘이 보인다.', 'C*:…이거 좀 민망한데. 어딜 봐도 내 얼굴이야.', 'C^:근데 네가 여러 명이라 그건 좋다.'],
+    inn_bath: ['N:캔들 불빛이 욕조 물 위에서 흔들린다.', 'C*:욕조 진짜 크네. 둘이 들어가도 남겠다.', 'C:물 받아 놓을까? 온도는 네가 정해.'],
+    inn_water: ['N:창밖으로 루비웨이 불빛이 별처럼 번진다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'],
+  };
+  // 객실 침대: 같이 눕기 / 아침까지 (화면은 암전, 묘사는 하지 않음)
+  async function innBed(o) {
+    const g = G(), S = St.S;
+    const water = o.fid === 'waterbed';
+    const it = await PX.UI.menu(o.f.name, [{ t: '🛏️ 잠깐 눕기', k: 'lie' }, ...(withCap() ? [{ t: '🤍 같이 누워 이야기하기', k: 'talk' }, { t: '🌙 불 끄고 아침까지', k: 'night' }] : [{ t: '😴 혼자 아침까지 자기', k: 'solo' }])]);
+    if (!it) return;
+    goSit(o);
+    if (it.k === 'lie') { if (water) PX.UI.toast('🌊 침대가 출렁인다'); return; }
+    if (it.k === 'solo') { await g.sleepUntil(9); return; }
+    PX.Cap.sitNear(g);
+    if (it.k === 'talk') {
+      await U.sleep(600);
+      await lines([U.pick([
+        ['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:왜요?', 'C^:너만 보느라 잠 못 자지.'],
+        ['C:…이렇게 가만히 누워 있는 거, 작전 나가면 제일 생각나.', 'C*:별거 아닌데. 옆에 네가 숨 쉬는 소리.'],
+        ['C*:팔 베고 누울래? 저려도 말 안 할게.', { q: [['그럼 실례할게요.', 4, ['C^:실례는 무슨. 원래 네 자리야.']], ['조금만 이대로 있어요.', 3, ['C:응. 조금만. …아니, 많이.']]] }],
+        ['C:우리 처음 만났을 때 기억나? 너 나 엄청 경계했잖아.', 'C*:지금은 내 옆에서 하품하고. 많이 컸다, 우리.'],
+      ]).concat(water ? ['N:침대가 둘의 숨에 맞춰 천천히 출렁인다.'] : [])]);
+      St.addAff(4); St.advance(30);
+      if (once('innTalk')) g.memory('은밀숙소의 밤', '같이 누워 천장을 보며 아무 얘기나 했다.', true);
+      return;
+    }
+    // 아침까지: 대위는 먼저 묻고, 거절하면 존중한다
+    await lines(['C*:불 끌까?']);
+    const ok = await PX.UI.ask('🌙 불 끄고 아침까지', '대위와 함께 아침까지 있을까요?', '응, 꺼요', '조금만 더 이야기해요');
+    if (!ok) { await lines(['C:그래. 서두를 거 하나도 없어.', 'C*:네가 좋은 속도가 내 속도야.']); return; }
+    await lines(['N:대위가 손을 뻗어 무드등을 끈다. 창밖 불빛만 남는다.', 'C*:…잘 자. 아니, 아직 자지 마.']);
+    S.cap.stay = 'bed'; PX.Cap.mode = 'stay';
+    St.addAff(6);
+    if (once('innNight')) g.memory('은밀숙소', '루비웨이의 밤. 다음 날 아침, 대위가 먼저 좋은 아침이라고 말했다.', true);
+    await g.sleepUntil(9);
+  }
+  H.bath = async (o) => {
+    const g = G(), S = St.S;
+    const it = await PX.UI.menu('🛁 큰 욕조', [{ t: '🫧 거품 목욕 (40분)', k: 'solo' }, ...(withCap() ? [{ t: '🛁 같이 들어가기', k: 'both' }] : [])]);
+    if (!it) return;
+    goSit(o);
+    if (it.k === 'both') {
+      await lines(['C*:…진짜? 나 들어가면 물 넘친다.']);
+      const ok = await PX.UI.ask('🛁 같이 들어가기', '대위와 함께 욕조에 들어갈까요?', '같이 들어가요', '역시 혼자 할게요');
+      if (!ok) { await lines(['C:응, 알았어. 밖에서 기다릴게. 천천히 해.']); }
+      else {
+        PX.Cap.sitNear(g);
+        g.fade(); St.advance(40);
+        await lines([U.pick([
+          ['N:거품이 어깨까지 차오른다. 대위가 내 등 뒤에 기대 앉는다.', 'C*:…이래서 사람들이 욕조 큰 방을 고르는구나.', 'C^:작전 끝나고 이거 하나만 생각날 것 같다.'],
+          ['N:캔들 불빛 아래, 대위가 거품을 한 줌 떠서 내 머리 위에 올린다.', 'C^:왕관이다. 잘 어울려.', 'C*:…가만있어. 사진 찍고 싶은데 단말이 저기 있네.'],
+        ])]);
+        S.energy = Math.min(100, S.energy + 35); St.addAff(5);
+        if (once('innBath')) g.memory('큰 욕조', '대위가 거품으로 왕관을 만들어 줬다.', true);
+        return;
+      }
+    }
+    g.fade(); St.advance(40); S.energy = Math.min(100, S.energy + 30);
+    PX.UI.toast('🫧 거품 목욕을 했다 (기력 +30)');
+  };
+  H.vanity = async () => {
+    const g = G();
+    if (!withCap()) { PX.UI.toast('🪞 거울 속의 나. 오늘 좀 괜찮은데?'); return; }
+    PX.Cap.sitNear(g);
+    await lines([U.pick([
+      ['N:거울 앞에 나란히 선다.', 'C*:이렇게 보니까 우리, 좀 잘 어울리지 않냐.', 'C^:아니다. 네가 너무 예뻐서 내가 손해다.'],
+      ['C:머리 묶어 줄까? 매듭은 내가 전문이야. 로프 매듭.', 'C*:…포니테일은 처음인데. 가만있어 봐.'],
+      ['N:대위가 거울 너머로 나를 보며 넥타이 없는 칼라를 괜히 고친다.', 'C^:뭘 봐. 잘생겼지.'],
+    ])]);
+    St.addAff(2);
+    if (once('innMirror')) g.memory('거울 앞의 우리', '거울 속 두 사람이 꽤 잘 어울렸다.', true);
+  };
 
   // ---------- 부대 행사 ----------
   const BASE_EV = ['LB38', 'LB46', 'LB49', 'LB47', 'LB44', 'LB48', 'LB42', 'LB45', 'LB43', 'LB40', 'LB41', 'LB52', 'LB55', 'LB56', 'LB39'];
@@ -364,6 +455,6 @@ PX.Act = (() => {
     if (H[o.use]) { await H[o.use](o); return true; }
     return false;
   }
-  const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
-  return { use, LABEL, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
+  const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
+  return { use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();
