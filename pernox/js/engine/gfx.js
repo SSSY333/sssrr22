@@ -161,6 +161,18 @@ PX.G = (() => {
     domegrass: () => ({ base: '#64c27a', dots: [['#86d991', .16], ['#55a96a', .1]], blades: '#9be6a4' }),
     water: () => ({ base: '#4fb3d9', dots: [['#7fd3ef', .12], ['#3f9cc4', .1]] }),
     glassfloor: () => ({ base: '#9fd8e8', dots: [['#c4eef7', .1]], seam: '#7fbfd2' }),
+    silversand: () => ({ base: '#c9ccd6', dots: [['#e4e6ee', .14], ['#aeb2bf', .08], ['#ffffff', .02]] }),
+    whitesand: () => ({ base: '#efe6d2', dots: [['#f8f1e2', .14], ['#ddd2ba', .08]] }),
+    ice: () => ({ base: '#bfe6f2', dots: [['#e2f6fb', .12], ['#9fd2e4', .06]], seam: '#d8f2fa' }),
+    snowfield: () => ({ base: '#e8f0f6', dots: [['#ffffff', .2], ['#cfdbe6', .08]] }),
+    void: () => ({ base: '#0d0a1c', dots: [['#ffffff', .012], ['#9fd8ff', .008], ['#1a1530', .2]] }),
+    crystal: () => ({ base: '#4a3a6a', dots: [['#6a5a9a', .1], ['#b9a0ff', .03], ['#3a2d55', .1]] }),
+    redrock: (P) => ({ base: shade(P.sand, -0.25), dots: [[shade(P.sand, -0.35), .15], [shade(P.sand, -0.12), .1]] }),
+    deepwater: () => ({ base: '#2a6f9a', dots: [['#3f8fbf', .12], ['#225d82', .1], ['#7fd3ef', .02]] }),
+    boardwalk: () => ({ base: '#a0743f', planks: '#7a5530', dots: [['#b0844f', .06]] }),
+    mosaic: () => ({ base: '#d6c9e8', checker: '#c3b2de', dots: [] }),
+    neonfloor: () => ({ base: '#2a1f3f', checker: '#33264d', dots: [['#ff6bd5', .01]] }),
+    rail: () => ({ base: '#5a4a6a', dots: [['#6a5a7a', .1]], stripe: '#c9ced4' }),
   };
   function makeTile(type, season, variant) {
     const P = SEASON_PAL[season];

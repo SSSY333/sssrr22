@@ -13,7 +13,16 @@ PX.S = (() => {
     big: { fw: 44, fh: 60, ax: 22, ay: 57, hw: 15, hh: 16, tw: 18, th: 13, aw: 4, lh: 11, lw: 6, gap: 2 },
   };
 
+  function critter(app, fr) {
+    const c = G.canvas(20, 16), g = c.getContext('2d');
+    const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    if (app.critter === 'lizard') { R(4, 10, 11, 4, '#b8543a'); R(13, 9, 5, 4, '#c4613f'); R(16, 10, 1, 1, '#1d1420'); R(1, 11 + (fr % 2), 4, 2, '#a04a35'); R(6, 13 + (fr % 2), 2, 2, '#8a3b30'); R(11, 13 + ((fr + 1) % 2), 2, 2, '#8a3b30'); }
+    else { const b = fr % 2; R(5, 3 + b, 10, 6, 'rgba(160,230,255,0.85)'); R(7, 2 + b, 6, 2, 'rgba(220,250,255,0.9)'); for (let i = 0; i < 4; i++) R(6 + i * 2, 9 + b, 1, 4 + ((i + fr) % 2), 'rgba(160,230,255,0.7)'); R(8, 5 + b, 1, 1, '#ffffff'); }
+    G.outline(c, '#20172a');
+    return { c, ax: 10, ay: 15, headY: 2, B: BODY.n };
+  }
   function frame(app, pose = 'idle', fr = 0, view = 'F', face = 'normal') {
+    if (app.critter) return critter(app, fr);
     const B = BODY[app.big ? 'big' : 'n'];
     const c = G.canvas(B.fw, B.fh), g = c.getContext('2d');
     const R = (x, y, w, h, col) => { if (w > 0 && h > 0) { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); } };
@@ -103,6 +112,7 @@ PX.S = (() => {
         case 'eat': arm(L, ay0, alen - 2, 0); R(Rr - 1, ay0 - 1 - (fr % 2) * 2, aw + 1, 5, skin); break;
         case 'workout': if (fr % 2) { arm(L, ay0, alen, 2); arm(Rr, ay0, alen, 2); R(L - 2, ay0 - alen - 2, B.tw + aw * 2 + 4, 2, '#555'); } else { arm(L, ay0, alen - 3, 0); arm(Rr, ay0, alen - 3, 0); } break;
         case 'surprise': case 'bump': arm(L, ay0, 5, 2); arm(Rr, ay0, 5, 2); break;
+        case 'hang': arm(L + 1, ay0, alen + 4, 2); arm(Rr - 1, ay0, alen + 4, 2); break;
         default: arm(L, ay0 + Math.max(0, swing), alen, 0); arm(Rr, ay0 + Math.max(0, -swing), alen, 0);
       }
     }

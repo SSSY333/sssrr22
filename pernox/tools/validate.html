@@ -1,8 +1,8 @@
 <!doctype html><meta charset=utf-8><body><pre id=o></pre>
 <script src="../js/core/util.js"></script><script src="../js/core/calendar.js"></script><script src="../js/engine/gfx.js"></script>
 <script src="../js/data/furniture.js"></script><script src="../js/engine/objects.js"></script><script src="../js/engine/sprites.js"></script>
-<script src="../js/data/maps.js"></script><script src="../js/data/items.js"></script><script src="../js/data/npcs.js"></script><script src="../js/data/lorebook.js"></script>
-<script src="../js/engine/path.js"></script><script src="../js/engine/world.js"></script>
+<script src="../js/data/maps.js"></script><script src="../js/data/maps_world.js"></script><script src="../js/data/items.js"></script><script src="../js/data/npcs.js"></script><script src="../js/data/lorebook.js"></script>
+<script src="../js/engine/path.js"></script><script src="../js/engine/world.js"></script><script src="../js/game/state.js"></script><script src="../js/game/decor.js"></script>
 <script>
 const R={errors:[],warnings:[],stats:{}};
 const E=(s)=>R.errors.push(s), Wn=(s)=>R.warnings.push(s);
@@ -20,7 +20,7 @@ for(const id in PX.MAPS){
     for(const o of m.objs){ if(o.kind==='wall') continue; if(o.kind==='furn'&&(o.desert||!o.blocks)) continue;
       for(let y=o.y;y<o.y+o.fd;y++)for(let x=o.x;x<o.x+o.fw;x++){const k=x+','+y; if(bo[k]) E(`${id}: ${o.kind==='bld'?o.id:o.fid}@${o.x},${o.y} 와 ${bo[k]} 겹침 (${k})`); bo[k]=(o.kind==='bld'?o.id:o.fid)+'@'+o.x+','+o.y;}}
     // 문 앞이 막혔는지, 정문/셔틀에서 도달 가능한지
-    const start = id==='base'?[31,58]:id==='plaza'?[25,47]:[23,40];
+    const start = id==='base'?[31,58]:id==='plaza'?[25,47]:id==='dome'?[23,40]:(def.arrive||[0,0]);
     const reach=PX.Path.reachableSet(m,start[0],start[1]);
     for(const l of (m.links||[])) for(let x=l.x0;x<=l.x1;x++) if(!reach[l.y0*m.w+x]) E(`${id}: 연결 통로 (${x},${l.y0}) 막힘`);
     for(const d of m.doors){ if(!PX.W.walkable(m,d.x,d.y)) E(`${id}: ${d.name} 문 앞 (${d.x},${d.y}) 막힘`); else if(!reach[d.y*m.w+d.x]) E(`${id}: ${d.name} 문 앞에 갈 수 없음`); }
@@ -40,6 +40,7 @@ for(const id in PX.MAPS){
     R.stats[id]={size:m.w+'x'+m.h, walkable:cnt, furn:m.objs.length, density:(1-total/(m.w*m.h)).toFixed(2)};
   }
 }
+for(const id in PX.W.maps){ const v=PX.Decor.validate(PX.W.maps[id]); if(!v.ok) E(`${id}: 편집 검사 실패 — ${v.reason}${v.o&&v.o.x!=null?' @'+v.o.fid+' '+v.o.x+','+v.o.y:''}`); }
 // NPC 일정 스폿 확인
 const allSpots={}; for(const id in PX.W.maps){ for(const k in PX.W.maps[id].spots) allSpots[k]=id; }
 for(const n of PX.NPCS){ for(const key of ['sched','sched2','we']){ if(!n[key]) continue; for(const part of n[key].split('|')){ const sp=part.split(' ')[1]; if(sp==='-'||sp==='field'||sp==='free') continue; if(!allSpots[sp]) E(`NPC ${n.name}: 스폿 ${sp} 없음`);} } }

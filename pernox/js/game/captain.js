@@ -177,6 +177,7 @@ PX.Cap = (() => {
     const pmOut = PX.MAPS[pm].kind === 'out' ? pm : PX.MAPS[pm].parent;
     const capOut = cap.map ? (PX.MAPS[cap.map].kind === 'out' ? cap.map : PX.MAPS[cap.map].parent) : null;
     if (pmOut === 'dome' && !job.military) { const wd = St.weekday(); if (![2, 4, 6].includes(wd)) { mode = 'sched'; schedule(S, g); return; } }
+    if (!['base', 'dome', 'plaza'].includes(pmOut)) { mode = 'sched'; schedule(S, g); return; } // 멀리 나가 있으면 찾아가지 않는다
     if (capOut !== pmOut) { // 다른 구역: 셔틀로 이동
       const near = ['dome', 'plaza'].includes(pmOut) && ['dome', 'plaza'].includes(capOut);
       travel(pmOut, near ? 6 : 30, 'seek', capOut);

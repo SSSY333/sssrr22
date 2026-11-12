@@ -239,6 +239,81 @@ PX.Mini = (() => {
       });
     });
   }
+
+  // ================= 범용 미니게임 (활동 · 부대 행사용) =================
+  // 타이밍: 움직이는 표시가 초록 구간에 왔을 때 누르기. rounds번 반복
+  function timing(o) {
+    return new Promise(resolve => {
+      const tools = setup(o.title, o.help);
+      let round = 0, hits = 0, x = 0, dir = 1, zone = null, sp = o.speed || 70, wait = 0, msg = '';
+      const newZone = () => { const w = (o.zoneW || 22) - round * 2; zone = [10 + Math.random() * (100 - w - 10), 0]; zone[1] = zone[0] + w; };
+      newZone();
+      const btn = el('button', { class: 'tool big' }, o.btn || '지금!');
+      btn.onclick = () => { if (wait > 0) return; const ok = x >= zone[0] && x <= zone[1]; if (ok) hits++; msg = ok ? '좋아요!' : '아깝다!'; PX.Audio && PX.Audio.blip(ok ? 1.5 : 0.5); round++; wait = 0.5; newZone(); sp *= 1.12; };
+      tools.append(btn);
+      loop(dt => {
+        if (wait > 0) wait -= dt; else { x += dir * sp * dt; if (x > 110) { x = 110; dir = -1; } if (x < 10) { x = 10; dir = 1; } }
+        R(0, 0, SZ, SZ, o.bg || '#2a3240'); if (o.draw) o.draw(R, round, hits);
+        R(8, 92, 104, 10, '#120c20'); R(zone[0], 92, zone[1] - zone[0], 10, '#7fb86a'); R(x - 1, 88, 3, 18, '#ffd166');
+        g.fillStyle = '#fff7ef'; g.font = '10px sans-serif'; g.textAlign = 'center'; g.fillText(msg, 60, 82);
+        timerEl.textContent = `${Math.min(round + 1, o.rounds)}/${o.rounds}`; scoreEl.textContent = `성공 ${hits}`;
+        if (round >= o.rounds) { const sc = hits / o.rounds; setTimeout(() => finish(sc, o.result ? o.result(hits, sc) : `${o.rounds}번 중 ${hits}번 성공`, '확인').then(resolve), 300); return false; }
+      });
+    });
+  }
+  // 연타 경주: 버튼을 빠르게 눌러 상대보다 먼저 막대를 채우기 (팔씨름 · 줄다리기)
+  function tapRace(o) {
+    return new Promise(resolve => {
+      const tools = setup(o.title, o.help);
+      let me = 50, time = o.time || 10, done = false;
+      const foe = o.foe || 6; // 초당 상대 힘
+      const btn = el('button', { class: 'tool big' }, o.btn || '힘껏!');
+      const push = (e) => { e.preventDefault(); if (done) return; me += 3.2; PX.Audio && PX.Audio.blip(1 + Math.random() * 0.3); };
+      btn.addEventListener('pointerdown', push); tools.append(btn);
+      loop(dt => {
+        time -= dt; me -= foe * dt; me = Math.max(0, Math.min(100, me));
+        R(0, 0, SZ, SZ, o.bg || '#3a2f50'); if (o.draw) o.draw(R, me);
+        R(10, 96, 100, 10, '#120c20'); R(10, 96, me, 10, '#ff7aa2'); R(59, 92, 2, 18, '#ffffff');
+        g.fillStyle = '#fff7ef'; g.font = '10px sans-serif'; g.textAlign = 'center'; g.fillText(o.left || '나', 22, 90); g.fillText(o.right || '상대', 98, 90);
+        timerEl.textContent = '⏱ ' + Math.ceil(Math.max(0, time)); scoreEl.textContent = me > 50 ? '우세!' : '밀린다!';
+        if (me >= 100 || me <= 0 || time <= 0) { done = true; const win = me >= 50; setTimeout(() => finish(win ? 1 : 0.3, o.result ? o.result(win) : (win ? '이겼다!' : '졌다…'), '확인', win ? '🏆 승리!' : '아쉽다!').then(() => resolve(win)), 300); return false; }
+      });
+    });
+  }
+  // 표적: 나타나는 표적을 빨리 누르기 (사격 · 물총전 · 반응 속도)
+  function targets(o) {
+    return new Promise(resolve => {
+      setup(o.title, o.help);
+      let time = o.time || 20, hit = 0, miss = 0, spawn = 0;
+      const ts = [];
+      cv.onpointerdown = e => { const [x, y] = pt(e); const t = ts.find(t => Math.hypot(t.x - x, t.y - y) < t.r + 3); if (t) { hit++; ts.splice(ts.indexOf(t), 1); PX.Audio && PX.Audio.blip(1.5); } else { miss++; } };
+      loop(dt => {
+        time -= dt; spawn -= dt;
+        if (spawn <= 0 && ts.length < 4) { spawn = 0.45 + Math.random() * 0.5; ts.push({ x: 14 + Math.random() * 92, y: 14 + Math.random() * 80, r: 6 + Math.random() * 3, life: 1.6 }); }
+        R(0, 0, SZ, SZ, o.bg || '#3a4a3a'); if (o.draw) o.draw(R);
+        for (let i = ts.length - 1; i >= 0; i--) { const t = ts[i]; t.life -= dt; if (t.life <= 0) { ts.splice(i, 1); continue; } R(t.x - t.r, t.y - t.r, t.r * 2, t.r * 2, o.color || '#d0563b'); R(t.x - t.r / 2, t.y - t.r / 2, t.r, t.r, '#f4efe4'); R(t.x - 1, t.y - 1, 2, 2, o.color || '#d0563b'); }
+        timerEl.textContent = '⏱ ' + Math.ceil(Math.max(0, time)); scoreEl.textContent = `명중 ${hit}`;
+        if (time <= 0) { cv.onpointerdown = null; const sc = U.clamp(hit / (o.goal || 18) - miss * 0.02, 0, 1); finish(sc, o.result ? o.result(hit, sc) : `명중 ${hit}발`, '확인').then(() => resolve(sc)); return false; }
+      });
+    });
+  }
+  // 퀴즈: 로어북 · 부대 상식 (선택지 버튼)
+  function quiz(o) {
+    return new Promise(resolve => {
+      const tools = setup(o.title, o.help);
+      let i = 0, ok = 0;
+      const qbox = el('p', { class: 'mhelp', style: 'color:#fff7ef;font-size:16px' });
+      cv.style.display = 'none'; root.insertBefore(qbox, tools);
+      const show = () => {
+        tools.innerHTML = '';
+        if (i >= o.qs.length) { cv.style.display = ''; finish(ok / o.qs.length, `${o.qs.length}문제 중 ${ok}개 정답`, '확인').then(() => resolve(ok / o.qs.length)); return; }
+        const q = o.qs[i]; qbox.textContent = `Q${i + 1}. ${q.q}`; timerEl.textContent = `${i + 1}/${o.qs.length}`; scoreEl.textContent = `정답 ${ok}`;
+        q.a.forEach((a, k) => { const b = el('button', { class: 'tool' }, a); b.onclick = () => { if (k === q.c) { ok++; PX.Audio && PX.Audio.blip(1.5); } else PX.Audio && PX.Audio.blip(0.5); i++; show(); }; tools.append(b); });
+      };
+      show();
+    });
+  }
+
   const api = {};
   function run(type, ctx = {}) {
     api.lastFound = [];
@@ -247,6 +322,8 @@ PX.Mini = (() => {
     return p.then(s => { PX.Game.inMini = false; PX.Game.modal--; return s; });
   }
   api.run = run;
+  const wrap = f => (o) => { PX.Game.inMini = true; PX.Game.modal++; return f(o).then(r => { PX.Game.inMini = false; PX.Game.modal--; return r; }); };
+  api.timing = wrap(timing); api.tapRace = wrap(tapRace); api.targets = wrap(targets); api.quiz = wrap(quiz);
   api.claw = () => { PX.Game.inMini = true; PX.Game.modal++; return clawGame().then(w => { PX.Game.inMini = false; PX.Game.modal--; return w; }); };
   return api;
 })();

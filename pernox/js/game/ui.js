@@ -7,7 +7,8 @@ PX.UI = (() => {
   // ---------- 토스트 ----------
   function toast(text, ms = 2600) {
     const t = el('div', { class: 'toast' }, text);
-    $('toasts').append(t);
+    const box = $('toasts'); while (box.children.length >= 3) box.firstChild.remove();
+    box.append(t);
     setTimeout(() => t.classList.add('out'), ms);
     setTimeout(() => t.remove(), ms + 400);
   }
@@ -66,7 +67,8 @@ PX.UI = (() => {
     $('hEnergy').parentElement.classList.toggle('low', S.energy < 30);
     $('hLoc').textContent = PX.MAPS[G.mapId].name;
     const r = S.rel.cap;
-    $('capChip').innerHTML = `<b>${S.capName}</b> · ${PX.Cap.status()} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    const near = G.cap.map === G.mapId;
+    $('capChip').innerHTML = `<b>${S.capName}</b>${near ? ' · 가까이 있음' : ''} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
   }
   function badge() { const n = St.S.messages.filter(m => m.reply == null).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
 
@@ -191,22 +193,32 @@ PX.UI = (() => {
       const G = PX.Game, S = St.S;
       const outId = PX.MAPS[G.mapId].kind === 'out' ? G.mapId : PX.MAPS[G.mapId].parent;
       const m = PX.W.maps[outId];
+      const k = m.w > 50 ? 6 : 8;
       const c = el('canvas', { class: 'minimap' }); const g = c.getContext('2d');
-      const k = 4; c.width = m.w * k; c.height = m.h * k;
-      const col = { sand: '#c4613f', grass: '#4fa35a', concrete: '#a7a3a8', plaza: '#c9c1b6', asphalt: '#4a4652', roadline: '#4a4652', dirt: '#9a5a3a', hangar: '#6d7480', domegrass: '#64c27a', cafe: '#e8d2b0', water: '#4fb3d9' };
-      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) { g.fillStyle = m.walk[y * m.w + x] ? (col[m.tiles[y * m.w + x]] || '#888') : '#2a2238'; g.fillRect(x * k, y * k, k, k); }
-      for (const o of m.objs) if (o.kind === 'bld') { g.fillStyle = o.b.closed ? '#6a6070' : o.b.stripe; g.fillRect(o.x * k, o.y * k, o.fw * k, o.fd * k); }
-      const dot = (x, y, c2, r) => { g.fillStyle = c2; g.beginPath(); g.arc(x * k, y * k, r, 0, 7); g.fill(); };
+      c.width = m.w * k; c.height = m.h * k;
+      const col = { sand: '#c4613f', grass: '#4fa35a', concrete: '#a7a3a8', plaza: '#c9c1b6', asphalt: '#4a4652', roadline: '#4a4652', dirt: '#9a5a3a', hangar: '#6d7480', domegrass: '#64c27a', cafe: '#e8d2b0', water: '#4fb3d9', deepwater: '#2a6f9a', glassfloor: '#9fd8e8', silversand: '#c9ccd6', whitesand: '#efe6d2', ice: '#bfe6f2', snowfield: '#e8f0f6', void: '#0d0a1c', crystal: '#4a3a6a', redrock: '#8a4430', boardwalk: '#a0743f', mosaic: '#d6c9e8', neonfloor: '#2a1f3f', rail: '#5a4a6a', metal: '#7f8a96' };
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) { g.fillStyle = col[m.tiles[y * m.w + x]] || '#888'; g.fillRect(x * k, y * k, k, k); }
+      const ICON = { shop: '🛒', stall: '🛍️', meal: '🍱', shuttle: '🧭', fish: '🎣', view: '🔭', campfire: '🔥', harvest: '🌱', hang: '💪', shoot: '🎯', course: '🏃', event: '🎪', kiosk: 'ℹ️', grill: '🥓', claw: '🐰', onsen: '♨️', rail: '🚃', salvage: '🔍', sandcastle: '🏰', tent: '⛺' };
+      const marks = [];
+      for (const o of m.objs) {
+        if (o.kind === 'bld') { g.fillStyle = o.b.closed ? '#6a6070' : o.b.stripe; g.fillRect(o.x * k, o.y * k, o.fw * k, o.fd * k); g.strokeStyle = '#120c20'; g.lineWidth = 2; g.strokeRect(o.x * k, o.y * k, o.fw * k, o.fd * k); marks.push([o.x + o.fw / 2, o.y + o.fd / 2, o.b.name.replace(/ \(.*\)$/, ''), true]); }
+        else if (o.kind === 'furn' && !o.hidden && ICON[o.use]) marks.push([o.x + o.fw / 2, o.y + o.fd / 2, ICON[o.use], false]);
+        else if (o.kind === 'furn' && o.blocks && !o.desert) { g.fillStyle = 'rgba(30,20,40,0.35)'; g.fillRect(o.x * k, o.y * k, o.fw * k, o.fd * k); }
+      }
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (const [x, y, t, isB] of marks) {
+        if (isB) { g.font = `${Math.max(11, k * 1.7)}px Jua, sans-serif`; const w = g.measureText(t).width + 8; g.fillStyle = 'rgba(27,20,48,0.85)'; g.fillRect(x * k - w / 2, y * k - k, w, k * 2); g.fillStyle = '#fff7ef'; g.fillText(t, x * k, y * k); }
+        else { g.font = `${k * 2}px sans-serif`; g.fillText(t, x * k, y * k); }
+      }
       const pIn = G.mapId === outId ? G.player : null;
-      if (pIn) dot(pIn.x, pIn.y, '#ffffff', 4);
-      else { const d = m.doors.find(d => d.to === G.mapId); if (d) dot(d.x + 0.5, d.y + 0.5, '#ffffff', 4); }
-      const cap = G.cap;
-      if (cap.map === outId) dot(cap.x, cap.y, '#ff5a7a', 4);
-      else if (cap.map) { const d = m.doors.find(d => d.to === cap.map); if (d) dot(d.x + 0.5, d.y + 0.5, '#ff5a7a', 3); }
-      const list = el('div', { class: 'maplist' });
-      for (const o of m.objs) if (o.kind === 'bld') list.append(el('div', { class: 'li' }, el('i', { style: `background:${o.b.stripe}` }), o.b.name, o.b.closed ? el('small', null, ' (예정)') : null));
-      p.append(el('p', { class: 'muted' }, `${m.name} · 흰 점: 나 · 분홍 점: ${S.capName} (${PX.Cap.status()})`), el('div', { class: 'mapwrap' }, c), list,
-        el('p', { class: 'muted' }, '이동: 부대 정문 옆 셔틀 정류장 ↔ 돔시티 셔틀 정류장 (30분). 다른 행성·관광지는 Beta 0.5~0.6에서 열립니다.'));
+      const dot = (x, y, c2) => { g.fillStyle = '#120c20'; g.beginPath(); g.arc(x * k, y * k, k * 0.9, 0, 7); g.fill(); g.fillStyle = c2; g.beginPath(); g.arc(x * k, y * k, k * 0.6, 0, 7); g.fill(); };
+      if (pIn) dot(pIn.x, pIn.y, '#ffffff'); else { const d = m.doors.find(d => d.to === G.mapId); if (d) dot(d.x + 0.5, d.y + 0.5, '#ffffff'); }
+      const REG = [['606부대', ['base']], ['돔시티', ['dome', 'plaza', 'corridor', 'bridge', 'rubyway']], ['돔시티 관광구역', ['lake', 'farm', 'glasshouse', 'glowpath', 'bluegarden', 'hill', 'beach', 'silverdesert', 'camp']], ['우주 · 다른 행성', ['port', 'station', 'planet3', 'planet4', 'planet6']], ['외곽 (출입 제한)', ['outskirts']]];
+      const reg = el('div', { class: 'maplist' });
+      for (const [name, ids] of REG) reg.append(el('div', { class: 'li' }, el('b', null, name), el('small', null, ' ' + ids.map(i => PX.MAPS[i].name + (i === outId ? ' ← 지금' : '')).join(' · '))));
+      p.append(el('p', { class: 'muted' }, `${m.name} · 흰 점: 나 · 아이콘: 할 수 있는 것`), el('div', { class: 'mapwrap' }, c),
+        el('h4', null, '페르녹스 지역'), reg,
+        el('p', { class: 'muted' }, '이동: 각 지역의 🧭 이동 안내 단말(부대 정문 옆 · 돔시티 셔틀 정류장 · 중앙광장 남쪽 · 우주항구 터미널)에서 골라요.'));
     },
     cal(p) {
       const S = St.S;
@@ -254,13 +266,7 @@ PX.UI = (() => {
           el('tr', null, el('td', null, '13:00~17:00'), el('td', null, '오후 근무')),
           el('tr', null, el('td', null, '주말'), el('td', null, '비번 · 자유 외출'))),
         el('p', { class: 'muted' }, `오늘 근무 ${done}/2회 완료. 근무지의 업무 자리를 눌러 근무하면 급여 ₢${j.pay}을 받아요.`));
-      // 대위 오늘 일정
-      const cap = PX.NPC_BY_ID.cap;
-      let str = St.isWeekend() ? cap.we : (S.day % 2 === 1 ? cap.sched2 : cap.sched);
-      const names = { 'cap.bed': '기상/취침 (개인 막사)', 'gym.bp': '체력 단련 (체육관)', 'hg.drone': '드론 점검 (격납고)', 'ops.b1': '작전 브리핑', 'ops.cap': '장비 점검 · 보고서 (작전동)', 'hg.w2': '장비 수리 (격납고)', field: '외곽 수색', 'med.patient': '복귀 검진 (의무동)', free: '개인 시간 (나를 찾아올지도)', 'cap.sofa/0': '막사 휴식', 'cap.craft': '잔해로 장비 개조', 'mess.b01a/1': '식사 (식당동)' };
-      const t = el('table', { class: 'tbl' }, el('tr', null, el('th', null, '시간'), el('th', null, `${S.capName} 대위`)));
-      for (const e of PX.A.parseSched(str)) t.append(el('tr', null, el('td', null, Cal.fmtTime(e.min)), el('td', null, names[e.spot] || e.spot)));
-      p.append(el('h4', null, '대위 오늘 일과'), t, el('p', { class: 'muted' }, '작전과 이벤트에 따라 바뀔 수 있어요. 장기작전은 Alpha 0.4에서 추가됩니다.'));
+      p.append(el('p', { class: 'muted' }, '대위의 일정은 단말에 나오지 않아요. 부대원들에게 물어보면 알려 줄지도 몰라요.'));
     },
     rel(p) {
       const S = St.S, r = S.rel.cap;
@@ -310,7 +316,7 @@ PX.UI = (() => {
       const S = St.S;
       for (const n of PX.NPCS) {
         const name = n.id === 'cap' ? S.capName : n.name;
-        const where = n.id === 'cap' ? PX.Cap.status() : (() => { const npc = PX.Game.npcs.find(x => x.id === n.id); return npc && npc.map ? PX.MAPS[npc.map].name : '지도 밖 (개인 공간)'; })();
+        const where = n.id === 'cap' ? (PX.Game.cap.map === PX.Game.mapId ? '가까이 있음' : '알 수 없음') : (() => { const npc = PX.Game.npcs.find(x => x.id === n.id); return npc && npc.map ? PX.MAPS[npc.map].name : '지도 밖 (개인 공간)'; })();
         p.append(el('details', { class: 'contact' }, el('summary', null, el('b', null, name), el('small', null, ` ${n.job} · 지금: ${where}`)),
           el('p', null, `${n.age}세 · ${n.personality}`), el('p', { class: 'muted' }, `근무지: ${n.work} · 거주: ${n.home} · 좋아하는 음식: ${n.likesFood} · 좋아하는 선물: ${n.likesGift}`)));
       }

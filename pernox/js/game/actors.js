@@ -135,6 +135,9 @@ PX.A = (() => {
     // 현재 일정 목적지
     desired(S) {
       const e = schedEntry(this.def, S);
+      if (this.def.id !== 'cap' && PX.Act && !/돔시티|우주항구/.test(this.def.team) && e.spot !== '-' && !/bed|cook|clerk|gate|cmd/.test(e.spot) && U.hash(this.id) % 3 !== 0) {
+        if (PX.Act.activeBase().length) { const sp = spot('base.ev' + (1 + U.hash(this.id) % 6)); if (sp) return { kind: 'spot', map: sp.map, s: sp.s, name: 'base.ev' }; }
+      }
       if (e.spot === '-' || e.spot === 'field' || e.spot === 'free') return { kind: e.spot, map: null };
       const sp = spot(e.spot);
       if (!sp) return { kind: '-', map: null };

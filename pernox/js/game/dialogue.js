@@ -162,9 +162,12 @@ PX.Dlg = (() => {
         if (!backoff && r.stage >= 2) opts.push('explicit', 'flirt');
         if (part === 'night') opts.push('night');
         cat = U.pick(opts);
+        const X = PX.DLG_CAP2;
+        if (X && X.place[G.mapId] && Math.random() < 0.32) cat = 'place';
+        else if (X && Math.random() < 0.22) cat = 'small';
       }
     }
-    let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : pick(cat, D[cat]);
+    let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
     if (!bd) bd = pick('greet', D.greet);
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;

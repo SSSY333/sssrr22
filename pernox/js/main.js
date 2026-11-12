@@ -15,6 +15,7 @@
     const S = St.S;
     const home = W.maps[PX.JOBS[S.player.job].home];
     if (S.homeLayout && S.homeMap === home.id) PX.Decor.applyLayout(home, S.homeLayout);
+    PX.Decor.applyAll();
     Game.player = new A.Actor('player', PX.S.playerApp(S.player, St.season()), { name: S.player.name, speed: 3.4 });
     Game.cap = new A.NPC(PX.NPC_BY_ID.cap); Game.capOutfit(); Game.cap.name = S.capName; Game.cap.speed = 3.3; Game.cap.big = true;
     Game.npcs = PX.NPCS.filter(n => n.id !== 'cap').map(n => new A.NPC(n));
@@ -97,12 +98,17 @@
     snapCam();
     if (!silent) { PX.Audio.door(); fade(); St.save(); }
     UI.hud();
-    $('decorBtn').classList.toggle('hidden', !PX.MAPS[id].home);
+    $('decorBtn').textContent = PX.MAPS[id].home ? '🛋️' : '🛠️';
+    $('decorBtn').setAttribute('aria-label', PX.MAPS[id].home ? '숙소 꾸미기' : '맵 편집');
     W.updateEvents(m, St.S.time, St.S.time.min);
+    PX.Act.spawnCritters(m);
     if (!silent) dateCheck(id);
     if (!silent && !St.S.done.intro && PX.MAPS[id].kind === 'out' && Game.prevMap === PX.JOBS[St.S.player.job].home && St.S.time.min < 12 * 60) Game.trigger(firstMeet);
   }
   Game.enterMap = enterMap;
+  let capCommentT = 40;
+  Game.fade = () => fade();
+  Game.sleepUntil = (h, p) => sleepUntil(h, p);
   function fade() { const f = $('fade'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 260); }
   function enterBuilding(door) {
     const S = St.S;
@@ -188,6 +194,7 @@
   const MENU = ['김치찌개', '된장국과 즉석밥', '통조림 햄 볶음밥', '냉동 만두 국', '라면 (보급 지연)', '뿌리채소 카레', '냉동 삼겹살 구이'];
   function useObj(o) {
     const S = St.S, f = o.f, home = PX.MAPS[Game.mapId].home, job = PX.JOBS[S.player.job];
+    if (PX.Act.LABEL[o.use] || (o.use === 'shop' && Game.mapId === 'inn')) { PX.Act.use(o); return; }
     switch (o.use) {
       case 'bed':
         if (home) return sleepMenu();
@@ -544,12 +551,14 @@
     }
     if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
+    for (const c of Game.critters || []) if (!c.hidden) list.push({ type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });
     if (Game.cap.map === Game.mapId) list.push({ type: 'cap', a: Game.cap, x: Game.cap.x, y: Game.cap.y, label: `💗 ${St.S.capName}`, fn: capMenu });
     return list;
   }
   function objLabel(o) {
     const job = PX.JOBS[St.S.player.job], home = PX.MAPS[Game.mapId].home;
+    if (PX.Act.LABEL[o.use]) return PX.Act.LABEL[o.use];
     const L0 = { grill: '🥓 냉삼 먹기', claw: '🐰 인형 뽑기', show: '🌠 투영 보기', stall: '🏮 축제 매대' };
     if (L0[o.use]) return L0[o.use];
     const L = { bed: home ? '🛏️ 침대' : '🛏️ 잠깐 눕기', sit: '🪑 앉기', terminal: '📟 개인 단말', album: '📷 사진첩', storage: '🗄️ 수납장', shop: '🛒 상점', vending: '🥤 자판기', meal: '🍱 식사하기', wardrobe: '👕 옷장', fridge: '🧊 냉장고', kitchen: '🍳 요리하기', tv: '📺 TV 보기', cooler: '❄️ 냉각기', shower: '🚿 샤워하기', sink: '🫧 세면대', workout: '💪 운동하기', arcade: '👾 오락기', game: '🃏 카드 게임', inspect: '🔍 살펴보기', kiosk: 'ℹ️ 안내 단말', shuttle: '🚌 셔틀 타기', desk: '🖥️ 살펴보기', work: o.spot === job.workSpot ? '🛠️ 근무하기' : '🔍 살펴보기' };
@@ -557,11 +566,17 @@
   }
   function tapAt(sx, sy) {
     const m = W.maps[Game.mapId], p = Game.player;
+    const list = interactables();
+    // 0) 화면에서 실제로 누른 그림 (맨 위부터, 투명 픽셀 통과) — 의자·소파·사람을 정확히 고른다
+    const pk = W.pick(sx, sy);
+    if (pk) {
+      if (pk.a && pk.a !== p) { const it = list.find(i => i.a === pk.a); if (it) return goInteract(it, pk.a.x, pk.a.y); }
+      if (pk.o) { const it = list.find(i => i.o === pk.o); if (it) return goInteract(it); if (pk.o.kind === 'bld') { UI.toast(pk.o.closedMsg || `🏢 ${pk.o.b.name}`); return; } }
+    }
     // 1) 사람 (스프라이트 영역)
-    const people = [Game.cap, ...Game.npcs].filter(a => a.map === Game.mapId && a.screen);
+    const people = [Game.cap, ...Game.npcs, ...(Game.critters || [])].filter(a => a.map === Game.mapId && a.screen && !a.hidden);
     let hit = null;
     for (const a of people) { const s = a.screen; if (sx > s.x - 9 && sx < s.x + 9 && sy > s.top + 4 && sy < s.foot + 2) { if (!hit || a.y + a.x > hit.y + hit.x) hit = a; } }
-    const list = interactables();
     if (hit) { const it = list.find(i => i.a === hit); return goInteract(it, hit.x, hit.y); }
     const [wx, wy] = W.toWorld(sx, sy);
     const tx = Math.floor(wx), ty = Math.floor(wy);
@@ -749,7 +764,18 @@
     UI.badge();
     if (!Game.running) { Game.running = true; last = performance.now(); requestAnimationFrame(frame); }
   }
-  function snapCam() { const p = Game.player; if (!p) return; const [px, py] = PX.G.proj(p.x, p.y); W.view.camX = px; W.view.camY = py - 14; }
+  // 카메라 목표: 플레이어 중심, 단 맵 바깥 허공이 화면을 많이 차지하지 않게 맵 경계 안으로 당김
+  function camTarget() {
+    const p = Game.player, m = W.maps[Game.mapId];
+    let [cx, cy] = PX.G.proj(p.x, p.y); cy -= 14;
+    if (!m) return [cx, cy];
+    const vw = W.view.w, vh = W.view.h, pad = 24;
+    const x0 = -m.h * 16 - pad, x1 = m.w * 16 + pad, y0 = -60, y1 = (m.w + m.h) * 8 + pad;
+    const clamp = (v, a, b) => a > b ? (a + b) / 2 : Math.max(a, Math.min(b, v));
+    cx = clamp(cx, x0 + vw / 2, x1 - vw / 2); cy = clamp(cy, y0 + vh / 2, y1 - vh / 2);
+    return [cx, cy];
+  }
+  function snapCam() { const p = Game.player; if (!p) return; const [px, py] = camTarget(); W.view.camX = px; W.view.camY = py; }
   function frame(t) {
     if (!Game.running) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -761,19 +787,21 @@
     }
     // 이동 · AI
     if (!Game.modal) keyMove(dt);
-    for (const a of Game.actors) a.update(Game.modal && a !== Game.player ? dt * 0 + dt : dt);
+    for (const a of Game.actors) a.update(dt);
+    if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
+    capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;
     if (npcT <= 0 && !Game.sleeping) { npcT = 0.5; if (!Game.modal) for (const n of Game.npcs) n.think(S, Game.mapId); }
     if (!Game.modal || Cap.mode === 'follow') Cap.update(Game.modal ? 0 : dt);
     pump();
     // 카메라
     const p = Game.player;
-    const [px, py] = PX.G.proj(p.x, p.y);
+    const [px, py] = camTarget();
     W.view.camX += (px - W.view.camX) * Math.min(1, dt * 8);
-    W.view.camY += (py - 14 - W.view.camY) * Math.min(1, dt * 8);
+    W.view.camY += (py - W.view.camY) * Math.min(1, dt * 8);
     // 렌더
     const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt };
-    W.render(W.maps[Game.mapId], Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
+    W.render(W.maps[Game.mapId], Game.critters && Game.critters.length ? Game.actors.concat(Game.critters) : Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
     positionBubbles(); positionLabels(); ambient(dt);
     hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); }
     saveT += dt; if (saveT > 300) { saveT = 0; St.save(); }
@@ -834,7 +862,8 @@
       let e = labelEls.get(o.id);
       if (!e) { e = U.el('div', { class: 'blabel' + (o.b.closed ? ' closed' : '') }, U.el('i', { style: `background:${o.b.stripe}` }), o.b.name.replace(/ \(.*\)$/, '')); box.append(e); labelEls.set(o.id, e); }
       const [sx, sy] = W.toScreen(o.x + o.fw / 2, o.y + o.fd / 2, o.b.h + 22);
-      const vis = sx > -60 && sx < W.view.w + 60 && sy > -10 && sy < W.view.h + 10;
+      const px = sx * sc, py = sy * sc;
+      const vis = sx > -60 && sx < W.view.w + 60 && sy > -10 && sy < W.view.h + 10 && py > 108 && !(px > innerWidth - 120 && py < 380);
       e.style.display = vis ? '' : 'none';
       if (vis) e.style.transform = `translate(${sx * sc}px, ${sy * sc}px) translate(-50%, -100%)`;
     }

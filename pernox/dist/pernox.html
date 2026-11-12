@@ -278,7 +278,7 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
     <div class="side">
       <button id="termBtn" aria-label="개인 단말">📟<i id="termBadge" class="badge"></i></button>
       <button id="photoBtn" aria-label="사진 찍기">📷</button>
-      <button id="decorBtn" class="hidden" aria-label="숙소 꾸미기">🛋️</button>
+      <button id="decorBtn" aria-label="꾸미기 · 맵 편집">🛋️</button>
     </div>
     <button id="actBtn" class="hidden"></button>
     <div id="joy" class="hidden" aria-label="이동 조이스틱 (끝까지 밀면 달리기)"><div id="knob"></div></div>
@@ -706,6 +706,18 @@ PX.G = (() => {
     domegrass: () => ({ base: '#64c27a', dots: [['#86d991', .16], ['#55a96a', .1]], blades: '#9be6a4' }),
     water: () => ({ base: '#4fb3d9', dots: [['#7fd3ef', .12], ['#3f9cc4', .1]] }),
     glassfloor: () => ({ base: '#9fd8e8', dots: [['#c4eef7', .1]], seam: '#7fbfd2' }),
+    silversand: () => ({ base: '#c9ccd6', dots: [['#e4e6ee', .14], ['#aeb2bf', .08], ['#ffffff', .02]] }),
+    whitesand: () => ({ base: '#efe6d2', dots: [['#f8f1e2', .14], ['#ddd2ba', .08]] }),
+    ice: () => ({ base: '#bfe6f2', dots: [['#e2f6fb', .12], ['#9fd2e4', .06]], seam: '#d8f2fa' }),
+    snowfield: () => ({ base: '#e8f0f6', dots: [['#ffffff', .2], ['#cfdbe6', .08]] }),
+    void: () => ({ base: '#0d0a1c', dots: [['#ffffff', .012], ['#9fd8ff', .008], ['#1a1530', .2]] }),
+    crystal: () => ({ base: '#4a3a6a', dots: [['#6a5a9a', .1], ['#b9a0ff', .03], ['#3a2d55', .1]] }),
+    redrock: (P) => ({ base: shade(P.sand, -0.25), dots: [[shade(P.sand, -0.35), .15], [shade(P.sand, -0.12), .1]] }),
+    deepwater: () => ({ base: '#2a6f9a', dots: [['#3f8fbf', .12], ['#225d82', .1], ['#7fd3ef', .02]] }),
+    boardwalk: () => ({ base: '#a0743f', planks: '#7a5530', dots: [['#b0844f', .06]] }),
+    mosaic: () => ({ base: '#d6c9e8', checker: '#c3b2de', dots: [] }),
+    neonfloor: () => ({ base: '#2a1f3f', checker: '#33264d', dots: [['#ff6bd5', .01]] }),
+    rail: () => ({ base: '#5a4a6a', dots: [['#6a5a7a', .1]], stripe: '#c9ced4' }),
   };
   function makeTile(type, season, variant) {
     const P = SEASON_PAL[season];
@@ -897,6 +909,42 @@ PX.G = (() => {
   def('arch', { name: '구역 연결 아치', w: 3, d: 1, cat: 'out', blocks: false, parts: [P(0, 0.35, 0, 0.3, 0.3, 40, '#d9dde2'), P(2.7, 0.35, 0, 0.3, 0.3, 40, '#d9dde2'), P(0, 0.3, 40, 3, 0.4, 5, '#7fb8e8')], det: [{ p: 2, f: 'S', u: [0.6, 2.4], v: [1, 4], c: '#ffffff' }], light: { r: 2.4, c: '#bfe3ff', z: 40, night: true } });
   def('bunnyplush', { name: '토끼 인형', cat: 'home', price: 0, parts: [P(0.3, 0.35, 0, 0.4, 0.35, 6, '#f7f2f4'), P(0.32, 0.37, 6, 0.36, 0.3, 6, '#ffffff'), P(0.36, 0.42, 12, 0.08, 0.08, 6, '#ffffff'), P(0.56, 0.42, 12, 0.08, 0.08, 6, '#ffffff'), P(0.42, 0.6, 4, 0.16, 0.06, 2, '#ffa8c0')], det: [{ p: 1, f: 'S', u: [0.08, 0.12], v: [3, 4], c: '#2a1e2a' }, { p: 1, f: 'S', u: [0.24, 0.28], v: [3, 4], c: '#2a1e2a' }] });
   def('glassvase', { name: '유리꽃 화병', cat: 'home', price: 60, parts: [P(0.35, 0.35, 0, 0.3, 0.3, 8, '#bfe3ee', { a: 1 }), P(0.3, 0.3, 8, 0.15, 0.15, 6, '#cfe8ff', { a: 1 }), P(0.5, 0.45, 8, 0.15, 0.15, 8, '#ff9ed2', { a: 1 }), P(0.4, 0.55, 8, 0.15, 0.15, 5, '#b9ffe8', { a: 1 })], light: { r: 1.2, c: '#e8f6ff', z: 10 } });
+
+  def('pullup', { name: '철봉', w: 2, d: 1, cat: 'base', use: 'hang', parts: [P(0.1, 0.4, 0, 0.15, 0.2, 40, '#7a828c'), P(1.75, 0.4, 0, 0.15, 0.2, 40, '#7a828c'), P(0.1, 0.45, 38, 1.8, 0.1, 2, '#c9ced4'), P(0, 0.3, 0, 0.35, 0.4, 2, '#4a5058'), P(1.65, 0.3, 0, 0.35, 0.4, 2, '#4a5058')] });
+  def('armtable', { name: '팔씨름 테이블', w: 2, d: 1, cat: 'base', use: 'armwrestle', parts: [...legs4(2, 1, 12, '#4a4f55'), P(0, 0, 12, 2, 1, 3, '#c43d4b'), P(0.15, 0.35, 15, 0.25, 0.3, 3, '#e8e3c8'), P(1.6, 0.35, 15, 0.25, 0.3, 3, '#e8e3c8')] });
+
+
+  // ---------------- 관광 · 외곽 · 다른 행성 (Alpha 0.3) ----------------
+  def('telescope', { name: '전망 망원경', cat: 'out', use: 'view', parts: [P(0.4, 0.4, 0, 0.2, 0.2, 14, '#5a5f66'), P(0.3, 0.3, 0, 0.4, 0.4, 2, '#3a3f45'), P(0.2, 0.42, 14, 0.6, 0.16, 5, '#9aa3ad')], det: [{ p: 2, f: 'S', u: [0.4, 0.58], v: [1, 4], c: '#7fe3ff' }] });
+  def('dometent', { name: '투명 돔 텐트', w: 2, d: 2, cat: 'out', use: 'tent', seats: [[1, 1, 0, 2]], parts: [P(0.1, 0.1, 0, 1.8, 1.8, 2, '#5a6b4f'), P(0.2, 0.2, 2, 1.6, 1.6, 14, '#cfe8f2', { a: 1 }), P(0.5, 0.5, 16, 1, 1, 5, '#e8f6ff', { a: 1 })], light: { r: 1.8, c: '#ffe2a0', z: 8, night: true } });
+  def('campfire', { name: '캠프파이어', cat: 'out', use: 'campfire', parts: [P(0.2, 0.2, 0, 0.6, 0.6, 2, '#5a5f66'), P(0.3, 0.35, 2, 0.4, 0.3, 3, '#6a4a3a'), P(0.38, 0.38, 5, 0.24, 0.24, 6, '#ff9b42'), P(0.44, 0.44, 11, 0.12, 0.12, 4, '#ffd166')], light: { r: 3.4, c: '#ff9b42', z: 8 } });
+  def('logseat', { name: '통나무 의자', w: 2, d: 1, cat: 'out', use: 'sit', seats: [[0.5, 0.5, 0, 6], [1.5, 0.5, 0, 6]], parts: [P(0, 0.25, 0, 2, 0.5, 6, '#7a5a3c')], det: [{ p: 0, f: 'E', u: [0.1, 0.4], v: [1, 5], c: '#c9a27a' }] });
+  def('beachchair', { name: '해변 의자', cat: 'out', use: 'sit', seats: [[0.5, 0.6, 0, 5]], parts: [P(0.1, 0.2, 0, 0.8, 0.8, 4, '#f4efe4'), P(0.1, 0.2, 4, 0.8, 0.2, 9, '#5fa8ff')] });
+  def('sandpile', { name: '모래 더미', cat: 'out', use: 'sandcastle', blocks: false, parts: [P(0.15, 0.2, 0, 0.7, 0.6, 3, '#e2d6bc'), P(0.35, 0.35, 3, 0.3, 0.3, 4, '#d6c9aa')] });
+  def('crop', { name: '향열매 작물', cat: 'out', use: 'harvest', parts: [P(0.15, 0.15, 0, 0.7, 0.7, 2, '#5a4a3a'), P(0.3, 0.3, 2, 0.4, 0.4, 7, '@leaf'), P(0.4, 0.35, 9, 0.2, 0.2, 3, '#ff8b5e')] });
+  def('fishspot', { name: '낚시터 표지', cat: 'out', use: 'fish', parts: [P(0.42, 0.42, 0, 0.12, 0.12, 18, '#5a3f22'), P(0.15, 0.45, 14, 0.7, 0.08, 6, '#f4efe4')], det: [{ p: 1, f: 'S', u: [0.1, 0.6], v: [1, 5], c: '#5fa8ff' }] });
+  def('ship', { name: '수송선', w: 8, d: 4, cat: 'out', parts: [P(0.5, 0.5, 0, 0.6, 0.6, 8, '#3a3f45'), P(6.9, 0.5, 0, 0.6, 0.6, 8, '#3a3f45'), P(0.5, 2.9, 0, 0.6, 0.6, 8, '#3a3f45'), P(6.9, 2.9, 0, 0.6, 0.6, 8, '#3a3f45'), P(0, 0.3, 8, 8, 3.4, 18, '#9aa6b4'), P(5.5, 0.6, 26, 2.2, 2.8, 10, '#c9d1d9'), P(0.6, 1.2, 26, 4, 1.6, 4, '#7f8a96')],
+    det: [{ p: 5, f: 'E', u: [0.4, 2.4], v: [3, 8], c: '#7fe3ff' }, { p: 4, f: 'S', u: [1, 7], v: [7, 9], c: '#3b5fa8' }, { p: 4, f: 'S', u: [2, 3], v: [2, 12], c: '#5a636e' }], light: { r: 3, c: '#bfe3ff', z: 30, night: true } });
+  def('tower', { name: '통신탑', w: 3, d: 3, cat: 'out', parts: [P(0.2, 0.2, 0, 0.2, 0.2, 90, '#7a828c'), P(2.6, 0.2, 0, 0.2, 0.2, 90, '#7a828c'), P(0.2, 2.6, 0, 0.2, 0.2, 90, '#7a828c'), P(2.6, 2.6, 0, 0.2, 0.2, 90, '#7a828c'), P(0.2, 0.2, 30, 2.6, 2.6, 2, '#5a636e'), P(0.2, 0.2, 60, 2.6, 2.6, 2, '#5a636e'), P(1.3, 1.3, 90, 0.4, 0.4, 20, '#c9ced4'), P(1.2, 1.2, 108, 0.6, 0.6, 4, '#ff5a5a')], light: { r: 2.2, c: '#ff5a5a', z: 110, night: true } });
+  def('ruinwall', { name: '무너진 방벽', w: 3, d: 1, cat: 'out', parts: [P(0, 0.2, 0, 1.2, 0.6, 18, '#6a6560'), P(1.4, 0.2, 0, 0.8, 0.6, 9, '#5e5954'), P(2.3, 0.2, 0, 0.7, 0.6, 14, '#6a6560')], det: [{ p: 0, f: 'S', u: [0.2, 0.5], v: [6, 9], c: '#3a3530' }] });
+  def('debris', { name: '전투 잔해', w: 2, d: 1, cat: 'out', use: 'salvage', parts: [P(0.1, 0.2, 0, 0.8, 0.6, 5, '#6a3f8a'), P(0.7, 0.3, 0, 0.9, 0.5, 8, '#5a5f66'), P(1.2, 0.2, 8, 0.3, 0.3, 4, '#9b5fd0')], light: { r: 1.2, c: '#c38bff', z: 6, night: true } });
+  def('crystalcluster', { name: '발광 광물 결정', cat: 'out', parts: [P(0.3, 0.3, 0, 0.25, 0.25, 16, '#b9a0ff', { a: 1 }), P(0.55, 0.45, 0, 0.2, 0.2, 10, '#9fd8ff', { a: 1 }), P(0.35, 0.6, 0, 0.18, 0.18, 7, '#ff9be8', { a: 1 })], light: { r: 2, c: '#b9a0ff', z: 10 } });
+  def('icesculpture', { name: '얼음 조형물', cat: 'out', use: 'inspect', parts: [P(0.2, 0.2, 0, 0.6, 0.6, 4, '#9fd2e4'), P(0.3, 0.3, 4, 0.4, 0.4, 14, '#d8f2fa', { a: 1 }), P(0.4, 0.4, 18, 0.2, 0.2, 8, '#ffffff', { a: 1 })], light: { r: 1.6, c: '#bfe9ff', z: 12 } });
+  def('hotspring', { name: '광물온천 탕', w: 3, d: 3, cat: 'base', use: 'onsen', seats: [[0.8, 1.5, 1, 2], [2.2, 1.5, 3, 2]], parts: [P(0, 0, 0, 3, 3, 6, '#7a6a5a'), P(0.3, 0.3, 6, 2.4, 2.4, 0.5, '#7fd3d0'), P(1.3, 1.3, 6.5, 0.4, 0.4, 6, '#ffffff', { a: 1 })], light: { r: 2, c: '#9ff5e0', z: 8 } });
+  def('exhibit', { name: '전시 진열장', cat: 'base', use: 'exhibit', parts: [P(0.1, 0.1, 0, 0.8, 0.8, 10, '#3a3f45'), P(0.15, 0.15, 10, 0.7, 0.7, 14, '#cfe8f2', { a: 1 }), P(0.35, 0.35, 10, 0.3, 0.3, 8, '#c9a227')], light: { r: 1.4, c: '#fff3c4', z: 18 } });
+  def('railstation', { name: '빛터널 열차 승강장', w: 3, d: 1, cat: 'out', use: 'rail', parts: [P(0, 0.1, 0, 3, 0.8, 4, '#8d98a3'), P(0.2, 0.2, 4, 0.12, 0.12, 26, '#4a5058'), P(2.68, 0.2, 4, 0.12, 0.12, 26, '#4a5058'), P(0, 0.1, 30, 3, 0.8, 3, '#b9a0ff')], light: { r: 2.4, c: '#b9a0ff', z: 28 } });
+  def('target', { name: '사격 표적', cat: 'out', use: 'shoot', parts: [P(0.45, 0.5, 0, 0.1, 0.1, 12, '#5a3f22'), P(0.15, 0.45, 12, 0.7, 0.1, 16, '#f4efe4')], det: [{ p: 1, f: 'S', u: [0.2, 0.5], v: [4, 12], c: '#d0563b' }, { p: 1, f: 'S', u: [0.3, 0.4], v: [6, 10], c: '#f4efe4' }] });
+  def('coursestart', { name: '장애물 코스 출발선', w: 2, d: 1, cat: 'out', use: 'course', blocks: false, parts: [P(0, 0.4, 0, 2, 0.2, 1, '#f4efe4'), P(0, 0.35, 0, 0.1, 0.3, 16, '#d0563b'), P(1.9, 0.35, 0, 0.1, 0.3, 16, '#d0563b')] });
+  def('eventbooth', { name: '부대 행사 부스', w: 3, d: 1, cat: 'out', use: 'event', parts: [P(0, 0.1, 0, 3, 0.8, 12, '#2f5a3a'), P(0.05, 0.15, 12, 2.9, 0.7, 2, '#f1e6d0'), P(0, 0.05, 0, 0.1, 0.1, 32, '#c9a227'), P(2.9, 0.05, 0, 0.1, 0.1, 32, '#c9a227'), P(-0.1, -0.05, 32, 3.2, 1.1, 3, '#2f5a3a')],
+    det: [{ p: 4, f: 'S', u: [0.4, 2.8], v: [0, 3], c: '#e8c56a' }, { p: 0, f: 'S', u: [1, 2], v: [4, 9], c: '#e8c56a' }], light: { r: 3, c: '#ffe2a0', z: 30, night: true } });
+  def('dicetable', { name: '주사위 테이블', w: 2, d: 2, cat: 'base', use: 'dice', parts: [...legs4(2, 2, 11, '#2a1f3f', 0.2), P(0.05, 0.05, 11, 1.9, 1.9, 2, '#2f6b3f'), P(0.7, 0.8, 13, 0.2, 0.2, 2, '#ffffff'), P(1.1, 0.9, 13, 0.2, 0.2, 2, '#ff6b6b'), P(0.3, 1.4, 13, 0.4, 0.2, 1, '#ffd166')], light: { r: 1.6, c: '#ffd7a0', z: 16 } });
+  def('perfumebar', { name: '향 조합 카운터', w: 3, d: 1, cat: 'base', use: 'perfume', parts: [P(0, 0.1, 0, 3, 0.8, 14, '#4a2f4a'), P(-0.02, 0.05, 14, 3.04, 0.9, 2, '#e8d2f0'), P(0.3, 0.3, 16, 0.2, 0.2, 6, '#ff9ed2', { a: 1 }), P(0.8, 0.35, 16, 0.2, 0.2, 7, '#9fd8ff', { a: 1 }), P(1.3, 0.3, 16, 0.2, 0.2, 5, '#ffd166', { a: 1 }), P(1.8, 0.35, 16, 0.2, 0.2, 8, '#b9ffe8', { a: 1 }), P(2.4, 0.3, 16, 0.2, 0.2, 6, '#ffb36b', { a: 1 })], light: { r: 2, c: '#ffb3e6', z: 18 } });
+  def('dancefloor', { name: '무대 바닥', w: 3, d: 3, cat: 'base', use: 'dance', blocks: false, flat: true, parts: [P(0, 0, 0, 3, 3, 1, '#3a2a6a')], det: [{ p: 0, f: 'T', r: [0.1, 0.1, 1.45, 1.45], c: '#ff6bd5' }, { p: 0, f: 'T', r: [1.55, 1.55, 2.9, 2.9], c: '#6bfff0' }, { p: 0, f: 'T', r: [1.55, 0.1, 2.9, 1.45], c: '#ffd166' }], light: { r: 3, c: '#ff8bea', z: 2 } });
+  def('barcounter', { name: '바 카운터', w: 3, d: 1, cat: 'base', use: 'drink', parts: [P(0, 0.1, 0, 3, 0.8, 14, '#5a3a2a'), P(-0.02, 0.05, 14, 3.04, 0.9, 2, '#c9a27a'), P(0.4, 0.3, 16, 0.15, 0.15, 7, '#7fb86a', { a: 1 }), P(1.2, 0.35, 16, 0.2, 0.2, 5, '#ffb36b', { a: 1 }), P(2.2, 0.3, 16, 0.15, 0.15, 8, '#9fd8ff', { a: 1 })], light: { r: 2, c: '#ffcf8a', z: 18 } });
+  def('stage', { name: '공연 무대', w: 4, d: 3, cat: 'base', use: 'perform', parts: [P(0, 0, 0, 4, 3, 6, '#5a3f2a'), P(0, 0, 6, 4, 0.2, 30, '#8a2f3a'), P(0.3, 0.6, 6, 0.3, 0.3, 14, '#3a3f45')], light: { r: 3, c: '#ffe2a0', z: 20 } });
+  def('travelkiosk', { name: '이동 안내 단말', cat: 'out', use: 'shuttle', parts: [P(0.25, 0.3, 0, 0.5, 0.4, 26, '#3a4450'), P(0.2, 0.25, 26, 0.6, 0.5, 3, '#5fa8ff')], det: [{ p: 0, f: 'S', u: [0.05, 0.45], v: [12, 23], c: '#7fe3ff' }], light: { r: 1.8, c: '#7fe3ff', z: 18, night: true } });
+  def('windowseat', { name: '창가 소파', w: 2, d: 1, cat: 'base', use: 'sit', seats: [[0.5, 0.6, 2, 8], [1.5, 0.6, 2, 8]], parts: [P(0, 0.1, 0, 2, 0.85, 6, '#3a3f6a'), P(0.15, 0.25, 6, 1.7, 0.62, 3, '#5a5f9a'), P(0, 0.75, 6, 2, 0.2, 10, '#2f335a')] });
+  def('railing', { name: '난간', w: 3, d: 1, cat: 'out', parts: [P(0, 0.45, 0, 0.1, 0.1, 12, '#c9ced4'), P(1.45, 0.45, 0, 0.1, 0.1, 12, '#c9ced4'), P(2.9, 0.45, 0, 0.1, 0.1, 12, '#c9ced4'), P(0, 0.45, 11, 3, 0.1, 2, '#e9eef2')] });
 
   // ---------------- 야외 장식 ----------------
   def('tree', { name: '수정잎 나무', cat: 'out', parts: [P(0.4, 0.4, 0, 0.2, 0.2, 18, '#7a5a48'), P(0.1, 0.1, 16, 0.8, 0.8, 12, '@leaf'), P(0.2, 0.2, 28, 0.6, 0.6, 10, '@leaf2'), P(0.32, 0.32, 38, 0.36, 0.36, 7, '@leaf'), P(0.42, 0.42, 45, 0.16, 0.16, 4, '@glow')], light: { r: 1.2, c: '#bfffee', z: 40, night: true } });
@@ -1198,7 +1246,16 @@ PX.S = (() => {
     big: { fw: 44, fh: 60, ax: 22, ay: 57, hw: 15, hh: 16, tw: 18, th: 13, aw: 4, lh: 11, lw: 6, gap: 2 },
   };
 
+  function critter(app, fr) {
+    const c = G.canvas(20, 16), g = c.getContext('2d');
+    const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    if (app.critter === 'lizard') { R(4, 10, 11, 4, '#b8543a'); R(13, 9, 5, 4, '#c4613f'); R(16, 10, 1, 1, '#1d1420'); R(1, 11 + (fr % 2), 4, 2, '#a04a35'); R(6, 13 + (fr % 2), 2, 2, '#8a3b30'); R(11, 13 + ((fr + 1) % 2), 2, 2, '#8a3b30'); }
+    else { const b = fr % 2; R(5, 3 + b, 10, 6, 'rgba(160,230,255,0.85)'); R(7, 2 + b, 6, 2, 'rgba(220,250,255,0.9)'); for (let i = 0; i < 4; i++) R(6 + i * 2, 9 + b, 1, 4 + ((i + fr) % 2), 'rgba(160,230,255,0.7)'); R(8, 5 + b, 1, 1, '#ffffff'); }
+    G.outline(c, '#20172a');
+    return { c, ax: 10, ay: 15, headY: 2, B: BODY.n };
+  }
   function frame(app, pose = 'idle', fr = 0, view = 'F', face = 'normal') {
+    if (app.critter) return critter(app, fr);
     const B = BODY[app.big ? 'big' : 'n'];
     const c = G.canvas(B.fw, B.fh), g = c.getContext('2d');
     const R = (x, y, w, h, col) => { if (w > 0 && h > 0) { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); } };
@@ -1288,6 +1345,7 @@ PX.S = (() => {
         case 'eat': arm(L, ay0, alen - 2, 0); R(Rr - 1, ay0 - 1 - (fr % 2) * 2, aw + 1, 5, skin); break;
         case 'workout': if (fr % 2) { arm(L, ay0, alen, 2); arm(Rr, ay0, alen, 2); R(L - 2, ay0 - alen - 2, B.tw + aw * 2 + 4, 2, '#555'); } else { arm(L, ay0, alen - 3, 0); arm(Rr, ay0, alen - 3, 0); } break;
         case 'surprise': case 'bump': arm(L, ay0, 5, 2); arm(Rr, ay0, 5, 2); break;
+        case 'hang': arm(L + 1, ay0, alen + 4, 2); arm(Rr - 1, ay0, alen + 4, 2); break;
         default: arm(L, ay0 + Math.max(0, swing), alen, 0); arm(Rr, ay0 + Math.max(0, -swing), alen, 0);
       }
     }
@@ -1669,100 +1727,86 @@ PX.S = (() => {
 (() => {
   const M = {};
 
-  // ---------------- 실내 ----------------
+  // ---------------- 실내 (Alpha 0.3: 아담하게 줄임) ----------------
   function room(id, o) {
-    M[id] = Object.assign({ id, kind: 'in', wallH: 58 }, o);
+    M[id] = Object.assign({ id, kind: 'in', wallH: 52 }, o);
   }
   const playerRoom = [
-    ['plant', 0, 0, 0], ['bed', 1, 0, 0, 'home.bed'], ['sidetable', 2, 0, 0], ['cabinet', 3, 0, 0], ['terminal', 5, 0, 0], ['chair', 6, 1, 2],
-    ['cooler', 7, 0, 0], ['shelf', 8, 0, 0], ['photo', 10, 0, 0], ['fridge', 11, 0, 0], ['kitchen', 12, 0, 0],
-    ['mirror', 0, 1, 3], ['wardrobe', 0, 3, 3], ['lamp', 0, 6, 0], ['tv', 0, 7, 3], ['rug', 2, 7, 0], ['sofa', 4, 7, 1, 'home.sofa'],
-    ['table', 10, 3, 0], ['chair', 9, 4, 3], ['chair', 12, 3, 1], ['plant', 13, 9, 0], ['bigplant', 0, 11, 0],
+    ['plant', 0, 0, 0], ['bed', 1, 0, 0, 'home.bed'], ['sidetable', 2, 0, 0], ['terminal', 3, 0, 0], ['chair', 4, 1, 2], ['cooler', 5, 0, 0], ['photo', 6, 0, 0], ['fridge', 7, 0, 0], ['kitchen', 8, 0, 0], ['bigplant', 10, 0, 0],
+    ['mirror', 0, 1, 3], ['wardrobe', 0, 2, 3], ['lamp', 0, 4, 0], ['tv', 0, 5, 3], ['rug', 2, 5, 0], ['sofa', 4, 5, 1, 'home.sofa'],
+    ['table', 7, 3, 0], ['chair', 6, 4, 3], ['chair', 9, 3, 1], ['plant', 10, 8, 0],
   ];
-  room('q_player', { name: '내 숙소 (간부 숙소동)', w: 14, h: 12, floor: 'wood', wall: '#e9dcc8', exit: 10, home: true,
-    furn: playerRoom.map(a => a.slice()),
-    walls: [['B', 3.6, 'window', 1.2], ['B', 9.2, 'poster', 0.8], ['L', 5.0, 'window', 1.2], ['L', 9.8, 'clock', 0.5]] });
-  room('apt_player', { name: '내 숙소 (민간 주거구역)', w: 14, h: 12, floor: 'cafe', wall: '#dfe8f0', exit: 10, home: true,
-    furn: playerRoom.map(a => a.slice()),
-    walls: [['B', 3.6, 'window', 1.2], ['B', 9.2, 'poster', 0.8], ['L', 5.0, 'window', 1.2], ['L', 9.8, 'clock', 0.5]] });
-  room('q_captain', { name: '대위 개인 막사', w: 16, h: 14, floor: 'darkwood', wall: '#5f6b5a', exit: 12, lowDoor: true,
-    furn: [['cooler', 0, 0, 0], ['bigbed', 1, 0, 0, 'cap.bed'], ['sidetable', 3, 0, 0], ['cooler', 4, 0, 0], ['weaponrack', 6, 0, 0], ['alienbench', 9, 0, 0], ['@', 9, 1, 2, 'cap.craft', 'work'], ['stool', 10, 1, 0],
-      ['workbench', 12, 0, 0], ['fridge', 14, 0, 0], ['bigplant', 15, 0, 0], ['kitchen', 0, 3, 3], ['tv', 0, 6, 3], ['rug_blue', 2, 6, 0], ['sofa_green', 6, 6, 1, 'cap.sofa'],
-      ['weights', 0, 9, 3], ['benchpress', 3, 10, 0], ['punchbag', 5, 12, 0], ['@', 2, 11, 1, 'cap.gym', 'workout'], ['table', 11, 5, 0], ['chair', 10, 6, 3], ['chair', 13, 5, 1], ['locker', 15, 3, 1], ['crates', 14, 10, 0], ['lamp', 15, 8, 0]],
-    walls: [['B', 5.0, 'flag', 1.0], ['B', 12.6, 'toolwall', 1.6], ['L', 1.2, 'window', 1.1], ['L', 8.6, 'poster', 0.8]] });
-  room('ops', { name: '수색팀 작전동', w: 22, h: 16, floor: 'metal', wall: '#56606b', exit: 18,
-    furn: [['opsdesk', 2, 0, 0], ['chair', 3, 1, 2, 'ops.d1'], ['opsdesk', 5, 0, 0], ['chair', 6, 1, 2, 'ops.d2'], ['console', 9, 0, 0], ['server', 11, 0, 0], ['server', 12, 0, 0],
-      ['opsdesk', 13, 0, 0], ['chair', 14, 1, 2, 'ops.d3'], ['opsdesk', 16, 0, 0], ['chair', 17, 1, 2, 'ops.d4'], ['opsdesk', 19, 0, 0], ['chair', 19, 1, 2, 'ops.cap'], ['flagstand', 21, 0, 0],
-      ['locker', 0, 3, 3], ['locker', 0, 4, 3], ['locker', 0, 5, 3], ['locker', 0, 6, 3], ['locker', 0, 7, 3], ['weaponrack', 0, 9, 3],
-      ['briefing', 8, 6, 0, 'ops.work'], ['@', 7, 7, 1, 'ops.b1', 'stand'], ['@', 11, 6, 3, 'ops.b2', 'stand'], ['@', 9, 8, 2, 'ops.b3', 'stand'], ['@', 10, 5, 0, 'ops.b4', 'stand'], ['@', 8, 5, 0, 'ops.b5', 'stand'],
-      ['drone', 4, 11, 0], ['crates', 2, 14, 0], ['crate', 5, 14, 0], ['bench', 13, 11, 0], ['vending', 21, 5, 1], ['bigplant', 21, 14, 0]],
-    walls: [['B', 7.6, 'map', 1.2], ['L', 12.2, 'board', 1.4], ['L', 1.2, 'window', 1.1]] });
-  const mess = [['fridge', 9, 0, 0], ['fridge', 10, 0, 0], ['stove', 5, 0, 0], ['stove', 7, 0, 0], ['servecounter', 5, 2, 0, 'mess.counter'], ['@', 6, 1, 0, 'mess.cook', 'stand'], ['@', 8, 1, 0, 'mess.cook2', 'stand'],
-    ['vending', 0, 3, 3], ['vending', 0, 4, 3], ['bigplant', 23, 0, 0], ['bigplant', 0, 17, 0], ['bigplant', 23, 17, 0], ['sink', 22, 0, 0], ['crates', 1, 0, 0]];
-  for (const [ri, ty] of [[0, 6], [1, 10], [2, 14]]) for (const [ci, tx] of [[0, 3], [1, 8], [2, 14], [3, 19]]) {
+  const homeWalls = [['B', 2.5, 'window', 1.0], ['B', 6.6, 'poster', 0.7], ['L', 4.2, 'window', 1.0], ['L', 7.6, 'clock', 0.5]];
+  room('q_player', { name: '내 숙소 (간부 숙소동)', w: 11, h: 9, floor: 'wood', wall: '#e9dcc8', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('apt_player', { name: '내 숙소 (민간 주거구역)', w: 11, h: 9, floor: 'cafe', wall: '#dfe8f0', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('q_captain', { name: '대위 개인 막사', w: 12, h: 10, floor: 'darkwood', wall: '#5f6b5a', exit: 9, lowDoor: true,
+    furn: [['cooler', 0, 0, 0], ['bigbed', 1, 0, 0, 'cap.bed'], ['sidetable', 3, 0, 0], ['weaponrack', 4, 0, 0], ['alienbench', 6, 0, 0], ['@', 6, 1, 2, 'cap.craft', 'work'], ['stool', 7, 1, 0], ['fridge', 9, 0, 0], ['cooler', 10, 0, 0], ['bigplant', 11, 0, 0],
+      ['kitchen', 0, 3, 3], ['tv', 0, 5, 3], ['rug_blue', 1, 5, 0], ['sofa_green', 4, 5, 1, 'cap.sofa'], ['table', 6, 3, 0], ['chair', 5, 3, 3], ['chair', 8, 4, 1],
+      ['weights', 11, 3, 1], ['@', 10, 4, 1, 'cap.gym', 'workout'], ['benchpress', 9, 6, 0], ['lamp', 11, 6, 0], ['punchbag', 7, 7, 0], ['crates', 10, 9, 0]],
+    walls: [['B', 4.2, 'flag', 0.9], ['B', 8.8, 'toolwall', 1.4], ['L', 1.0, 'window', 0.9], ['L', 7.4, 'poster', 0.7]] });
+  room('ops', { name: '수색팀 작전동', w: 16, h: 12, floor: 'metal', wall: '#56606b', exit: 13,
+    furn: [['opsdesk', 1, 0, 0], ['chair', 2, 1, 2, 'ops.d1'], ['opsdesk', 4, 0, 0], ['chair', 5, 1, 2, 'ops.d2'], ['console', 7, 0, 0], ['server', 9, 0, 0], ['opsdesk', 10, 0, 0], ['chair', 11, 1, 2, 'ops.d3'], ['opsdesk', 13, 0, 0], ['chair', 13, 1, 2, 'ops.cap'], ['flagstand', 15, 0, 0],
+      ['locker', 0, 3, 3], ['locker', 0, 4, 3], ['locker', 0, 5, 3], ['weaponrack', 0, 7, 3],
+      ['briefing', 6, 5, 0, 'ops.work'], ['@', 5, 6, 1, 'ops.b1', 'stand'], ['@', 9, 5, 3, 'ops.b2', 'stand'], ['@', 7, 7, 2, 'ops.b3', 'stand'], ['@', 8, 4, 0, 'ops.b4', 'stand'], ['@', 6, 4, 0, 'ops.b5', 'stand'],
+      ['opsdesk', 11, 8, 0], ['chair', 12, 9, 2, 'ops.d4'], ['drone', 3, 9, 0], ['crates', 1, 11, 0], ['bench', 5, 10, 0], ['vending', 15, 4, 1], ['bigplant', 15, 11, 0]],
+    walls: [['B', 6.2, 'map', 1.0], ['L', 9.6, 'board', 1.2], ['L', 1.0, 'window', 1.0]] });
+  const mess = [['crates', 0, 0, 0], ['stove', 3, 0, 0], ['stove', 5, 0, 0], ['fridge', 7, 0, 0], ['fridge', 8, 0, 0], ['servecounter', 3, 2, 0, 'mess.counter'], ['@', 4, 1, 0, 'mess.cook', 'stand'], ['@', 6, 1, 0, 'mess.cook2', 'stand'],
+    ['vending', 0, 3, 3], ['vending', 0, 4, 3], ['sink', 16, 0, 0], ['bigplant', 15, 0, 0], ['bigplant', 0, 12, 0], ['bigplant', 16, 12, 0]];
+  for (const [ri, ty] of [[0, 6], [1, 10]]) for (const [ci, tx] of [[0, 2], [1, 5], [2, 10], [3, 13]]) {
     mess.push(['bench', tx, ty - 1, 0, `mess.b${ri}${ci}a`], ['messtable', tx, ty, 0], ['bench', tx, ty + 1, 2, `mess.b${ri}${ci}b`]);
   }
-  room('mess', { name: '식당동', w: 24, h: 18, floor: 'lino', wall: '#d9c7a8', exit: 12, furn: mess,
-    walls: [['B', 2.6, 'notice', 1.0], ['B', 13.4, 'window', 1.2], ['B', 16.4, 'window', 1.2], ['B', 19.4, 'window', 1.2], ['L', 7.8, 'window', 1.2], ['L', 11.8, 'window', 1.2], ['L', 15.0, 'clock', 0.5]] });
-  room('med', { name: '의무동', w: 20, h: 16, floor: 'medtile', wall: '#dfeceb', exit: 14,
-    furn: [['medcab', 0, 0, 0], ['medcab', 1, 0, 0], ['examdesk', 3, 0, 0, 'med.work'], ['chair', 4, 1, 2, 'med.doc'], ['stool', 3, 2, 0, 'med.patient'], ['scanner', 7, 0, 0],
-      ['medbed', 11, 0, 0, 'med.bed1'], ['curtain', 12, 0, 1], ['medbed', 13, 0, 0, 'med.bed2'], ['curtain', 14, 0, 1], ['medbed', 15, 0, 0, 'med.bed3'], ['curtain', 16, 0, 1], ['medbed', 17, 0, 0, 'med.bed4'],
-      ['medcab', 0, 3, 3], ['medcab', 0, 4, 3], ['bench', 0, 8, 3, 'med.wait'], ['opsdesk', 7, 7, 0], ['chair', 8, 8, 2, 'med.nurse'], ['sink', 19, 3, 1], ['vending', 19, 8, 1], ['plant', 0, 14, 0], ['bigplant', 19, 14, 0]],
-    walls: [['B', 9.8, 'cross', 0.8], ['L', 6.2, 'window', 1.2], ['L', 12.0, 'window', 1.2]] });
-  room('hangar', { name: '정비격납고', w: 26, h: 20, floor: 'hangar', wall: '#6b737e', exit: 13, wallH: 72,
-    furn: [['workbench', 8, 0, 0, 'hg.work'], ['@', 8, 1, 2, 'hg.w1', 'work'], ['workbench', 11, 0, 0], ['@', 11, 1, 2, 'hg.w2', 'work'], ['workbench', 14, 0, 0], ['@', 14, 1, 2, 'hg.w3', 'work'],
-      ['crates', 19, 0, 0], ['crates', 22, 0, 0], ['crate', 24, 0, 0], ['crate', 25, 0, 0], ['rover', 3, 4, 0], ['rover', 3, 9, 0], ['drone', 10, 5, 0], ['drone', 12, 5, 0], ['drone', 14, 5, 0],
-      ['@', 11, 6, 0, 'hg.drone', 'work'], ['truck', 18, 8, 0], ['locker', 0, 13, 3], ['locker', 0, 14, 3], ['locker', 0, 15, 3], ['crates', 20, 15, 0], ['crate', 23, 15, 0], ['crate', 23, 16, 0], ['bench', 8, 15, 0, 'hg.rest']],
-    walls: [['B', 2.0, 'toolwall', 2.4], ['B', 17.0, 'hazard', 1.8], ['L', 3.0, 'shutter', 3.0], ['L', 9.0, 'shutter', 3.0]] });
-  room('gym', { name: '체육관', w: 22, h: 16, floor: 'rubber', wall: '#4f5f6e', exit: 11,
-    furn: [['treadmill', 2, 0, 0, 'gym.t1'], ['treadmill', 4, 0, 0, 'gym.t2'], ['treadmill', 6, 0, 0, 'gym.t3'], ['weights', 9, 0, 0], ['@', 9, 1, 2, 'gym.wt', 'workout'], ['weights', 12, 0, 0], ['@', 12, 1, 2, 'gym.wt2', 'workout'],
-      ['benchpress', 15, 0, 0, 'gym.bp'], ['benchpress', 18, 0, 0, 'gym.bp2'], ['punchbag', 20, 4, 0], ['@', 19, 4, 1, 'gym.bag', 'workout'], ['punchbag', 20, 7, 0],
-      ['mat', 3, 6, 0], ['mat', 6, 6, 0], ['mat', 9, 8, 0], ['@', 4, 7, 0, 'gym.mat', 'workout'], ['locker', 0, 4, 3], ['locker', 0, 5, 3], ['locker', 0, 6, 3], ['locker', 0, 7, 3],
-      ['bench', 2, 12, 0, 'gym.rest'], ['vending', 0, 10, 3], ['mat', 13, 8, 0], ['punchbag', 16, 9, 0], ['bigplant', 21, 14, 0]],
-    walls: [['B', 0.6, 'window', 1.2], ['B', 10.8, 'poster', 0.8], ['L', 9.4, 'mirrorw', 2.0]] });
-  room('px', { name: '보급창고 (PX)', w: 18, h: 14, floor: 'concrete', wall: '#c9c1a8', exit: 9,
-    furn: [['shopcounter', 8, 3, 0, 'px.shop'], ['@', 8, 2, 0, 'px.clerk', 'stand'], ['crates', 1, 0, 0], ['crates', 4, 0, 0], ['crates', 13, 0, 0], ['crate', 16, 0, 0], ['crate', 17, 0, 0],
-      ['pxshelf', 2, 6, 0], ['pxshelf', 5, 6, 0], ['pxshelf', 11, 6, 0], ['pxshelf', 14, 6, 0], ['pxshelf', 2, 9, 0], ['pxshelf', 5, 9, 0], ['pxshelf', 11, 9, 0], ['pxshelf', 14, 9, 0],
-      ['vending', 0, 4, 3], ['bigplant', 17, 13, 0]],
-    walls: [['B', 9.0, 'notice', 1.0], ['L', 9.0, 'window', 1.2]] });
-  room('lounge', { name: '휴게실', w: 18, h: 14, floor: 'carpet', wall: '#e2d5f0', exit: 9,
-    furn: [['shelf', 1, 0, 0], ['tv', 6, 0, 0, 'lng.tv'], ['rug_blue', 5, 1, 0], ['sofa', 5, 3, 2, 'lng.sofa1'], ['sofa_green', 7, 3, 2, 'lng.sofa2'],
-      ['arcade', 12, 0, 0], ['@', 12, 1, 2, 'lng.arcade', 'stand'], ['arcade', 13, 0, 0], ['arcade', 14, 0, 0], ['vending', 17, 0, 0],
-      ['gametable', 11, 6, 0], ['stool', 10, 6, 0, 'lng.g1'], ['stool', 13, 6, 0, 'lng.g2'], ['lamp', 0, 5, 0], ['sofa', 0, 6, 3, 'lng.sofa3'], ['sidetable', 0, 8, 0], ['plant', 16, 13, 0], ['bigplant', 0, 13, 0]],
-    walls: [['B', 3.6, 'window', 1.2], ['B', 9.8, 'poster', 0.8], ['L', 1.6, 'window', 1.2], ['L', 10.2, 'poster', 0.8]] });
-  room('shower', { name: '샤워실', w: 14, h: 12, floor: 'tile', wall: '#cfe3ea', exit: 7,
-    furn: [['showerstall', 1, 0, 0, 'sh.1'], ['showerstall', 2, 0, 0], ['showerstall', 3, 0, 0], ['showerstall', 4, 0, 0], ['showerstall', 5, 0, 0], ['showerstall', 6, 0, 0],
-      ['sink', 0, 3, 3], ['sink', 0, 4, 3], ['sink', 0, 5, 3], ['sink', 0, 6, 3], ['locker', 9, 0, 0], ['locker', 10, 0, 0], ['locker', 11, 0, 0], ['locker', 12, 0, 0], ['locker', 13, 0, 0],
-      ['bench', 8, 6, 0, 'sh.bench'], ['mirror', 0, 8, 3], ['plant', 13, 11, 0]],
-    walls: [['L', 4.4, 'mirrorw', 2.4], ['B', 7.6, 'window', 1.0]] });
-  room('admin', { name: '행정동', w: 18, h: 14, floor: 'carpet', wall: '#d8d2c0', exit: 9,
-    furn: [['opsdesk', 2, 0, 0], ['chair', 3, 1, 2, 'adm.c1'], ['opsdesk', 5, 0, 0], ['chair', 6, 1, 2, 'adm.c2'], ['filecab', 8, 0, 0], ['filecab', 9, 0, 0], ['filecab', 10, 0, 0],
-      ['flagstand', 12, 0, 0], ['flagstand', 15, 0, 0], ['chair', 13, 1, 0, 'adm.cmd'], ['opsdesk', 13, 2, 0], ['bigplant', 17, 0, 0],
-      ['bench', 0, 6, 3, 'adm.wait'], ['table', 6, 7, 0], ['chair', 5, 7, 3, 'adm.m1'], ['chair', 8, 8, 1, 'adm.m2'], ['plant', 17, 13, 0], ['bigplant', 0, 13, 0]],
-    walls: [['B', 13.6, 'flag', 1.0], ['B', 0.6, 'window', 1.2], ['L', 3.0, 'board', 1.4], ['L', 10.2, 'window', 1.2]] });
-  room('comms', { name: '통신실', w: 16, h: 12, floor: 'darktile', wall: '#3d4654', exit: 8,
-    furn: [['console', 2, 0, 0], ['chair', 3, 1, 2, 'com.1'], ['console', 5, 0, 0], ['chair', 6, 1, 2, 'com.2'], ['console', 8, 0, 0], ['chair', 9, 1, 2, 'com.3'],
-      ['server', 11, 0, 0], ['server', 12, 0, 0], ['server', 13, 0, 0], ['server', 14, 0, 0], ['server', 15, 0, 0], ['server', 0, 3, 3], ['server', 0, 4, 3], ['server', 0, 5, 3],
-      ['opsdesk', 6, 6, 0], ['chair', 7, 7, 2, 'com.4'], ['bench', 12, 9, 0], ['plant', 0, 10, 0]],
-    walls: [['L', 7.4, 'map', 1.6], ['B', 0.6, 'screen', 1.0]] });
+  room('mess', { name: '식당동', w: 17, h: 13, floor: 'lino', wall: '#d9c7a8', exit: 8, furn: mess,
+    walls: [['B', 1.6, 'notice', 0.9], ['B', 10.4, 'window', 1.0], ['B', 12.8, 'window', 1.0], ['L', 6.0, 'window', 1.0], ['L', 9.0, 'clock', 0.5]] });
+  room('med', { name: '의무동', w: 15, h: 11, floor: 'medtile', wall: '#dfeceb', exit: 10,
+    furn: [['medcab', 0, 0, 0], ['medcab', 1, 0, 0], ['examdesk', 2, 0, 0, 'med.work'], ['chair', 3, 1, 2, 'med.doc'], ['stool', 2, 2, 0, 'med.patient'], ['scanner', 5, 0, 0],
+      ['medbed', 8, 0, 0, 'med.bed1'], ['curtain', 9, 0, 1], ['medbed', 10, 0, 0, 'med.bed2'], ['curtain', 11, 0, 1], ['medbed', 12, 0, 0, 'med.bed3'], ['curtain', 13, 0, 1], ['medbed', 14, 0, 0, 'med.bed4'],
+      ['bench', 0, 5, 3, 'med.wait'], ['opsdesk', 5, 5, 0], ['chair', 6, 6, 2, 'med.nurse'], ['sink', 14, 4, 1], ['vending', 14, 6, 1], ['plant', 0, 10, 0], ['bigplant', 14, 10, 0]],
+    walls: [['B', 7.2, 'cross', 0.7], ['L', 3.6, 'window', 1.0], ['L', 8.6, 'window', 1.0]] });
+  room('hangar', { name: '정비격납고', w: 19, h: 14, floor: 'hangar', wall: '#6b737e', exit: 9, wallH: 64,
+    furn: [['workbench', 5, 0, 0, 'hg.work'], ['@', 5, 1, 2, 'hg.w1', 'work'], ['workbench', 8, 0, 0], ['@', 8, 1, 2, 'hg.w2', 'work'], ['workbench', 11, 0, 0], ['@', 11, 1, 2, 'hg.w3', 'work'],
+      ['crates', 14, 0, 0], ['crate', 16, 0, 0], ['crate', 17, 0, 0], ['rover', 1, 3, 0], ['rover', 1, 7, 0], ['drone', 7, 4, 0], ['drone', 9, 4, 0], ['drone', 11, 4, 0], ['@', 8, 5, 0, 'hg.drone', 'work'],
+      ['truck', 13, 6, 0], ['locker', 0, 11, 3], ['locker', 0, 12, 3], ['crates', 14, 12, 0], ['crate', 17, 12, 0], ['bench', 4, 11, 0, 'hg.rest']],
+    walls: [['B', 1.2, 'toolwall', 2.0], ['B', 14.4, 'hazard', 1.6], ['L', 2.6, 'shutter', 2.6], ['L', 7.0, 'shutter', 2.6]] });
+  room('gym', { name: '체육관', w: 15, h: 11, floor: 'rubber', wall: '#4f5f6e', exit: 7,
+    furn: [['treadmill', 1, 0, 0, 'gym.t1'], ['treadmill', 2, 0, 0, 'gym.t2'], ['treadmill', 3, 0, 0, 'gym.t3'], ['weights', 5, 0, 0], ['@', 5, 1, 2, 'gym.wt', 'workout'], ['weights', 8, 0, 0], ['@', 8, 1, 2, 'gym.wt2', 'workout'],
+      ['benchpress', 11, 0, 0, 'gym.bp'], ['benchpress', 13, 0, 0, 'gym.bp2'], ['pullup', 11, 4, 0], ['punchbag', 14, 6, 0], ['@', 13, 6, 1, 'gym.bag', 'workout'],
+      ['mat', 2, 4, 0], ['mat', 5, 4, 0], ['@', 3, 5, 0, 'gym.mat', 'workout'], ['locker', 0, 3, 3], ['locker', 0, 4, 3], ['locker', 0, 5, 3], ['vending', 0, 7, 3], ['bench', 1, 9, 0, 'gym.rest'], ['armtable', 9, 8, 0], ['bigplant', 14, 10, 0]],
+    walls: [['B', 0.2, 'window', 0.8], ['B', 7.4, 'poster', 0.7], ['L', 7.4, 'mirrorw', 1.6]] });
+  room('px', { name: '보급창고 (PX)', w: 13, h: 10, floor: 'concrete', wall: '#c9c1a8', exit: 6,
+    furn: [['shopcounter', 5, 2, 0, 'px.shop'], ['@', 5, 1, 0, 'px.clerk', 'stand'], ['crates', 0, 0, 0], ['crates', 9, 0, 0], ['crate', 11, 0, 0], ['crate', 12, 0, 0],
+      ['pxshelf', 1, 5, 0], ['pxshelf', 3, 5, 0], ['pxshelf', 8, 5, 0], ['pxshelf', 10, 5, 0], ['pxshelf', 1, 7, 0], ['pxshelf', 3, 7, 0], ['pxshelf', 8, 7, 0], ['pxshelf', 10, 7, 0], ['vending', 0, 3, 3], ['bigplant', 12, 9, 0]],
+    walls: [['B', 6.2, 'notice', 0.9], ['L', 6.4, 'window', 1.0]] });
+  room('lounge', { name: '휴게실', w: 13, h: 10, floor: 'carpet', wall: '#e2d5f0', exit: 6,
+    furn: [['shelf', 0, 0, 0], ['tv', 3, 0, 0, 'lng.tv'], ['rug_blue', 3, 1, 0], ['sofa', 2, 3, 2, 'lng.sofa1'], ['sofa_green', 4, 3, 2, 'lng.sofa2'], ['arcade', 8, 0, 0], ['@', 8, 1, 2, 'lng.arcade', 'stand'], ['arcade', 9, 0, 0], ['arcade', 10, 0, 0], ['vending', 12, 0, 0],
+      ['gametable', 9, 5, 0], ['stool', 8, 5, 0, 'lng.g1'], ['stool', 11, 5, 0, 'lng.g2'], ['lamp', 0, 3, 0], ['sofa', 0, 4, 3, 'lng.sofa3'], ['sidetable', 0, 6, 0], ['plant', 12, 9, 0], ['bigplant', 0, 9, 0]],
+    walls: [['B', 1.8, 'window', 1.0], ['B', 6.4, 'poster', 0.7], ['L', 1.2, 'window', 1.0], ['L', 7.4, 'poster', 0.7]] });
+  room('shower', { name: '샤워실', w: 11, h: 8, floor: 'tile', wall: '#cfe3ea', exit: 5,
+    furn: [['showerstall', 1, 0, 0, 'sh.1'], ['showerstall', 2, 0, 0], ['showerstall', 3, 0, 0], ['showerstall', 4, 0, 0], ['sink', 0, 2, 3], ['sink', 0, 3, 3], ['sink', 0, 4, 3], ['locker', 7, 0, 0], ['locker', 8, 0, 0], ['locker', 9, 0, 0], ['locker', 10, 0, 0], ['bench', 6, 4, 0, 'sh.bench'], ['mirror', 0, 5, 3], ['plant', 10, 7, 0]],
+    walls: [['L', 1.8, 'mirrorw', 2.0], ['B', 5.6, 'window', 0.8]] });
+  room('admin', { name: '행정동', w: 13, h: 10, floor: 'carpet', wall: '#d8d2c0', exit: 6,
+    furn: [['opsdesk', 1, 0, 0], ['chair', 2, 1, 2, 'adm.c1'], ['opsdesk', 4, 0, 0], ['chair', 5, 1, 2, 'adm.c2'], ['filecab', 6, 0, 0], ['filecab', 7, 0, 0], ['flagstand', 8, 0, 0], ['flagstand', 11, 0, 0], ['chair', 9, 1, 0, 'adm.cmd'], ['opsdesk', 9, 2, 0], ['bigplant', 12, 0, 0],
+      ['bench', 0, 4, 3, 'adm.wait'], ['table', 4, 5, 0], ['chair', 3, 5, 3, 'adm.m1'], ['chair', 6, 6, 1, 'adm.m2'], ['plant', 12, 9, 0], ['bigplant', 0, 9, 0]],
+    walls: [['B', 9.6, 'flag', 0.9], ['L', 1.8, 'board', 1.2], ['L', 7.6, 'window', 1.0]] });
+  room('comms', { name: '통신실', w: 12, h: 9, floor: 'darktile', wall: '#3d4654', exit: 6,
+    furn: [['console', 1, 0, 0], ['chair', 2, 1, 2, 'com.1'], ['console', 4, 0, 0], ['chair', 5, 1, 2, 'com.2'], ['console', 7, 0, 0], ['chair', 8, 1, 2, 'com.3'], ['server', 10, 0, 0], ['server', 11, 0, 0], ['server', 0, 3, 3], ['server', 0, 4, 3],
+      ['opsdesk', 3, 5, 0], ['chair', 4, 6, 2, 'com.4'], ['bench', 8, 6, 0], ['plant', 0, 8, 0]],
+    walls: [['L', 5.6, 'map', 1.4], ['B', 9.4, 'screen', 0.9]] });
   const brk = [];
-  [1, 3, 5, 7, 12, 14, 16, 18].forEach((x, i) => brk.push(['bunk', x, 0, 0, 'brk.bed' + i]));
-  [2, 4, 6, 13, 15, 17].forEach(x => brk.push(['locker', x, 0, 0]));
-  [1, 3, 5, 14, 16, 18].forEach((x, i) => brk.push(['bunk', x, 11, 2, 'brk.bedb' + i]));
-  brk.push(['table', 9, 5, 0], ['stool', 8, 5, 0, 'brk.s1'], ['stool', 11, 6, 0, 'brk.s2'], ['stool', 9, 7, 0, 'brk.s3'], ['tv', 0, 5, 3], ['bench', 2, 5, 1, 'brk.tv']);
-  room('barracks', { name: '병사 생활관', w: 20, h: 14, floor: 'lino', wall: '#c9d1bd', exit: 10, furn: brk,
-    walls: [['B', 9.2, 'window', 1.4], ['L', 3.2, 'window', 1.0], ['L', 8.6, 'board', 1.2]] });
-  room('lab', { name: '민간 생태연구소', w: 22, h: 16, floor: 'tile', wall: '#e6f2ee', exit: 11,
-    furn: [['labbench', 2, 0, 0, 'lab.work'], ['stool', 3, 1, 0, 'lab.1'], ['labbench', 5, 0, 0], ['stool', 6, 1, 0, 'lab.2'], ['labbench', 8, 0, 0], ['stool', 9, 1, 0, 'lab.3'],
-      ['specimen', 12, 0, 0], ['specimen', 13, 0, 0], ['specimen', 14, 0, 0], ['specimen', 15, 0, 0], ['opsdesk', 17, 0, 0], ['chair', 18, 1, 2, 'lab.boss'], ['shelf', 20, 0, 0],
-      ['bigplant', 0, 3, 0], ['plant', 0, 4, 0], ['bigplant', 0, 5, 0], ['plant', 0, 6, 0], ['bigplant', 0, 7, 0], ['labbench', 8, 7, 0], ['labbench', 12, 7, 0], ['@', 10, 8, 1, 'lab.c', 'work'],
-      ['specimen', 21, 6, 0], ['specimen', 21, 7, 0], ['bench', 15, 13, 0], ['bigplant', 21, 14, 0]],
-    walls: [['B', 10.4, 'window', 1.2], ['L', 9.8, 'window', 1.2], ['L', 13.0, 'board', 1.4]] });
-  const cafe = [['cafecounter', 6, 2, 0, 'cafe.shop'], ['@', 7, 1, 0, 'cafe.barista', 'stand'], ['fridge', 9, 0, 0], ['shelf', 10, 0, 0], ['kitchen', 4, 0, 0], ['plant', 0, 0, 0], ['plant', 17, 0, 0],
-    ['bigplant', 0, 13, 0], ['bigplant', 17, 13, 0], ['sofa', 0, 3, 3, 'cafe.sofa'], ['cafetable', 1, 3, 0], ['lamp', 0, 6, 0]];
-  for (const ty of [7, 10]) for (const tx of [3, 7, 11, 15]) cafe.push(['chair', tx - 1, ty, 3, `cafe.c${tx}${ty}a`], ['cafetable', tx, ty, 0], ['chair', tx + 1, ty, 1, `cafe.c${tx}${ty}b`]);
-  room('cafe', { name: '향열매 카페', w: 18, h: 14, floor: 'cafe', wall: '#f4e4c8', exit: 9, furn: cafe,
-    walls: [['B', 13.0, 'window', 1.4], ['B', 15.2, 'window', 1.4], ['L', 8.8, 'window', 1.4], ['L', 11.6, 'poster', 0.8], ['B', 1.2, 'menu', 1.6]] });
+  [1, 3, 5, 9, 11, 13].forEach((x, i) => brk.push(['bunk', x, 0, 0, 'brk.bed' + i]));
+  [2, 4, 10, 12].forEach(x => brk.push(['locker', x, 0, 0]));
+  [1, 3, 11, 13].forEach((x, i) => brk.push(['bunk', x, 8, 2, 'brk.bedb' + i]));
+  brk.push(['table', 6, 4, 0], ['stool', 5, 4, 0, 'brk.s1'], ['stool', 8, 5, 0, 'brk.s2'], ['stool', 6, 6, 0, 'brk.s3'], ['tv', 0, 4, 3], ['bench', 1, 4, 1, 'brk.tv']);
+  room('barracks', { name: '병사 생활관', w: 15, h: 10, floor: 'lino', wall: '#c9d1bd', exit: 7, furn: brk,
+    walls: [['B', 6.6, 'window', 1.2], ['L', 2.4, 'window', 0.9], ['L', 6.4, 'board', 1.0]] });
+  room('lab', { name: '민간 생태연구소', w: 15, h: 11, floor: 'tile', wall: '#e6f2ee', exit: 7,
+    furn: [['labbench', 1, 0, 0, 'lab.work'], ['stool', 2, 1, 0, 'lab.1'], ['labbench', 4, 0, 0], ['stool', 5, 1, 0, 'lab.2'], ['specimen', 7, 0, 0], ['specimen', 8, 0, 0], ['opsdesk', 10, 0, 0], ['chair', 11, 1, 2, 'lab.boss'], ['shelf', 13, 0, 0],
+      ['bigplant', 0, 3, 0], ['plant', 0, 4, 0], ['bigplant', 0, 5, 0], ['labbench', 5, 5, 0], ['stool', 6, 6, 0, 'lab.3'], ['@', 8, 6, 3, 'lab.c', 'work'], ['specimen', 14, 5, 0], ['specimen', 14, 6, 0], ['bench', 10, 9, 0], ['bigplant', 14, 10, 0]],
+    walls: [['B', 9.6, 'window', 1.0], ['L', 7.0, 'window', 1.0], ['L', 9.2, 'board', 1.2]] });
+  const cafe = [['cafecounter', 4, 2, 0, 'cafe.shop'], ['@', 5, 1, 0, 'cafe.barista', 'stand'], ['kitchen', 2, 0, 0], ['fridge', 7, 0, 0], ['shelf', 8, 0, 0], ['plant', 0, 0, 0], ['plant', 12, 0, 0],
+    ['bigplant', 0, 9, 0], ['bigplant', 12, 9, 0], ['sofa', 12, 3, 1, 'cafe.sofa'], ['cafetable', 11, 3, 0], ['lamp', 0, 3, 0]];
+  for (const ty of [5, 8]) for (const tx of [2, 9]) cafe.push(['chair', tx - 1, ty, 3, `cafe.c${tx}${ty}a`], ['cafetable', tx, ty, 0], ['chair', tx + 1, ty, 1, `cafe.c${tx}${ty}b`]);
+  room('cafe', { name: '향열매 카페', w: 13, h: 10, floor: 'cafe', wall: '#f4e4c8', exit: 6, furn: cafe, date: true,
+    walls: [['B', 9.6, 'window', 1.0], ['L', 5.6, 'window', 1.0], ['L', 7.6, 'poster', 0.7], ['B', 0.6, 'menu', 1.2]] });
 
   // ---------------- 606부대 야외 ----------------
   const base = { id: 'base', name: '606부대 생활구역', kind: 'out', w: 64, h: 64, buildings: [], decor: [], zones: [] };
@@ -1796,7 +1840,7 @@ PX.S = (() => {
   // 정문
   D.push(['guardpost', 34, 58, 0], ['barrier', 29, 60, 0], ['sandbags', 26, 59, 0], ['sandbags', 34, 56, 1], ['shuttlestop', 24, 57, 0], ['kiosk', 23, 56, 0]);
   // 통신 · 시설
-  D.push(['radar', 6, 15, 0], ['watertank', 2, 20, 0], ['solar', 3, 33, 0], ['solar', 3, 35, 0], ['solar', 3, 37, 0]);
+  D.push(['radar', 6, 15, 0], ['watertank', 3, 20, 0], ['solar', 3, 33, 0], ['solar', 3, 35, 0], ['solar', 3, 37, 0]);
   // 격납고 앞 계류장 · 차량
   D.push(['truck', 38, 48, 0], ['crates', 44, 48, 0], ['crate', 47, 48, 0], ['crates', 53, 47, 1], ['rover', 30, 47, 0]);
   // 훈련장
@@ -1813,9 +1857,11 @@ PX.S = (() => {
   base.walls = [ // 외곽 방벽 (정문 x 30~32 비움)
     { x: 2, y: 2, w: 60, d: 1 }, { x: 2, y: 3, w: 1, d: 58 }, { x: 61, y: 3, w: 1, d: 58 }, { x: 2, y: 61, w: 28, d: 1 }, { x: 33, y: 61, w: 29, d: 1 },
   ];
+  base.decor.push(['eventbooth', 34, 33, 0, ['LB38', 'LB46', 'LB49', 'LB47', 'LB44', 'LB48', 'LB42', 'LB45', 'LB43', 'LB40', 'LB41', 'LB52', 'LB55', 'LB56', 'LB39']], ['pullup', 46, 54, 0], ['target', 55, 56, 0], ['target', 57, 56, 0], ['coursestart', 38, 53, 1]);
   base.desert = true;
   base.spots = { // 야외 스폿
     'base.flag': [33, 34, 0, 'stand'], 'base.gate': [33, 59, 3, 'stand'], 'base.gate2': [28, 59, 1, 'stand'], 'base.train1': [42, 54, 0, 'workout'], 'base.train2': [46, 54, 0, 'workout'], 'base.train3': [50, 54, 0, 'workout'],
+    'base.ev1': [33, 35, 2, 'stand'], 'base.ev2': [37, 35, 2, 'stand'], 'base.ev3': [34, 36, 2, 'stand'], 'base.ev4': [36, 36, 2, 'stand'], 'base.ev5': [32, 34, 1, 'stand'], 'base.ev6': [38, 34, 3, 'stand'],
     'base.messfront': [41, 21, 0, 'stand'], 'base.plaza1': [30, 27, 0, 'stand'], 'base.plaza2': [34, 30, 3, 'stand'], 'base.apron': [42, 47, 1, 'stand'], 'base.quarters': [30, 41, 3, 'stand'],
   };
   M.base = base;
@@ -1831,7 +1877,7 @@ PX.S = (() => {
   const DD = dome.decor;
   DD.push(['fountain', 20, 20, 0], ['benchout', 16, 18, 0], ['benchout', 26, 18, 0], ['benchout', 16, 25, 2], ['benchout', 26, 25, 2]);
   for (const [x, y] of [[17, 16], [27, 16], [17, 27], [27, 27], [16, 10], [24, 8], [24, 14], [14, 33], [24, 33], [24, 40], [38, 22], [30, 22]]) DD.push(['streetlamp', x, y, 0]);
-  for (const [x, y] of [[2, 18], [6, 18], [10, 18], [2, 22], [7, 23], [11, 22], [36, 16], [42, 16], [44, 21], [44, 26], [16, 42], [10, 42], [4, 42], [40, 44]]) DD.push(['tree', x, y, 0]);
+  for (const [x, y] of [[2, 18], [6, 18], [10, 18], [2, 22], [7, 23], [11, 22], [36, 16], [42, 16], [44, 21], [44, 26], [16, 42], [10, 42], [4, 42], [40, 41]]) DD.push(['tree', x, y, 0]);
   for (const [x, y] of [[4, 20], [9, 20], [12, 24], [38, 19], [41, 24], [13, 40], [7, 44]]) DD.push(['glowflower', x, y, 0]);
   DD.push(['shuttlestop', 22, 42, 0], ['kiosk', 26, 42, 0], ['parasol', 14, 30, 0], ['parasol', 14, 35, 0], ['flowerbed', 30, 41, 0], ['benchout', 36, 42, 0], ['arch', 20, 1, 0], ['planter', 30, 15, 0], ['planter', 38, 15, 0], ['kiosk', 19, 15, 0], ['bush', 3, 26, 0], ['bush', 44, 18, 0], ['vending', 28, 37, 0]);
   dome.zones = [
@@ -1877,23 +1923,30 @@ PX.S = (() => {
   M.plaza = plaza;
 
   // 실내
-  const sg = [['kitchen', 1, 0, 0], ['stove', 3, 0, 0], ['cafecounter', 6, 1, 0, 'sg.shop'], ['@', 7, 0, 0, 'sg.boss', 'stand'], ['fridge', 10, 0, 0], ['fridge', 11, 0, 0], ['bigplant', 15, 0, 0], ['bigplant', 0, 11, 0], ['plant', 15, 11, 0], ['crates', 13, 0, 0]];
-  for (const ty of [4, 8]) for (const tx of [2, 6, 10]) { sg.push(['grilltable', tx, ty, 0, `sg.t${tx}${ty}`], ['stool', tx - 1, ty, 0, `sg.s${tx}${ty}a`], ['stool', tx - 1, ty + 1, 0], ['stool', tx + 2, ty, 0], ['stool', tx + 2, ty + 1, 0]); }
-  room('samgyup', { name: '냉삼집', w: 16, h: 12, floor: 'darkwood', wall: '#d9c7a8', exit: 8, furn: sg, date: true,
-    walls: [['B', 1.4, 'menu', 1.6], ['B', 9.0, 'notice', 1.0], ['L', 3.0, 'window', 1.2], ['L', 7.4, 'poster', 0.8]] });
-  room('flower', { name: '유리돔 꽃시장', w: 16, h: 12, floor: 'tile', wall: '#e8f4f0', exit: 8, date: true,
-    furn: [['cafecounter', 6, 1, 0, 'fl.shop'], ['@', 7, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 1, 0, 0], ['flowershelf', 10, 0, 0], ['flowershelf', 12, 0, 0], ['flowershelf', 0, 3, 3], ['flowershelf', 0, 6, 3],
-      ['flowerbed', 3, 5, 0], ['flowerbed', 9, 5, 0], ['flowerbed', 12, 8, 0], ['bench', 3, 9, 0], ['glassvase', 15, 0, 0], ['bigplant', 15, 11, 0], ['plant', 0, 11, 0]],
-    walls: [['B', 4.2, 'window', 1.4], ['B', 8.6, 'window', 1.2], ['L', 9.0, 'window', 1.4]] });
-  room('arcade', { name: '오락실', w: 18, h: 14, floor: 'darktile', wall: '#2a1f4f', exit: 9, date: true,
-    furn: [['arcade', 1, 0, 0], ['arcade', 2, 0, 0], ['arcade', 3, 0, 0], ['arcade', 4, 0, 0], ['arcade', 5, 0, 0], ['@', 3, 1, 2, 'ac.player', 'stand'],
-      ['clawmachine', 10, 0, 0], ['clawmachine', 11, 0, 0], ['clawmachine', 12, 0, 0], ['clawmachine', 13, 0, 0], ['clawmachine', 0, 4, 3], ['clawmachine', 0, 5, 3], ['clawmachine', 0, 6, 3],
-      ['shopcounter', 13, 6, 0], ['@', 14, 5, 0, 'ac.clerk', 'stand'], ['vending', 17, 3, 1], ['vending', 17, 4, 1], ['gametable', 7, 8, 0], ['stool', 6, 8, 0], ['stool', 9, 8, 0], ['bench', 2, 11, 0], ['bigplant', 17, 13, 0]],
-    walls: [['B', 6.6, 'poster', 0.8], ['B', 14.6, 'screen', 1.4], ['L', 9.4, 'poster', 0.8]] });
-  const st = [['projector', 8, 4, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 17, 0, 0]];
-  for (const ty of [8, 10]) for (let tx = 2; tx <= 15; tx++) if (tx !== 9 && tx !== 8) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
-  room('starroom', { name: '별비 투영실', w: 18, h: 14, floor: 'darktile', wall: '#141028', exit: 9, wallH: 66, date: true, stars: true, furn: st,
-    walls: [['B', 2.0, 'screen', 3.0], ['B', 12.0, 'screen', 3.0], ['L', 4.0, 'screen', 4.0]] });
+  const sg = [['kitchen', 0, 0, 0], ['stove', 2, 0, 0], ['cafecounter', 4, 1, 0, 'sg.shop'], ['@', 5, 0, 0, 'sg.boss', 'stand'], ['fridge', 8, 0, 0], ['fridge', 9, 0, 0], ['bigplant', 11, 0, 0]];
+  for (const ty of [4, 7]) for (const tx of [2, 8]) { sg.push(['grilltable', tx, ty, 0, `sg.t${tx}${ty}`], ['stool', tx - 1, ty, 0, `sg.s${tx}${ty}a`], ['stool', tx - 1, ty + 1, 0], ['stool', tx + 2, ty, 0], ['stool', tx + 2, ty + 1, 0]); }
+  room('samgyup', { name: '냉삼집', w: 12, h: 9, floor: 'darkwood', wall: '#d9c7a8', exit: 6, furn: sg, date: true,
+    walls: [['B', 0.6, 'menu', 1.2], ['B', 6.8, 'notice', 0.9], ['L', 2.2, 'window', 1.0], ['L', 5.6, 'poster', 0.7]] });
+  room('flower', { name: '유리돔 꽃시장', w: 11, h: 9, floor: 'tile', wall: '#e8f4f0', exit: 5, date: true,
+    furn: [['cafecounter', 4, 1, 0, 'fl.shop'], ['@', 5, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 0, 0, 0], ['flowershelf', 8, 0, 0], ['flowershelf', 0, 3, 3], ['flowerbed', 2, 4, 0], ['flowerbed', 7, 4, 0], ['bench', 2, 7, 0], ['glassvase', 10, 0, 0], ['bigplant', 10, 8, 0], ['plant', 0, 8, 0]],
+    walls: [['B', 2.6, 'window', 1.0], ['B', 7.4, 'window', 1.0], ['L', 6.0, 'window', 1.0]] });
+  room('arcade', { name: '오락실', w: 13, h: 10, floor: 'darktile', wall: '#2a1f4f', exit: 6, date: true,
+    furn: [['arcade', 1, 0, 0], ['arcade', 2, 0, 0], ['arcade', 3, 0, 0], ['arcade', 4, 0, 0], ['@', 2, 1, 2, 'ac.player', 'stand'], ['clawmachine', 8, 0, 0], ['clawmachine', 9, 0, 0], ['clawmachine', 10, 0, 0], ['clawmachine', 11, 0, 0], ['clawmachine', 0, 3, 3], ['clawmachine', 0, 4, 3],
+      ['shopcounter', 10, 4, 0], ['@', 11, 3, 0, 'ac.clerk', 'stand'], ['vending', 12, 6, 1], ['gametable', 5, 5, 0], ['stool', 4, 5, 0], ['stool', 7, 5, 0], ['bench', 1, 8, 0], ['bigplant', 12, 9, 0]],
+    walls: [['B', 5.4, 'poster', 0.7], ['B', 11.0, 'screen', 1.2], ['L', 6.8, 'poster', 0.7]] });
+  const st = [['projector', 6, 2, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 13, 0, 0]];
+  for (const ty of [6, 8]) for (let tx = 1; tx <= 12; tx++) if (tx !== 6 && tx !== 7) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
+  room('starroom', { name: '별비 투영실', w: 14, h: 10, floor: 'darktile', wall: '#141028', exit: 7, wallH: 60, date: true, stars: true, furn: st,
+    walls: [['B', 1.4, 'screen', 2.6], ['B', 9.6, 'screen', 2.6], ['L', 3.0, 'screen', 3.4]] });
+
+  // 바깥 건물을 줄여 길과 마당이 보이게 (문 쪽 면은 그대로 두고 반대편을 줄임)
+  function shrink(b, f = 0.72, fh = 0.74) {
+    const w = Math.max(5, Math.round(b.w * f)), d = Math.max(4, Math.round(b.d * f));
+    if (b.door && b.door.f === 'R') { b.x += b.w - w; b.door.u = Math.min(d - (b.door.wide ? 3 : 1), Math.max(1, Math.round(b.door.u * d / b.d))); }
+    else if (b.door && b.door.f === 'L') { b.y += b.d - d; b.door.u = Math.min(w - (b.door.wide ? 3 : 1), Math.max(1, Math.round(b.door.u * w / b.w))); }
+    b.w = w; b.d = d; b.h = Math.round(b.h * fh);
+  }
+  for (const k of ['base', 'dome', 'plaza']) for (const b of M[k].buildings) shrink(b);
 
   // 실내 → 바깥 연결
   const outOf = { q_player: ['base', 'b_quarters'], q_captain: ['base', 'b_cap'], ops: ['base', 'b_ops'], mess: ['base', 'b_mess'], med: ['base', 'b_med'], hangar: ['base', 'b_hangar'], gym: ['base', 'b_gym'],
@@ -1902,6 +1955,224 @@ PX.S = (() => {
   for (const k in outOf) { M[k].parent = outOf[k][0]; M[k].building = outOf[k][1]; }
 
   PX.MAPS = M;
+})();
+
+</script>
+  <script>
+/* js/data/maps_world.js */
+// 페르녹스 전역 (Alpha 0.3): 돔시티 관광구역 · 루비웨이 · 우주항구 · 궤도정거장 · 제3/4/6행성 · 외곽 수색구역
+// 각 지역의 이동 안내 단말(travelkiosk)에서 travel 목록으로 이동한다.
+'use strict';
+(() => {
+  const M = PX.MAPS;
+  function out(id, o) {
+    const m = Object.assign({ id, kind: 'out', buildings: [], decor: [], zones: [], roads: [], spots: {}, travel: [], dome: true }, o);
+    if (o.edge !== 'none') {
+      const g = o.edge !== 'rock';
+      m.walls = [{ x: 0, y: 0, w: m.w, d: 1, glass: g }, { x: 0, y: 1, w: 1, d: m.h - 1, glass: g }, { x: m.w - 1, y: 1, w: 1, d: m.h - 1, glass: g }, { x: 1, y: m.h - 1, w: m.w - 2, d: 1, glass: g }];
+    } else m.walls = [];
+    m.decor.push(['travelkiosk', m.arrive[0] + 1, m.arrive[1] - 1, 0]);
+    M[id] = m;
+    return m;
+  }
+  function room(id, o) { M[id] = Object.assign({ id, kind: 'in', wallH: 52 }, o); }
+  const DOME = (mins = 20) => ({ to: 'dome', label: '🚌 돔시티 연구·주거구역', mins });
+  const PORT = (mins) => ({ to: 'port', label: '🚀 페르녹스 우주항구', mins });
+
+  // ================= 돔시티 관광구역 =================
+  const lake = out('lake', { name: '인공호수 공원', w: 40, h: 34, fill: 'domegrass', arrive: [20, 30], lore: 'LB15', travel: [DOME(20)] });
+  lake.zones = [{ t: 'sand', x0: 10, y0: 8, x1: 29, y1: 22 }, { t: 'water', x0: 12, y0: 10, x1: 27, y1: 20 }, { t: 'boardwalk', x0: 19, y0: 15, x1: 20, y1: 21 }, { t: 'concrete', x0: 6, y0: 26, x1: 34, y1: 27 }, { t: 'concrete', x0: 6, y0: 5, x1: 7, y1: 27 }, { t: 'concrete', x0: 33, y0: 5, x1: 34, y1: 27 }, { t: 'concrete', x0: 6, y0: 4, x1: 34, y1: 5 }];
+  lake.decor.push(['fishspot', 19, 15, 0], ['fishspot', 11, 15, 0], ['stage', 34, 8, 1], ['benchout', 8, 23, 0], ['benchout', 30, 23, 0], ['benchout', 14, 24, 0], ['benchout', 24, 24, 0],
+    ['parasol', 4, 29, 0], ['parasol', 9, 30, 0], ['parasol', 30, 29, 0], ['vending', 36, 26, 0], ['kiosk', 23, 29, 0]);
+  for (const [x, y] of [[3, 3], [3, 12], [3, 20], [37, 3], [37, 14], [37, 20], [14, 2], [26, 2], [10, 28], [29, 31]]) lake.decor.push(['tree', x, y, 0]);
+  for (const [x, y] of [[7, 3], [33, 3], [7, 25], [33, 25], [20, 25]]) lake.decor.push(['streetlamp', x, y, 0]);
+  lake.spots = { 'lake.pier': [19, 21, 2, 'stand'], 'lake.bench': [16, 26, 0, 'stand'] };
+
+  const farm = out('farm', { name: '농업돔 체험장', w: 34, h: 28, fill: 'domegrass', arrive: [17, 24], lore: 'LB19', travel: [DOME(25)] });
+  farm.zones = [{ t: 'dirt', x0: 3, y0: 3, x1: 21, y1: 19 }, { t: 'concrete', x0: 3, y0: 21, x1: 31, y1: 22 }, { t: 'concrete', x0: 23, y0: 3, x1: 24, y1: 21 }];
+  for (let y = 4; y <= 18; y += 2) for (let x = 4; x <= 20; x += 2) farm.decor.push(['crop', x, y, 0]);
+  farm.decor.push(['stall', 26, 6, 0], ['stall', 26, 10, 0], ['benchout', 27, 15, 0], ['bigplant', 30, 3, 0], ['watertank', 27, 2, 0], ['solar', 26, 18, 0], ['crates', 29, 17, 0]);
+  farm.shops = { stall: 'farm' };
+
+  const glasshouse = out('glasshouse', { name: '유리꽃 온실', w: 28, h: 24, fill: 'glassfloor', arrive: [14, 20], lore: 'LB22', travel: [DOME(15)] });
+  glasshouse.zones = [{ t: 'domegrass', x0: 2, y0: 2, x1: 9, y1: 9 }, { t: 'domegrass', x0: 18, y0: 2, x1: 25, y1: 9 }, { t: 'domegrass', x0: 2, y0: 12, x1: 9, y1: 17 }, { t: 'domegrass', x0: 18, y0: 12, x1: 25, y1: 17 }];
+  for (const [x, y] of [[4, 4], [7, 6], [20, 4], [23, 6], [4, 13], [7, 15], [20, 13], [23, 15]]) glasshouse.decor.push(['flowerbed', x, y, 0]);
+  glasshouse.decor.push(['specimen', 13, 4, 0], ['specimen', 14, 4, 0], ['benchout', 12, 10, 0], ['benchout', 12, 15, 0], ['glowflower', 11, 7, 0], ['glowflower', 16, 7, 0], ['tree2', 12, 1, 0]);
+
+  const glowpath = out('glowpath', { name: '발광초 온실길', w: 34, h: 14, fill: 'domegrass', arrive: [4, 7], lore: 'LB60', amb: 0.5, travel: [DOME(15)] });
+  glowpath.zones = [{ t: 'glassfloor', x0: 1, y0: 6, x1: 32, y1: 7 }];
+  for (let x = 3; x <= 31; x += 2) glowpath.decor.push(['glowflower', x, 4, 0], ['glowflower', x + 1, 9, 0]);
+  for (let x = 6; x <= 30; x += 8) glowpath.decor.push(['lantern', x, 5, 0]);
+  glowpath.decor.push(['benchout', 14, 9, 0], ['benchout', 24, 9, 0], ['tree', 2, 2, 0], ['tree', 31, 11, 0]);
+
+  const bluegarden = out('bluegarden', { name: '푸른기압 정원', w: 24, h: 22, fill: 'domegrass', arrive: [12, 18], lore: 'LB65', tint: ['#5fa8ff', 0.1], travel: [DOME(15)] });
+  bluegarden.zones = [{ t: 'water', x0: 8, y0: 6, x1: 15, y1: 11 }, { t: 'glassfloor', x0: 3, y0: 14, x1: 20, y1: 15 }];
+  bluegarden.decor.push(['benchout', 5, 12, 0], ['benchout', 16, 12, 0], ['bigplant', 3, 3, 0], ['bigplant', 20, 3, 0], ['tree2', 4, 7, 0], ['tree2', 18, 7, 0], ['glowflower', 7, 13, 0], ['glowflower', 16, 9, 0]);
+
+  const hill = out('hill', { name: '관람언덕', w: 32, h: 26, fill: 'domegrass', arrive: [16, 22], lore: 'LB23', sunsetView: true, travel: [DOME(20)] });
+  hill.zones = [{ t: 'plaza', x0: 9, y0: 4, x1: 22, y1: 10 }, { t: 'concrete', x0: 15, y0: 11, x1: 16, y1: 21 }];
+  hill.decor.push(['telescope', 11, 5, 0], ['telescope', 15, 4, 0], ['telescope', 19, 5, 0], ['benchout', 10, 8, 0], ['benchout', 19, 8, 0], ['railing', 9, 3, 0], ['railing', 13, 3, 0], ['railing', 17, 3, 0], ['vending', 22, 9, 0], ['stall', 6, 12, 0], ['kiosk', 23, 6, 0]);
+  for (const [x, y] of [[3, 4], [4, 15], [27, 5], [27, 16], [8, 20], [24, 20]]) hill.decor.push(['tree', x, y, 0]);
+  hill.shops = { stall: 'souvenir' };
+
+  const silver = out('silverdesert', { name: '은사막 전망대', w: 36, h: 28, fill: 'silversand', dome: false, edge: 'rock', arrive: [18, 24], lore: 'LB63', sunsetView: true, travel: [DOME(40)] });
+  silver.zones = [{ t: 'boardwalk', x0: 11, y0: 4, x1: 24, y1: 9 }, { t: 'concrete', x0: 17, y0: 10, x1: 18, y1: 23 }];
+  silver.decor.push(['telescope', 13, 5, 0], ['telescope', 18, 4, 0], ['telescope', 22, 5, 0], ['railing', 11, 3, 0], ['railing', 15, 3, 0], ['railing', 19, 3, 0], ['benchout', 13, 8, 0], ['benchout', 20, 8, 0], ['rover', 23, 18, 0]);
+  for (const [x, y] of [[4, 5], [6, 14], [28, 6], [30, 15], [8, 22], [27, 22], [3, 10], [32, 11]]) silver.decor.push([(x + y) % 2 ? 'rockbig' : 'rock', x, y, 0]);
+
+  const beach = out('beach', { name: '흰모래 해변돔', w: 40, h: 30, fill: 'whitesand', arrive: [20, 4], lore: 'LB69', travel: [DOME(25)] });
+  beach.zones = [{ t: 'water', x0: 1, y0: 21, x1: 38, y1: 28 }, { t: 'boardwalk', x0: 4, y0: 2, x1: 36, y1: 3 }];
+  for (const [x, y] of [[6, 10], [14, 12], [24, 10], [32, 13]]) beach.decor.push(['parasol', x, y, 0], ['beachchair', x + 2, y + 1, 0], ['beachchair', x - 1, y + 1, 0]);
+  beach.decor.push(['sandpile', 18, 17, 0], ['sandpile', 28, 18, 0], ['sandpile', 9, 18, 0], ['vending', 36, 5, 0], ['stall', 30, 5, 0], ['guardpost', 2, 14, 0]);
+  beach.shops = { stall: 'beach' };
+
+  const camp = out('camp', { name: '안정구역 캠핑장', w: 36, h: 30, fill: 'sand', dome: false, edge: 'rock', arrive: [18, 26], lore: 'LB25', travel: [DOME(40)] });
+  camp.zones = [{ t: 'grass', x0: 4, y0: 4, x1: 31, y1: 21 }, { t: 'dirt', x0: 15, y0: 11, x1: 20, y1: 15 }];
+  camp.decor.push(['campfire', 17, 13, 0], ['logseat', 15, 11, 0], ['logseat', 18, 15, 2], ['logseat', 14, 14, 3], ['logseat', 20, 12, 1],
+    ['dometent', 6, 6, 0], ['dometent', 11, 5, 0], ['dometent', 24, 6, 0], ['dometent', 28, 10, 0], ['dometent', 6, 16, 0], ['stove', 24, 17, 0], ['crates', 27, 17, 0], ['lantern', 13, 9, 0], ['lantern', 22, 9, 0], ['lantern', 22, 17, 0]);
+  for (const [x, y] of [[3, 3], [31, 3], [3, 22], [32, 22], [9, 24], [26, 24]]) camp.decor.push(['tree', x, y, 0]);
+
+  const bridge = out('bridge', { name: '빛먼지 산책교', w: 42, h: 12, fill: 'void', edge: 'none', arrive: [3, 6], lore: 'LB64', fx: 'lightdust', amb: 0.25, bg: '#0d0a1c', travel: [{ to: 'plaza', label: '🚶 중앙광장', mins: 10 }, { to: 'port', label: '🚶 우주항구 구역', mins: 15 }] });
+  bridge.zones = [{ t: 'glassfloor', x0: 1, y0: 4, x1: 40, y1: 7 }];
+  for (let x = 6; x <= 36; x += 6) bridge.decor.push(['streetlamp', x, 4, 0], ['railing', x - 2, 7, 0]);
+  bridge.decor.push(['benchout', 13, 7, 0], ['benchout', 25, 7, 0]);
+
+  const corridor = out('corridor', { name: '인공노을 회랑', w: 38, h: 12, fill: 'glassfloor', arrive: [3, 6], lore: 'LB59', sunsetView: true, travel: [{ to: 'plaza', label: '🚶 중앙광장', mins: 10 }, { to: 'farm', label: '🚶 농업돔 방향', mins: 15 }] });
+  corridor.zones = [{ t: 'mosaic', x0: 1, y0: 5, x1: 36, y1: 6 }];
+  for (let x = 6; x <= 27; x += 7) corridor.decor.push(['benchout', x, 8, 0], ['bigplant', x + 3, 2, 0], ['telescope', x + 1, 2, 0]);
+
+  // ================= 루비웨이 (성인 · 직접 선택) =================
+  const ruby = out('rubyway', { name: '루비웨이', w: 36, h: 28, fill: 'neonfloor', arrive: [18, 24], adult: true, amb: 0.4, tint: ['#ff6bd5', 0.08], travel: [{ to: 'plaza', label: '🚶 중앙광장', mins: 10 }] });
+  ruby.buildings = [
+    { id: 'r_perfume', name: '퍼퓸덴', to: 'perfume', x: 3, y: 3, w: 7, d: 6, h: 38, wall: '#4a2f4a', roof: '#2a1f2a', stripe: '#ff9ed2', icon: 'drop', door: { f: 'R', u: 2 }, awning: '#ff9ed2' },
+    { id: 'r_dice', name: '다이스키스', to: 'dice', x: 3, y: 12, w: 7, d: 6, h: 40, wall: '#2a2f4a', roof: '#1a1f2a', stripe: '#ffd166', icon: 'star', door: { f: 'R', u: 2 } },
+    { id: 'r_mask', name: '실버마스크', to: 'mask', x: 3, y: 20, w: 7, d: 5, h: 40, wall: '#3a3f4a', roof: '#c9ccd6', stripe: '#c9ccd6', icon: 'star', door: { f: 'R', u: 2 } },
+    { id: 'r_midnight', name: '미드나잇 룸', to: 'midnight', x: 25, y: 3, w: 8, d: 6, h: 42, wall: '#2a1f3f', roof: '#1a1428', stripe: '#9b5fd0', icon: 'heart', door: { f: 'L', u: 3 } },
+    { id: 'r_inn', name: '돔시티 은밀숙소', to: 'inn', x: 25, y: 12, w: 8, d: 6, h: 56, wall: '#5a2f3f', roof: '#3a1f2a', stripe: '#ff6b8b', icon: 'bed', door: { f: 'L', u: 3 } },
+    { id: 'r_show', name: '블라인드 쇼룸', to: 'showroom', x: 13, y: 3, w: 8, d: 5, h: 40, wall: '#3a2a4a', roof: '#2a1f3a', stripe: '#ff8bea', icon: 'star', door: { f: 'L', u: 3 } },
+    { id: 'r_pub', name: '술집 골목', to: 'pub', x: 25, y: 20, w: 8, d: 5, h: 40, wall: '#4a3a30', roof: '#2a2020', stripe: '#ffb070', icon: 'cup', door: { f: 'L', u: 3 } },
+    { id: 'r_shower', name: '새벽 샤워실', to: 'dawnshower', x: 13, y: 11, w: 6, d: 5, h: 34, wall: '#3f5a6a', roof: '#2a3f4a', stripe: '#7fe3ff', icon: 'drop', door: { f: 'L', u: 2 } },
+  ];
+  for (const [x, y] of [[12, 10], [22, 10], [12, 18], [22, 18]]) ruby.decor.push(['neonsign', x, y, 0]);
+  for (let y = 4; y <= 24; y += 5) ruby.decor.push(['lantern', 11, y, 0], ['lantern', 23, y, 0]);
+  ruby.decor.push(['benchout', 15, 20, 0]);
+
+  // ================= 우주항구 · 궤도정거장 =================
+  const port = out('port', { name: '페르녹스 우주항구', w: 44, h: 34, fill: 'concrete', dome: false, edge: 'rock', arrive: [22, 30], lore: 'LB51', travel: [{ to: 'plaza', label: '🚌 돔시티 중앙광장', mins: 20 }, { to: 'bridge', label: '🚶 빛먼지 산책교', mins: 10 }] });
+  port.buildings = [{ id: 'p_terminal', name: '여객 터미널', to: 'terminal', x: 16, y: 14, w: 12, d: 8, h: 48, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', door: { f: 'L', u: 5 }, glass: true, roofDeco: ['antenna', 'dish'] }];
+  port.zones = [{ t: 'asphalt', x0: 2, y0: 2, x1: 13, y1: 12 }, { t: 'asphalt', x0: 30, y0: 2, x1: 41, y1: 12 }, { t: 'hangar', x0: 2, y0: 24, x1: 13, y1: 31 }];
+  port.decor.push(['ship', 3, 4, 0], ['ship', 31, 4, 0], ['crates', 4, 25, 0], ['crates', 7, 25, 0], ['crate', 10, 25, 0], ['crates', 4, 28, 0], ['crate', 8, 28, 0], ['truck', 32, 24, 0], ['barrier', 14, 11, 0], ['barrier', 27, 11, 0], ['sandbags', 31, 15, 0], ['guardpost', 38, 16, 0], ['benchout', 18, 26, 0], ['benchout', 24, 26, 0]);
+  for (const [x, y] of [[15, 25], [29, 25], [15, 13], [29, 13]]) port.decor.push(['streetlamp', x, y, 0]);
+  port.spots = { 'port.wave': [21, 24, 2, 'stand'], 'port.wave2': [24, 24, 2, 'stand'] };
+
+  const station = out('station', { name: '궤도정거장', w: 36, h: 28, fill: 'metal', edge: 'none', arrive: [18, 24], amb: 0.3, fx: 'stars', bg: '#0d0a1c', travel: [PORT(120)] });
+  station.zones = [{ t: 'void', x0: 0, y0: 0, x1: 35, y1: 1 }, { t: 'void', x0: 0, y0: 0, x1: 1, y1: 27 }, { t: 'void', x0: 34, y0: 0, x1: 35, y1: 27 }, { t: 'void', x0: 0, y0: 26, x1: 35, y1: 27 },
+    { t: 'domegrass', x0: 22, y0: 15, x1: 31, y1: 23 }];
+  station.buildings = [
+    { id: 's_lounge', name: '항성 · 별빛 라운지', to: 'skylounge', x: 4, y: 4, w: 10, d: 7, h: 44, wall: '#3a3f6a', roof: '#c9d1d9', stripe: '#9fe6ff', icon: 'star', door: { f: 'L', u: 4 }, glass: true },
+    { id: 's_hotel', name: '무중력 호텔', to: 'zerohotel', x: 20, y: 3, w: 11, d: 7, h: 60, wall: '#d9dde2', roof: '#7f8a96', stripe: '#b9a0ff', icon: 'bed', door: { f: 'L', u: 5 }, glass: true },
+  ];
+  station.decor.push(['bigplant', 23, 16, 0], ['bigplant', 30, 16, 0], ['glowflower', 25, 19, 0], ['glowflower', 28, 21, 0], ['tree2', 26, 17, 0], ['benchout', 24, 22, 0], ['windowseat', 4, 15, 0], ['windowseat', 8, 15, 0], ['telescope', 12, 16, 0], ['kiosk', 16, 14, 0]);
+  station.lore = 'LB37';
+
+  // ================= 다른 행성 =================
+  const p3 = out('planet3', { name: '제3행성 · 해양돔거리', w: 44, h: 34, fill: 'deepwater', arrive: [22, 29], lore: 'LB33', travel: [PORT(360)] });
+  p3.zones = [{ t: 'plaza', x0: 16, y0: 24, x1: 28, y1: 31 }, { t: 'plaza', x0: 4, y0: 6, x1: 15, y1: 15 }, { t: 'plaza', x0: 28, y0: 6, x1: 39, y1: 15 }, { t: 'plaza', x0: 18, y0: 3, x1: 26, y1: 10 },
+    { t: 'boardwalk', x0: 21, y0: 11, x1: 22, y1: 23 }, { t: 'boardwalk', x0: 10, y0: 16, x1: 11, y1: 25 }, { t: 'boardwalk', x0: 12, y0: 24, x1: 15, y1: 25 }, { t: 'boardwalk', x0: 33, y0: 16, x1: 34, y1: 25 }, { t: 'boardwalk', x0: 29, y0: 24, x1: 32, y1: 25 }];
+  p3.buildings = [{ id: 'p3_food', name: '해산물 요리점', x: 6, y: 7, w: 6, d: 5, h: 36, wall: '#e8f4f0', roof: '#3b8fbf', stripe: '#ff8b5e', icon: 'fork', awning: '#ff8b5e', closed: true, closedMsg: '🐟 해산물 요리점 — 매대에서 주문할 수 있어요' },
+    { id: 'p3_shop', name: '부유식 상점', x: 31, y: 7, w: 6, d: 5, h: 34, wall: '#f4e4c8', roof: '#5fa8ff', stripe: '#5fc8e8', icon: 'box', awning: '#5fc8e8', closed: true, closedMsg: '🛍️ 부유식 상점 — 매대에서 기념품을 살 수 있어요' }];
+  p3.decor.push(['stall', 8, 13, 0], ['stall', 33, 13, 0], ['parasol', 19, 26, 0], ['parasol', 25, 26, 0], ['benchout', 18, 8, 0], ['fountain', 21, 4, 0], ['streetlamp', 17, 24, 0], ['streetlamp', 28, 24, 0], ['fishspot', 16, 28, 0]);
+  p3.shops = { stall: 'seafood' };
+
+  const p4 = out('planet4', { name: '제4행성 · 광물도시', w: 40, h: 34, fill: 'crystal', dome: true, edge: 'rock', arrive: [20, 29], lore: 'LB26', amb: 0.42, travel: [PORT(360)] });
+  p4.zones = [{ t: 'rail', x0: 1, y0: 8, x1: 38, y1: 8 }, { t: 'concrete', x0: 18, y0: 9, x1: 21, y1: 28 }, { t: 'redrock', x0: 25, y0: 18, x1: 37, y1: 27 }];
+  p4.buildings = [
+    { id: 'p4_museum', name: '제4 광물박물관', to: 'museum', x: 4, y: 12, w: 10, d: 7, h: 46, wall: '#7a6a5a', roof: '#4a3a2a', stripe: '#c9a227', icon: 'star', door: { f: 'R', u: 3 } },
+    { id: 'p4_onsen', name: '제4 광물온천', to: 'onsen', x: 4, y: 22, w: 9, d: 6, h: 36, wall: '#8a7a6a', roof: '#5a4a3a', stripe: '#7fd3d0', icon: 'drop', door: { f: 'R', u: 3 } },
+  ];
+  p4.decor.push(['railstation', 18, 9, 0], ['lantern', 17, 12, 0], ['lantern', 22, 12, 0]);
+  for (const [x, y] of [[26, 19], [29, 21], [32, 19], [34, 23], [27, 25], [31, 25], [24, 13], [34, 13], [3, 3], [36, 3]]) p4.decor.push(['crystalcluster', x, y, 0]);
+  for (const [x, y] of [[23, 15], [16, 18], [23, 22], [16, 24]]) p4.decor.push(['lantern', x, y, 0, ['LB29']]);
+  p4.decor.push(['benchout', 24, 27, 0], ['stall', 14, 20, 0]);
+  p4.shops = { stall: 'mineral' };
+
+  const p6 = out('planet6', { name: '제6행성 · 얼음권 기지', w: 40, h: 34, fill: 'snowfield', dome: false, edge: 'rock', arrive: [20, 29], lore: 'LB30', weather: 'snow', fx: 'aurora', travel: [PORT(360)] });
+  p6.zones = [{ t: 'ice', x0: 2, y0: 2, x1: 37, y1: 9 }, { t: 'concrete', x0: 19, y0: 10, x1: 20, y1: 28 }, { t: 'boardwalk', x0: 4, y0: 20, x1: 18, y1: 21 }];
+  p6.buildings = [{ id: 'p6_aurora', name: '오로라 관측기지', to: 'aurora', x: 26, y: 13, w: 10, d: 7, h: 52, wall: '#d9e6ee', roof: '#9fb0c0', stripe: '#7fffd4', icon: 'star', door: { f: 'L', u: 4 }, glass: true, roofDeco: ['dish'] }];
+  for (const [x, y] of [[6, 4], [12, 6], [18, 4], [26, 6], [32, 4]]) p6.decor.push(['icesculpture', x, y, 0]);
+  for (let x = 5; x <= 17; x += 4) p6.decor.push(['lantern', x, 19, 0]);
+  p6.decor.push(['stall', 6, 24, 0], ['stall', 10, 24, 0], ['benchout', 14, 24, 0], ['telescope', 22, 11, 0]);
+  p6.shops = { stall: 'smoked' };
+
+  // ================= 외곽 수색구역 (출입 제한) =================
+  const os = out('outskirts', { name: '외곽 수색구역', w: 56, h: 52, fill: 'sand', dome: false, edge: 'rock', arrive: [28, 48], restricted: true, travel: [{ to: 'base', label: '🚙 606부대 정문으로 복귀', mins: 30 }] });
+  os.zones = [{ t: 'redrock', x0: 2, y0: 2, x1: 20, y1: 18 }, { t: 'dirt', x0: 22, y0: 4, x1: 34, y1: 14 }, { t: 'redrock', x0: 38, y0: 28, x1: 53, y1: 46 }, { t: 'silversand', x0: 36, y0: 2, x1: 53, y1: 16 }, { t: 'dirt', x0: 26, y0: 15, x1: 29, y1: 47 }];
+  os.buildings = [
+    { id: 'o_lab', name: '폐쇄 연구기지', to: 'ruinlab', x: 5, y: 5, w: 10, d: 8, h: 40, wall: '#6a6560', roof: '#4a4540', stripe: '#d0563b', icon: 'flask', door: { f: 'R', u: 3 } },
+    { id: 'o_cave', name: '미확인 동굴', to: 'cave', x: 42, y: 32, w: 8, d: 7, h: 34, wall: '#7a3f30', roof: '#5a2f25', stripe: '#b9a0ff', icon: 'star', door: { f: 'L', u: 3 } },
+  ];
+  os.decor.push(['tower', 26, 6, 0], ['ruinwall', 40, 6, 0], ['ruinwall', 44, 9, 1], ['ruinwall', 48, 5, 0], ['crates', 45, 12, 0], ['sandbags', 41, 12, 0], ['crate', 49, 12, 0]);
+  for (const [x, y] of [[8, 24], [14, 30], [20, 26], [11, 36], [18, 40], [6, 44]]) os.decor.push(['debris', x, y, 0]);
+  for (const [x, y] of [[34, 22], [38, 20], [44, 22], [48, 24], [36, 26]]) os.decor.push(['glowflower', x, y, 0]);
+  for (const [x, y] of [[3, 22], [22, 34], [32, 40], [52, 20], [4, 48], [50, 48], [24, 20], [33, 30]]) os.decor.push(['rockbig', x, y, 0]);
+  os.critters = [{ kind: 'lizard', x0: 32, y0: 18, x1: 50, y1: 27, n: 4 }, { kind: 'drifter', x0: 4, y0: 20, x1: 22, y1: 44, n: 3 }];
+
+  // ================= 실내 =================
+  room('terminal', { name: '여객 터미널', w: 16, h: 11, floor: 'tile', wall: '#d9e6ee', exit: 8, travelRoom: true,
+    furn: [['travelkiosk', 6, 2, 0], ['travelkiosk', 9, 2, 0], ['bench', 1, 6, 0], ['bench', 1, 8, 0], ['bench', 11, 6, 0], ['bench', 11, 8, 0], ['vending', 15, 2, 1], ['shopcounter', 1, 1, 0], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0], ['@', 8, 4, 0, 'term.desk', 'stand']],
+    walls: [['B', 3.0, 'screen', 2.4], ['B', 10.6, 'screen', 2.4], ['L', 4.0, 'window', 1.4]],
+    travel: [{ to: 'station', label: '🛰️ 궤도정거장 (2시간)', mins: 120 }, { to: 'planet3', label: '🌊 제3행성 해양도시 (6시간)', mins: 360 }, { to: 'planet4', label: '💎 제4행성 광물도시 (6시간)', mins: 360 }, { to: 'planet6', label: '❄️ 제6행성 얼음권 기지 (6시간)', mins: 360 }] });
+  room('skylounge', { name: '항성 · 별빛 라운지', w: 14, h: 10, floor: 'carpet', wall: '#141028', exit: 7, stars: true, date: true,
+    furn: [['windowseat', 1, 0, 0], ['windowseat', 4, 0, 0], ['windowseat', 8, 0, 0], ['windowseat', 11, 0, 0], ['telescope', 0, 3, 0], ['barcounter', 10, 6, 0], ['cafetable', 3, 5, 0], ['chair', 2, 5, 3], ['chair', 4, 5, 1], ['cafetable', 7, 5, 0], ['chair', 6, 5, 3], ['chair', 8, 5, 1], ['bigplant', 13, 9, 0]],
+    walls: [['B', 0.4, 'window', 2.2], ['B', 3.6, 'window', 2.2], ['B', 7.4, 'window', 2.2], ['B', 10.6, 'window', 2.2]] });
+  room('zerohotel', { name: '무중력 호텔 객실', w: 11, h: 9, floor: 'mosaic', wall: '#d9dde2', exit: 5, stars: true, lowgrav: true, date: true,
+    furn: [['bigbed', 1, 0, 0, 'hotel.bed'], ['sidetable', 3, 0, 0], ['windowseat', 5, 0, 0], ['fridge', 9, 0, 0], ['cabinet', 10, 0, 0], ['sofa', 0, 4, 3], ['cafetable', 2, 4, 0], ['lamp', 10, 5, 0], ['plant', 0, 8, 0]],
+    walls: [['B', 4.6, 'window', 2.4], ['L', 2.4, 'window', 1.2]] });
+  room('museum', { name: '제4 광물박물관', w: 15, h: 11, floor: 'darktile', wall: '#5a4a3a', exit: 7,
+    furn: [['exhibit', 1, 0, 0], ['exhibit', 3, 0, 0], ['exhibit', 5, 0, 0], ['exhibit', 9, 0, 0], ['exhibit', 11, 0, 0], ['exhibit', 13, 0, 0], ['exhibit', 0, 3, 0], ['exhibit', 0, 6, 0], ['crystalcluster', 6, 5, 0], ['crystalcluster', 8, 5, 0], ['drone', 12, 5, 0], ['bench', 4, 8, 0], ['bench', 9, 8, 0]],
+    walls: [['B', 6.6, 'board', 1.6], ['L', 8.6, 'map', 1.2]] });
+  room('onsen', { name: '제4 광물온천', w: 12, h: 10, floor: 'tile', wall: '#8a7a6a', exit: 6, date: true,
+    furn: [['hotspring', 1, 1, 0], ['hotspring', 7, 1, 0], ['bench', 1, 6, 0], ['locker', 9, 6, 0], ['locker', 10, 6, 0], ['locker', 11, 6, 0], ['bigplant', 0, 9, 0], ['sink', 11, 0, 0]],
+    walls: [['B', 4.6, 'window', 1.6], ['L', 4.0, 'window', 1.2]] });
+  room('aurora', { name: '오로라 관측기지 상층 돔', w: 14, h: 10, floor: 'carpet', wall: '#141028', exit: 7, stars: true, auroraRoom: true, date: true,
+    furn: [['windowseat', 1, 1, 0], ['windowseat', 4, 1, 0], ['windowseat', 8, 1, 0], ['windowseat', 11, 1, 0], ['telescope', 6, 1, 0], ['barcounter', 1, 6, 0], ['bench', 9, 6, 0], ['bigplant', 13, 9, 0]],
+    walls: [['B', 0.4, 'window', 3.0], ['B', 5.0, 'window', 3.0], ['B', 9.6, 'window', 3.0]] });
+  room('ruinlab', { name: '폐쇄 연구기지 (내부)', w: 14, h: 10, floor: 'darktile', wall: '#4a4540', exit: 7, amb: 0.55,
+    furn: [['labbench', 1, 0, 0], ['specimen', 4, 0, 0], ['specimen', 5, 0, 0], ['server', 9, 0, 0], ['server', 10, 0, 0], ['debris', 2, 4, 0], ['debris', 9, 5, 0], ['crates', 11, 8, 0], ['filecab', 0, 4, 0], ['crystalcluster', 6, 6, 0]],
+    walls: [['B', 6.6, 'hazard', 1.6], ['L', 6.0, 'board', 1.2]] });
+  room('cave', { name: '미확인 동굴', w: 14, h: 11, floor: 'crystal', wall: '#3a2a3a', exit: 7, amb: 0.65,
+    furn: [['crystalcluster', 1, 0, 0], ['crystalcluster', 4, 1, 0], ['crystalcluster', 9, 0, 0], ['crystalcluster', 12, 2, 0], ['crystalcluster', 0, 5, 0], ['crystalcluster', 11, 6, 0], ['rock', 3, 5, 0], ['rockbig', 6, 3, 0], ['debris', 8, 7, 0]],
+    walls: [], critters: [{ kind: 'drifter', x0: 2, y0: 2, x1: 12, y1: 8, n: 2 }] });
+  room('pub', { name: '술집 골목', w: 13, h: 9, floor: 'darkwood', wall: '#4a3a30', exit: 6, amb: 0.3, date: true, adult: true,
+    furn: [['barcounter', 2, 1, 0], ['barcounter', 5, 1, 0], ['stool', 2, 2, 0], ['stool', 3, 2, 0], ['stool', 5, 2, 0], ['stool', 6, 2, 0], ['cafetable', 9, 4, 0], ['chair', 8, 4, 3], ['chair', 10, 4, 1], ['cafetable', 2, 6, 0], ['chair', 1, 6, 3], ['chair', 3, 6, 1], ['@', 3, 0, 0, 'pub.boss', 'stand'], ['bigplant', 12, 8, 0]],
+    walls: [['B', 9.0, 'menu', 1.4], ['L', 4.4, 'poster', 0.7]] });
+  room('perfume', { name: '퍼퓸덴', w: 11, h: 8, floor: 'mosaic', wall: '#4a2f4a', exit: 5, date: true, adult: true,
+    furn: [['perfumebar', 3, 1, 0], ['shelf', 0, 0, 0], ['shelf', 8, 0, 0], ['sofa', 0, 4, 3], ['glassvase', 10, 4, 0], ['plant', 10, 7, 0]], walls: [['B', 2.8, 'mirrorw', 1.6]] });
+  room('dice', { name: '다이스키스', w: 12, h: 9, floor: 'neonfloor', wall: '#2a2f4a', exit: 6, date: true, adult: true,
+    furn: [['dicetable', 2, 3, 0], ['chair', 1, 3, 3], ['chair', 4, 4, 1], ['dicetable', 8, 3, 0], ['chair', 7, 3, 3], ['chair', 10, 4, 1], ['barcounter', 4, 0, 0], ['arcade', 0, 0, 0], ['arcade', 11, 0, 0]], walls: [['B', 2.0, 'poster', 0.7], ['B', 8.6, 'poster', 0.7]] });
+  room('mask', { name: '실버마스크', w: 13, h: 10, floor: 'neonfloor', wall: '#3a3f4a', exit: 6, amb: 0.35, date: true, adult: true,
+    furn: [['dancefloor', 5, 3, 0], ['barcounter', 0, 1, 3], ['sofa', 10, 0, 0], ['sofa', 12, 4, 1], ['cafetable', 10, 2, 0], ['lamp', 0, 8, 0]], walls: [['B', 3.0, 'mirrorw', 2.0]] });
+  room('midnight', { name: '미드나잇 룸', w: 11, h: 8, floor: 'carpet', wall: '#2a1f3f', exit: 5, amb: 0.4, date: true, adult: true,
+    furn: [['sofa', 1, 0, 0], ['sofa', 3, 0, 0], ['sofa', 0, 2, 3], ['cafetable', 2, 2, 0], ['tv', 7, 0, 0], ['lamp', 10, 0, 0], ['sidetable', 0, 4, 0]], walls: [['B', 5.6, 'screen', 1.2]] });
+  room('inn', { name: '은밀숙소 로비', w: 11, h: 8, floor: 'carpet', wall: '#5a2f3f', exit: 5, amb: 0.25, adult: true,
+    furn: [['shopcounter', 4, 1, 0, 'inn.desk'], ['@', 4, 0, 0, 'inn.clerk', 'stand'], ['sofa', 0, 4, 3], ['bigplant', 10, 0, 0], ['lamp', 0, 0, 0], ['mirror', 10, 4, 1]], walls: [['B', 7.0, 'board', 1.2]] });
+  room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.45, adult: true,
+    furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0]], walls: [] });
+  room('dawnshower', { name: '새벽 샤워실', w: 11, h: 8, floor: 'tile', wall: '#3f5a6a', exit: 5, adult: true,
+    furn: [['showerstall', 1, 0, 0], ['showerstall', 2, 0, 0], ['showerstall', 3, 0, 0], ['sink', 0, 2, 3], ['sink', 0, 3, 3], ['locker', 7, 0, 0], ['locker', 8, 0, 0], ['bench', 6, 4, 0], ['plant', 10, 7, 0]], walls: [['L', 1.4, 'mirrorw', 1.6]] });
+
+  // 기존 지역의 이동 목록
+  M.dome.travel = [{ to: 'base', label: '🚌 606부대 정문 (30분)', mins: 30, need: 'pass' }, { to: 'lake', label: '🌳 인공호수 공원', mins: 20 }, { to: 'farm', label: '🌱 농업돔 체험장', mins: 25 }, { to: 'glasshouse', label: '🌸 유리꽃 온실', mins: 15 },
+    { to: 'glowpath', label: '✨ 발광초 온실길', mins: 15 }, { to: 'bluegarden', label: '💧 푸른기압 정원', mins: 15 }, { to: 'hill', label: '🌇 관람언덕', mins: 20 }, { to: 'beach', label: '🏖️ 흰모래 해변돔', mins: 25 },
+    { to: 'silverdesert', label: '🚙 은사막 전망대 (안정도로 40분)', mins: 40 }, { to: 'camp', label: '⛺ 안정구역 캠핑장', mins: 40 }];
+  M.base.travel = [{ to: 'dome', label: '🚌 돔시티 (30분)', mins: 30 }, { to: 'outskirts', label: '🚙 외곽 수색구역 (출입 제한)', mins: 30, need: 'scout' }];
+  M.plaza.travel = [{ to: 'port', label: '🚀 우주항구 (20분)', mins: 20 }, { to: 'corridor', label: '🌅 인공노을 회랑', mins: 10 }, { to: 'bridge', label: '🌉 빛먼지 산책교', mins: 10 }, { to: 'rubyway', label: '🌹 루비웨이 (성인 · 직접 선택)', mins: 10, need: 'adult' }, { to: 'dome', label: '🚶 연구·주거구역', mins: 5 }];
+  M.plaza.decor.push(['travelkiosk', 28, 46, 0]);
+  M.plaza.buildings = M.plaza.buildings.filter(b => b.id !== 'p_pub' && b.id !== 'p_port');
+  M.plaza.buildings.push({ id: 'p_port', name: '우주항구 · 루비웨이 방면', x: 38, y: 4, w: 8, d: 5, h: 40, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 광장 남쪽 이동 안내 단말에서 우주항구 · 루비웨이로 갈 수 있어요' });
+
+  // 실내 ↔ 바깥 연결 자동 등록
+  for (const id in M) { const m = M[id]; if (m.kind !== 'out') continue; for (const b of m.buildings) if (b.to && M[b.to] && !M[b.to].parent) { M[b.to].parent = id; M[b.to].building = b.id; } }
 })();
 
 </script>
@@ -1952,6 +2223,14 @@ PX.S = (() => {
   it('skewer', { name: '행성권 꼬치', cat: 'food', price: 9, energy: 14, capLike: 2, icon: '🍢', desc: '축제·야시장 매대 인기 메뉴.' });
   it('fruitIce', { name: '향열매 빙수', cat: 'food', price: 15, energy: 12, capLike: 2, icon: '🍧', desc: '얼음 산 위에 향열매 시럽.' });
   it('samgyupMeal', { name: '냉삼 한 판 (포장)', cat: 'food', price: 24, energy: 30, capLike: 2, icon: '🥓', desc: '문성호네 냉삼. 대위의 최애.' });
+  it('fish', { name: '물고기', cat: 'food', price: 0, energy: 6, capLike: 0, icon: '🐟', desc: '인공호수에서 낚았다. 구우면 더 맛있다.' });
+  it('grilledFish', { name: '구운 생선', cat: 'food', price: 0, energy: 25, capLike: 2, icon: '🍢', desc: '캠프파이어에 구웠다. 대위가 좋아할 것 같다.' });
+  it('rawfruit', { name: '갓 딴 향열매', cat: 'food', price: 0, energy: 10, capLike: 1, icon: '🍊', desc: '농업돔에서 직접 딴 향열매.' });
+  it('chitin', { name: '외계 갑각 잔해', price: 0, capLike: 2, icon: '🦂', desc: '외곽에서 회수한 외골격 조각. 대위의 장비 재료.' });
+  it('seafood', { name: '제3행성 해산물 꼬치', cat: 'food', price: 18, energy: 22, capLike: 2, icon: '🦐', desc: '해양도시 명물.' });
+  it('smoked', { name: '냉훈제 생선', cat: 'food', price: 20, energy: 24, capLike: 2, icon: '🐟', desc: '제6행성 냉훈제거리의 별미.' });
+  it('mineralSalt', { name: '광물염', price: 15, capLike: 1, icon: '🧂', desc: '제4행성 광물염 조미료. 요리 좋아하는 사람에게.' });
+  it('souvenir', { name: '돔시티 스노볼', price: 25, capLike: 1, icon: '🔮', desc: '흔들면 은빛 가루가 흩날린다.' });
   it('festivalBadge', { name: '축제 기념 배지', price: 20, capLike: 0, icon: '🎗️', desc: '돔시티 행사 기념품.' });
   // 가구 아이템 (상점 구매 → 숙소 배치)
   for (const fid of ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'sidetable', 'cabinet', 'chair', 'stool', 'sofa', 'sofa_green', 'table', 'desk', 'shelf', 'mirror', 'cafetable', 'aquarium', 'cooler', 'tv', 'bed', 'bigbed', 'wardrobe', 'fridge', 'kitchen', 'glassvase']) {
@@ -1986,6 +2265,12 @@ PX.S = (() => {
     flower: { name: '유리돔 꽃시장', clerk: 'go', items: ['bouquet', 'glassflower', 'perfume', 'f_glassvase', 'f_plant', 'f_bigplant'] },
     arcade: { name: '오락실 카운터', items: ['earthSnack', 'iceDessert', 'coffee'] },
     festival: { name: '축제 · 야시장 매대', items: ['skewer', 'fruitIce', 'earthSnack', 'iceDessert', 'festivalBadge', 'glassflower'] },
+    farm: { name: '농업돔 매대', items: ['fruitTea', 'rawfruit', 'fruitIce', 'f_plant'] },
+    souvenir: { name: '관람언덕 기념품 매대', items: ['souvenir', 'glassflower', 'coffee', 'iceDessert'] },
+    beach: { name: '해변 매점', items: ['fruitIce', 'iceDessert', 'coffee', 'skewer'] },
+    seafood: { name: '해양도시 매대', items: ['seafood', 'iceDessert', 'souvenir'] },
+    mineral: { name: '광물도시 매대', items: ['mineral', 'mineralSalt', 'protein', 'souvenir'] },
+    smoked: { name: '냉훈제거리', items: ['smoked', 'hotchoco', 'iceDessert', 'souvenir'] },
     vending: { name: '자판기', items: ['coffee', 'hotchoco', 'protein', 'earthSnack'] },
   };
 })();
@@ -2106,7 +2391,7 @@ PX.S = (() => {
   // 돔시티 주민
   add({ id: 'jo', name: '조은별', age: 28, job: '생태연구원 (외계식물 전문가)', team: '돔시티 생태연구소', look: look(0, 'curly', '밝은 갈색', '초록', { top: '#7fc8b4', bottom: '#3a4a5a', coat: '#ffffff' }),
     personality: '식물 이야기만 나오면 눈이 반짝인다.', work: '민간 생태연구소', home: '민간 주거구역',
-    sched: '08:00 -|09:00 lab.2|12:00 cafe.c3' + '7a|13:00 lab.2|18:00 dome.bench|19:00 -', we: '11:00 dome.bench|13:00 cafe.c37a|15:00 -',
+    sched: '08:00 -|09:00 lab.2|12:00 cafe.c25a|13:00 lab.2|18:00 dome.bench|19:00 -', we: '11:00 dome.bench|13:00 cafe.c25a|15:00 -',
     likesFood: '향열매 차', likesGift: '페르녹스 생태도감', rel: '동료/친구',
     lines: { g: ['유리꽃 꽃잎이 왜 투명한지 아세요? 아직 아무도 몰라요! 멋지죠!', '발광초는 밤에 더 예뻐요. 꼭 보러 가세요.', '검역 표본이 오늘 스무 개나 들어왔어요.', '돔 밖 식물은 진짜 강해요. 부러울 만큼.'],
       cap: ['그 큰 군인분, 연구소 경계 지원 올 때마다 {pf} 씨 자리만 봐요.'] } });
@@ -2470,10 +2755,112 @@ PX.S = (() => {
 
 </script>
   <script>
+/* js/data/dialogue_captain2.js */
+// 대위 대사 확장 (Alpha 0.3): 장소별 한마디 · 장소 대화 · 활동 반응 · 잡담 · 기존 카테고리 추가분
+'use strict';
+(() => {
+  const D = PX.DLG_CAP;
+  const ANY = [0, 7], LOVE = [4, 7], MID = [2, 7], PRE = [0, 3];
+  const b = (s, l, o = {}) => Object.assign({ s, l }, o);
+  const X = {};
+
+  // 동행 중 말풍선 (장소별)
+  X.placeAmb = {
+    _: ['여기 좋다. 너랑 오니까.', '다리 안 아파? 아프면 말해.', '사람 많으면 내 쪽으로 붙어.', '배고프면 말해. 뭐든 사 줄게.', '{p아}, 이리 와. 길 이쪽이야.', '천천히 가. 시간 많아.'],
+    base: ['부대 안에서 데이트라니. 다들 쳐다본다.', '저기 헌병 중사가 째려본다. 신경 쓰지 마.', '훈련장 저 끝, 별 잘 보여.', '식당 냄새 난다. 오늘 김치찌개다.'],
+    dome: ['돔 안은 공기가 달라. 덜 덥다. 그래도 덥다.', '연구소 근처 오면 꽃냄새 나네.', '여기 사는 거 괜찮아? 불편한 거 있으면 말해.'],
+    plaza: ['광장 분수 앞, 사진 찍기 좋다.', '냉삼집 들를래? 아니다, 너 먹고 싶은 거.', '사람 많다. 손 줘.', '저기 꽃시장. 네가 좋아하는 거 있으면 골라.'],
+    lake: ['물가 너무 가까이 가지 마. 빠지면 내가 들어간다.', '돗자리 펼까. 그늘은 내가 만들어 줄게.', '낚시해 볼래? 미끼는 내가 끼워 줄게.'],
+    farm: ['흙 냄새 좋다. 부대에선 못 맡는 냄새.', '향열매 따 볼래? 높은 건 내가 딸게.', '손에 흙 묻었다. 이리 와, 닦아 줄게.'],
+    glasshouse: ['유리꽃… 너 닮았다. 투명해서.', '보호종은 안전 용기 안에서만 봐. 만지면 혼나.'],
+    glowpath: ['어두우니까 손 잡자. 넘어지면 안 되니까.', '발광초가 숨 쉬는 것 같지?'],
+    bluegarden: ['여긴 조용하다. 목소리 낮춰야겠다.', '이런 데 오면 잠이 와. 너 옆이라 더.'],
+    hill: ['노을 시간 맞춰서 오자. 그때가 제일 예뻐.', '벤치에 앉아. 어깨 빌려줄게.'],
+    silverdesert: ['여기, 내가 페르녹스에서 처음 좋아하게 된 곳이야.', '은빛 모래가 바람 따라 움직여. 볼 때마다 신기해.'],
+    beach: ['물 차갑다. 들어가 볼래? 아니면 내가 들어서 넣어 줄까.', '해변 의자 하나 맡아 놨어.', '모래성 쌓자. 내가 해자 팔게.'],
+    camp: ['고기는 내가 굽는다. 집게 넘보지 마.', '밤 되면 별 진짜 많아. 기다려 봐.', '텐트 하나 빌렸어. 투명 돔이라 별 보면서 잘 수 있대.'],
+    bridge: ['수요일이랑 토요일 밤에 빛먼지 쏟아져.', '난간 꼭 잡아. 아니, 내 팔 잡아.'],
+    corridor: ['17시 40분쯤 오면 전부 노을빛으로 변해.', '유리 너머 봐. 농업돔 지붕.'],
+    rubyway: ['…여기 데려온 거 너야. 나 아니야.', '네온 때문에 네 얼굴이 분홍색이야. 예쁘다.', '불편하면 바로 나가자. 진짜로.'],
+    port: ['저 수송선 타고 지구 가는 사람들 많아. 나는 여기 남을 거지만.', '보급선 들어오면 과자 사재기하자.'],
+    station: ['창밖 봐. 저기 우리 부대 있는 데야.', '중력 약한 구역 조심해. 둥실 떠.'],
+    planet3: ['바다다. 진짜 바다.', '수상 택시 흔들리면 나 잡아.'],
+    planet4: ['광물등 축제는 10월이래. 그때 또 오자.', '레일투어 타 볼래? 터널 안이 다 빛나.'],
+    planet6: ['시원하다! 여기 살고 싶다.', '너는 추우면 내 외투 입어. 난 하나도 안 추워.', '밤 되면 오로라 보러 가자.'],
+    outskirts: ['내 뒤에 있어. 여긴 장난 아니야.', '잔해 만질 땐 장갑 껴.', '저 통신탑, 가끔 이상한 신호가 잡혀.', '무서우면 말해. 바로 돌아가자.'],
+  };
+  // 활동 반응
+  X.activity = {
+    hang: [['C*:몇 개 했어? …귀엽네. 나는 오십 개.'], ['C:자세 좋다. 팔 다 펴고 내려와야 돼.', 'C^:다음엔 내가 받쳐 줄게.'], ['C!:와, 생각보다 잘하는데?']],
+    fish: [['C:미끼 다시 끼워 줄게. 손 다쳐.'], ['C^:잡았다! …아니 네가 잡았지. 내가 더 신나네.'], ['C*:물고기보다 낚시하는 네가 더 재밌어.']],
+    harvest: [['C:높은 건 내가 딸게. 너는 바구니 들어.'], ['C^:손에 향열매 냄새 밴다. 좋다.']],
+    view: [['C:…예쁘다.', 'P:경치요?', 'C*:응. 경치도.'], ['C:여기 너랑 다시 오고 싶었어.'], ['C:이런 거 보면, 여기서 버틴 보람이 있다.', 'C^:너 만난 것도.'], ['N:대위가 말없이 어깨를 감싼다. 바람이 조금 차다.']],
+    tent: [['C*:텐트 좁다. 붙어 앉아야겠네.'], ['C:천장으로 별 보인다. 누워 볼래?']],
+    campfire: [['C:불 앞에선 다들 솔직해진대.', 'C:…나 너 처음 봤을 때, 이 사람이다 싶었어.'], ['C^:마시멜로 구웠다. 아~ 해.', 'C*:뜨거워. 후 불어 줄게.'], ['C:외곽에서 불 피울 땐 늘 혼자였어.', 'C:지금은 아니네.'], ['N:타닥타닥. 대위의 옆얼굴에 불빛이 일렁인다.', 'C:졸리면 기대. 괜찮아.']],
+    onsen: [['C:…덥다. 너무 덥다.', 'C*:근데 너 옆이라 안 나갈 거야.'], ['C:근육이 다 풀린다. 너도 어깨 내려.']],
+    salvage: [['C:그건 내가 들게. 무거워.'], ['C*:이거 나 주면 장비 하나 만들어 줄게.'], ['C:잔해는 날카로워. 손 보여 줘. …괜찮네.']],
+    shoot: [['C:숨 내쉬고, 멈춘 다음에 당겨.', 'C^:그래, 그거야.'], ['C*:점수 괜찮은데? 수색팀 올래?']],
+    course: [['C:기록 괜찮다. 다음엔 나랑 같이 뛰자.'], ['C^:넘어질까 봐 조마조마했어.']],
+  };
+  // 장소에서 나누는 대화 (대화하기를 고르면 장소에 맞는 묶음이 나올 수 있다)
+  X.place = {
+    mess: [b(ANY, ['C:오늘 메뉴 괜찮지?', 'C*:내 고기 반 줄게. 아니, 다 줄게.']), b(ANY, ['C:식판 들고 내 옆에 앉아. 자리 맡아 놨어.']), b(ANY, ['C:조리장님한테 잘 보여. 그래야 국물 많이 줘.'])],
+    gym: [b(ANY, ['C:운동하러 왔어? 같이 하자. 보조해 줄게.', 'C*:무게는 내가 올려 줄게.']), b(ANY, ['C:철봉 매달려 봐. 몇 개 하나 보자.']), b(ANY, ['C:팔씨름 할래? 왼손으로 해 줄게.'])],
+    hangar: [b(ANY, ['C:이 드론 내가 고친 거야. 엔진 소리 들어 봐.']), b(ANY, ['C:기름 묻는다. 이 장갑 껴.'])],
+    lounge: [b(ANY, ['C:오락기 한 판. 진 사람이 자판기 쏘기.']), b(ANY, ['C:소파에 앉아. 나 여기 바닥에 앉을게. 그래야 눈높이 맞지.'])],
+    q_captain: [b(ANY, ['C:내 막사 춥지? 냉각기 최저야. 이거 덮어.', 'N:대위가 담요를 던져 준다. 대위 냄새가 난다.']), b(ANY, ['C:저 작업대, 잔해로 만드는 중인 거 있어. 완성되면 너 줄게.']), b(MID, ['C*:여기까지 들어온 사람 너 하나야.'])],
+    q_player: [b(ANY, ['C:네 방 좋다. 너 냄새 나.']), b(ANY, ['C:저 액자, 다음엔 우리 사진 넣자.'])],
+    cafe: [b(ANY, ['C:얼음 많이. 너는?', 'C^:네 거 내가 계산할게. 말리지 마.']), b(ANY, ['C:창가 자리 앉자. 너 햇빛 받는 거 보기 좋아.'])],
+    samgyup: [b(ANY, ['C:여기 사장님이 나 오면 고기를 두 배로 썰어.', 'C*:오늘은 너 때문에 세 배.'])],
+    plaza: [b(ANY, ['C:분수 앞에서 사진 찍자. 내가 찍어 줄게.']), b(ANY, ['C:광장 행사 있는 날엔 사람 진짜 많아. 그날은 손 꼭 잡고 다니자.'])],
+    lake: [b(ANY, ['C:피크닉 하자. 도시락은 내가 쌌어.', 'C*:김치찌개는 못 싸 와서 아쉽다.'])],
+    beach: [b(ANY, ['C:물 들어가자. 안 들어가면 들어서 넣는다.', { q: [['들어가요!', 3, ['C^:그래, 그거야.']], ['싫어요!', 1, ['C:알았어. 발만 담그자.']]] }])],
+    camp: [b(ANY, ['C:오늘 밤은 여기서 별 보자.', 'C:춥지? 침낭 온도 최고로 해 놨어. 내 거는 최저로.'])],
+    planet6: [b(ANY, ['C:여기 나한테 천국이야. 시원해.', 'C*:너는 내 품이 천국이고. …농담 아니야.'])],
+    station: [b(ANY, ['C:우주에서 보는 페르녹스, 생각보다 작지?', 'C:저 작은 데서 너 만났다는 게 신기해.'])],
+    outskirts: [b(ANY, ['C:여긴 일하는 데야. 그래도 네가 있으니까 덜 삭막하네.']), b(ANY, ['C:저기 폐쇄 연구기지. 안엔 내가 먼저 들어간다.'])],
+    rubyway: [b(MID, ['C:…여기 오자고 한 거 너다. 기억해.', 'C*:싫으면 바로 나가자. 좋으면 천천히 보고.'])],
+  };
+  // 잡담 (대위 자신 이야기)
+  X.small = [
+    b(ANY, ['C:흉터? 신병 둘 끌고 나오다 생긴 거야.', 'C:둘 다 살았어. 그래서 이건 훈장이야.']),
+    b(ANY, ['C:나 어릴 때 지구에선 여름마다 계곡에 살았어.', 'C*:더위 타는 건 그때부터야.']),
+    b(ANY, ['C:박도현 중사랑은 칠 년째야. 그 사람 없으면 나 벌써 죽었어.']),
+    b(ANY, ['C:잔해로 장비 만드는 거, 처음엔 심심해서 시작했어.', 'C^:지금은 너 줄 거 만드는 재미로 해.']),
+    b(ANY, ['C:김치찌개 비법? 통조림 햄을 먼저 볶는 거야. 비밀이다.']),
+    b(ANY, ['C:문틀에 머리 박는 거, 하루에 세 번은 해.', 'C*:오늘은 아직 한 번.']),
+    b(ANY, ['C:외곽 나가면 별이 진짜 많아. 근데 같이 볼 사람이 없었지.', 'C:이젠 있네.']),
+    b(ANY, ['C:처음 페르녹스 왔을 때, 붉은 모래가 무서웠어.', 'C:지금은 그냥 집 마당 같아.']),
+    b(ANY, ['C:냉각기 최저로 해 놓는 거, 이상한 거 아니야. 생존이야.']),
+    b(ANY, ['C:나 요리하는 거 좋아해. 누가 맛있게 먹어 주면 더.', 'C*:주로 너.']),
+    b(ANY, ['C:중령님은 무서워 보여도 우리 다 챙겨. 나도.']),
+    b(ANY, ['C:무기 손질하는 시간이 제일 조용해. 생각 정리돼.', 'C:요즘은 그 시간에도 네 생각해.']),
+    b(MID, ['C:전쟁 끝나면 뭐 하고 싶냐고? …너랑 제6행성 가서 오로라 보기.']),
+    b(MID, ['C:나 원래 이렇게 말 많은 사람 아니야. 너 앞에서만.']),
+    b(LOVE, ['C:우리 나중에 집 구하면, 냉각기는 내 방에만 달자.', 'C*:그러면 너 내 방으로 피신 오겠지.']),
+    b(LOVE, ['C:너랑 있으면 이 행성이 덜 무서워.', 'C:…이상한 말 했다. 잊어.']),
+  ];
+  // 기존 카테고리 추가분
+  const more = {
+    greet: [b(ANY, ['C:어, 딱 마주쳤네. 운명인가.', 'P:같은 부대잖아요.', 'C*:그러니까 운명이지.']), b(ANY, ['C:오늘 얼굴 좋다. 뭐 좋은 일 있어?']), b(ANY, ['C:{p아}. 잠깐 서 봐.', 'N:대위가 내 옷깃을 바로 잡아 준다.', 'C:됐다. 가.']), b(ANY, ['C:어디 가? 나도 그쪽 가는데.', 'P:어디 가시는데요?', 'C*:너 가는 데.']), b(LOVE, ['C:왔어, 내 사람.'])],
+    tease: [b(ANY, ['C:너 오늘 나 세 번 쳐다봤다.', 'P:세셨어요?', 'C*:응. 나는 열 번 봤으니까 내가 진 거지.']), b(ANY, ['C:키 재 보자. …어, 너 컸다?', 'P:진짜요?', 'C*:아니. 귀여워서 그냥 해 봤어.']), b(ANY, ['C:너 볼 만지면 혼나?', { q: [['혼나요.', 2, ['C:그럼 혼날 각오하고.', 'N:대위가 볼을 살짝 꼬집는다.']], ['…조금만요.', 4, ['C^:조금만.']]] }])],
+    flirt: [b(ANY, ['C:너 오늘 향 좋다.', 'C*:내가 다 기억하고 있어. 네 향.']), b(MID, ['C:오늘 하루 종일 네 생각만 했다는 거, 믿어?']), b(LOVE, ['C:우리 오늘 일찍 들어가자. 이유는 묻지 말고.'])],
+    aegyo: [b(ANY, ['C:나 머리 박았어. 문틀에.', 'C;:호 해 줘.', { q: [['호~', 4, ['C^:다 나았다.']], ['조심 좀 하세요.', 2, ['C:응… 근데 호는?']]] }]), b(ANY, ['C:나 오늘 보고서 일찍 냈어. 칭찬해 줘.'])],
+    worry: [b(ANY, ['C:너 오늘 기력 없어 보여. 식당 가자. 지금.']), b(ANY, ['C:밤길 혼자 다니지 마. 불러. 몇 시든.'])],
+    praise: [b(ANY, ['C:너는 사람을 편하게 해. 그게 재능이야.']), b(ANY, ['C:오늘 일 처리 깔끔했다더라. 자랑스럽다.'])],
+    dateAsk: [b(ANY, ['C:주말에 인공호수 가자. 도시락 쌀게.']), b(ANY, ['C:관람언덕 노을 보러 갈래? 17시쯤.']), b(MID, ['C:캠핑장 예약했어. …같이 갈래?']), b(LOVE, ['C:휴가 맞춰서 제6행성 가자. 오로라 보러.'])],
+    night: [b(ANY, ['C:잠 안 와? 나도.', 'C:같이 별 세다 들어가자.']), b(LOVE, ['C:내일 아침에 제일 먼저 너 보고 싶다.'])],
+  };
+  for (const k in more) D[k] = (D[k] || []).concat(more[k]);
+  PX.DLG_CAP2 = X;
+})();
+
+</script>
+  <script>
 /* js/data/dialogue_npc.js */
 // NPC 상황별 대사: 지금 하고 있는 일(활동)에 맞춰 말한다
 // talk: 말을 걸었을 때 / amb: 혼잣말 말풍선 (짧게)
-// {c} 대위 이름 · {cs} 대위가 지금 하는 일 · {p}/{pf} 플레이어
+// {c} 대위 이름 · {p}/{pf} 플레이어
 'use strict';
 PX.NPC_ACT = {
   workout: {
@@ -2489,11 +2876,11 @@ PX.NPC_ACT = {
     amb: ['간 좀 보자…', '불 줄여라!', '다음 배식 준비!', '국자 어디 갔어.'],
   },
   work_med: {
-    talk: ['지금 차트 정리 중이에요. 아픈 데 있으면 바로 말씀하세요.', '수색팀 복귀하면 바빠져요. 그 전에 물 한잔 마셔 둘게요.', '소독약 재고가 또 줄었네요.', '{c} 대위님은 오늘 검진 오셨나… 아, {cs}이시구나.', '혈압 재 드릴까요? 공짜예요.'],
+    talk: ['지금 차트 정리 중이에요. 아픈 데 있으면 바로 말씀하세요.', '수색팀 복귀하면 바빠져요. 그 전에 물 한잔 마셔 둘게요.', '소독약 재고가 또 줄었네요.', '{c} 대위님은 검진 날짜 또 미루셨어요. 좀 데려와 주실래요?', '혈압 재 드릴까요? 공짜예요.'],
     amb: ['다음 환자분~', '붕대 재고 확인.', '체온계 어디 있지.', '기록 완료.'],
   },
   work_ops: {
-    talk: ['외곽 지도 갱신 중이에요. 어제랑 또 달라요.', '정찰 로그 보는데 이상한 발자국이 있네요.', '작전 중엔 커피가 생명이에요.', '{c} 대위님 지금 {cs}이세요.', '보고서 마감이 두 시간 남았어요. 말 걸어 주셔서 다행이에요, 쉬는 핑계 생겼어요.'],
+    talk: ['외곽 지도 갱신 중이에요. 어제랑 또 달라요.', '정찰 로그 보는데 이상한 발자국이 있네요.', '작전 중엔 커피가 생명이에요.', '{c} 대위님이요? 아까 잠깐 들르셨다가 바람처럼 사라지셨어요.', '보고서 마감이 두 시간 남았어요. 말 걸어 주셔서 다행이에요, 쉬는 핑계 생겼어요.'],
     amb: ['좌표 확인.', '드론 신호 양호.', '보고서… 보고서…', '흔적 하나 더 찾았다.'],
   },
   work_hangar: {
@@ -2529,7 +2916,7 @@ PX.NPC_ACT = {
     amb: ['이상 무.', '출입 확인.', '…경계 중.', '다음 순찰.'],
   },
   rest: {
-    talk: ['쉬는 중이에요. 같이 앉으실래요?', '휴게실 소파는 한번 앉으면 못 일어나요.', '오늘 하루 진짜 길었어요.', '이 시간이 제일 좋아요. 아무것도 안 하는 시간.', '{c} 대위님은 요즘 {cs}이던데요.'],
+    talk: ['쉬는 중이에요. 같이 앉으실래요?', '휴게실 소파는 한번 앉으면 못 일어나요.', '오늘 하루 진짜 길었어요.', '이 시간이 제일 좋아요. 아무것도 안 하는 시간.', '{c} 대위님 요즘 표정이 좀 풀리셨던데요. 무슨 일 있으세요?'],
     amb: ['아, 편하다.', '하암…', '뭐 재밌는 거 없나.', '조금만 더 쉬자.'],
   },
   game: {
@@ -2541,7 +2928,7 @@ PX.NPC_ACT = {
     amb: ['쿨…', 'zzz', '음냐…'],
   },
   stroll: {
-    talk: ['산책 중이에요. 오늘 공기 괜찮죠?', '이 길 따라 걸으면 생각이 정리돼요.', '{c} 대위님 지금 {cs}이시던데요.', '어디 가세요? 저는 그냥 걷는 중이에요.'],
+    talk: ['산책 중이에요. 오늘 공기 괜찮죠?', '이 길 따라 걸으면 생각이 정리돼요.', '{c} 대위님이 아까 누구 찾는 눈치시던데요.', '어디 가세요? 저는 그냥 걷는 중이에요.'],
     amb: ['오늘 날씨 좋네.', '어디 가지.', '흠흠~', '바람 좋다.'],
   },
   cafe: {
@@ -2553,10 +2940,10 @@ PX.NPC_ACT = {
     workout: ['하나… 둘… 잠깐만, 세트 끝나고.', '같이 할래? 처음엔 가볍게.', '{c} 대위가 드는 무게 봤어? 사람 아니야.', '땀 흘리니까 좀 살 것 같다.', '체육대회 전에 몸 좀 만들어 둬.'],
     eat: ['밥 먹을 땐 밥 먹어. 앉아.', '오늘 국물 괜찮다. 먹어 봐.', '보급선 오기 전엔 메뉴가 늘 이래.', '많이 먹어. 외곽은 배고프면 더 춥다.'],
     work_hangar: ['손 조심해. 부품 다 날카로워.', '이 드론 기어에 모래가 꽉 꼈네.', '방호복 봉제선 하나 터지면 외곽에선 끝이야.', '{c} 대위가 또 잔해로 뭘 만들어 달래.'],
-    work_ops: ['외곽 지도가 어제랑 또 달라.', '정찰 로그에 이상한 발자국이 찍혔어.', '{c} 대위는 지금 {cs}이야.', '보고서 마감 두 시간 남았다.'],
+    work_ops: ['외곽 지도가 어제랑 또 달라.', '정찰 로그에 이상한 발자국이 찍혔어.', '{c} 대위? 어디 있는지는 나도 몰라. 그 양반은 늘 그래.', '보고서 마감 두 시간 남았다.'],
     shop: ['어서 와. 찾는 거 있으면 말해.', '오늘 새로 들어온 거 있어. 구경해.', '단골이니까 조금 더 챙겨 줄게.'],
-    rest: ['쉬는 중이야. 앉을래?', '오늘 하루 길었다.', '{c} 대위는 요즘 {cs}이더라.'],
-    stroll: ['산책 중이야. 공기 괜찮지?', '걸으면 생각이 좀 정리돼.', '{c} 대위는 지금 {cs}이던데.'],
+    rest: ['쉬는 중이야. 앉을래?', '오늘 하루 길었다.', '{c} 대위 요즘 좀 웃더라. 너 때문이지?'],
+    stroll: ['산책 중이야. 공기 괜찮지?', '걸으면 생각이 좀 정리돼.', '{c} 대위가 아까 너 어디 있냐고 묻던데.'],
     sleep: ['음… 5분만…', '…어? 잠깐 졸았다.'],
   },
   // 날씨 · 시간 공통 (야외에서)
@@ -2672,7 +3059,7 @@ PX.W = (() => {
         addFurn(m, a[0], a[1], a[2], a[3] || 0, a[4], 'f' + i);
       });
     } else {
-      fill(0, 0, m.w - 1, m.h - 1, def.dome ? 'plaza' : 'sand');
+      fill(0, 0, m.w - 1, m.h - 1, def.fill || (def.dome ? 'plaza' : 'sand'));
       for (const z of def.zones || []) fill(z.x0, z.y0, z.x1, z.y1, z.t);
       for (const r of def.roads || []) {
         if (r.walk) { fill(r.x0, r.y0, r.x1, r.y1, 'concrete'); continue; }
@@ -2727,11 +3114,12 @@ PX.W = (() => {
       m.links = (def.links || []).map(l => Object.assign({}, l));
       for (const k in def.spots || {}) { const [x, y, dir, pose] = def.spots[k]; m.spots[k] = { x: x + 0.5, y: y + 0.5, dir, pose, z: 0 }; }
       // 물 타일은 못 걷는다
-      for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i] === 'water') m.walk[i] = 0;
+      for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i] === 'water' || m.tiles[i] === 'deepwater' || m.tiles[i] === 'void') m.walk[i] = 0;
     }
     // 가구 막힘 반영
     for (const o of m.objs) if (o.kind === 'furn' && o.blocks) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
     resolveSpots(m);
+    m.staticLights = m.lights.filter(L => !L.obj);
     maps[id] = m;
     return m;
   }
@@ -2766,10 +3154,20 @@ PX.W = (() => {
     }
   }
   // 가구 하나 다시 배치 (꾸미기 모드)
+  // 가구를 뺀 기본 길 (건물 · 벽 · 물 · 우주 · 사막 가장자리)
+  function baseGrid(m) {
+    const g = new Uint8Array(m.w * m.h).fill(1);
+    if (m.kind === 'out') {
+      for (const o of m.objs) if (o.kind === 'bld' || o.kind === 'wall') for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) g[y * m.w + x] = 0;
+      for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i] === 'water' || m.tiles[i] === 'deepwater' || m.tiles[i] === 'void') g[i] = 0;
+      if (m.def.desert) for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (x < 2 || y < 2 || x > 61 || y > 61) g[y * m.w + x] = 0;
+    }
+    return g;
+  }
   function rebuildWalk(m) {
-    m.walk.fill(1);
-    for (const o of m.objs) if (o.kind === 'furn' && o.blocks) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
-    m.lights = m.objs.filter(o => o.light).map(o => o.light);
+    m.walk.set(baseGrid(m));
+    for (const o of m.objs) if (o.kind === 'furn' && o.blocks && !o.hidden && !o.desert) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
+    m.lights = (m.staticLights || []).concat(m.objs.filter(o => o.light).map(o => o.light));
     resolveSpots(m);
   }
   function refreshObj(m, o) {
@@ -2851,6 +3249,19 @@ PX.W = (() => {
     view.dark = G.canvas(view.w, view.h);
     view.cssScale = cw / view.w;
   }
+  // 화면의 한 점을 눌렀을 때 맨 위에 그려진 물체/사람 (투명한 픽셀은 통과)
+  function pick(sx, sy) {
+    const order = view.lastOrder || [];
+    for (let i = order.length - 1; i >= 0; i--) {
+      const e = order[i], c = e.spr ? e.spr.c : e.fr.c;
+      let x = Math.floor(sx - e.dx), y = Math.floor(sy - e.dy);
+      if (x < 0 || y < 0 || x >= c.width || y >= c.height) continue;
+      if (e.fr && e.fr.flip) x = c.width - 1 - x;
+      if (!c._a) { try { c._a = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; } catch (err) { return e; } }
+      if (c._a[(y * c.width + x) * 4 + 3] > 20) return e;
+    }
+    return null;
+  }
   // 확대·축소: 픽셀이 뭉개지지 않게 정수 배율로만 (기본 배율 -3 ~ +3)
   function zoomBy(step) {
     const lo = Math.max(1, view.base - 3), hi = view.base + 3;
@@ -2885,8 +3296,10 @@ PX.W = (() => {
     let tint = null;
     if (h >= 5 && h < 7.2) tint = ['#ff9a6a', 0.18 * (1 - Math.abs(h - 6) / 1.2)];
     if (h >= 17 && h < 19.5) tint = ['#ff7a4a', 0.24 * (1 - Math.abs(h - 18.2) / 1.3)];
-    if (m.def.dome) { d *= 0.7; if (min >= 17 * 60 + 40 && min < 18 * 60 + 30) tint = ['#ff8a5a', 0.26]; }
+    if (m.def.dome) { d *= 0.7; if (min >= 17 * 60 + 40 && min < 18 * 60 + 30) tint = ['#ff8a5a', m.def.sunsetView ? 0.34 : 0.26]; }
     if (m.kind === 'in') { d = d * 0.35; tint = null; }
+    if (m.def.amb) d = Math.max(d, m.def.amb);
+    if (m.def.tint && !tint) tint = m.def.tint;
     if (weather === 'cloudy' || weather === 'rain') d = Math.min(1, d + 0.12);
     if (weather === 'dust' && m.kind === 'out' && !m.def.dome) tint = ['#d0603a', 0.22];
     return { d, tint };
@@ -2897,7 +3310,7 @@ PX.W = (() => {
     const g = view.g, W = view.w, H = view.h;
     const season = env.season, night = env.night;
     // 배경
-    g.fillStyle = m.kind === 'in' ? '#17121f' : m.def.dome ? '#2a3850' : G.SEASON_PAL[season].sand;
+    g.fillStyle = m.def.bg || (m.kind === 'in' ? '#17121f' : m.def.dome ? '#2a3850' : G.SEASON_PAL[season].sand);
     g.fillRect(0, 0, W, H);
     const gr = groundCanvas(m, season, night);
     const sx0 = Math.round(-view.camX + W / 2 - gr.ox), sy0 = Math.round(-view.camY + H / 2 - gr.oy);
@@ -2953,6 +3366,7 @@ PX.W = (() => {
       done[best] = 1; order.push(list[best]);
       for (const j of adj[best]) indeg[j]--;
     }
+    view.lastOrder = order;
     for (const e of order) {
       if (e.o) {
         if (e.o.ghost) g.globalAlpha = 0.55;
@@ -2970,7 +3384,7 @@ PX.W = (() => {
     }
     // 조명 · 날씨
     const amb = ambient(m, env.min, env.weather);
-    if (m.kind === 'out' && !m.def.dome) weatherFx(g, env, W, H);
+    if (m.kind === 'out' && !m.def.dome && m.def.fx !== 'stars') weatherFx(g, env, W, H);
     if (amb.tint) { g.globalAlpha = amb.tint[1]; g.fillStyle = amb.tint[0]; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
     if (amb.d > 0.02) {
       const dk = view.dark, dg = dk.getContext('2d');
@@ -3006,6 +3420,7 @@ PX.W = (() => {
       g.globalCompositeOperation = 'source-over';
     }
     if (m.kind === 'out' && m.def.dome) domeFx(g, env, W, H);
+    if (m.def.fx) specialFx(g, m, env, W, H);
     if (extra && extra.overlay) extra.overlay(g);
   }
 
@@ -3035,13 +3450,32 @@ PX.W = (() => {
       if (p.y < -6) p.y = H + 4;
     }
   }
+  // 지역 특수 효과: 별, 오로라, 빛먼지
+  const sfx = [];
+  function specialFx(g, m, env, W, H) {
+    const t = performance.now() / 1000, fx = m.def.fx;
+    if (fx === 'aurora' && (env.min >= 19 * 60 || env.min < 5 * 60)) {
+      for (let i = 0; i < 3; i++) {
+        const y0 = 30 + i * 22 + Math.sin(t * 0.3 + i) * 6;
+        for (let x = 0; x < W; x += 2) { const y = y0 + Math.sin(x / 30 + t * 0.6 + i * 2) * 12; g.fillStyle = `rgba(${i === 1 ? '160,120,255' : '110,255,190'},${0.16 + 0.08 * Math.sin(x / 17 + t)})`; g.fillRect(x, y, 2, 18 + 10 * Math.sin(x / 23 + i)); }
+      }
+    }
+    if (fx === 'lightdust') {
+      const wd = PX.Cal.weekday(PX.St.S.time.y, PX.St.S.time.m, PX.St.S.time.d);
+      const on = (wd === 3 || wd === 6) && env.min >= 20 * 60 + 30 && env.min < 21 * 60 + 30;
+      const n = on ? 90 : 14;
+      while (sfx.length < n) sfx.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random() });
+      sfx.length = n;
+      for (const p of sfx) { p.y -= (4 + p.s * 8) * env.dt; p.x += Math.sin(t + p.s * 9) * 5 * env.dt; if (p.y < 0) { p.y = H; p.x = Math.random() * W; } g.fillStyle = `rgba(255,${200 + 55 * p.s | 0},${160 + 90 * p.s | 0},${0.4 + 0.5 * Math.abs(Math.sin(t * 2 + p.s * 7))})`; g.fillRect(p.x | 0, p.y | 0, on ? 2 : 1, on ? 2 : 1); }
+    }
+  }
   function domeFx(g, env, W, H) { // 돔 안: 은은한 발광 포자
     if (partKind !== 'dome') { parts.length = 0; partKind = 'dome'; }
     while (parts.length < 16) parts.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random(), t: Math.random() * 100 });
     for (const p of parts) { p.t += env.dt; p.y -= 5 * env.dt; p.x += Math.sin(p.t + p.s * 7) * 4 * env.dt; if (p.y < -2) { p.y = H + 2; p.x = Math.random() * W; } g.fillStyle = `rgba(190,240,255,${0.3 + 0.3 * Math.sin(p.t * 2)})`; g.fillRect(p.x | 0, p.y | 0, 1, 1); }
   }
 
-  return { zoomBy, updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
+  return { baseGrid, pick, zoomBy, updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
 })();
 
 </script>
@@ -3369,6 +3803,9 @@ PX.A = (() => {
     // 현재 일정 목적지
     desired(S) {
       const e = schedEntry(this.def, S);
+      if (this.def.id !== 'cap' && PX.Act && !/돔시티|우주항구/.test(this.def.team) && e.spot !== '-' && !/bed|cook|clerk|gate|cmd/.test(e.spot) && U.hash(this.id) % 3 !== 0) {
+        if (PX.Act.activeBase().length) { const sp = spot('base.ev' + (1 + U.hash(this.id) % 6)); if (sp) return { kind: 'spot', map: sp.map, s: sp.s, name: 'base.ev' }; }
+      }
       if (e.spot === '-' || e.spot === 'field' || e.spot === 'free') return { kind: e.spot, map: null };
       const sp = spot(e.spot);
       if (!sp) return { kind: '-', map: null };
@@ -3630,9 +4067,12 @@ PX.Dlg = (() => {
         if (!backoff && r.stage >= 2) opts.push('explicit', 'flirt');
         if (part === 'night') opts.push('night');
         cat = U.pick(opts);
+        const X = PX.DLG_CAP2;
+        if (X && X.place[G.mapId] && Math.random() < 0.32) cat = 'place';
+        else if (X && Math.random() < 0.22) cat = 'small';
       }
     }
-    let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : pick(cat, D[cat]);
+    let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
     if (!bd) bd = pick('greet', D.greet);
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;
@@ -3923,6 +4363,7 @@ PX.Cap = (() => {
     const pmOut = PX.MAPS[pm].kind === 'out' ? pm : PX.MAPS[pm].parent;
     const capOut = cap.map ? (PX.MAPS[cap.map].kind === 'out' ? cap.map : PX.MAPS[cap.map].parent) : null;
     if (pmOut === 'dome' && !job.military) { const wd = St.weekday(); if (![2, 4, 6].includes(wd)) { mode = 'sched'; schedule(S, g); return; } }
+    if (!['base', 'dome', 'plaza'].includes(pmOut)) { mode = 'sched'; schedule(S, g); return; } // 멀리 나가 있으면 찾아가지 않는다
     if (capOut !== pmOut) { // 다른 구역: 셔틀로 이동
       const near = ['dome', 'plaza'].includes(pmOut) && ['dome', 'plaza'].includes(capOut);
       travel(pmOut, near ? 6 : 30, 'seek', capOut);
@@ -4203,7 +4644,8 @@ PX.UI = (() => {
   // ---------- 토스트 ----------
   function toast(text, ms = 2600) {
     const t = el('div', { class: 'toast' }, text);
-    $('toasts').append(t);
+    const box = $('toasts'); while (box.children.length >= 3) box.firstChild.remove();
+    box.append(t);
     setTimeout(() => t.classList.add('out'), ms);
     setTimeout(() => t.remove(), ms + 400);
   }
@@ -4262,7 +4704,8 @@ PX.UI = (() => {
     $('hEnergy').parentElement.classList.toggle('low', S.energy < 30);
     $('hLoc').textContent = PX.MAPS[G.mapId].name;
     const r = S.rel.cap;
-    $('capChip').innerHTML = `<b>${S.capName}</b> · ${PX.Cap.status()} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    const near = G.cap.map === G.mapId;
+    $('capChip').innerHTML = `<b>${S.capName}</b>${near ? ' · 가까이 있음' : ''} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
   }
   function badge() { const n = St.S.messages.filter(m => m.reply == null).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
 
@@ -4387,22 +4830,32 @@ PX.UI = (() => {
       const G = PX.Game, S = St.S;
       const outId = PX.MAPS[G.mapId].kind === 'out' ? G.mapId : PX.MAPS[G.mapId].parent;
       const m = PX.W.maps[outId];
+      const k = m.w > 50 ? 6 : 8;
       const c = el('canvas', { class: 'minimap' }); const g = c.getContext('2d');
-      const k = 4; c.width = m.w * k; c.height = m.h * k;
-      const col = { sand: '#c4613f', grass: '#4fa35a', concrete: '#a7a3a8', plaza: '#c9c1b6', asphalt: '#4a4652', roadline: '#4a4652', dirt: '#9a5a3a', hangar: '#6d7480', domegrass: '#64c27a', cafe: '#e8d2b0', water: '#4fb3d9' };
-      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) { g.fillStyle = m.walk[y * m.w + x] ? (col[m.tiles[y * m.w + x]] || '#888') : '#2a2238'; g.fillRect(x * k, y * k, k, k); }
-      for (const o of m.objs) if (o.kind === 'bld') { g.fillStyle = o.b.closed ? '#6a6070' : o.b.stripe; g.fillRect(o.x * k, o.y * k, o.fw * k, o.fd * k); }
-      const dot = (x, y, c2, r) => { g.fillStyle = c2; g.beginPath(); g.arc(x * k, y * k, r, 0, 7); g.fill(); };
+      c.width = m.w * k; c.height = m.h * k;
+      const col = { sand: '#c4613f', grass: '#4fa35a', concrete: '#a7a3a8', plaza: '#c9c1b6', asphalt: '#4a4652', roadline: '#4a4652', dirt: '#9a5a3a', hangar: '#6d7480', domegrass: '#64c27a', cafe: '#e8d2b0', water: '#4fb3d9', deepwater: '#2a6f9a', glassfloor: '#9fd8e8', silversand: '#c9ccd6', whitesand: '#efe6d2', ice: '#bfe6f2', snowfield: '#e8f0f6', void: '#0d0a1c', crystal: '#4a3a6a', redrock: '#8a4430', boardwalk: '#a0743f', mosaic: '#d6c9e8', neonfloor: '#2a1f3f', rail: '#5a4a6a', metal: '#7f8a96' };
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) { g.fillStyle = col[m.tiles[y * m.w + x]] || '#888'; g.fillRect(x * k, y * k, k, k); }
+      const ICON = { shop: '🛒', stall: '🛍️', meal: '🍱', shuttle: '🧭', fish: '🎣', view: '🔭', campfire: '🔥', harvest: '🌱', hang: '💪', shoot: '🎯', course: '🏃', event: '🎪', kiosk: 'ℹ️', grill: '🥓', claw: '🐰', onsen: '♨️', rail: '🚃', salvage: '🔍', sandcastle: '🏰', tent: '⛺' };
+      const marks = [];
+      for (const o of m.objs) {
+        if (o.kind === 'bld') { g.fillStyle = o.b.closed ? '#6a6070' : o.b.stripe; g.fillRect(o.x * k, o.y * k, o.fw * k, o.fd * k); g.strokeStyle = '#120c20'; g.lineWidth = 2; g.strokeRect(o.x * k, o.y * k, o.fw * k, o.fd * k); marks.push([o.x + o.fw / 2, o.y + o.fd / 2, o.b.name.replace(/ \(.*\)$/, ''), true]); }
+        else if (o.kind === 'furn' && !o.hidden && ICON[o.use]) marks.push([o.x + o.fw / 2, o.y + o.fd / 2, ICON[o.use], false]);
+        else if (o.kind === 'furn' && o.blocks && !o.desert) { g.fillStyle = 'rgba(30,20,40,0.35)'; g.fillRect(o.x * k, o.y * k, o.fw * k, o.fd * k); }
+      }
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (const [x, y, t, isB] of marks) {
+        if (isB) { g.font = `${Math.max(11, k * 1.7)}px Jua, sans-serif`; const w = g.measureText(t).width + 8; g.fillStyle = 'rgba(27,20,48,0.85)'; g.fillRect(x * k - w / 2, y * k - k, w, k * 2); g.fillStyle = '#fff7ef'; g.fillText(t, x * k, y * k); }
+        else { g.font = `${k * 2}px sans-serif`; g.fillText(t, x * k, y * k); }
+      }
       const pIn = G.mapId === outId ? G.player : null;
-      if (pIn) dot(pIn.x, pIn.y, '#ffffff', 4);
-      else { const d = m.doors.find(d => d.to === G.mapId); if (d) dot(d.x + 0.5, d.y + 0.5, '#ffffff', 4); }
-      const cap = G.cap;
-      if (cap.map === outId) dot(cap.x, cap.y, '#ff5a7a', 4);
-      else if (cap.map) { const d = m.doors.find(d => d.to === cap.map); if (d) dot(d.x + 0.5, d.y + 0.5, '#ff5a7a', 3); }
-      const list = el('div', { class: 'maplist' });
-      for (const o of m.objs) if (o.kind === 'bld') list.append(el('div', { class: 'li' }, el('i', { style: `background:${o.b.stripe}` }), o.b.name, o.b.closed ? el('small', null, ' (예정)') : null));
-      p.append(el('p', { class: 'muted' }, `${m.name} · 흰 점: 나 · 분홍 점: ${S.capName} (${PX.Cap.status()})`), el('div', { class: 'mapwrap' }, c), list,
-        el('p', { class: 'muted' }, '이동: 부대 정문 옆 셔틀 정류장 ↔ 돔시티 셔틀 정류장 (30분). 다른 행성·관광지는 Beta 0.5~0.6에서 열립니다.'));
+      const dot = (x, y, c2) => { g.fillStyle = '#120c20'; g.beginPath(); g.arc(x * k, y * k, k * 0.9, 0, 7); g.fill(); g.fillStyle = c2; g.beginPath(); g.arc(x * k, y * k, k * 0.6, 0, 7); g.fill(); };
+      if (pIn) dot(pIn.x, pIn.y, '#ffffff'); else { const d = m.doors.find(d => d.to === G.mapId); if (d) dot(d.x + 0.5, d.y + 0.5, '#ffffff'); }
+      const REG = [['606부대', ['base']], ['돔시티', ['dome', 'plaza', 'corridor', 'bridge', 'rubyway']], ['돔시티 관광구역', ['lake', 'farm', 'glasshouse', 'glowpath', 'bluegarden', 'hill', 'beach', 'silverdesert', 'camp']], ['우주 · 다른 행성', ['port', 'station', 'planet3', 'planet4', 'planet6']], ['외곽 (출입 제한)', ['outskirts']]];
+      const reg = el('div', { class: 'maplist' });
+      for (const [name, ids] of REG) reg.append(el('div', { class: 'li' }, el('b', null, name), el('small', null, ' ' + ids.map(i => PX.MAPS[i].name + (i === outId ? ' ← 지금' : '')).join(' · '))));
+      p.append(el('p', { class: 'muted' }, `${m.name} · 흰 점: 나 · 아이콘: 할 수 있는 것`), el('div', { class: 'mapwrap' }, c),
+        el('h4', null, '페르녹스 지역'), reg,
+        el('p', { class: 'muted' }, '이동: 각 지역의 🧭 이동 안내 단말(부대 정문 옆 · 돔시티 셔틀 정류장 · 중앙광장 남쪽 · 우주항구 터미널)에서 골라요.'));
     },
     cal(p) {
       const S = St.S;
@@ -4450,13 +4903,7 @@ PX.UI = (() => {
           el('tr', null, el('td', null, '13:00~17:00'), el('td', null, '오후 근무')),
           el('tr', null, el('td', null, '주말'), el('td', null, '비번 · 자유 외출'))),
         el('p', { class: 'muted' }, `오늘 근무 ${done}/2회 완료. 근무지의 업무 자리를 눌러 근무하면 급여 ₢${j.pay}을 받아요.`));
-      // 대위 오늘 일정
-      const cap = PX.NPC_BY_ID.cap;
-      let str = St.isWeekend() ? cap.we : (S.day % 2 === 1 ? cap.sched2 : cap.sched);
-      const names = { 'cap.bed': '기상/취침 (개인 막사)', 'gym.bp': '체력 단련 (체육관)', 'hg.drone': '드론 점검 (격납고)', 'ops.b1': '작전 브리핑', 'ops.cap': '장비 점검 · 보고서 (작전동)', 'hg.w2': '장비 수리 (격납고)', field: '외곽 수색', 'med.patient': '복귀 검진 (의무동)', free: '개인 시간 (나를 찾아올지도)', 'cap.sofa/0': '막사 휴식', 'cap.craft': '잔해로 장비 개조', 'mess.b01a/1': '식사 (식당동)' };
-      const t = el('table', { class: 'tbl' }, el('tr', null, el('th', null, '시간'), el('th', null, `${S.capName} 대위`)));
-      for (const e of PX.A.parseSched(str)) t.append(el('tr', null, el('td', null, Cal.fmtTime(e.min)), el('td', null, names[e.spot] || e.spot)));
-      p.append(el('h4', null, '대위 오늘 일과'), t, el('p', { class: 'muted' }, '작전과 이벤트에 따라 바뀔 수 있어요. 장기작전은 Alpha 0.4에서 추가됩니다.'));
+      p.append(el('p', { class: 'muted' }, '대위의 일정은 단말에 나오지 않아요. 부대원들에게 물어보면 알려 줄지도 몰라요.'));
     },
     rel(p) {
       const S = St.S, r = S.rel.cap;
@@ -4506,7 +4953,7 @@ PX.UI = (() => {
       const S = St.S;
       for (const n of PX.NPCS) {
         const name = n.id === 'cap' ? S.capName : n.name;
-        const where = n.id === 'cap' ? PX.Cap.status() : (() => { const npc = PX.Game.npcs.find(x => x.id === n.id); return npc && npc.map ? PX.MAPS[npc.map].name : '지도 밖 (개인 공간)'; })();
+        const where = n.id === 'cap' ? (PX.Game.cap.map === PX.Game.mapId ? '가까이 있음' : '알 수 없음') : (() => { const npc = PX.Game.npcs.find(x => x.id === n.id); return npc && npc.map ? PX.MAPS[npc.map].name : '지도 밖 (개인 공간)'; })();
         p.append(el('details', { class: 'contact' }, el('summary', null, el('b', null, name), el('small', null, ` ${n.job} · 지금: ${where}`)),
           el('p', null, `${n.age}세 · ${n.personality}`), el('p', { class: 'muted' }, `근무지: ${n.work} · 거주: ${n.home} · 좋아하는 음식: ${n.likesFood} · 좋아하는 선물: ${n.likesGift}`)));
       }
@@ -4863,6 +5310,81 @@ PX.Mini = (() => {
       });
     });
   }
+
+  // ================= 범용 미니게임 (활동 · 부대 행사용) =================
+  // 타이밍: 움직이는 표시가 초록 구간에 왔을 때 누르기. rounds번 반복
+  function timing(o) {
+    return new Promise(resolve => {
+      const tools = setup(o.title, o.help);
+      let round = 0, hits = 0, x = 0, dir = 1, zone = null, sp = o.speed || 70, wait = 0, msg = '';
+      const newZone = () => { const w = (o.zoneW || 22) - round * 2; zone = [10 + Math.random() * (100 - w - 10), 0]; zone[1] = zone[0] + w; };
+      newZone();
+      const btn = el('button', { class: 'tool big' }, o.btn || '지금!');
+      btn.onclick = () => { if (wait > 0) return; const ok = x >= zone[0] && x <= zone[1]; if (ok) hits++; msg = ok ? '좋아요!' : '아깝다!'; PX.Audio && PX.Audio.blip(ok ? 1.5 : 0.5); round++; wait = 0.5; newZone(); sp *= 1.12; };
+      tools.append(btn);
+      loop(dt => {
+        if (wait > 0) wait -= dt; else { x += dir * sp * dt; if (x > 110) { x = 110; dir = -1; } if (x < 10) { x = 10; dir = 1; } }
+        R(0, 0, SZ, SZ, o.bg || '#2a3240'); if (o.draw) o.draw(R, round, hits);
+        R(8, 92, 104, 10, '#120c20'); R(zone[0], 92, zone[1] - zone[0], 10, '#7fb86a'); R(x - 1, 88, 3, 18, '#ffd166');
+        g.fillStyle = '#fff7ef'; g.font = '10px sans-serif'; g.textAlign = 'center'; g.fillText(msg, 60, 82);
+        timerEl.textContent = `${Math.min(round + 1, o.rounds)}/${o.rounds}`; scoreEl.textContent = `성공 ${hits}`;
+        if (round >= o.rounds) { const sc = hits / o.rounds; setTimeout(() => finish(sc, o.result ? o.result(hits, sc) : `${o.rounds}번 중 ${hits}번 성공`, '확인').then(resolve), 300); return false; }
+      });
+    });
+  }
+  // 연타 경주: 버튼을 빠르게 눌러 상대보다 먼저 막대를 채우기 (팔씨름 · 줄다리기)
+  function tapRace(o) {
+    return new Promise(resolve => {
+      const tools = setup(o.title, o.help);
+      let me = 50, time = o.time || 10, done = false;
+      const foe = o.foe || 6; // 초당 상대 힘
+      const btn = el('button', { class: 'tool big' }, o.btn || '힘껏!');
+      const push = (e) => { e.preventDefault(); if (done) return; me += 3.2; PX.Audio && PX.Audio.blip(1 + Math.random() * 0.3); };
+      btn.addEventListener('pointerdown', push); tools.append(btn);
+      loop(dt => {
+        time -= dt; me -= foe * dt; me = Math.max(0, Math.min(100, me));
+        R(0, 0, SZ, SZ, o.bg || '#3a2f50'); if (o.draw) o.draw(R, me);
+        R(10, 96, 100, 10, '#120c20'); R(10, 96, me, 10, '#ff7aa2'); R(59, 92, 2, 18, '#ffffff');
+        g.fillStyle = '#fff7ef'; g.font = '10px sans-serif'; g.textAlign = 'center'; g.fillText(o.left || '나', 22, 90); g.fillText(o.right || '상대', 98, 90);
+        timerEl.textContent = '⏱ ' + Math.ceil(Math.max(0, time)); scoreEl.textContent = me > 50 ? '우세!' : '밀린다!';
+        if (me >= 100 || me <= 0 || time <= 0) { done = true; const win = me >= 50; setTimeout(() => finish(win ? 1 : 0.3, o.result ? o.result(win) : (win ? '이겼다!' : '졌다…'), '확인', win ? '🏆 승리!' : '아쉽다!').then(() => resolve(win)), 300); return false; }
+      });
+    });
+  }
+  // 표적: 나타나는 표적을 빨리 누르기 (사격 · 물총전 · 반응 속도)
+  function targets(o) {
+    return new Promise(resolve => {
+      setup(o.title, o.help);
+      let time = o.time || 20, hit = 0, miss = 0, spawn = 0;
+      const ts = [];
+      cv.onpointerdown = e => { const [x, y] = pt(e); const t = ts.find(t => Math.hypot(t.x - x, t.y - y) < t.r + 3); if (t) { hit++; ts.splice(ts.indexOf(t), 1); PX.Audio && PX.Audio.blip(1.5); } else { miss++; } };
+      loop(dt => {
+        time -= dt; spawn -= dt;
+        if (spawn <= 0 && ts.length < 4) { spawn = 0.45 + Math.random() * 0.5; ts.push({ x: 14 + Math.random() * 92, y: 14 + Math.random() * 80, r: 6 + Math.random() * 3, life: 1.6 }); }
+        R(0, 0, SZ, SZ, o.bg || '#3a4a3a'); if (o.draw) o.draw(R);
+        for (let i = ts.length - 1; i >= 0; i--) { const t = ts[i]; t.life -= dt; if (t.life <= 0) { ts.splice(i, 1); continue; } R(t.x - t.r, t.y - t.r, t.r * 2, t.r * 2, o.color || '#d0563b'); R(t.x - t.r / 2, t.y - t.r / 2, t.r, t.r, '#f4efe4'); R(t.x - 1, t.y - 1, 2, 2, o.color || '#d0563b'); }
+        timerEl.textContent = '⏱ ' + Math.ceil(Math.max(0, time)); scoreEl.textContent = `명중 ${hit}`;
+        if (time <= 0) { cv.onpointerdown = null; const sc = U.clamp(hit / (o.goal || 18) - miss * 0.02, 0, 1); finish(sc, o.result ? o.result(hit, sc) : `명중 ${hit}발`, '확인').then(() => resolve(sc)); return false; }
+      });
+    });
+  }
+  // 퀴즈: 로어북 · 부대 상식 (선택지 버튼)
+  function quiz(o) {
+    return new Promise(resolve => {
+      const tools = setup(o.title, o.help);
+      let i = 0, ok = 0;
+      const qbox = el('p', { class: 'mhelp', style: 'color:#fff7ef;font-size:16px' });
+      cv.style.display = 'none'; root.insertBefore(qbox, tools);
+      const show = () => {
+        tools.innerHTML = '';
+        if (i >= o.qs.length) { cv.style.display = ''; finish(ok / o.qs.length, `${o.qs.length}문제 중 ${ok}개 정답`, '확인').then(() => resolve(ok / o.qs.length)); return; }
+        const q = o.qs[i]; qbox.textContent = `Q${i + 1}. ${q.q}`; timerEl.textContent = `${i + 1}/${o.qs.length}`; scoreEl.textContent = `정답 ${ok}`;
+        q.a.forEach((a, k) => { const b = el('button', { class: 'tool' }, a); b.onclick = () => { if (k === q.c) { ok++; PX.Audio && PX.Audio.blip(1.5); } else PX.Audio && PX.Audio.blip(0.5); i++; show(); }; tools.append(b); });
+      };
+      show();
+    });
+  }
+
   const api = {};
   function run(type, ctx = {}) {
     api.lastFound = [];
@@ -4871,6 +5393,8 @@ PX.Mini = (() => {
     return p.then(s => { PX.Game.inMini = false; PX.Game.modal--; return s; });
   }
   api.run = run;
+  const wrap = f => (o) => { PX.Game.inMini = true; PX.Game.modal++; return f(o).then(r => { PX.Game.inMini = false; PX.Game.modal--; return r; }); };
+  api.timing = wrap(timing); api.tapRace = wrap(tapRace); api.targets = wrap(targets); api.quiz = wrap(quiz);
   api.claw = () => { PX.Game.inMini = true; PX.Game.modal++; return clawGame().then(w => { PX.Game.inMini = false; PX.Game.modal--; return w; }); };
   return api;
 })();
@@ -4878,77 +5402,96 @@ PX.Mini = (() => {
 </script>
   <script>
 /* js/game/decor.js */
-// 숙소 꾸미기: 가구 선택 → 끌어서 옮기기 · 회전 · 보관 · 꺼내기. 배치할 때마다 겹침/통로/출구를 검사한다.
+// 꾸미기 · 맵 편집
+//  - 내 숙소: 소지품(구매한 가구)으로 꾸미기, 치우면 보관함으로
+//  - 그 밖의 모든 맵: 장식 카탈로그에서 자유롭게 놓기 · 옮기기 · 회전 · 치우기 (건물은 그대로)
+// 놓을 때마다 겹침 · 출입구 · 통로(문 · 출구 · 연결 통로 · 쓸 수 있는 물건까지 길이 이어지는지)를 검사한다.
 'use strict';
 PX.Decor = (() => {
   const U = PX.U, St = PX.St, W = PX.W, el = U.el;
-  const FIXED = ['terminal', 'photo'];
-  let active = false, m = null, sel = null, drag = null, bar = null, before = null;
+  const OUT_CAT = ['tree', 'tree2', 'bush', 'glowflower', 'flowerbed', 'planter', 'bigplant', 'plant', 'streetlamp', 'lantern', 'benchout', 'logseat', 'beachchair', 'parasol', 'cafetable', 'fountain', 'kiosk', 'telescope', 'vending', 'campfire', 'dometent', 'icesculpture', 'crystalcluster', 'rock', 'rockbig', 'crate', 'crates', 'sandbags', 'railing', 'neonsign', 'stall', 'pullup', 'target'];
+  const IN_CAT = ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'chair', 'stool', 'sofa', 'sofa_green', 'bench', 'cafetable', 'table', 'sidetable', 'shelf', 'cabinet', 'tv', 'arcade', 'gametable', 'vending', 'locker', 'crate', 'crates', 'mirror', 'aquarium', 'glassvase', 'bunnyplush', 'cooler', 'pullup', 'armtable'];
+  let active = false, m = null, sel = null, drag = null, bar = null, before = null, homeMode = false;
+  const locked = o => !!(o.spot || o.event || o.desert || ['shuttle', 'event', 'work', 'meal', 'shop'].includes(o.use) || ['terminal', 'photo'].includes(o.fid));
 
+  function entryPoint(map) {
+    if (map.kind === 'in') return [map.exit.x, map.exit.y];
+    const a = { base: [31, 58], dome: [23, 40], plaza: [25, 47] }[map.id] || map.def.arrive;
+    return a;
+  }
   function validate(map) {
-    const occ = new Map();
+    const occ = new Map(), base = W.baseGrid(map);
     for (const o of map.objs) {
-      if (o.kind !== 'furn') continue;
-      if (o.x < 0 || o.y < 0 || o.x + o.fw > map.w || o.y + o.fd > map.h) return { ok: false, reason: '방 밖으로 나갔어요', o };
+      if (o.kind !== 'furn' || o.desert || o.hidden) continue;
+      if (o.x < 0 || o.y < 0 || o.x + o.fw > map.w || o.y + o.fd > map.h) return { ok: false, reason: '맵 밖으로 나갔어요', o };
       if (!o.blocks) continue;
       for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) {
+        if (!base[y * map.w + x]) return { ok: false, reason: `${o.f.name}이(가) 건물·벽·물 위에 걸쳐요`.replace('이(가)', U.hasBatchim(o.f.name) ? '이' : '가'), o };
         const k = x + ',' + y;
-        if (occ.has(k)) return { ok: false, reason: `${PX.U.josa(o.f.name, '이')} ${PX.U.josa(occ.get(k).f.name, '와')} 겹쳐요`, o };
+        if (occ.has(k)) return { ok: false, reason: `${U.josa(o.f.name, '이')} ${U.josa(occ.get(k).f.name, '와')} 겹쳐요`, o };
         occ.set(k, o);
       }
     }
-    const e = map.exit;
-    for (const [x, y] of [[e.x, e.y], [e.x, e.y - 1]]) if (occ.has(x + ',' + y)) return { ok: false, reason: '출입구 앞은 비워 두세요', o: occ.get(x + ',' + y) };
-    // 통로 검사
+    const must = [];
+    if (map.kind === 'in') { const e = map.exit; must.push([e.x, e.y, '출입구'], [e.x, e.y - 1, '출입구 앞']); }
+    for (const d of map.doors || []) must.push([d.x, d.y, `${d.name} 문 앞`]);
+    for (const l of map.links || []) must.push([Math.floor((l.x0 + l.x1) / 2), l.y0, '연결 통로']);
+    for (const [x, y, n] of must) if (occ.has(x + ',' + y)) return { ok: false, reason: `${n}은 비워 두세요`, o: occ.get(x + ',' + y) };
     const save = map.walk.slice();
-    map.walk.fill(1);
+    map.walk.set(base);
     for (const o of occ.values()) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) map.walk[y * map.w + x] = 0;
-    const reach = PX.Path.reachableSet(map, e.x, e.y);
+    const [sx, sy] = entryPoint(map);
+    const reach = PX.Path.reachableSet(map, sx, sy);
     let bad = null;
-    for (const o of map.objs) {
-      if (o.kind !== 'furn' || !(o.use || (o.seats && o.seats.length))) continue;
+    for (const [x, y, n] of must) if (!reach[y * map.w + x] && n !== '출입구 앞') { bad = { f: { name: n } }; break; }
+    if (!bad) for (const o of map.objs) {
+      if (o.kind !== 'furn' || o.hidden || o.desert || !(o.use || (o.seats && o.seats.length))) continue;
       const a = W.accessTile(map, o);
       if (!a || !reach[a.y * map.w + a.x]) { bad = o; break; }
     }
     map.walk.set(save);
-    if (bad) return { ok: false, reason: `${bad.f.name}에 다가갈 길이 막혀요`, o: bad };
+    if (bad) return { ok: false, reason: `${bad.f.name}(으)로 가는 길이 막혀요`.replace('(으)로', U.hasBatchim(bad.f.name) && !/ㄹ$/.test(bad.f.name) ? '으로' : '로'), o: bad.kind ? bad : null };
     return { ok: true };
   }
-  const layoutOf = map => map.objs.filter(o => o.kind === 'furn').map(o => [o.fid, o.x, o.y, o.r, o.spot || null]);
-  // 저장된 배치를 맵에 적용
+  const layoutOf = map => map.objs.filter(o => o.kind === 'furn' && !o.desert).map(o => [o.fid, o.x, o.y, o.r, o.spot || null, o.event || null]);
   function applyLayout(map, layout) {
     if (!layout) return;
-    map.objs = map.objs.filter(o => o.kind !== 'furn');
-    layout.forEach(([fid, x, y, r, spot], i) => W.addFurn(map, fid, x, y, r, spot, 'h' + i));
+    map.objs = map.objs.filter(o => o.kind !== 'furn' || o.desert);
+    layout.forEach(([fid, x, y, r, spot, ev], i) => { if (!PX.FURN[fid]) return; const o = W.addFurn(map, fid, x, y, r, spot, 'h' + i); if (ev) o.event = ev; });
     W.rebuildWalk(map);
+    if (St.S) W.updateEvents(map, St.S.time, St.S.time.min);
+  }
+  function applyAll() { // 저장된 맵 편집 모두 적용
+    const S = St.S;
+    for (const id in (S.mapEdits || {})) if (W.maps[id]) applyLayout(W.maps[id], S.mapEdits[id]);
   }
 
   function start() {
     const G = PX.Game;
-    if (!PX.MAPS[G.mapId].home) return;
-    if (PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay') { PX.UI.toast('손님이 있을 땐 가구를 옮길 수 없어요'); return; }
+    homeMode = !!PX.MAPS[G.mapId].home;
+    if (homeMode && (PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay')) { PX.UI.toast('손님이 있을 땐 가구를 옮길 수 없어요'); return; }
     active = true; m = W.maps[G.mapId]; sel = null;
     before = layoutOf(m);
     G.player.leaveSeat();
     G.modal++;
     bar = el('div', { id: 'decorbar' },
-      el('p', { class: 'dhint' }, '가구를 눌러 고르고 끌어서 옮기세요.'),
-      el('div', { class: 'dbtns' },
-        btn('⟳ 회전', rotate), btn('📦 보관', store), btn('➕ 꺼내기', takeOut), btn('↩ 되돌리기', revert), btn('✔ 완료', done, 'ok')));
+      el('p', { class: 'dhint' }, ''),
+      el('div', { class: 'dbtns' }, btn('⟳ 회전', rotate), btn(homeMode ? '📦 보관' : '🗑️ 치우기', store), btn('➕ ' + (homeMode ? '꺼내기' : '추가'), takeOut), btn('↩ 되돌리기', revert), btn('✔ 완료', done, 'ok')));
     document.body.append(bar);
     hint();
   }
   const btn = (t, fn, cls) => { const b = el('button', { class: cls || '' }, t); b.onclick = fn; return b; };
-  function hint(msg) { if (bar) bar.querySelector('.dhint').textContent = msg || (sel ? `${sel.f.name} 선택됨 · 끌어서 옮기기 / 회전 / 보관` : '가구를 눌러 고르고 끌어서 옮기세요.'); }
-
+  function hint(msg) { if (bar) bar.querySelector('.dhint').textContent = msg || (sel ? `${sel.f.name} 선택됨 · 끌어서 옮기기 / 회전 / ${homeMode ? '보관' : '치우기'}` : (homeMode ? '가구를 눌러 고르고 끌어서 옮기세요.' : '🛠️ 맵 편집: 장식을 눌러 고르고 끌어서 옮기세요. 건물은 움직이지 않아요.')); }
   function objAt(tx, ty) {
-    const list = m.objs.filter(o => o.kind === 'furn' && tx >= o.x && tx < o.x + o.fw && ty >= o.y && ty < o.y + o.fd);
+    const list = m.objs.filter(o => o.kind === 'furn' && !o.desert && !o.hidden && tx >= o.x && tx < o.x + o.fw && ty >= o.y && ty < o.y + o.fd);
     return list.sort((a, b) => (b.blocks ? 1 : 0) - (a.blocks ? 1 : 0))[0] || null;
   }
-  // 포인터 (main에서 내부 좌표로 전달)
   function down(sx, sy) {
+    const pk = W.pick(sx, sy);
+    let o = pk && pk.o && pk.o.kind === 'furn' ? pk.o : null;
     const [wx, wy] = W.toWorld(sx, sy);
-    const o = objAt(Math.floor(wx), Math.floor(wy));
+    if (!o) o = objAt(Math.floor(wx), Math.floor(wy));
+    if (o && locked(o)) { PX.UI.toast('🔒 ' + o.f.name + ' — 사람들이 쓰는 자리라 고정돼 있어요'); sel = null; hint(); return; }
     if (o) { sel = o; drag = { ox: o.x, oy: o.y, dx: wx - o.x, dy: wy - o.y, moved: false }; hint(); }
     else { sel = null; hint(); }
   }
@@ -4960,69 +5503,65 @@ PX.Decor = (() => {
   }
   function up() {
     if (!drag || !sel) { drag = null; return; }
-    if (drag.moved) {
-      const v = validate(m);
-      if (!v.ok) { PX.UI.toast('⚠️ ' + v.reason); sel.x = drag.ox; sel.y = drag.oy; W.refreshObj(m, sel); }
-      W.rebuildWalk(m);
-    }
+    if (drag.moved) { const v = validate(m); if (!v.ok) { PX.UI.toast('⚠️ ' + v.reason); sel.x = drag.ox; sel.y = drag.oy; W.refreshObj(m, sel); } W.rebuildWalk(m); }
     drag = null;
   }
   function rotate() {
-    if (!sel) { hint('먼저 가구를 눌러 고르세요.'); return; }
+    if (!sel) { hint('먼저 물건을 눌러 고르세요.'); return; }
     const old = [sel.r, sel.x, sel.y];
     sel.r = (sel.r + 1) % 4; W.refreshObj(m, sel);
     let v = validate(m);
-    if (!v.ok) { // 회전 후 자리를 조금 옮겨서 맞춰 보기
-      for (const [dx, dy] of [[0, -1], [-1, 0], [0, 1], [1, 0], [-1, -1]]) { sel.x = old[1] + dx; sel.y = old[2] + dy; W.refreshObj(m, sel); v = validate(m); if (v.ok) break; }
-    }
+    if (!v.ok) for (const [dx, dy] of [[0, -1], [-1, 0], [0, 1], [1, 0], [-1, -1]]) { sel.x = old[1] + dx; sel.y = old[2] + dy; W.refreshObj(m, sel); v = validate(m); if (v.ok) break; }
     if (!v.ok) { PX.UI.toast('⚠️ ' + v.reason); [sel.r, sel.x, sel.y] = old; W.refreshObj(m, sel); }
     W.rebuildWalk(m);
   }
   function store() {
-    if (!sel) { hint('먼저 가구를 눌러 고르세요.'); return; }
-    if (FIXED.includes(sel.fid)) { PX.UI.toast('이 가구는 숙소에 고정돼 있어요'); return; }
-    if ((sel.f.use === 'bed') && m.objs.filter(o => o.kind === 'furn' && o.f.use === 'bed').length <= 1) { PX.UI.toast('침대는 하나는 있어야 해요'); return; }
+    if (!sel) { hint('먼저 물건을 눌러 고르세요.'); return; }
+    if (sel.f.use === 'bed' && m.objs.filter(o => o.kind === 'furn' && o.f.use === 'bed').length <= 1 && homeMode) { PX.UI.toast('침대는 하나는 있어야 해요'); return; }
     m.objs.splice(m.objs.indexOf(sel), 1);
-    const item = sel.fid === 'stonedisplay' ? 'capStone' : (Object.values(PX.ITEMS).find(i => i.furn === sel.fid && !i.id.startsWith('f_')) || { id: 'f_' + sel.fid }).id;
-    St.addItem(item); PX.UI.toast(`📦 ${PX.U.josa(sel.f.name, '을')} 보관함에 넣었어요`);
+    if (homeMode) { const item = sel.fid === 'stonedisplay' ? 'capStone' : (Object.values(PX.ITEMS).find(i => i.furn === sel.fid && !i.id.startsWith('f_')) || { id: 'f_' + sel.fid }).id; St.addItem(item); PX.UI.toast(`📦 ${U.josa(sel.f.name, '을')} 보관함에 넣었어요`); }
+    else PX.UI.toast(`🗑️ ${U.josa(sel.f.name, '을')} 치웠어요`);
     sel = null; W.rebuildWalk(m); hint();
   }
   function takeOut() {
     const S = St.S;
-    const ids = Object.keys(S.inv).filter(k => S.inv[k] > 0 && (PX.ITEMS[k].furn || k === 'capStone'));
-    if (!ids.length) { PX.UI.toast('보관 중인 가구가 없어요. PX에서 살 수 있어요.'); return; }
-    PX.UI.menu('가구 꺼내기', ids.map(k => ({ t: `${PX.ITEMS[k].icon} ${k === 'capStone' ? '대위의 돌 진열대' : PX.ITEMS[k].name} ×${S.inv[k]}`, fn: () => place(k) })));
+    if (homeMode) {
+      const ids = Object.keys(S.inv).filter(k => S.inv[k] > 0 && (PX.ITEMS[k].furn || k === 'capStone'));
+      if (!ids.length) { PX.UI.toast('보관 중인 가구가 없어요. PX에서 살 수 있어요.'); return; }
+      PX.UI.menu('가구 꺼내기', ids.map(k => ({ t: `${PX.ITEMS[k].icon} ${k === 'capStone' ? '대위의 돌 진열대' : PX.ITEMS[k].name} ×${S.inv[k]}`, fn: () => place(k === 'capStone' ? 'stonedisplay' : PX.ITEMS[k].furn, k) })));
+      return;
+    }
+    const cat = (m.kind === 'out' ? OUT_CAT : IN_CAT).filter(id => PX.FURN[id]);
+    PX.UI.menu('장식 추가 (무료)', cat.map(id => ({ t: PX.FURN[id].name, sub: `${PX.FURN[id].w}×${PX.FURN[id].d}`, fn: () => place(id, null) })));
   }
-  function place(itemId) {
-    const fid = itemId === 'capStone' ? 'stonedisplay' : PX.ITEMS[itemId].furn;
+  function place(fid, itemId) {
     const o = W.addFurn(m, fid, 0, 0, 0, null, 'n' + Date.now());
-    // 빈자리 찾기 (방 가운데부터)
-    const cx = Math.floor(m.w / 2), cy = Math.floor(m.h / 2);
+    const p = PX.Game.player, cx = Math.floor(p.x), cy = Math.floor(p.y);
     const cand = [];
-    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) cand.push([x, y, Math.hypot(x - cx, y - cy)]);
+    for (let y = Math.max(0, cy - 8); y < Math.min(m.h, cy + 8); y++) for (let x = Math.max(0, cx - 8); x < Math.min(m.w, cx + 8); x++) cand.push([x, y, Math.hypot(x - cx, y - cy)]);
     cand.sort((a, b) => a[2] - b[2]);
-    for (const [x, y] of cand) for (const r of [0, 1, 2, 3]) { o.x = x; o.y = y; o.r = r; W.refreshObj(m, o); if (validate(m).ok) { St.addItem(itemId, -1); sel = o; W.rebuildWalk(m); hint(); PX.UI.toast(`${PX.U.josa(o.f.name, '을')} 놓았어요. 끌어서 옮겨 보세요.`); return; } }
+    for (const [x, y] of cand) { if (x === cx && y === cy) continue; for (const r of [0, 1]) { o.x = x; o.y = y; o.r = r; W.refreshObj(m, o); if (validate(m).ok) { if (itemId) St.addItem(itemId, -1); sel = o; W.rebuildWalk(m); hint(); PX.UI.toast(`${U.josa(o.f.name, '을')} 놓았어요. 끌어서 옮겨 보세요.`); return; } } }
     m.objs.splice(m.objs.indexOf(o), 1);
-    PX.UI.toast('놓을 자리가 없어요. 다른 가구를 보관해 보세요.');
+    PX.UI.toast('근처에 놓을 자리가 없어요. 조금 넓은 곳으로 가서 다시 해 보세요.');
   }
   function revert() { applyLayout(m, before); sel = null; hint('처음 배치로 되돌렸어요.'); }
   function done() {
     const v = validate(m);
-    if (!v.ok) { PX.UI.toast('⚠️ ' + v.reason); sel = v.o; return; }
-    St.S.homeLayout = layoutOf(m);
-    // 같은 배치를 두 숙소 맵에 공유하지 않음: 현재 숙소만
-    St.S.homeMap = m.id;
+    if (!v.ok) { PX.UI.toast('⚠️ ' + v.reason); sel = v.o || null; return; }
+    const S = St.S;
+    if (homeMode) { S.homeLayout = layoutOf(m); S.homeMap = m.id; }
+    else { S.mapEdits = S.mapEdits || {}; S.mapEdits[m.id] = layoutOf(m); }
     end();
+    PX.A.indexSpots();
     St.save();
-    PX.UI.toast('🛋️ 숙소 배치를 저장했어요');
+    PX.UI.toast(homeMode ? '🛋️ 숙소 배치를 저장했어요' : `🛠️ ${m.name} 편집을 저장했어요`);
   }
   function end() {
     active = false; sel = null; drag = null;
     if (bar) bar.remove(); bar = null;
     PX.Game.modal--;
-    const p = PX.Game.player; const t = PX.Path.nearestWalkable(m, p.x, p.y); if (t) { p.x = t[0] + 0.5; p.y = t[1] + 0.5; }
+    const p = PX.Game.player; const t = PX.Path.nearestWalkable(m, p.x, p.y); if (t && !W.walkable(m, Math.floor(p.x), Math.floor(p.y))) { p.x = t[0] + 0.5; p.y = t[1] + 0.5; }
   }
-  // 렌더 오버레이: 선택 가구 바닥 표시
   function overlay(g) {
     if (!active || !sel) return;
     const v = validate(m);
@@ -5032,7 +5571,380 @@ PX.Decor = (() => {
       PX.G.fillPoly(g, [a, b, c, d], col);
     }
   }
-  return { start, down, move, up, overlay, validate, applyLayout, layoutOf, get active() { return active; } };
+  return { start, down, move, up, overlay, validate, applyLayout, applyAll, layoutOf, get active() { return active; } };
+})();
+
+</script>
+  <script>
+/* js/game/activities.js */
+// 활동 · 이동 · 부대 행사 · 외계 생물 (Alpha 0.3)
+'use strict';
+PX.Act = (() => {
+  const U = PX.U, St = PX.St, Cal = PX.Cal, W = PX.W;
+  const G = () => PX.Game;
+  const withCap = () => { const g = G(); return g.cap.map === g.mapId && ['follow', 'visit', 'stay'].includes(PX.Cap.mode); };
+  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function capSay(key, extra) {
+    if (!withCap()) return;
+    const pool = (PX.DLG_CAP2.activity[key] || []).concat(extra || []);
+    if (!pool.length) return;
+    G().cap.setDirTo(G().player.x, G().player.y);
+    await lines(U.pick(pool));
+  }
+  const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
+  const ARRIVE = { base: [27.5, 58.5], dome: [23.5, 40.5], plaza: [26.5, 45.5] };
+
+  // ---------- 이동 ----------
+  async function travelMenu() {
+    const g = G(), S = St.S, md = PX.MAPS[g.mapId];
+    const list = (md.travel || []).filter(t => PX.MAPS[t.to]);
+    if (!list.length) { PX.UI.toast('이곳에서는 다른 곳으로 갈 수 없어요'); return; }
+    const it = await PX.UI.menu(`${md.name} · 이동`, list.map(t => ({ t: t.label, sub: `${t.mins >= 60 ? Math.round(t.mins / 60) + '시간' : t.mins + '분'}${t.need === 'scout' ? ' · 수색팀 소속이거나 대위와 동행할 때' : t.need === 'adult' ? ' · 성인만' : ''}`, k: t })));
+    if (!it) return;
+    const t = it.k;
+    if (t.need === 'scout' && S.player.job !== 'scout' && PX.Cap.mode !== 'follow') { PX.UI.toast('🚫 출입 제한 구역이에요. 수색팀 소속이거나 대위와 동행해야 해요.'); return; }
+    if (t.need === 'pass' && !PX.JOBS[S.player.job].military && !St.has('pass')) { PX.UI.toast('🪪 부대 출입 허가증이 필요해요'); return; }
+    if (t.need === 'adult' && !S.done.adultOk) {
+      const ok = await PX.UI.ask('루비웨이', '루비웨이는 성인 대상 유흥 · 데이트 구역이에요. 성인이고, 직접 선택해서 들어가시나요? (노골적인 묘사는 나오지 않아요)', '네, 들어갈게요', '돌아가기');
+      if (!ok) return; S.done.adultOk = 1;
+    }
+    await travel(t.to, t.mins);
+  }
+  async function travel(to, mins) {
+    const g = G(), S = St.S;
+    const following = PX.Cap.mode === 'follow' && g.cap.map === g.mapId;
+    if (following && PX.Cap.onDuty()) { PX.Cap.release('나 근무 들어가야 돼. 조심히 다녀와.'); }
+    const f = document.getElementById('fade'); f.classList.add('on', 'long');
+    await U.sleep(500);
+    St.advance(mins);
+    const m = W.maps[to], a = ARRIVE[to] || (m.def.arrive ? [m.def.arrive[0] + 0.5, m.def.arrive[1] + 0.5] : [m.w / 2, m.h / 2]);
+    g.enterMap(to, a[0], a[1]);
+    if (following && PX.Cap.mode === 'follow') { PX.Cap.moveTo(to); g.cap.x = a[0] + 1; g.cap.y = a[1] - 0.5; PX.Cap.mode = 'follow'; }
+    await U.sleep(300);
+    f.classList.remove('on', 'long');
+    PX.UI.toast(`📍 ${PX.MAPS[to].name}${mins >= 60 ? ` · ${Math.round(mins / 60)}시간 이동` : ''}`);
+    const lore = PX.MAPS[to].lore && PX.LORE_BY_ID[PX.MAPS[to].lore];
+    if (lore && once('visit_' + to)) setTimeout(() => PX.UI.toast(`📚 ${lore.originalTitle}: ${lore.description.slice(0, 48)}…`, 5000), 1200);
+    if (following && PX.MAPS[to].kind === 'out') setTimeout(() => placeComment(true), 1500);
+    if (following && to !== 'base' && to !== 'dome' && to !== 'plaza' && once('trip_' + to)) setTimeout(() => G().memory(`${PX.MAPS[to].name} 여행`, `${U.josa(S.capName, '와')} 함께 ${PX.MAPS[to].name}에 왔다.`, true), 2500);
+  }
+  // 대위가 장소에 대해 한마디 (동행 중)
+  function placeComment(force) {
+    const g = G();
+    if (!withCap() || g.modal) return;
+    const pool = PX.DLG_CAP2.placeAmb[g.mapId] || PX.DLG_CAP2.placeAmb._;
+    if (!force && Math.random() < 0.4) return;
+    g.bubble(g.cap, U.fmt(U.pick(pool), PX.Dlg.ctx()), 3.2);
+  }
+
+  // ---------- 활동 ----------
+  function goSit(o) { const p = G().player; const s = (o.seats || []).filter(s => !s.by).sort((a, b) => U.dist(a.x, a.y, p.x, p.y) - U.dist(b.x, b.y, p.x, p.y))[0]; if (s) p.sitOn(s); return s; }
+  function nearSeat(o, r = 2.5) { const m = W.maps[G().mapId], p = G().player; let best = null, bd = r; for (const x of m.objs) if (x.seats) for (const s of x.seats) { if (s.by) continue; const d = U.dist(s.x, s.y, o.x + o.fw / 2, o.y + o.fd / 2); if (d < bd) { bd = d; best = s; } } if (best) p.sitOn(best); return best; }
+  const H = {};
+  H.hang = async (o) => { // 철봉
+    const p = G().player, S = St.S;
+    p.x = o.x + o.fw / 2; p.y = o.y + 0.6; p.dir = 0;
+    p.doPose('hang', 60); p.z = 16;
+    const n = await PX.Mini.timing({ title: '💪 철봉 · 턱걸이', help: '몸을 끌어올릴 때(초록 구간) 누르세요. 6번 도전!', rounds: 6, speed: 75, btn: '당기기!', bg: '#3d4a56',
+      draw: (R, round, hits) => { R(30, 20, 60, 3, '#c9ced4'); const up = (performance.now() / 300) % 2 < 1; R(54, 23, 3, 10, '#e9b48c'); R(63, 23, 3, 10, '#e9b48c'); R(52, up ? 30 : 36, 16, 14, '#3b5fa8'); R(53, up ? 18 : 24, 14, 12, '#fde3cf'); } });
+    p.doPose(null, 0); p.tempPose = null; p.z = 0;
+    const reps = Math.round(n * 6) * 2 + Math.floor(Math.random() * 2);
+    S.energy = Math.max(0, S.energy - 6); St.advance(10);
+    const best = reps > (S.stats.pullup || 0) && reps > 0;
+    S.stats.pullup = Math.max(S.stats.pullup || 0, reps);
+    PX.UI.toast(`💪 턱걸이 ${reps}개${best ? ' · 개인 최고!' : ''}`);
+    await capSay('hang');
+  };
+  H.armwrestle = async (o) => {
+    const g = G(), S = St.S, cap = withCap();
+    const foeN = g.npcs.find(n => n.map === g.mapId && U.dist(n.x, n.y, g.player.x, g.player.y) < 7);
+    const foe = cap ? S.capName : foeN ? foeN.def.name : '부대원';
+    if (!nearSeat(o, 2)) { /* 서서 해도 된다 */ }
+    if (cap) await lines(['C*:나랑? 진심이야?', 'C^:좋아. 왼손 쓸게. 공평하게.']);
+    const win = await PX.Mini.tapRace({ title: `💪 팔씨름 · vs ${foe}`, help: '버튼을 최대한 빨리 연타!', left: '나', right: foe, foe: cap ? 5.2 : 6.5, bg: '#4a2f3a',
+      draw: (R, me) => { R(20, 40, 80, 20, '#c43d4b'); R(58 - (me - 50) * 0.3, 26, 6, 18, '#fde3cf'); } });
+    G().player.leaveSeat();
+    S.stats.armwins = (S.stats.armwins || 0) + (win ? 1 : 0);
+    if (cap) await lines(win ? ['C!:…', 'C:졌다. 진짜로 졌어. 일부러 아니야.', 'C*:…아마도.'] : ['C^:힘 좋은데? 손이 따끈하다.', 'C*:이긴 상으로 손 좀 더 잡고 있을게.']);
+    else PX.UI.toast(win ? `🏆 ${foe}을(를) 이겼다!`.replace('을(를)', U.hasBatchim(foe) ? '을' : '를') : `😤 ${foe}에게 졌다`);
+    if (cap) St.addAff(3);
+  };
+  H.fish = async (o) => {
+    const S = St.S, g = G();
+    const sea = g.mapId === 'planet3';
+    const sc = await PX.Mini.timing({ title: '🎣 낚시', help: '찌가 움직일 때(초록 구간) 낚아채세요!', rounds: 3, speed: 55, zoneW: 18, btn: '낚아채기!', bg: sea ? '#225d82' : '#2f6f8f',
+      draw: (R) => { R(0, 0, 120, 120, sea ? '#2a6f9a' : '#3f8fbf'); R(58, 40 + Math.sin(performance.now() / 180) * 3, 4, 6, '#ff5a5a'); R(59, 10, 1, 32, '#e9eef2'); } });
+    const n = Math.round(sc * 3);
+    St.advance(30);
+    if (n) { St.addItem('fish', n); PX.UI.toast(`🐟 물고기 ${n}마리! (캠프파이어나 숙소 주방에서 구울 수 있어요)`); G().codex('aquafish'); } else PX.UI.toast('🎣 오늘은 입질이 없다…');
+    await capSay('fish');
+  };
+  H.harvest = async (o) => {
+    const S = St.S, inSeason = [4, 9].includes(S.time.m);
+    const sc = await PX.Mini.targets({ title: '🌱 향열매 수확', help: '익은 열매를 빨리 따세요!', time: 15, goal: 14, color: '#ff8b5e', bg: '#5a4a3a', draw: (R) => { for (let i = 0; i < 6; i++) R(10 + i * 18, 70, 8, 30, '#4fa35a'); } });
+    const n = Math.max(1, Math.round(sc * (inSeason ? 6 : 3)));
+    St.addItem('rawfruit', n); St.advance(30); S.energy = Math.max(0, S.energy - 5);
+    PX.UI.toast(`🍊 향열매 ${n}개 수확${inSeason ? ' (수확철 보너스!)' : ''}`);
+    G().codex('fruit');
+    await capSay('harvest');
+  };
+  H.view = async (o) => {
+    const S = St.S, g = G(), t = S.time.min, id = g.mapId;
+    const sunset = t >= 17 * 60 && t < 19 * 60 + 30, night = t >= 19 * 60 + 30 || t < 5 * 60, dawn = t >= 5 * 60 && t < 7 * 60;
+    const views = {
+      hill: sunset ? '돔시티 지붕 위로 인공 노을이 번진다. 유리 돔이 주황빛으로 물든다.' : night ? '돔시티 야경. 상업구역 네온과 항구 셔틀 불빛이 점점이 반짝인다.' : '돔시티 전경이 한눈에 들어온다. 멀리 농업돔과 인공호수가 보인다.',
+      silverdesert: dawn || sunset ? '은빛 모래 언덕이 빛을 받아 일렁인다. 바람이 지나간 자리마다 은색 물결이 생긴다.' : night ? '은사막 위로 별이 쏟아질 듯하다. 지평선 끝에 외곽 통신탑 불빛 하나.' : '끝없는 은사막. 안전 경계 너머로 붉은 사막이 이어진다.',
+      corridor: t >= 17 * 60 + 40 && t < 18 * 60 + 30 ? '유리 복도 전체가 노을빛으로 바뀐다. 이 시간만의 색이다.' : '유리 너머로 농업돔의 초록 지붕이 보인다.',
+      station: '창밖으로 붉은 페르녹스가 천천히 돈다. 그 너머로 항로등이 줄지어 있다.',
+      skylounge: '거대한 안테나 너머로 먼 행성의 궤도광이 흐른다.',
+      aurora: night ? '하늘 가득 초록과 보랏빛 오로라가 커튼처럼 흔들린다.' : '아직 낮이라 오로라는 보이지 않는다. 밤에 다시 오자.',
+      planet6: night ? '얼음 평원 위로 오로라가 내려앉는다.' : '얼음 해변이 냉광 조명을 받아 반짝인다.',
+    };
+    const text = views[id] || '경치가 좋다.';
+    G().player.setDirTo(o.x, o.y - 2);
+    await lines(['N:' + text]);
+    St.advance(15);
+    if (withCap()) {
+      await lines(U.pick(PX.DLG_CAP2.activity.view));
+      St.addAff(3);
+      if (once('view_' + id + (sunset ? 's' : night ? 'n' : 'd'))) G().memory(`${PX.MAPS[id].name}에서`, text.slice(0, 40), true);
+    }
+  };
+  H.tent = async (o) => {
+    const it = await PX.UI.menu('투명 돔 텐트', [{ t: '🪑 안에 들어가 앉기', k: 'sit' }, { t: '😴 한숨 자기 (1시간)', k: 'nap' }]);
+    if (!it) return;
+    if (it.k === 'sit') { goSit(o); if (withCap()) { PX.Cap.sitNear(G()); await capSay('tent'); } return; }
+    G().fade(); St.advance(60); St.S.energy = Math.min(100, St.S.energy + 18); PX.UI.toast('💤 텐트 안에서 한숨 잤다 (기력 +18)');
+  };
+  H.campfire = async (o) => {
+    const S = St.S;
+    nearSeat(o, 3);
+    if (withCap()) PX.Cap.sitNear(G());
+    const night = S.time.min >= 19 * 60 || S.time.min < 5 * 60;
+    if (St.has('fish')) { St.addItem('fish', -1); St.addItem('grilledFish', 1); PX.UI.toast('🔥 물고기를 구웠다 (구운 생선 +1)'); }
+    St.advance(30); S.energy = Math.min(100, S.energy + 8);
+    if (withCap()) {
+      await lines(U.pick(PX.DLG_CAP2.activity.campfire));
+      St.addAff(night ? 6 : 3);
+      if (night && once('campfire_night')) G().memory('캠프파이어', '불꽃이 튀는 소리, 별, 그리고 대위의 낮은 목소리.', true);
+    } else await lines(['N:타닥타닥 불꽃 튀는 소리. 마음이 조용해진다.']);
+  };
+  H.sandcastle = async () => {
+    const win = await PX.Mini.tapRace({ title: '🏰 모래성 쌓기', help: '파도가 오기 전에 빨리 쌓으세요! 연타!', left: '모래성', right: '파도', foe: 5.5, btn: '쌓기!', bg: '#efe6d2', draw: (R, me) => { R(40, 90 - me * 0.6, 40, me * 0.6, '#d6c9aa'); R(55, 84 - me * 0.6, 10, 6, '#c9654a'); } });
+    St.advance(20);
+    PX.UI.toast(win ? '🏰 멋진 모래성 완성!' : '🌊 파도에 무너졌다…');
+    if (withCap()) { await lines(win ? ['C^:오, 잘 만들었다. 깃발 꽂자.', 'C*:성 이름은 네 이름으로.'] : ['C:무너졌네. 다시 쌓자. 이번엔 내가 파도 막을게.']); if (win && once('sandcastle')) G().memory('모래성', '해변에서 같이 모래성을 쌓았다.', true); }
+  };
+  H.onsen = async (o) => {
+    goSit(o); if (withCap()) PX.Cap.sitNear(G());
+    G().fade(); St.advance(40); St.S.energy = Math.min(100, St.S.energy + 30);
+    PX.UI.toast('♨️ 광물온천에 몸을 담갔다 (기력 +30)');
+    await capSay('onsen');
+    if (withCap() && once('onsen')) G().memory('광물온천', '대위는 3분 만에 덥다고 했지만 끝까지 옆에 있었다.', true);
+  };
+  H.salvage = async (o) => {
+    const S = St.S, g = G();
+    if (o.salvagedDay === S.day) { PX.UI.toast('이미 살펴본 잔해예요'); return; }
+    o.salvagedDay = S.day;
+    St.advance(20); S.energy = Math.max(0, S.energy - 6);
+    if (Math.random() < 0.35) { // 가벼운 전투: 모래 갑각충 기습
+      PX.UI.toast('⚠️ 잔해 밑에서 모래 갑각충이 튀어나왔다!');
+      const sc = await PX.Mini.timing({ title: '⚔️ 모래 갑각충', help: '공격이 오는 순간(초록 구간) 피하기·반격!', rounds: 4, speed: 85, zoneW: 20, btn: '회피 · 반격', bg: '#5a2f25',
+        draw: (R, round) => { const t = performance.now() / 150; R(50 + Math.sin(t) * 8, 30, 20, 12, '#8a3b30'); R(48 + Math.sin(t) * 8, 34, 4, 4, '#ffd166'); R(70 + Math.sin(t) * 8, 34, 4, 4, '#ffd166'); } });
+      if (sc >= 0.5) { PX.UI.toast('🛡️ 갑각충을 쫓아냈다!'); St.addItem('chitin'); g.codex('chitin'); }
+      else { S.energy = Math.max(0, S.energy - 15); PX.UI.toast('🤕 살짝 긁혔다 (기력 -15). 무리하지 말자.'); if (withCap()) await lines(['C!:야, 괜찮아?', 'C:보여 줘. …긁힌 거네. 의무동 가자. 다음엔 내 뒤에 있어.']); return; }
+    }
+    const r = Math.random();
+    if (r < 0.45) { St.addItem('mineral'); g.codex('mineral'); PX.UI.toast('💎 외계 광물 조각을 찾았다'); }
+    else if (r < 0.8) { St.addItem('chitin'); g.codex('chitin'); PX.UI.toast('🦂 외계 갑각 잔해를 회수했다'); }
+    else PX.UI.toast('🔩 쓸 만한 건 없었다');
+    await capSay('salvage');
+  };
+  H.rail = async () => {
+    const S = St.S;
+    if (!St.spend(15)) { PX.UI.toast('돈이 모자라요 (₢15)'); return; }
+    G().fade(); St.advance(40);
+    await lines(['N:투명 객실 너머로 빛을 머금은 광물층이 흘러간다. 오래된 채굴 기계가 어둠 속에서 거인처럼 서 있다.', ...(withCap() ? ['C:저 기계 아직 돌아가겠는데.', 'C^:…아니, 지금은 기계 말고 너 보는 중이야.'] : [])]);
+    if (once('railtour')) G().memory('빛터널 레일투어', '광물층 사이를 달리는 열차.', true);
+    if (withCap()) St.addAff(4);
+  };
+  H.exhibit = async () => {
+    const ex = U.pick(['초기 개척민의 채굴복. 헬멧 유리에 긁힌 자국이 그대로 남아 있다.', '거대 드릴의 축소 모형. 실제는 이보다 서른 배 크다고 한다.', '광물벽 단면. 층마다 다른 색으로 빛난다.', '개척민 생활관 재현: 좁은 침대 두 개와 손때 묻은 주전자.', '안전 점검을 마친 구역만 개방한다는 안내문.']);
+    await lines(['N:' + ex]); St.advance(10); G().codex('mineral');
+    if (withCap() && Math.random() < 0.5) await lines(['C:드릴 구조 봐. 저렇게 만들면 진동이 안 와.', 'C*:…재미없지? 너 표정이 다 말해 주네.']);
+  };
+  H.dice = async () => {
+    const S = St.S, cap = withCap();
+    const it = await PX.UI.menu('주사위 한 판', [{ t: `🎲 ${cap ? S.capName + '와(과) 내기' : '딜러와 한 판'} (₢10)`.replace('와(과)', U.hasBatchim(S.capName) ? '과' : '와'), k: 1 }]);
+    if (!it) return;
+    if (!St.spend(10)) { PX.UI.toast('돈이 모자라요'); return; }
+    const a = 1 + Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6), b = 2 + Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6);
+    await lines([`N:🎲 내 주사위 ${a} · ${cap ? '대위' : '딜러'} ${b}`]);
+    St.advance(15);
+    if (a > b) { S.money += 20; PX.UI.toast('🎉 이겼다! ₢20'); }
+    if (!cap) return;
+    if (a > b) {
+      const pen = await PX.UI.menu('내가 이겼다! 벌칙은?', [{ t: '😚 볼에 뽀뽀 받기', k: 'cheek' }, { t: '🎤 노래 한 소절', k: 'song' }, { t: '🧗 업어 달라고 하기', k: 'carry' }, { t: '벌칙 없이 봐주기', k: 'none' }]);
+      if (pen && pen.k === 'song') await lines(['C;:…진짜?', 'N:대위가 낮은 목소리로 옛 지구 노래를 한 소절 부른다. 의외로 음이 정확하다.', 'C*:박수 쳐.']);
+      else if (pen && pen.k !== 'none' && St.S.rel.cap.stage >= (pen.k === 'cheek' ? 3 : 2)) { await PX.Cap.doSkin(pen.k, false); await lines(['C^:벌칙 받는 게 이렇게 좋을 수가.']); }
+      else await lines(['C^:봐주는 거야? 다음엔 내가 봐줄게.']);
+    } else if (a < b) await lines(['C*:내가 이겼네. 벌칙은…', 'C^:오늘 저녁 같이 먹기. 끝.', 'C:어려운 거 시킬 줄 알았지?']);
+    else await lines(['C:비겼다. 한 판 더?']);
+    St.addAff(3);
+  };
+  H.perfume = async () => {
+    const S = St.S;
+    const top = await PX.UI.menu('향 조합 1/3 · 첫 향', [{ t: '🍊 향열매', k: '향열매' }, { t: '🌸 유리꽃', k: '유리꽃' }, { t: '🌿 발광초 잎', k: '발광초' }]); if (!top) return;
+    const mid = await PX.UI.menu('향 조합 2/3 · 가운데 향', [{ t: '❄️ 제6행성 서리', k: '서리' }, { t: '🪵 따뜻한 나무', k: '나무' }, { t: '🧂 광물염', k: '광물염' }]); if (!mid) return;
+    const base = await PX.UI.menu('향 조합 3/3 · 잔향', [{ t: '🌙 은사막 밤공기', k: '밤공기' }, { t: '☕ 지구 커피', k: '커피' }, { t: '🍯 꿀', k: '꿀' }]); if (!base) return;
+    if (!St.spend(45)) { PX.UI.toast('돈이 모자라요 (₢45)'); return; }
+    const name = `${top.k}·${mid.k}·${base.k}`;
+    S.myPerfume = name; St.addItem('perfume'); St.advance(30);
+    await lines([`N:피부 온도에 맞춰 섞인 향. 「${name}」.`, ...(withCap() ? ['N:대위가 손목에 코를 가까이 댄다.', 'C:…이거 기억할게. 이제 이 냄새 나면 너 생각날 거야.'] : [])]);
+    if (withCap() && once('perfume')) G().memory('나만의 향', `「${name}」. 대위가 이 향을 기억하겠다고 했다.`, true);
+  };
+  H.dance = async () => {
+    const sc = await PX.Mini.timing({ title: '💃 실버마스크 · 춤', help: '박자(초록 구간)에 맞춰 누르세요!', rounds: 6, speed: 80, btn: '스텝!', bg: '#2a1f4f' });
+    St.advance(20);
+    if (withCap()) await lines(sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
+    if (withCap() && once('dance')) G().memory('가면 아래에서', '실버마스크에서 대위와 춤을 췄다.', true);
+  };
+  H.drink = async () => {
+    const S = St.S;
+    const it = await PX.UI.menu('바', [{ t: '🍹 향열매 칵테일 (₢12)', k: 1 }, { t: '🧃 무알코올 냉음료 (₢6)', k: 2 }]);
+    if (!it) return;
+    if (!St.spend(it.k === 1 ? 12 : 6)) { PX.UI.toast('돈이 모자라요'); return; }
+    St.advance(30); S.energy = Math.min(100, S.energy + 5);
+    if (withCap()) await lines(U.pick([['C:나 두 잔에서 멈출게. 너 데려다줘야 하니까.'], ['C*:술 마시면 얼굴 빨개지는 거, 그것도 귀엽다.'], ['C:헌병 순찰 돈다. 너무 늦기 전에 들어가자.']]));
+    else PX.UI.toast('🍹 한 잔 마셨다');
+  };
+  H.perform = async (o) => {
+    const g = G();
+    if (g.mapId === 'showroom') { // 블라인드 쇼룸: 실루엣 공연 관람
+      if (!St.spend(20)) { PX.UI.toast('돈이 모자라요 (₢20)'); return; }
+      nearSeat(o, 6); if (withCap()) PX.Cap.sitNear(g);
+      St.advance(40);
+      await lines(['N:반투명 커튼 너머로 실루엣이 음악에 맞춰 움직인다. 직접 접촉은 금지된 공연이다.', ...(withCap() ? ['C:…', 'C*:솔직히 말할게. 질투 나. 내가 더 낫지 않아?', { q: [['대위님이 더 나아요.', 4, ['C^:그치? 그 말 들으려고 참았어.']], ['공연 보는 중이에요.', 1, ['C;:응… 조용히 볼게.']]] }] : [])]);
+      return;
+    }
+    const sc = await PX.Mini.timing({ title: '🎤 무대 공연', help: '노래 박자(초록 구간)에 맞춰 누르세요!', rounds: 5, speed: 70, btn: '♪', bg: '#5a3f2a' });
+    St.advance(20);
+    PX.UI.toast(sc > 0.6 ? '👏 박수가 쏟아진다!' : '🎤 떨렸지만 끝까지 불렀다');
+    if (withCap()) await lines(sc > 0.6 ? ['C!:…', 'C^:제일 크게 박수 친 사람 나야. 알지?'] : ['C:잘했어. 진짜로. 나는 무대 올라가면 다리 떨려.']);
+  };
+  H.shoot = async () => {
+    const sc = await PX.Mini.targets({ title: '🎯 사격장', help: '표적을 빨리 정확하게!', time: 20, goal: 18, color: '#d0563b', bg: '#5a5040' });
+    St.advance(20); St.S.energy = Math.max(0, St.S.energy - 4);
+    const g = Math.round(sc * 100); St.S.stats.shoot = Math.max(St.S.stats.shoot || 0, g);
+    PX.UI.toast(`🎯 사격 점수 ${g}점`);
+    await capSay('shoot');
+  };
+  H.course = async () => {
+    const sc = await PX.Mini.timing({ title: '🏃 장애물 코스', help: '허들 앞(초록 구간)에서 점프!', rounds: 5, speed: 90, btn: '점프!', bg: '#7a5a3a', draw: (R) => { R(0, 60, 120, 4, '#e8e3c8'); } });
+    const sec = (42 - sc * 14 + Math.random() * 2).toFixed(1);
+    St.advance(15); St.S.energy = Math.max(0, St.S.energy - 8);
+    PX.UI.toast(`🏃 기록 ${sec}초`);
+    await capSay('course');
+  };
+  H.observe = async (c) => { // 외계 생물 관찰
+    const k = c.app.critter;
+    await lines(['N:' + (k === 'lizard' ? '붉은 모래와 같은 색의 작은 도마뱀. 눈이 마주치자 모래 속으로 쏙 들어간다.' : '반투명한 생명체가 공중에 둥실 떠 있다. 가까이 가자 천천히 멀어진다.')]);
+    G().codex(k === 'lizard' ? 'lizard' : 'drifter');
+    if (withCap()) await lines([k === 'lizard' ? 'C:저건 무해해. 괜히 건드리지만 마.' : 'C:예쁘지? 근데 손은 대지 마. 독은 없는데 따가워.']);
+  };
+
+  // ---------- 상점 매대 ----------
+  H.stall = async () => { const md = PX.MAPS[G().mapId]; PX.UI.shop((md.shops && md.shops.stall) || 'festival'); };
+
+  // ---------- 은밀숙소 프런트 (연인 이상 · 대위와 함께) ----------
+  async function innDesk() {
+    const S = St.S;
+    if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설이다. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
+    await lines(['C*:예약 화면 봤어? …물침대 방도 있대.', { q: [['하룻밤 묵어요.', 5, ['C!:…진짜?', 'C^:무르기 없다.']], ['구경만 해요.', 0, ['C:응. 구경만. 화면 끌게.']]] }]);
+    if (!S.done.innAskDay || S.done.innAskDay !== S.day) S.done.innAskDay = S.day;
+    const yes = await PX.UI.ask('은밀숙소', '하룻밤 예약할까요? (₢120 · 다음 날 아침까지)', '예약하기', '그만두기');
+    if (!yes) return;
+    if (!St.spend(120)) { PX.UI.toast('돈이 모자라요'); return; }
+    S.cap.stay = 'bed'; PX.Cap.mode = 'stay';
+    if (once('inn')) G().memory('은밀숙소', '루비웨이의 밤. 다음 날 아침, 대위가 먼저 좋은 아침이라고 말했다.', true);
+    await G().sleepUntil(8);
+  }
+
+  // ---------- 부대 행사 ----------
+  const BASE_EV = ['LB38', 'LB46', 'LB49', 'LB47', 'LB44', 'LB48', 'LB42', 'LB45', 'LB43', 'LB40', 'LB41', 'LB52', 'LB55', 'LB56', 'LB39'];
+  function activeBase() { const S = St.S; return BASE_EV.map(id => PX.LORE_BY_ID[id]).filter(e => Cal.openAt(e, S.time, S.time.min)); }
+  function quizQs(n = 5) {
+    const pool = PX.LORE.filter(e => ['festival', 'base'].includes(e.eventType) && e.months.length === 1);
+    const qs = [];
+    for (const e of pool.sort(() => Math.random() - 0.5).slice(0, n)) {
+      const c = e.months[0]; const opts = new Set([c]); while (opts.size < 4) opts.add(1 + Math.floor(Math.random() * 12));
+      const a = [...opts].sort((x, y) => x - y); qs.push({ q: `「${e.originalTitle}」은(는) 몇 월 행사일까요?`.replace('은(는)', U.hasBatchim(e.originalTitle) ? '은' : '는'), a: a.map(m => m + '월'), c: a.indexOf(c) });
+    }
+    return qs;
+  }
+  async function eventBooth() {
+    const S = St.S, ev = activeBase();
+    if (!ev.length) { PX.UI.toast('지금은 진행 중인 부대 행사가 없어요. 단말 일정표에서 날짜를 확인하세요.'); return; }
+    const e = ev[0];
+    const A = {
+      LB38: [['💪 팔씨름', () => H.armwrestle({ x: 34, y: 33, fw: 3, fd: 1 })], ['🪢 줄다리기', () => PX.Mini.tapRace({ title: '🪢 줄다리기', help: '연타! 팀이 이기게!', left: '우리 팀', right: '상대 팀', foe: 6.5 })], ['🏃 장애물 달리기', () => H.course()], ['⚡ 반응 속도', () => PX.Mini.targets({ title: '⚡ 반응 속도 게임', help: '불이 켜진 곳을 빨리!', time: 15, goal: 14, color: '#ffd166' })]],
+      LB46: [['🛸 드론 장애물 코스', () => PX.Mini.run('drone')], ['🎯 공중 표적 맞히기', () => PX.Mini.targets({ title: '🎯 공중 표적', help: '드론으로 표적을 맞히세요', time: 18, goal: 16, color: '#5fa8ff' })]],
+      LB49: [['🔫 물총 표적', () => PX.Mini.targets({ title: '💦 여름 물총전', help: '상대 팀 표적을 맞히세요!', time: 20, goal: 18, color: '#5fc8e8', bg: '#2f5a7a' })], ['🚩 깃발 지키기', () => PX.Mini.tapRace({ title: '🚩 깃발 지키기', help: '연타로 깃발 사수!', foe: 6 })]],
+      LB47: [['❓ 단체 퀴즈', () => PX.Mini.quiz({ title: '❓ 생활관 리그 퀴즈', help: '페르녹스 행사 상식!', qs: quizQs(5) })], ['🛏️ 침상 정리 속도전', () => PX.Mini.tapRace({ title: '🛏️ 침상 정리', help: '연타로 각 잡기!', left: '나', right: '옆 생활관', foe: 6 })], ['👾 게임 점수전', () => PX.Mini.targets({ title: '👾 점수전', help: '최대한 많이!', time: 15, goal: 14, color: '#ff6bd5', bg: '#2a1f4f' })]],
+      LB44: [['🎖️ 기념 패치 만들기', async () => { const d = await PX.UI.menu('패치 디자인', [{ t: '🦂 갑각충 마크', k: 1 }, { t: '🌸 유리꽃 마크', k: 2 }, { t: '⭐ 606 별 마크', k: 3 }]); if (d) { St.addItem('patch'); PX.UI.toast('🎖️ 수제 패치 완성!'); if (withCap()) await lines(['C*:나한테도 하나 줘. …근데 이니셜은 네 거 넣어 줘.']); } return 1; }], ['📸 사진 부스', async () => { G().memory('부대문화제 사진', '사진 부스에서 찰칵.', true); return 1; }], ['👾 게임 코너', () => PX.Mini.targets({ title: '🎯 게임 코너', help: '표적 맞히기!', time: 15, goal: 14 })]],
+      LB48: [['🎤 장기자랑 참가', () => H.perform({})], ['💪 팔씨름 시범 구경', async () => { await lines(['N:대위가 팔씨름 시범에 나섰다. 도전자 다섯 명이 차례로 쓰러진다.', 'C*:다음 도전자? …너는 봐줄게.']); return 1; }]],
+      LB42: [['🎖️ 기념식 참석', async () => { await lines(['N:부대기가 오르고, 강태욱 중령이 짧게 말한다. "오늘도 다들 무사하라."']); return 1; }], ['📸 단체사진', async () => { await lines(['N:단체사진. 대위가 슬쩍 내 옆에 선다.']); G().memory('창설기념제 단체사진', '대위는 꼭 내 옆에 섰다.', true); return 1; }], ['🎯 장비 체험', () => H.shoot()]],
+      LB45: [['🧰 장비함 정돈', () => PX.Mini.timing({ title: '🧰 장비함 정돈', help: '칸에 맞춰 넣기!', rounds: 5 })], ['🏷️ 장비 이름 붙이기', async () => { const n = await PX.UI.menu('내 장비 이름', [{ t: '든든이', k: 1 }, { t: '번개', k: 2 }, { t: '대위님 2호', k: 3 }]); if (n && withCap()) await lines(n.k === 3 ? ['C!:…대위님 2호?', 'C^:1호는 나라는 거지? 좋다.'] : ['C:좋은 이름이다.']); return 1; }]],
+      LB43: [['🪖 사열 행진', () => PX.Mini.timing({ title: '🪖 합동사열제', help: '구령에 맞춰 발을 맞추세요!', rounds: 6, speed: 60 })]],
+      LB40: [['🩺 신체검사 받기', async () => { await lines(['N:체성분, 혈압, 시력, 중력 적응도 검사. 모두 정상이다.', ...(withCap() ? ['C:체중계 숫자는 근육이야. 근육.'] : [])]); return 1; }]],
+      LB41: [['🦺 전투복 피팅', async () => { await lines(['N:전투복과 하네스 치수를 잰다.', ...(withCap() ? ['C:하네스 불편해 보인다. 잠깐만.', 'N:대위가 끈을 하나하나 고쳐 매 준다. 손끝이 조심스럽다.'] : [])]); return 1; }]],
+      LB52: [['📁 서류 정리', () => PX.Mini.quiz({ title: '📁 보안감사 서류 정리', help: '맞는 분류를 고르세요', qs: quizQs(3) })]],
+      LB55: [['🕯️ 기록 정리 돕기', async () => { await lines(['N:오래된 이름표와 낡은 패치를 하나씩 정리한다.', ...(withCap() ? ['C:…', 'N:대위는 오늘 말수가 적다. 대신 내 옆을 떠나지 않는다.', 'C:고마워. 같이 있어 줘서.'] : [])]); return 1; }]],
+      LB56: [['🫧 세척 드론 구경', async () => { await lines(['N:세척 드론 수십 대가 돔 외벽을 따라 천천히 움직인다.']); return 1; }]],
+      LB39: [['🧺 야유회 출발 (인공호수 공원)', async () => { await travel('lake', 30); return 1; }]],
+    }[e.id] || [];
+    const it = await PX.UI.menu(`🎪 ${e.originalTitle}`, A.map(([t, f], i) => ({ t, k: i, sub: i === 0 ? e.description.slice(0, 40) : null })));
+    if (!it) return;
+    const res = await A[it.k][1]();
+    const key = 'ev_' + e.id + '_' + S.time.y;
+    const prize = typeof res === 'number' || res === true ? 40 : 20;
+    S.money += prize;
+    PX.UI.toast(`🎪 ${e.originalTitle} 참가 · 상품 ₢${prize}`);
+    if (once(key)) { St.addItem('festivalBadge'); G().memory(e.originalTitle, `${e.originalTitle}에 참가했다.${withCap() ? ' ' + e.captainReaction : ''}`, true); }
+    if (withCap()) { await lines(['N:' + e.captainReaction]); St.addAff(4); }
+  }
+
+  // ---------- 외계 생물 ----------
+  function spawnCritters(m) {
+    const g = G();
+    g.critters = [];
+    for (const c of m.def.critters || []) for (let i = 0; i < c.n; i++) {
+      const a = new PX.A.Actor('critter' + i + c.kind, { critter: c.kind }, { map: m.id, speed: c.kind === 'lizard' ? 1.6 : 0.6 });
+      for (let k = 0; k < 20; k++) { const x = c.x0 + Math.floor(Math.random() * (c.x1 - c.x0)), y = c.y0 + Math.floor(Math.random() * (c.y1 - c.y0)); if (W.walkable(m, x, y)) { a.x = x + 0.5; a.y = y + 0.5; break; } }
+      a.box = c; a.nextMove = performance.now() + Math.random() * 3000;
+      g.critters.push(a);
+    }
+  }
+  function critterThink() {
+    const g = G(), now = performance.now(), m = W.maps[g.mapId];
+    for (const a of g.critters || []) {
+      if (now < a.nextMove || a.path.length) continue;
+      a.nextMove = now + 2500 + Math.random() * 4000;
+      const c = a.box, x = c.x0 + Math.floor(Math.random() * (c.x1 - c.x0)), y = c.y0 + Math.floor(Math.random() * (c.y1 - c.y0));
+      if (U.dist(a.x, a.y, g.player.x, g.player.y) < 2 && a.app.critter === 'lizard') { a.hidden = true; setTimeout(() => (a.hidden = false), 3000); continue; }
+      a.goTo(m, x, y);
+    }
+  }
+
+  async function use(o) {
+    if (o.use === 'shuttle') return travelMenu();
+    if (o.use === 'event') return eventBooth();
+    if (o.use === 'shop' && G().mapId === 'inn') return innDesk();
+    if (H[o.use]) { await H[o.use](o); return true; }
+    return false;
+  }
+  const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
+  return { use, LABEL, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();
 
 </script>
@@ -5235,6 +6147,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     const S = St.S;
     const home = W.maps[PX.JOBS[S.player.job].home];
     if (S.homeLayout && S.homeMap === home.id) PX.Decor.applyLayout(home, S.homeLayout);
+    PX.Decor.applyAll();
     Game.player = new A.Actor('player', PX.S.playerApp(S.player, St.season()), { name: S.player.name, speed: 3.4 });
     Game.cap = new A.NPC(PX.NPC_BY_ID.cap); Game.capOutfit(); Game.cap.name = S.capName; Game.cap.speed = 3.3; Game.cap.big = true;
     Game.npcs = PX.NPCS.filter(n => n.id !== 'cap').map(n => new A.NPC(n));
@@ -5317,12 +6230,17 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     snapCam();
     if (!silent) { PX.Audio.door(); fade(); St.save(); }
     UI.hud();
-    $('decorBtn').classList.toggle('hidden', !PX.MAPS[id].home);
+    $('decorBtn').textContent = PX.MAPS[id].home ? '🛋️' : '🛠️';
+    $('decorBtn').setAttribute('aria-label', PX.MAPS[id].home ? '숙소 꾸미기' : '맵 편집');
     W.updateEvents(m, St.S.time, St.S.time.min);
+    PX.Act.spawnCritters(m);
     if (!silent) dateCheck(id);
     if (!silent && !St.S.done.intro && PX.MAPS[id].kind === 'out' && Game.prevMap === PX.JOBS[St.S.player.job].home && St.S.time.min < 12 * 60) Game.trigger(firstMeet);
   }
   Game.enterMap = enterMap;
+  let capCommentT = 40;
+  Game.fade = () => fade();
+  Game.sleepUntil = (h, p) => sleepUntil(h, p);
   function fade() { const f = $('fade'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 260); }
   function enterBuilding(door) {
     const S = St.S;
@@ -5408,6 +6326,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   const MENU = ['김치찌개', '된장국과 즉석밥', '통조림 햄 볶음밥', '냉동 만두 국', '라면 (보급 지연)', '뿌리채소 카레', '냉동 삼겹살 구이'];
   function useObj(o) {
     const S = St.S, f = o.f, home = PX.MAPS[Game.mapId].home, job = PX.JOBS[S.player.job];
+    if (PX.Act.LABEL[o.use] || (o.use === 'shop' && Game.mapId === 'inn')) { PX.Act.use(o); return; }
     switch (o.use) {
       case 'bed':
         if (home) return sleepMenu();
@@ -5764,12 +6683,14 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     }
     if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
+    for (const c of Game.critters || []) if (!c.hidden) list.push({ type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });
     if (Game.cap.map === Game.mapId) list.push({ type: 'cap', a: Game.cap, x: Game.cap.x, y: Game.cap.y, label: `💗 ${St.S.capName}`, fn: capMenu });
     return list;
   }
   function objLabel(o) {
     const job = PX.JOBS[St.S.player.job], home = PX.MAPS[Game.mapId].home;
+    if (PX.Act.LABEL[o.use]) return PX.Act.LABEL[o.use];
     const L0 = { grill: '🥓 냉삼 먹기', claw: '🐰 인형 뽑기', show: '🌠 투영 보기', stall: '🏮 축제 매대' };
     if (L0[o.use]) return L0[o.use];
     const L = { bed: home ? '🛏️ 침대' : '🛏️ 잠깐 눕기', sit: '🪑 앉기', terminal: '📟 개인 단말', album: '📷 사진첩', storage: '🗄️ 수납장', shop: '🛒 상점', vending: '🥤 자판기', meal: '🍱 식사하기', wardrobe: '👕 옷장', fridge: '🧊 냉장고', kitchen: '🍳 요리하기', tv: '📺 TV 보기', cooler: '❄️ 냉각기', shower: '🚿 샤워하기', sink: '🫧 세면대', workout: '💪 운동하기', arcade: '👾 오락기', game: '🃏 카드 게임', inspect: '🔍 살펴보기', kiosk: 'ℹ️ 안내 단말', shuttle: '🚌 셔틀 타기', desk: '🖥️ 살펴보기', work: o.spot === job.workSpot ? '🛠️ 근무하기' : '🔍 살펴보기' };
@@ -5777,11 +6698,17 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   }
   function tapAt(sx, sy) {
     const m = W.maps[Game.mapId], p = Game.player;
+    const list = interactables();
+    // 0) 화면에서 실제로 누른 그림 (맨 위부터, 투명 픽셀 통과) — 의자·소파·사람을 정확히 고른다
+    const pk = W.pick(sx, sy);
+    if (pk) {
+      if (pk.a && pk.a !== p) { const it = list.find(i => i.a === pk.a); if (it) return goInteract(it, pk.a.x, pk.a.y); }
+      if (pk.o) { const it = list.find(i => i.o === pk.o); if (it) return goInteract(it); if (pk.o.kind === 'bld') { UI.toast(pk.o.closedMsg || `🏢 ${pk.o.b.name}`); return; } }
+    }
     // 1) 사람 (스프라이트 영역)
-    const people = [Game.cap, ...Game.npcs].filter(a => a.map === Game.mapId && a.screen);
+    const people = [Game.cap, ...Game.npcs, ...(Game.critters || [])].filter(a => a.map === Game.mapId && a.screen && !a.hidden);
     let hit = null;
     for (const a of people) { const s = a.screen; if (sx > s.x - 9 && sx < s.x + 9 && sy > s.top + 4 && sy < s.foot + 2) { if (!hit || a.y + a.x > hit.y + hit.x) hit = a; } }
-    const list = interactables();
     if (hit) { const it = list.find(i => i.a === hit); return goInteract(it, hit.x, hit.y); }
     const [wx, wy] = W.toWorld(sx, sy);
     const tx = Math.floor(wx), ty = Math.floor(wy);
@@ -5969,7 +6896,18 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     UI.badge();
     if (!Game.running) { Game.running = true; last = performance.now(); requestAnimationFrame(frame); }
   }
-  function snapCam() { const p = Game.player; if (!p) return; const [px, py] = PX.G.proj(p.x, p.y); W.view.camX = px; W.view.camY = py - 14; }
+  // 카메라 목표: 플레이어 중심, 단 맵 바깥 허공이 화면을 많이 차지하지 않게 맵 경계 안으로 당김
+  function camTarget() {
+    const p = Game.player, m = W.maps[Game.mapId];
+    let [cx, cy] = PX.G.proj(p.x, p.y); cy -= 14;
+    if (!m) return [cx, cy];
+    const vw = W.view.w, vh = W.view.h, pad = 24;
+    const x0 = -m.h * 16 - pad, x1 = m.w * 16 + pad, y0 = -60, y1 = (m.w + m.h) * 8 + pad;
+    const clamp = (v, a, b) => a > b ? (a + b) / 2 : Math.max(a, Math.min(b, v));
+    cx = clamp(cx, x0 + vw / 2, x1 - vw / 2); cy = clamp(cy, y0 + vh / 2, y1 - vh / 2);
+    return [cx, cy];
+  }
+  function snapCam() { const p = Game.player; if (!p) return; const [px, py] = camTarget(); W.view.camX = px; W.view.camY = py; }
   function frame(t) {
     if (!Game.running) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -5981,19 +6919,21 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     }
     // 이동 · AI
     if (!Game.modal) keyMove(dt);
-    for (const a of Game.actors) a.update(Game.modal && a !== Game.player ? dt * 0 + dt : dt);
+    for (const a of Game.actors) a.update(dt);
+    if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
+    capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;
     if (npcT <= 0 && !Game.sleeping) { npcT = 0.5; if (!Game.modal) for (const n of Game.npcs) n.think(S, Game.mapId); }
     if (!Game.modal || Cap.mode === 'follow') Cap.update(Game.modal ? 0 : dt);
     pump();
     // 카메라
     const p = Game.player;
-    const [px, py] = PX.G.proj(p.x, p.y);
+    const [px, py] = camTarget();
     W.view.camX += (px - W.view.camX) * Math.min(1, dt * 8);
-    W.view.camY += (py - 14 - W.view.camY) * Math.min(1, dt * 8);
+    W.view.camY += (py - W.view.camY) * Math.min(1, dt * 8);
     // 렌더
     const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt };
-    W.render(W.maps[Game.mapId], Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
+    W.render(W.maps[Game.mapId], Game.critters && Game.critters.length ? Game.actors.concat(Game.critters) : Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
     positionBubbles(); positionLabels(); ambient(dt);
     hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); }
     saveT += dt; if (saveT > 300) { saveT = 0; St.save(); }
@@ -6054,7 +6994,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
       let e = labelEls.get(o.id);
       if (!e) { e = U.el('div', { class: 'blabel' + (o.b.closed ? ' closed' : '') }, U.el('i', { style: `background:${o.b.stripe}` }), o.b.name.replace(/ \(.*\)$/, '')); box.append(e); labelEls.set(o.id, e); }
       const [sx, sy] = W.toScreen(o.x + o.fw / 2, o.y + o.fd / 2, o.b.h + 22);
-      const vis = sx > -60 && sx < W.view.w + 60 && sy > -10 && sy < W.view.h + 10;
+      const px = sx * sc, py = sy * sc;
+      const vis = sx > -60 && sx < W.view.w + 60 && sy > -10 && sy < W.view.h + 10 && py > 108 && !(px > innerWidth - 120 && py < 380);
       e.style.display = vis ? '' : 'none';
       if (vis) e.style.transform = `translate(${sx * sc}px, ${sy * sc}px) translate(-50%, -100%)`;
     }

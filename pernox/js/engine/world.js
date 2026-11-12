@@ -20,7 +20,7 @@ PX.W = (() => {
         addFurn(m, a[0], a[1], a[2], a[3] || 0, a[4], 'f' + i);
       });
     } else {
-      fill(0, 0, m.w - 1, m.h - 1, def.dome ? 'plaza' : 'sand');
+      fill(0, 0, m.w - 1, m.h - 1, def.fill || (def.dome ? 'plaza' : 'sand'));
       for (const z of def.zones || []) fill(z.x0, z.y0, z.x1, z.y1, z.t);
       for (const r of def.roads || []) {
         if (r.walk) { fill(r.x0, r.y0, r.x1, r.y1, 'concrete'); continue; }
@@ -75,11 +75,12 @@ PX.W = (() => {
       m.links = (def.links || []).map(l => Object.assign({}, l));
       for (const k in def.spots || {}) { const [x, y, dir, pose] = def.spots[k]; m.spots[k] = { x: x + 0.5, y: y + 0.5, dir, pose, z: 0 }; }
       // 물 타일은 못 걷는다
-      for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i] === 'water') m.walk[i] = 0;
+      for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i] === 'water' || m.tiles[i] === 'deepwater' || m.tiles[i] === 'void') m.walk[i] = 0;
     }
     // 가구 막힘 반영
     for (const o of m.objs) if (o.kind === 'furn' && o.blocks) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
     resolveSpots(m);
+    m.staticLights = m.lights.filter(L => !L.obj);
     maps[id] = m;
     return m;
   }
@@ -114,10 +115,20 @@ PX.W = (() => {
     }
   }
   // 가구 하나 다시 배치 (꾸미기 모드)
+  // 가구를 뺀 기본 길 (건물 · 벽 · 물 · 우주 · 사막 가장자리)
+  function baseGrid(m) {
+    const g = new Uint8Array(m.w * m.h).fill(1);
+    if (m.kind === 'out') {
+      for (const o of m.objs) if (o.kind === 'bld' || o.kind === 'wall') for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) g[y * m.w + x] = 0;
+      for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i] === 'water' || m.tiles[i] === 'deepwater' || m.tiles[i] === 'void') g[i] = 0;
+      if (m.def.desert) for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (x < 2 || y < 2 || x > 61 || y > 61) g[y * m.w + x] = 0;
+    }
+    return g;
+  }
   function rebuildWalk(m) {
-    m.walk.fill(1);
-    for (const o of m.objs) if (o.kind === 'furn' && o.blocks) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
-    m.lights = m.objs.filter(o => o.light).map(o => o.light);
+    m.walk.set(baseGrid(m));
+    for (const o of m.objs) if (o.kind === 'furn' && o.blocks && !o.hidden && !o.desert) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
+    m.lights = (m.staticLights || []).concat(m.objs.filter(o => o.light).map(o => o.light));
     resolveSpots(m);
   }
   function refreshObj(m, o) {
@@ -199,6 +210,19 @@ PX.W = (() => {
     view.dark = G.canvas(view.w, view.h);
     view.cssScale = cw / view.w;
   }
+  // 화면의 한 점을 눌렀을 때 맨 위에 그려진 물체/사람 (투명한 픽셀은 통과)
+  function pick(sx, sy) {
+    const order = view.lastOrder || [];
+    for (let i = order.length - 1; i >= 0; i--) {
+      const e = order[i], c = e.spr ? e.spr.c : e.fr.c;
+      let x = Math.floor(sx - e.dx), y = Math.floor(sy - e.dy);
+      if (x < 0 || y < 0 || x >= c.width || y >= c.height) continue;
+      if (e.fr && e.fr.flip) x = c.width - 1 - x;
+      if (!c._a) { try { c._a = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; } catch (err) { return e; } }
+      if (c._a[(y * c.width + x) * 4 + 3] > 20) return e;
+    }
+    return null;
+  }
   // 확대·축소: 픽셀이 뭉개지지 않게 정수 배율로만 (기본 배율 -3 ~ +3)
   function zoomBy(step) {
     const lo = Math.max(1, view.base - 3), hi = view.base + 3;
@@ -233,8 +257,10 @@ PX.W = (() => {
     let tint = null;
     if (h >= 5 && h < 7.2) tint = ['#ff9a6a', 0.18 * (1 - Math.abs(h - 6) / 1.2)];
     if (h >= 17 && h < 19.5) tint = ['#ff7a4a', 0.24 * (1 - Math.abs(h - 18.2) / 1.3)];
-    if (m.def.dome) { d *= 0.7; if (min >= 17 * 60 + 40 && min < 18 * 60 + 30) tint = ['#ff8a5a', 0.26]; }
+    if (m.def.dome) { d *= 0.7; if (min >= 17 * 60 + 40 && min < 18 * 60 + 30) tint = ['#ff8a5a', m.def.sunsetView ? 0.34 : 0.26]; }
     if (m.kind === 'in') { d = d * 0.35; tint = null; }
+    if (m.def.amb) d = Math.max(d, m.def.amb);
+    if (m.def.tint && !tint) tint = m.def.tint;
     if (weather === 'cloudy' || weather === 'rain') d = Math.min(1, d + 0.12);
     if (weather === 'dust' && m.kind === 'out' && !m.def.dome) tint = ['#d0603a', 0.22];
     return { d, tint };
@@ -245,7 +271,7 @@ PX.W = (() => {
     const g = view.g, W = view.w, H = view.h;
     const season = env.season, night = env.night;
     // 배경
-    g.fillStyle = m.kind === 'in' ? '#17121f' : m.def.dome ? '#2a3850' : G.SEASON_PAL[season].sand;
+    g.fillStyle = m.def.bg || (m.kind === 'in' ? '#17121f' : m.def.dome ? '#2a3850' : G.SEASON_PAL[season].sand);
     g.fillRect(0, 0, W, H);
     const gr = groundCanvas(m, season, night);
     const sx0 = Math.round(-view.camX + W / 2 - gr.ox), sy0 = Math.round(-view.camY + H / 2 - gr.oy);
@@ -301,6 +327,7 @@ PX.W = (() => {
       done[best] = 1; order.push(list[best]);
       for (const j of adj[best]) indeg[j]--;
     }
+    view.lastOrder = order;
     for (const e of order) {
       if (e.o) {
         if (e.o.ghost) g.globalAlpha = 0.55;
@@ -318,7 +345,7 @@ PX.W = (() => {
     }
     // 조명 · 날씨
     const amb = ambient(m, env.min, env.weather);
-    if (m.kind === 'out' && !m.def.dome) weatherFx(g, env, W, H);
+    if (m.kind === 'out' && !m.def.dome && m.def.fx !== 'stars') weatherFx(g, env, W, H);
     if (amb.tint) { g.globalAlpha = amb.tint[1]; g.fillStyle = amb.tint[0]; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
     if (amb.d > 0.02) {
       const dk = view.dark, dg = dk.getContext('2d');
@@ -354,6 +381,7 @@ PX.W = (() => {
       g.globalCompositeOperation = 'source-over';
     }
     if (m.kind === 'out' && m.def.dome) domeFx(g, env, W, H);
+    if (m.def.fx) specialFx(g, m, env, W, H);
     if (extra && extra.overlay) extra.overlay(g);
   }
 
@@ -383,11 +411,30 @@ PX.W = (() => {
       if (p.y < -6) p.y = H + 4;
     }
   }
+  // 지역 특수 효과: 별, 오로라, 빛먼지
+  const sfx = [];
+  function specialFx(g, m, env, W, H) {
+    const t = performance.now() / 1000, fx = m.def.fx;
+    if (fx === 'aurora' && (env.min >= 19 * 60 || env.min < 5 * 60)) {
+      for (let i = 0; i < 3; i++) {
+        const y0 = 30 + i * 22 + Math.sin(t * 0.3 + i) * 6;
+        for (let x = 0; x < W; x += 2) { const y = y0 + Math.sin(x / 30 + t * 0.6 + i * 2) * 12; g.fillStyle = `rgba(${i === 1 ? '160,120,255' : '110,255,190'},${0.16 + 0.08 * Math.sin(x / 17 + t)})`; g.fillRect(x, y, 2, 18 + 10 * Math.sin(x / 23 + i)); }
+      }
+    }
+    if (fx === 'lightdust') {
+      const wd = PX.Cal.weekday(PX.St.S.time.y, PX.St.S.time.m, PX.St.S.time.d);
+      const on = (wd === 3 || wd === 6) && env.min >= 20 * 60 + 30 && env.min < 21 * 60 + 30;
+      const n = on ? 90 : 14;
+      while (sfx.length < n) sfx.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random() });
+      sfx.length = n;
+      for (const p of sfx) { p.y -= (4 + p.s * 8) * env.dt; p.x += Math.sin(t + p.s * 9) * 5 * env.dt; if (p.y < 0) { p.y = H; p.x = Math.random() * W; } g.fillStyle = `rgba(255,${200 + 55 * p.s | 0},${160 + 90 * p.s | 0},${0.4 + 0.5 * Math.abs(Math.sin(t * 2 + p.s * 7))})`; g.fillRect(p.x | 0, p.y | 0, on ? 2 : 1, on ? 2 : 1); }
+    }
+  }
   function domeFx(g, env, W, H) { // 돔 안: 은은한 발광 포자
     if (partKind !== 'dome') { parts.length = 0; partKind = 'dome'; }
     while (parts.length < 16) parts.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random(), t: Math.random() * 100 });
     for (const p of parts) { p.t += env.dt; p.y -= 5 * env.dt; p.x += Math.sin(p.t + p.s * 7) * 4 * env.dt; if (p.y < -2) { p.y = H + 2; p.x = Math.random() * W; } g.fillStyle = `rgba(190,240,255,${0.3 + 0.3 * Math.sin(p.t * 2)})`; g.fillRect(p.x | 0, p.y | 0, 1, 1); }
   }
 
-  return { zoomBy, updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
+  return { baseGrid, pick, zoomBy, updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
 })();
