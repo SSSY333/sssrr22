@@ -272,7 +272,7 @@ const SP_EVENTS = [
     await spComeClose(); await spDet('normal', spB('정자에 좀 앉았다 가자.', '정자에 좀 앉았다 가요.'));
     if (await spChoose(['좋아요', '그냥 걸어요']) === 1) { await spDet('normal', spB('그래, 걷자.', '그래요, 걸어요.')); return; }
     const bk = Object.keys(M.benches).find(k => /정자/.test(M.benches[k].name || '')) || Object.keys(M.benches).find(k => M.benches[k].place === 'pavilion');
-    if (bk) { closeDialog(); G.busy--; try { await sitTogether(bk); } finally { G.busy++; } }
+    if (bk) { const b = M.benches[bk]; await walkBothTo([b.stand[0][0] + 0.5, b.stand[0][1] + 0.5], [b.stand[1][0] + 0.5, b.stand[1][1] + 0.5]); G.player.sitAt(bk, 0); G.det.sitAt(bk, 1); await sleep(400); if (!S.rel.flags.firstSit) { S.rel.flags.firstSit = true; await addAlbum('나란히 앉은 시간', 'sit'); } }
     spNear(4); await spAct('좁은 정자. 어깨가 닿는다. 형사님은 자리를 옮기지 않는다.');
     await spDet('normal', spB('오늘은 사람도 없네.', '오늘은 사람도 없네요.'));
     const i = await spChoose(['(어깨에 기댄다)', '(조용히 앉아 있는다)']);
@@ -482,3 +482,29 @@ function spCheck() {
 }
 const _checkEventsSp = checkEvents;
 checkEvents = function () { _checkEventsSp(); if (spOn() && !G.busy) try { spCheck(); } catch (e) { console.error('[spicy]', e); } };
+/* 함께 앉기 (벤치 · 정자): 아찔한 모드에선 담백한 대사로 — 진행 플래그 · 앨범 · 고백 흐름은 그대로 */
+SP.sit = {
+  first: [['n', '나란히 앉았다. 어깨 사이가 한 뼘쯤.'], ['normal', '이렇게 앉으니까 좋네요.'], ['n', '형사님이 잠시 이쪽을 보다가, 다시 앞을 본다.']],
+  1: [[['n', '형사님이 옆에 앉아 한동안 말없이 앞을 본다.'], ['normal', '좀 더 있다 가요.']], [['n', '바람이 분다. 형사님이 겉옷 자락을 이쪽으로 당겨 덮어 준다.'], ['normal', '추우면 말해요.']]],
+  4: [[['n', '형사님이 가까이 앉는다. 어깨가 닿는다.'], ['normal', '좀 더 가까이 앉아도 돼?']], [['n', '형사님이 손을 벤치 위에 올려 둔다. 손등이 닿는다.'], ['normal', '…손 줘.']]],
+  5: [[['n', '형사님이 팔을 둘러 어깨를 감싼다.'], ['normal', '기대.']], [['n', '형사님이 손가락을 깍지 끼운다.'], ['normal', '오늘은 여기서 노을 보고 가자.']]],
+};
+const _sitTogetherSp = sitTogether;
+sitTogether = async function (benchKey) {
+  if (!spOn()) return _sitTogetherSp(benchKey);
+  await runEvent(async () => {
+    const P = G.player, d = G.det;
+    const [k] = benchKey ? [benchKey] : nearestBench(P);
+    if (!k) { toast('여기엔 앉을 벤치가 없어요'); return; }
+    const bk = M.benches[k]; scriptDet();
+    await walkBothTo([bk.stand[0][0] + 0.5, bk.stand[0][1] + 0.5], [bk.stand[1][0] + 0.5, bk.stand[1][1] + 0.5]);
+    P.sitAt(k, 0); d.sitAt(k, 1); await sleep(500);
+    if (!S.rel.flags.firstSit) {
+      for (const [e, t] of SP.sit.first) { if (e === 'n') await spAct(t); else await spDet(e, t); }
+      S.rel.flags.firstSit = true; addAff(5, { event: true }); await addAlbum('나란히 앉은 시간', 'sit');
+    } else { await spBeat(spPick(SP.sit[S.rel.stage >= 5 ? 5 : S.rel.stage >= 4 ? 4 : 1])); if (!S.rel.daily.sit[k]) addAff(2); }
+    S.rel.daily.sit[k] = true; advanceTime(20);
+    if (confessReady()) { closeDialog(); await confessionEvent(); }
+    closeDialog(); toast('화면을 누르면 일어나요');
+  });
+};
