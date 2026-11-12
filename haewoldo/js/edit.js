@@ -55,15 +55,29 @@ computeAction = function () {
   return a;
 };
 /* ---------------- 편집 「＋ 추가」: 묶음만 보여서 덜 복잡하게 ---------------- */
+/* 이모지 대신 실제 모양 그림 (한 번 그려 두고 재사용) */
+const _editPrevCache = {};
+function editObjPreview(k) {
+  if (k in _editPrevCache) return _editPrevCache[k];
+  let url = null;
+  try {
+    const sp = objSprite({ kind: k, v: 0, x: 0, y: 0, solid: true });
+    if (sp && sp.c && sp.c.width) { const sc = Math.max(1, Math.min(3, Math.floor(48 / Math.max(sp.c.width, sp.c.height)) || 1)), c = mkCanvas(sp.c.width * sc, sp.c.height * sc), g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(sp.c, 0, 0, c.width, c.height); url = c.toDataURL(); }
+  } catch (e) { url = null; }
+  return (_editPrevCache[k] = url);
+}
+function editFurnPreview(k) { const key = 'F:' + k; if (key in _editPrevCache) return _editPrevCache[key]; let url = null; try { url = furnPreview(k, 0, 2); } catch (e) { } return (_editPrevCache[key] = url); }
+function editYardPreview(k) { const key = 'Y:' + k; if (key in _editPrevCache) return _editPrevCache[key]; let url = null; try { url = yardPreview(k, 1); } catch (e) { } return (_editPrevCache[key] = url); }
+const editImg = (url, fb) => url ? `<img class="si-img" src="${url}">` : fb;
 const _devToolClickEdit = devToolClick;
 devToolClick = function (t) {
   const d = G.dev; if (!d) return;
   if (t !== 'add') return _devToolClickEdit(t);
   d.tool = 'add'; d.sel = null; devBarSel(); devBarTools();
   const inside = !!M.interior, groups = [];
-  if (!inside) groups.push({ icon: '🌳', label: '자연 · 기본', note: `나무 · 바위 · 벤치 · 가로등 ${DEV_ADD.length}개`, onClick: () => openSheet({ title: '＋ 자연 · 기본', cols: 4, items: [...DEV_ADD.map(([k, n, i]) => ({ icon: i, label: n, onClick: () => { d.addKind = k; devInfo(`＋ ${n} — 놓을 곳을 눌러요`); } })), { icon: '↩', label: '뒤로', onClick: () => devToolClick('add') }] }) });
-  for (const c of Object.keys(YARD_CATS).filter(c => inside ? c === 'indoor' : c !== 'indoor')) groups.push({ icon: YARD_CATS[c].split(' ')[0], label: YARD_CATS[c].replace(/^\S+\s/, ''), note: `${Object.keys(YARD).filter(k => YARD[k].cat === c).length}개`, onClick: () => devYardCat(c) });
-  if (inside) groups.push({ icon: '🛋', label: '가구', note: '가게 · 건물 안 가구', onClick: () => openSheet({ title: '＋ 가구', cols: 4, items: [...Object.keys(FURN).filter(k => !FURN[k].wall && !FURN[k].season).slice(0, 40).map(k => ({ icon: '🛋', label: FURN[k].name, onClick: () => { d.addKind = 'furn:' + k; devInfo(`＋ ${FURN[k].name} — 놓을 곳을 눌러요`); } })), { icon: '↩', label: '뒤로', onClick: () => devToolClick('add') }] }) });
+  if (!inside) groups.push({ icon: editImg(editObjPreview('tree'), '🌳'), label: '자연 · 기본', note: `나무 · 바위 · 벤치 · 가로등 ${DEV_ADD.length}개`, onClick: () => openSheet({ title: '＋ 자연 · 기본', cols: 4, items: [...DEV_ADD.map(([k, n, i]) => ({ icon: editImg(editObjPreview(k), i), label: n, onClick: () => { d.addKind = k; devInfo(`＋ ${n} — 놓을 곳을 눌러요`); } })), { icon: '↩', label: '뒤로', onClick: () => devToolClick('add') }] }) });
+  for (const c of Object.keys(YARD_CATS).filter(c => inside ? c === 'indoor' : c !== 'indoor')) groups.push({ icon: (() => { const k0 = Object.keys(YARD).find(k => YARD[k].cat === c); return editImg(k0 && editYardPreview(k0), YARD_CATS[c].split(' ')[0]); })(), label: YARD_CATS[c].replace(/^\S+\s/, ''), note: `${Object.keys(YARD).filter(k => YARD[k].cat === c).length}개`, onClick: () => devYardCat(c) });
+  if (inside) groups.push({ icon: editImg(editFurnPreview('sofa') || editFurnPreview(Object.keys(FURN)[0]), '🛋'), label: '가구', note: '가게 · 건물 안 가구', onClick: () => openSheet({ title: '＋ 가구', cols: 4, items: [...Object.keys(FURN).filter(k => !FURN[k].wall && !FURN[k].season).slice(0, 40).map(k => ({ icon: editImg(editFurnPreview(k), '🛋'), label: FURN[k].name, onClick: () => { d.addKind = 'furn:' + k; devInfo(`＋ ${FURN[k].name} — 놓을 곳을 눌러요`); } })), { icon: '↩', label: '뒤로', onClick: () => devToolClick('add') }] }) });
   openSheet({ title: '＋ 무엇을 놓을까요?', sub: '<div class="relneed">모두 무료 · 개수 제한 없음. 고른 뒤 땅을 누르면 놓이고, 계속 누르면 여러 개</div>', cols: 3, items: groups });
   devInfo('＋ 묶음을 골라요');
 };

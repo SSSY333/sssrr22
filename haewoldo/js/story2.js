@@ -969,7 +969,7 @@ function sellMenu() {
   openSheet({ title: '팔기', sub: `<div class="relneed">보유 ${fmtMoney(S.money)}</div>`, items: items.length ? items : [{ icon: '🫙', label: '팔 물건이 없어요', disabled: true, wide: true }], cols: 3 });
 }
 function furnShopMenu() {
-  const items = FURN_SHOP.map(k => ({ icon: '🛋', label: FURN[k].name, note: fmtMoney(FURN[k].price) + (S.furnInv[k] ? ` · 보관 ${S.furnInv[k]}` : ''), keep: true, onClick: () => { if (S.money < FURN[k].price) { toast('돈이 부족해요'); return; } S.money -= FURN[k].price; S.furnInv[k] = (S.furnInv[k] || 0) + 1; Sound.sfx('coin'); toast(`🛋 ${FURN[k].name} 구입 — 집에서 「꾸미기」로 놓을 수 있어요`); updateHUD(); save(); } }));
+  const items = FURN_SHOP.map(k => ({ icon: typeof editFurnPreview === 'function' ? editImg(editFurnPreview(k), '🛋') : '🛋', label: FURN[k].name, note: fmtMoney(FURN[k].price) + (S.furnInv[k] ? ` · 보관 ${S.furnInv[k]}` : ''), keep: true, onClick: () => { if (S.money < FURN[k].price) { toast('돈이 부족해요'); return; } S.money -= FURN[k].price; S.furnInv[k] = (S.furnInv[k] || 0) + 1; Sound.sfx('coin'); toast(`🛋 ${FURN[k].name} 구입 — 집에서 「꾸미기」로 놓을 수 있어요`); updateHUD(); save(); } }));
   openSheet({ title: '가구 코너', sub: `<div class="relneed">보유 ${fmtMoney(S.money)} · 산 가구는 내 집 「꾸미기」에서 배치해요</div>`, items, cols: 3 });
 }
 
@@ -1007,7 +1007,7 @@ function decorTap(x, y) {
   setFurniture(m, homeFurnList()); updateDecorBar(); save();
 }
 function decorStorage() {
-  const items = Object.entries(S.furnInv).filter(([, n]) => n > 0).map(([k, n]) => ({ icon: '🛋', label: FURN[k].name, note: `${n}개`, onClick: () => { G.decor.placing = k; G.decor.sel = null; updateDecorBar(); } }));
+  const items = Object.entries(S.furnInv).filter(([, n]) => n > 0).map(([k, n]) => ({ icon: typeof editFurnPreview === 'function' ? editImg(editFurnPreview(k), '🛋') : '🛋', label: FURN[k].name, note: `${n}개`, onClick: () => { G.decor.placing = k; G.decor.sel = null; updateDecorBar(); } }));
   openSheet({ title: '가구 보관함', sub: '<div class="relneed">고른 뒤 방바닥을 눌러 놓아요. 가구는 슈퍼 가구 코너에서 살 수 있어요.</div>', items: items.length ? items : [{ icon: '📦', label: '보관함이 비어 있어요', disabled: true, wide: true }], cols: 3 });
 }
 function updateDecorUI() { $('#decorBtn').classList.toggle('hidden', !(G.started && M.id === 'in_home' && !G.decor)); }
