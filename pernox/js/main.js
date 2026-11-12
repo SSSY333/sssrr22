@@ -302,7 +302,7 @@
     UI.toast(`💰 급여 ₢${pay} · 기력 -18`);
     PX.Audio.coin();
     if (ctx.patient && ctx.patient.startsWith(S.capName)) Game.trigger(async () => { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; });
-    if (!S.done.firstWork) { S.done.firstWork = 1; Game.memory('첫 근무', `${job.ko}로서의 하루. 급여 ₢${pay}.`, true); }
+    if (!S.done.firstWork) { S.done.firstWork = 1; Game.memory('첫 근무', `${U.josa(job.ko, '으로')}서의 하루. 급여 ₢${pay}.`, true); }
     for (const n of Game.npcs) n.place(S);
   }
   async function wardrobe() {

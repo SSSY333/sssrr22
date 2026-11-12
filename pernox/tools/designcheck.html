@@ -1,0 +1,26 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#4a3f5a">
+<canvas id=c width=760 height=430 style="image-rendering:pixelated;width:1520px;height:860px"></canvas>
+<script src="../js/core/util.js"></script><script src="../js/engine/gfx.js"></script><script src="../js/engine/sprites.js"></script>
+<script src="../js/data/furniture.js"></script><script src="../js/data/items.js"></script><script src="../js/data/npcs.js"></script>
+<script>
+const c=document.getElementById('c'),g=c.getContext('2d');
+// 모든 머리 모양 × 앞/뒤 × 대기/걷기/앉기, 여성·남성
+let y=2;
+for(const gender of ['여성','남성']){
+  let x=2;
+  for(const h of Object.keys(PX.S.HAIRS)){
+    const a=PX.S.playerApp({skin:gender==='여성'?0:2,hair:h,hairColor:'갈색',eye:'갈색',outfit:gender==='여성'?'hoodie':'shirt',job:'medic',gender},'winter');
+    for(const [p,v] of [['idle','F'],['idle','B'],['sit','F']]){const s=PX.S.get(a,p,0,v,'normal');g.drawImage(s.c,x,y);x+=24;}
+    x+=6;
+  }
+  y+=52;
+}
+// NPC 24명 전원 (앞/뒤)
+let x=2;
+for(const n of PX.NPCS){ const s=PX.S.get(n.look,'idle',0,'F','smile'); const b=PX.S.get(n.look,'idle',0,'B','normal'); if(x>720){x=2;y+=62;} g.drawImage(s.c,x,y+(60-s.c.height)); x+=s.c.width-6; g.drawImage(b.c,x,y+(60-b.c.height)); x+=b.c.width-2; }
+y+=64; x=2;
+// 대위 · 자세들
+const cap=PX.NPC_BY_ID.cap.look;
+for(const p of ['idle','walk','sit','hug','hold','pat','bend','carry','eat','workout','wave','bump']){const s=PX.S.get(cap,p,1,'F','smirk');g.drawImage(s.c,x,y);x+=s.c.width-6;}
+window.done=1;
+</script>

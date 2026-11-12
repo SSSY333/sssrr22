@@ -356,7 +356,7 @@ PX.UI = (() => {
       for (const n of [1, 2]) {
         const pk = St.peek(n);
         const b = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}에 저장${S.slot === n ? ' (사용 중)' : ''}`), el('small', null, pk ? `${pk.name} · ${pk.date}` : '비어 있음'));
-        b.onclick = () => { if (pk && S.slot !== n && !confirm(`저장 칸 ${n}을 덮어쓸까요?`)) return; const ok = St.save(n, false); toast(ok ? `💾 저장 칸 ${n}에 저장했어요` : '저장하지 못했어요 (저장 공간 부족)'); p.innerHTML = ''; PANES.set(p, close); };
+        b.onclick = () => { if (pk && S.slot !== n && !confirm(`저장 칸 ${n}번을 덮어쓸까요?`)) return; const ok = St.save(n, false); toast(ok ? `💾 저장 칸 ${n}에 저장했어요` : '저장하지 못했어요 (저장 공간 부족)'); p.innerHTML = ''; PANES.set(p, close); };
         p.append(b);
       }
       p.append(el('p', { class: 'muted' }, `자동 저장: 지금 쓰는 저장 칸 ${S.slot}에 장소 이동·잠·5분마다 자동으로 저장돼요. (저장 버전 v${St.SAVE_VERSION})`));

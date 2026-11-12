@@ -1203,6 +1203,11 @@ PX.S = (() => {
         R(cx, tTop + 2, 1, B.th - 4, shade(top, -0.18));
       }
       if (!sit && !app.skirt) R(tx, tTop + B.th - 2, B.tw, 2, shade(bot, -0.25)); // 벨트
+      if (sit) { // 앉으면 허벅지와 신발이 몸 아래로 보인다
+        const ky = tTop + B.th;
+        R(lx, ky - 1, B.lw, 3, bot); R(rx, ky - 1, B.lw, 3, bot);
+        if (view === 'F') { R(lx, ky + 2, B.lw, 2, shoe); R(rx, ky + 2, B.lw, 2, shoe); }
+      }
       if (app.vest) { R(tx + 1, tTop + 1, 2, B.th - 3, app.vest); R(tx + B.tw - 3, tTop + 1, 2, B.th - 3, app.vest); }
       if (view === 'F' && !tank) R(cx - 1, tTop, 2, 2, shade(top, -0.3)); // 목깃
       if (app.badge && view === 'F') R(tx + B.tw - 4, tTop + 2, 2, 2, app.badge);
@@ -1246,9 +1251,16 @@ PX.S = (() => {
     // 머리
     const hw = B.hw, hh = B.hh;
     const hx = cx - Math.floor(hw / 2);
-    const hy = pose === 'lie' ? footY - hh - 6 : tTop - hh + 1 + (pose === 'bend' ? 2 : 0) + (pose === 'bump' ? 1 : 0);
+    const neckH = app.big ? 2 : 2;
+    const hy = pose === 'lie' ? footY - hh - 6 : tTop - hh - neckH + 1 + (pose === 'bend' ? 2 : 0) + (pose === 'bump' ? 1 : 0);
+    // 목
+    if (pose !== 'lie') { const nw = app.big ? 6 : 4; R(cx - nw / 2, hy + hh - 2, nw, neckH + 2, shade(skin, -0.12)); }
     // 머리 뒤 머리카락 (긴 머리 등)
-    if (view === 'F' && pose !== 'lie') backHair(R, app, hx, hy, hw, hh, hair, B);
+    if (view === 'F' && pose !== 'lie') { // 뒷머리는 몸 '뒤'에 그린다 (어깨를 덮지 않게)
+      g.globalCompositeOperation = 'destination-over';
+      backHair(R, app, hx, hy, hw, hh, hair, B);
+      g.globalCompositeOperation = 'source-over';
+    }
     if (app.big) { // 대위: 갸름한 턱선
       R(hx + 1, hy, hw - 2, hh - 2, skin); R(hx, hy + 1, hw, hh - 4, skin); R(hx + 2, hy + hh - 2, hw - 4, 1, skin); R(hx + 3, hy + hh - 1, hw - 6, 1, skin);
     } else { // 동글동글한 얼굴
@@ -1312,9 +1324,10 @@ PX.S = (() => {
 
   function backHair(R, app, hx, hy, hw, hh, col, B) {
     const d = shade(col, -0.15);
-    if (app.hair === 'long') { R(hx - 1, hy + 4, hw + 2, hh + 5, d); }
-    if (app.hair === 'bob') { R(hx - 1, hy + 4, hw + 2, hh - 1, d); }
-    if (app.hair === 'wolf') { R(hx - 1, hy + 4, hw + 2, hh + 1, d); }
+    if (app.hair === 'long') { R(hx - 1, hy + 4, hw + 2, hh + 7, d); }
+    if (app.hair === 'bob') { R(hx - 1, hy + 4, hw + 2, hh - 2, d); }
+    if (app.hair === 'wolf') { R(hx - 1, hy + 4, hw + 2, hh + 2, d); }
+    if (app.hair === 'pony') { R(hx + hw - 1, hy + 4, 3, 8, d); }
   }
   function hairDraw(R, app, hx, hy, hw, hh, col, view, B) {
     const hl = shade(col, 0.25), dk = shade(col, -0.18);
@@ -1329,7 +1342,7 @@ PX.S = (() => {
       if (st === 'bun') { R(hx + hw / 2 - 3, hy - 5, 6, 5, col); }
       if (st === 'messybun') { R(hx + hw / 2 - 4, hy - 4, 8, 7, col); R(hx + hw / 2 - 2, hy - 3, 3, 1, hl); R(hx - 2, hy + hh - 3, 1, 3, dk); R(hx + hw + 1, hy + hh - 4, 1, 4, dk); }
       if (st === 'slick') { R(hx + 4, hy + 1, 6, 1, hl); }
-      if (st === 'curly') for (let i = 0; i < hw; i += 3) R(hx + i, hy + hh - 3, 2, 2, dk);
+      if (st === 'curly') for (let i = -1; i < hw + 1; i += 3) R(hx + i, hy + hh - 4, 2, 2, col);
       return;
     }
     // 앞모습
@@ -2131,7 +2144,7 @@ PX.S = (() => {
     b(ANY, ['C:어제 몇 시에 잤어?', { q: [['일찍 잤어요.', 2, ['C^:잘했어. 그럼 오늘은 칭찬부터.']], ['좀 늦게요…', 1, ['C:오늘은 일찍 자. 늦게까지 안 자면 내가 알 거야.']]] }]),
     b(ANY, ['C:아침부터 너 보니까 오늘 일 잘 풀리겠다.', 'P:그런 게 어딨어요.', 'C*:여기 있지. 지난번에도 그랬어. 통계 있어.']),
     b(ANY, ['C:춥지? 아침엔 공조가 늦게 돌아.', 'C*:난 덥다. 너는 춥고. 둘이 붙어 있으면 딱 맞겠는데.'], { t: ['morning'], season: ['winter', 'autumn'] }),
-    b(ANY, ['C:아침 운동 하고 왔어. 땀 냄새 나?', 'P:조금요.', 'C!:진짜? …샤워하고 다시 올게. 도망가지 마.']),
+    b(ANY, ['C:아침 운동 하고 왔어. 땀 냄새 나?', 'P:조금요.', 'C!:진짜? …샤워하고 다시 올게. 도망가지 마.'], { wd: 'weekday' }),
     b(LOVE, ['C:일어났어? 나 보고 싶어서 일찍 깼지?', 'P:아닌데요.', 'C*:난 그래서 깼는데.']),
     b(LOVE, ['C^:모닝 뽀뽀는?', { q: [['볼에 해 주기', 5, ['C!:…', 'C^:아, 오늘 작전 열 개도 하겠다.']], ['양치하고요.', 2, ['C*:기다릴게. 오래는 못 기다려.']]] }]),
     b([7, 7], ['C:여보, 커피 내려놨어. 얼음은 네 거 두 개, 내 거 열 개.']),
@@ -2142,7 +2155,7 @@ PX.S = (() => {
     b(ANY, ['C:밥 먹을 땐 일 생각하지 마.', 'P:대위님은 무슨 생각해요?', 'C*:너 생각. 일 생각은 아니잖아.']),
     b(ANY, ['C:너 그거 안 먹을 거면 나 줘.', 'P:먹을 건데요.', 'C:그래? 그럼 내 거 줄게. 너 많이 먹어야 돼.']),
     b(ANY, ['C:점심 먹고 잠깐 산책할래? 십 분만.', { q: [['좋아요.', 3, ['C^:그럼 십오 분.']], ['오늘은 바빠요.', 0, ['C:그래, 일 봐. 대신 저녁 땐 시간 내 줘.']]] }]),
-    b(ANY, ['C:오후에 나 외곽 나가.', 'C:다섯 시쯤 들어오니까 기다리지 말고 쉬고 있어.', 'C*:…그래도 기다려 주면 좋고.']),
+    b(ANY, ['C:오후에 나 외곽 나가.', 'C:다섯 시쯤 들어오니까 기다리지 말고 쉬고 있어.', 'C*:…그래도 기다려 주면 좋고.'], { wd: 'weekday' }),
     b(ANY, ['C:너 오늘 물 몇 잔 마셨어?', 'P:한… 잔?', 'C:의무팀한테 이른다. 아니, 내가 사 올게.']),
     b(ANY, ['C:점심시간 짧다. 너랑 있으면 더 짧아.']),
     b(ANY, ['C:배고파 보여.', 'P:티 나요?', 'C^:응. 배고플 때 표정이 있어. 나만 알아.']),
@@ -2164,7 +2177,7 @@ PX.S = (() => {
   D.night = [
     b(ANY, ['C:늦었는데 안 자?', 'P:대위님은요?', 'C*:너 안 자서 나도 못 자.']),
     b(ANY, ['C:밤하늘 봐. 저기 깜빡이는 거 항로등이야.', 'C:언젠가 같이 저 끝까지 가 보자.']),
-    b(ANY, ['C:추워? 내 옷 줄까.', 'P:대위님 추울 텐데요.', 'C*:나? 나는 추운 게 뭔지 몰라.']),
+    b(ANY, ['C:추워? 내 옷 줄까.', 'P:대위님 추울 텐데요.', 'C*:나? 나는 추운 게 뭔지 몰라.'], { season: ['autumn', 'winter', 'spring'] }),
     b(ANY, ['C:이 시간엔 부대가 조용해서 좋아.', 'C:네 목소리만 들려서.']),
     b(ANY, ['C:들어가. 내가 여기서 볼게, 들어가는 거.', 'P:괜찮은데요.', 'C:안 괜찮아. 내가 안 괜찮아.']),
     b(ANY, ['C:자기 전에 물 마시고, 이불 덮고, 알람 맞추고.', 'P:엄마예요?', 'C*:엄마보단 다른 거 하고 싶은데.']),
@@ -2252,7 +2265,7 @@ PX.S = (() => {
     b(LOVE, ['C:이리 와. 무릎에 앉아.', 'P!:여기 사람 있어요!', 'C:그럼 사람 없는 데로 가자. 지금.']),
   ];
   D.jealousy = [
-    b(ANY, ['C:아까 누구랑 그렇게 웃었어?', 'P:{rival}님이요.', 'C:그래. …나 지금 질투하는 중이야.', 'P:그걸 왜 말해요?', 'C:네가 알아줬으면 해서.', { q: [['귀엽네요.', 3, ['C*:그럼 좀 예뻐해 줘.']], ['질투할 일 아니에요.', 2, ['C:알아. 그래도 해. 그게 나야.']]] }]),
+    b(ANY, ['C:아까 누구랑 그렇게 웃었어?', 'P:{rival이랑} 얘기 좀 했어요.', 'C:그래. …나 지금 질투하는 중이야.', 'P:그걸 왜 말해요?', 'C:네가 알아줬으면 해서.', { q: [['귀엽네요.', 3, ['C*:그럼 좀 예뻐해 줘.']], ['질투할 일 아니에요.', 2, ['C:알아. 그래도 해. 그게 나야.']]] }]),
     b(ANY, ['C:{rival이랑} 친해?', 'P:그냥 동료예요.', 'C:응. 그 "그냥"이 좋다.']),
     b(ANY, ['C:나 말고 다른 사람이랑 오래 얘기하더라.', 'C*:괜찮아. 그만큼 나랑 더 오래 있으면 돼.']),
     b(ANY, ['C:{rival}한테 웃어 주는 거 봤어.', 'C:나한테는 더 크게 웃어 줘. 부탁이야.']),
@@ -2290,9 +2303,9 @@ PX.S = (() => {
   D.dateAsk = [
     b(ANY, ['C:저녁에 시간 있어?', { q: [['있어요.', 3, ['C^:그럼 내가 데리러 갈게.']], ['오늘은 없어요.', 0, ['C:응. 그럼 다음에.']]] }]),
     b(ANY, ['C:같이 걸을래? 그냥 부대 한 바퀴.', 'C*:두 바퀴면 더 좋고.']),
-    b(ANY, ['C:휴게실 갈래? 오락기 내가 이길 자신 있어.', 'P:지난번엔 졌잖아요.', 'C:그건 너 보느라 그런 거고.']),
-    b(ANY, ['C:돔시티 나갈 때 같이 가자. 셔틀 같이 타고.', 'C:향열매 카페 가 봤어? 얼음 많이 주는 데.']),
-    b(ANY, ['C:식당 가자. 오늘 특식이래.', 'C*:특식보다 너랑 먹는 게 더 특식이지만.']),
+    b(ANY, ['C:오락기 한 판 할래? 내가 이길 자신 있어.', 'P:지난번엔 졌잖아요.', 'C:그건 너 보느라 그런 거고.']),
+    b(ANY, ['C:돔시티 나갈 때 같이 가자. 셔틀 같이 타고.', 'C:향열매 카페 가 봤어? 얼음 많이 주는 데.'], { notJob: 'researcher' }),
+    b(ANY, ['C:식당 가자. 오늘 특식이래.', 'C*:특식보다 너랑 먹는 게 더 특식이지만.'], { event: 'LB82' }),
     b(ANY, ['C:산책하자. 별 보이는 데 알아.', 'C:훈련장 끝에 서면 항로등이 다 보여.']),
     b(ANY, ['C:주말에 뭐 해?', 'P:모르겠어요.', 'C:그럼 나랑 해. 뭘 하든.']),
     b(ANY, ['C:내 막사 놀러 올래? 냉각기 최저로 해 놨어.', 'P:그럼 추워요.', 'C*:그럼 내가 안아 줄게. 완벽하지?'], { s: MID }),
@@ -2388,7 +2401,7 @@ PX.S = (() => {
     2: [['C!:이거… 나 주는 거야?', 'C^:진짜 좋다. 아껴 쓸게. 아니, 아까워서 못 쓰겠다.'], ['C^:어떻게 알았어? 내가 이거 좋아하는 거.', 'C*:나 너한테 다 들켰네.']],
     1: [['C^:고마워. 네가 줘서 더 좋다.'], ['C:오, 이거 좋다. 잘 쓸게.']],
     0: [['C:고마워. 네가 골랐다는 게 제일 좋아.'], ['C:선물이네. …받는 거 오랜만이다. 고마워.']],
-    '-1': [['C:어… 고마워. 이건 좀 더울 것 같지만.', 'C*:너한테 다시 선물할게. 너 추위 타잖아.'], ['C:핫팩… 하하, 나한테? 마음만 받을게. 아니, 이것도 받을게.']],
+    '-1': [['C:어… 고마워. 이건 좀 더울 것 같지만.', 'C*:너한테 다시 선물할게. 너 추위 타잖아.'], ['C:핫팩… 나한테? 마음만 받을게. 아니, 이것도 받을게.']],
   };
   // 메시지 (떨어져 있을 때)
   D.msg = [
@@ -3369,15 +3382,18 @@ PX.Dlg = (() => {
 
   // 조건에 맞는 묶음 고르기 (최근 사용 제외)
   function pick(cat, list, cond = {}) {
-    const S = St.S, st = S.rel.cap.stage, part = Cal.partOfDay(S.time.min), w = St.weather(), season = St.season();
-    const todays = PX.Cal.eventsOn(S.time).map(e => e.id);
+    const S = St.S, st = S.rel.cap.stage, part = Cal.partOfDay(S.time.min), season = St.season();
+    const w = PX.MAPS[PX.Game.mapId] && PX.MAPS[PX.Game.mapId].dome ? 'clear' : St.weather(); // 돔 안은 인공 기후
+    const wkd = !St.isWeekend();
     const ok = list.map((bd, i) => ({ bd, i })).filter(({ bd }) => {
       if (bd.s && (st < bd.s[0] || st > bd.s[1])) return false;
       if (bd.t && !bd.t.includes(part)) return false;
       if (bd.w && !bd.w.includes(w)) return false;
       if (bd.season && !bd.season.includes(season)) return false;
       if (bd.job && bd.job !== S.player.job) return false;
-      if (bd.event && !todays.includes(bd.event)) return false;
+      if (bd.event && !Cal.openAt(PX.LORE_BY_ID[bd.event], S.time, S.time.min)) return false; // 행사 시간 안에만
+      if (bd.notJob && bd.notJob === S.player.job) return false;
+      if (bd.wd === 'weekday' && !wkd) return false;
       if (cond.act && bd.act !== cond.act) return false;
       return true;
     });
@@ -3417,11 +3433,11 @@ PX.Dlg = (() => {
     }
     let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : pick(cat, D[cat]);
     if (!bd) bd = pick('greet', D.greet);
-    if (cat === 'jealousy') S.lastRival = null;
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
     const res = await runLines(bd.l, { refuse });
+    if (cat === 'jealousy') S.lastRival = null; // 대사가 끝난 뒤에 지운다
     let gain = res.aff;
     if (firstToday) { gain += 4; r.talksToday = 0; }
     else if (r.talksToday < 5) gain += 1;
@@ -4323,7 +4339,7 @@ PX.UI = (() => {
       for (const n of [1, 2]) {
         const pk = St.peek(n);
         const b = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}에 저장${S.slot === n ? ' (사용 중)' : ''}`), el('small', null, pk ? `${pk.name} · ${pk.date}` : '비어 있음'));
-        b.onclick = () => { if (pk && S.slot !== n && !confirm(`저장 칸 ${n}을 덮어쓸까요?`)) return; const ok = St.save(n, false); toast(ok ? `💾 저장 칸 ${n}에 저장했어요` : '저장하지 못했어요 (저장 공간 부족)'); p.innerHTML = ''; PANES.set(p, close); };
+        b.onclick = () => { if (pk && S.slot !== n && !confirm(`저장 칸 ${n}번을 덮어쓸까요?`)) return; const ok = St.save(n, false); toast(ok ? `💾 저장 칸 ${n}에 저장했어요` : '저장하지 못했어요 (저장 공간 부족)'); p.innerHTML = ''; PANES.set(p, close); };
         p.append(b);
       }
       p.append(el('p', { class: 'muted' }, `자동 저장: 지금 쓰는 저장 칸 ${S.slot}에 장소 이동·잠·5분마다 자동으로 저장돼요. (저장 버전 v${St.SAVE_VERSION})`));
@@ -5085,7 +5101,7 @@ PX.Decor = (() => {
     UI.toast(`💰 급여 ₢${pay} · 기력 -18`);
     PX.Audio.coin();
     if (ctx.patient && ctx.patient.startsWith(S.capName)) Game.trigger(async () => { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; });
-    if (!S.done.firstWork) { S.done.firstWork = 1; Game.memory('첫 근무', `${job.ko}로서의 하루. 급여 ₢${pay}.`, true); }
+    if (!S.done.firstWork) { S.done.firstWork = 1; Game.memory('첫 근무', `${U.josa(job.ko, '으로')}서의 하루. 급여 ₢${pay}.`, true); }
     for (const n of Game.npcs) n.place(S);
   }
   async function wardrobe() {

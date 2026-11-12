@@ -61,6 +61,11 @@ PX.S = (() => {
         R(cx, tTop + 2, 1, B.th - 4, shade(top, -0.18));
       }
       if (!sit && !app.skirt) R(tx, tTop + B.th - 2, B.tw, 2, shade(bot, -0.25)); // 벨트
+      if (sit) { // 앉으면 허벅지와 신발이 몸 아래로 보인다
+        const ky = tTop + B.th;
+        R(lx, ky - 1, B.lw, 3, bot); R(rx, ky - 1, B.lw, 3, bot);
+        if (view === 'F') { R(lx, ky + 2, B.lw, 2, shoe); R(rx, ky + 2, B.lw, 2, shoe); }
+      }
       if (app.vest) { R(tx + 1, tTop + 1, 2, B.th - 3, app.vest); R(tx + B.tw - 3, tTop + 1, 2, B.th - 3, app.vest); }
       if (view === 'F' && !tank) R(cx - 1, tTop, 2, 2, shade(top, -0.3)); // 목깃
       if (app.badge && view === 'F') R(tx + B.tw - 4, tTop + 2, 2, 2, app.badge);
@@ -104,9 +109,16 @@ PX.S = (() => {
     // 머리
     const hw = B.hw, hh = B.hh;
     const hx = cx - Math.floor(hw / 2);
-    const hy = pose === 'lie' ? footY - hh - 6 : tTop - hh + 1 + (pose === 'bend' ? 2 : 0) + (pose === 'bump' ? 1 : 0);
+    const neckH = app.big ? 2 : 2;
+    const hy = pose === 'lie' ? footY - hh - 6 : tTop - hh - neckH + 1 + (pose === 'bend' ? 2 : 0) + (pose === 'bump' ? 1 : 0);
+    // 목
+    if (pose !== 'lie') { const nw = app.big ? 6 : 4; R(cx - nw / 2, hy + hh - 2, nw, neckH + 2, shade(skin, -0.12)); }
     // 머리 뒤 머리카락 (긴 머리 등)
-    if (view === 'F' && pose !== 'lie') backHair(R, app, hx, hy, hw, hh, hair, B);
+    if (view === 'F' && pose !== 'lie') { // 뒷머리는 몸 '뒤'에 그린다 (어깨를 덮지 않게)
+      g.globalCompositeOperation = 'destination-over';
+      backHair(R, app, hx, hy, hw, hh, hair, B);
+      g.globalCompositeOperation = 'source-over';
+    }
     if (app.big) { // 대위: 갸름한 턱선
       R(hx + 1, hy, hw - 2, hh - 2, skin); R(hx, hy + 1, hw, hh - 4, skin); R(hx + 2, hy + hh - 2, hw - 4, 1, skin); R(hx + 3, hy + hh - 1, hw - 6, 1, skin);
     } else { // 동글동글한 얼굴
@@ -170,9 +182,10 @@ PX.S = (() => {
 
   function backHair(R, app, hx, hy, hw, hh, col, B) {
     const d = shade(col, -0.15);
-    if (app.hair === 'long') { R(hx - 1, hy + 4, hw + 2, hh + 5, d); }
-    if (app.hair === 'bob') { R(hx - 1, hy + 4, hw + 2, hh - 1, d); }
-    if (app.hair === 'wolf') { R(hx - 1, hy + 4, hw + 2, hh + 1, d); }
+    if (app.hair === 'long') { R(hx - 1, hy + 4, hw + 2, hh + 7, d); }
+    if (app.hair === 'bob') { R(hx - 1, hy + 4, hw + 2, hh - 2, d); }
+    if (app.hair === 'wolf') { R(hx - 1, hy + 4, hw + 2, hh + 2, d); }
+    if (app.hair === 'pony') { R(hx + hw - 1, hy + 4, 3, 8, d); }
   }
   function hairDraw(R, app, hx, hy, hw, hh, col, view, B) {
     const hl = shade(col, 0.25), dk = shade(col, -0.18);
@@ -187,7 +200,7 @@ PX.S = (() => {
       if (st === 'bun') { R(hx + hw / 2 - 3, hy - 5, 6, 5, col); }
       if (st === 'messybun') { R(hx + hw / 2 - 4, hy - 4, 8, 7, col); R(hx + hw / 2 - 2, hy - 3, 3, 1, hl); R(hx - 2, hy + hh - 3, 1, 3, dk); R(hx + hw + 1, hy + hh - 4, 1, 4, dk); }
       if (st === 'slick') { R(hx + 4, hy + 1, 6, 1, hl); }
-      if (st === 'curly') for (let i = 0; i < hw; i += 3) R(hx + i, hy + hh - 3, 2, 2, dk);
+      if (st === 'curly') for (let i = -1; i < hw + 1; i += 3) R(hx + i, hy + hh - 4, 2, 2, col);
       return;
     }
     // 앞모습

@@ -106,15 +106,18 @@ PX.Dlg = (() => {
 
   // 조건에 맞는 묶음 고르기 (최근 사용 제외)
   function pick(cat, list, cond = {}) {
-    const S = St.S, st = S.rel.cap.stage, part = Cal.partOfDay(S.time.min), w = St.weather(), season = St.season();
-    const todays = PX.Cal.eventsOn(S.time).map(e => e.id);
+    const S = St.S, st = S.rel.cap.stage, part = Cal.partOfDay(S.time.min), season = St.season();
+    const w = PX.MAPS[PX.Game.mapId] && PX.MAPS[PX.Game.mapId].dome ? 'clear' : St.weather(); // 돔 안은 인공 기후
+    const wkd = !St.isWeekend();
     const ok = list.map((bd, i) => ({ bd, i })).filter(({ bd }) => {
       if (bd.s && (st < bd.s[0] || st > bd.s[1])) return false;
       if (bd.t && !bd.t.includes(part)) return false;
       if (bd.w && !bd.w.includes(w)) return false;
       if (bd.season && !bd.season.includes(season)) return false;
       if (bd.job && bd.job !== S.player.job) return false;
-      if (bd.event && !todays.includes(bd.event)) return false;
+      if (bd.event && !Cal.openAt(PX.LORE_BY_ID[bd.event], S.time, S.time.min)) return false; // 행사 시간 안에만
+      if (bd.notJob && bd.notJob === S.player.job) return false;
+      if (bd.wd === 'weekday' && !wkd) return false;
       if (cond.act && bd.act !== cond.act) return false;
       return true;
     });
@@ -154,11 +157,11 @@ PX.Dlg = (() => {
     }
     let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : pick(cat, D[cat]);
     if (!bd) bd = pick('greet', D.greet);
-    if (cat === 'jealousy') S.lastRival = null;
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
     const res = await runLines(bd.l, { refuse });
+    if (cat === 'jealousy') S.lastRival = null; // 대사가 끝난 뒤에 지운다
     let gain = res.aff;
     if (firstToday) { gain += 4; r.talksToday = 0; }
     else if (r.talksToday < 5) gain += 1;
