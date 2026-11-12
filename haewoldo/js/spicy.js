@@ -259,7 +259,7 @@ const SP_EVENTS = [
     await spDet('normal', spB('바다 쪽 좀 걸을래?', '바다 쪽 좀 걸을래요?'));
     if (await spChoose(['좋아요', '오늘은 피곤해요']) === 1) { await spDet('normal', spB('그래. 집 앞까지 데려다줄게.', '그래요. 집 앞까지 데려다줄게요.')); return; }
     await walkBothTo(P_('promenade'), [P_('promenade')[0] + 1, P_('promenade')[1]]);
-    spNear(3); await spAct('🌊 밤바람이 분다. 파도 소리 말고는 아무 소리도 없다.');
+    spNear(3); await spWalked(); await spAct('🌊 밤바람이 분다. 파도 소리 말고는 아무 소리도 없다.');
     await spDet('normal', spB('바람 좀 부네. 추우면 말해.', '바람 좀 부네요. 추우면 말해요.'));
     await spAct('형사님이 손을 내민다.');
     await spDet('normal', spB('손잡을래?', '손잡을래요?'));
@@ -553,7 +553,7 @@ SP_EVENTS.push(
       S.rel.flags.hand = true; await addAlbum('슬쩍 잡은 손', 'hand');
     }
     S.hold = true; S.arm = false; burst(d, 'heart', 3); addAff(3);
-    await spAct('형사님은 아무 말 없이 앞을 보며 걷는다. 손에 살짝 힘이 들어간다.');
+    await spAct('형사님은 아무 말 없이 앞을 보며 걷는다. 손에 살짝 힘이 들어간다.'); await spWalked();
   } },
   /* 뒤에서 다가와 손잡기 — 혼자 걷는 중 */
   { id: 'sp_sneakFromBehind', cd: 2, st: 4, far: true, ok: () => !S.comp && !M.interior && spOffDuty() && S.min >= 9 * 60 && S.min < 21.5 * 60, run: async () => {
@@ -670,7 +670,7 @@ SP_EVENTS.push(
     const i = await spChoose(['(옆에 앉는다)', '(지나간다)']);
     if (i === 1) { await spDet('normal', spB('응. 이따 봐.', '네. 이따 봐요.')); d.standUp && d.standUp(); return; }
     await walkBothTo([bk.stand[0][0] + 0.5, bk.stand[0][1] + 0.5], [d.x, d.y]); try { P.sitAt(k, 0); } catch (e) { }
-    spNear(3); await spAct('앉자마자 형사님이 어깨를 붙여 온다. 한동안 말없이 노을을 본다.');
+    spNear(3); if (!S.rel.flags.firstSit) { S.rel.flags.firstSit = true; await addAlbum('나란히 앉은 시간', 'sit'); } await spAct('앉자마자 형사님이 어깨를 붙여 온다. 한동안 말없이 노을을 본다.');
     await spDet('normal', spB('오늘 하루 어땠어?', '오늘 하루 어땠어요?')); addAff(5);
     spReset(); spStay();
   } },
@@ -793,3 +793,6 @@ SP_EVENTS.push(
 );
 /* 같은 말을 고르는 도우미 (문자열 배열 → 하나) */
 function spBeatText(arr) { return spPick(arr); }
+
+/* 함께 걸은 장면은 「첫 산책」으로 쳐요 */
+async function spWalked() { const r = S.rel; if (r.stage >= 2 && !r.flags.firstWalk) { r.flags.firstWalk = true; await addAlbum('첫 산책', 'walk'); toast('🚶 「첫 산책」 — 친한 사이로 가는 조건을 채웠어요'); checkStage(); } }
