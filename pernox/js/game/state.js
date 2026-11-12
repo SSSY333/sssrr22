@@ -77,6 +77,19 @@ PX.St = (() => {
   }
   function addNpcF(id, n) { const r = S.rel.npc[id]; if (r) r.f = Math.max(0, Math.min(100, r.f + n)); }
 
+  // ---------- 부탁(퀘스트): 매일 아침 NPC 두 명이 부탁을 남긴다 ----------
+  const Q_ITEMS = ['coffee', 'earthSnack', 'protein', 'ramen', 'iceDessert', 'fruitTea', 'toolkit', 'glassflower', 'bouquet', 'perfume', 'book', 'samgyupMeal', 'handfan', 'patch'];
+  const Q_HINT = { coffee: 'PX나 카페에 있어요.', earthSnack: 'PX에서 팔아요.', protein: 'PX에 있을 거예요.', ramen: 'PX에 가끔 들어와요.', iceDessert: 'PX나 카페에서요.', fruitTea: '향열매 카페 메뉴예요.', toolkit: 'PX 공구 코너에 있어요.', glassflower: '카페나 꽃시장에서 팔아요.', bouquet: '꽃시장에서요.', perfume: '카페나 꽃시장에 있어요.', book: '향열매 카페 책장 옆에서 팔더라고요.', samgyupMeal: '중앙광장 냉삼집 포장이요!', handfan: 'PX에 있어요.', patch: 'PX에서 팔아요.' };
+  function makeQuests() {
+    S.quests = (S.quests || []).filter(q => !q.done && S.day - q.day < 3);
+    const r = PX.U.rng('q' + S.day);
+    const pool = PX.NPCS.filter(n => n.id !== 'cap' && !S.quests.some(q => q.npc === n.id));
+    for (let k = 0; k < 2 && pool.length; k++) {
+      const n = pool.splice(Math.floor(r() * pool.length), 1)[0];
+      const item = Q_ITEMS[Math.floor(r() * Q_ITEMS.length)];
+      S.quests.push({ npc: n.id, item, day: S.day, reward: Math.round(PX.ITEMS[item].price * 1.6 + 15), hint: Q_HINT[item] || '', done: false });
+    }
+  }
   // ---------- 아이템 · 돈 ----------
   function addItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; if (S.inv[id] <= 0) delete S.inv[id]; }
   const has = id => (S.inv[id] || 0) > 0;
@@ -119,6 +132,7 @@ PX.St = (() => {
     }
     // 새로 추가된 NPC가 있으면 관계값 생성
     for (const n of PX.NPCS) if (n.id !== 'cap' && !d.rel.npc[n.id]) d.rel.npc[n.id] = { f: 25, lastTalkDay: -1, talks: 0, idx: 0 };
+    d.quests = d.quests || []; d.codex = d.codex || {};
     return d;
   }
   function load(slot) {
@@ -134,5 +148,5 @@ PX.St = (() => {
   function lastSlot() { try { return JSON.parse(store.get('pernox.meta') || '{}').last || null; } catch (e) { return null; } }
   function wipe(slot) { store.del(KEY(slot)); }
 
-  return { newGame, get S() { return S; }, set S(v) { S = v; }, advance, on, season, weather, weekday, isWeekend, absMin, isNight, capRel, stageName, addAff, addNpcF, addItem, has, spend, save, load, peek, lastSlot, wipe, STAGES, THRESH, SAVE_VERSION, migrate };
+  return { makeQuests, newGame, get S() { return S; }, set S(v) { S = v; }, advance, on, season, weather, weekday, isWeekend, absMin, isNight, capRel, stageName, addAff, addNpcF, addItem, has, spend, save, load, peek, lastSlot, wipe, STAGES, THRESH, SAVE_VERSION, migrate };
 })();

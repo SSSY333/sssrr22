@@ -220,15 +220,30 @@ PX.Dlg = (() => {
     const recent = S.recent[key] || [];
     let cand = pool.filter(t => !recent.includes(t));
     if (!cand.length) cand = pool;
-    const line = U.pick(cand);
+    let line = U.pick(cand);
     S.recent[key] = [line, ...recent].slice(0, Math.max(1, pool.length - 2));
     const G = PX.Game; G.modal++;
     npc.setDirTo(G.player.x, G.player.y); G.player.setDirTo(npc.x, npc.y);
+    // 부탁(퀘스트) 전달
+    const q = (S.quests || []).find(q => q.npc === npc.id && !q.done);
+    if (q && St.has(q.item)) {
+      const it = PX.ITEMS[q.item];
+      const i = await choose([{ t: `${it.icon} 부탁하신 ${it.name} 여기요.` }, { t: '그냥 얘기하러 왔어요.' }]);
+      if (i === 0) {
+        await say('player', `부탁하신 ${it.name} 여기요.`);
+        St.addItem(q.item, -1); q.done = true; S.money += q.reward; St.addNpcF(npc.id, 8); S.stats.quests = (S.stats.quests || 0) + 1;
+        await say(npc.id, U.pick(['와, 진짜 고마워요! 이건 사례예요.', '구해 주셨네요! 덕분에 살았어요.', '역시 믿을 만해요. 받아 주세요.']), 'smile');
+        PX.UI.toast(`✅ 부탁 완료 · ₢${q.reward} · ${d.name}와(과) 친해졌다`.replace('와(과)', U.hasBatchim(d.name) ? '과' : '와'));
+        close(); G.modal--; return;
+      }
+    } else if (q && Math.random() < 0.5) {
+      line = `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
+    }
     await say(npc.id, U.fmt(line, ctx()), 'smile');
     if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; }
     r.talks++;
     close(); G.modal--;
-    if (d.team !== '돔시티' || true) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
+    if (!['kang', 'nam', 'ryu', 'moon', 'song'].includes(npc.id)) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
   }
 
   return { init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };

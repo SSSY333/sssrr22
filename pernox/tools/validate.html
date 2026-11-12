@@ -20,8 +20,9 @@ for(const id in PX.MAPS){
     for(const o of m.objs){ if(o.kind==='wall') continue; if(o.kind==='furn'&&(o.desert||!o.blocks)) continue;
       for(let y=o.y;y<o.y+o.fd;y++)for(let x=o.x;x<o.x+o.fw;x++){const k=x+','+y; if(bo[k]) E(`${id}: ${o.kind==='bld'?o.id:o.fid}@${o.x},${o.y} 와 ${bo[k]} 겹침 (${k})`); bo[k]=(o.kind==='bld'?o.id:o.fid)+'@'+o.x+','+o.y;}}
     // 문 앞이 막혔는지, 정문/셔틀에서 도달 가능한지
-    const start = id==='base'?[31,58]:[23,40];
+    const start = id==='base'?[31,58]:id==='plaza'?[25,47]:[23,40];
     const reach=PX.Path.reachableSet(m,start[0],start[1]);
+    for(const l of (m.links||[])) for(let x=l.x0;x<=l.x1;x++) if(!reach[l.y0*m.w+x]) E(`${id}: 연결 통로 (${x},${l.y0}) 막힘`);
     for(const d of m.doors){ if(!PX.W.walkable(m,d.x,d.y)) E(`${id}: ${d.name} 문 앞 (${d.x},${d.y}) 막힘`); else if(!reach[d.y*m.w+d.x]) E(`${id}: ${d.name} 문 앞에 갈 수 없음`); }
     for(const o of m.objs){ if(o.kind==='furn'&&o.use&&!o.desert){ const a=PX.W.accessTile(m,o); if(!a||!reach[a.y*m.w+a.x]) E(`${id}: ${o.fid}@${o.x},${o.y} 사용 불가(접근 칸 없음)`);} }
     let cnt=0; for(let i=0;i<reach.length;i++) cnt+=reach[i]; R.stats[id]={walkable:cnt, objs:m.objs.length};

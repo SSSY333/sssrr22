@@ -162,29 +162,79 @@
     { id: 'd_apt', name: '민간 주거구역', to: 'apt_player', x: 4, y: 4, w: 11, d: 10, h: 92, wall: '#dfe6ee', roof: '#9fb0c0', stripe: '#7fb8e8', icon: 'home', door: { f: 'R', u: 4 }, roofDeco: ['solar', 'ac'], tall: true },
     { id: 'd_lab', name: '민간 생태연구소', to: 'lab', x: 30, y: 4, w: 12, d: 10, h: 62, wall: '#e6f2ee', roof: '#8fc4b4', stripe: '#3fb08a', icon: 'leaf', door: { f: 'L', u: 5 }, roofDeco: ['dish', 'vents'], glass: true },
     { id: 'd_cafe', name: '향열매 카페', to: 'cafe', x: 4, y: 29, w: 9, d: 9, h: 44, wall: '#f4e4c8', roof: '#c98a5a', stripe: '#ff8b5e', icon: 'cup', door: { f: 'R', u: 3 }, roofDeco: ['ac'], awning: '#ff8b5e' },
-    { id: 'd_shop1', name: '냉삼집 (Alpha 0.2 예정)', x: 31, y: 30, w: 6, d: 6, h: 40, wall: '#d9c7a8', roof: '#8a5a3c', stripe: '#d0563b', icon: 'fork', awning: '#d0563b', closed: true },
-    { id: 'd_shop2', name: '유리돔 꽃시장 (Alpha 0.2 예정)', x: 39, y: 30, w: 6, d: 6, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', awning: '#ff9ed2', glass: true, closed: true },
-    { id: 'd_shop3', name: '오락실 (Alpha 0.2 예정)', x: 31, y: 39, w: 6, d: 5, h: 42, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', closed: true },
+    { id: 'd_apt2', name: '민간 주거 B동', x: 32, y: 31, w: 10, d: 8, h: 84, wall: '#e8e0d4', roof: '#a99c88', stripe: '#c9a27a', icon: 'home', roofDeco: ['solar', 'ac'], tall: true },
   ];
   const DD = dome.decor;
   DD.push(['fountain', 20, 20, 0], ['benchout', 16, 18, 0], ['benchout', 26, 18, 0], ['benchout', 16, 25, 2], ['benchout', 26, 25, 2]);
   for (const [x, y] of [[17, 16], [27, 16], [17, 27], [27, 27], [16, 10], [24, 8], [24, 14], [14, 33], [24, 33], [24, 40], [38, 22], [30, 22]]) DD.push(['streetlamp', x, y, 0]);
   for (const [x, y] of [[2, 18], [6, 18], [10, 18], [2, 22], [7, 23], [11, 22], [36, 16], [42, 16], [44, 21], [44, 26], [16, 42], [10, 42], [4, 42], [40, 44]]) DD.push(['tree', x, y, 0]);
   for (const [x, y] of [[4, 20], [9, 20], [12, 24], [38, 19], [41, 24], [13, 40], [7, 44]]) DD.push(['glowflower', x, y, 0]);
-  DD.push(['shuttlestop', 22, 42, 0], ['kiosk', 26, 42, 0], ['parasol', 14, 30, 0], ['parasol', 14, 35, 0], ['neonsign', 37, 37, 0], ['planter', 30, 15, 0], ['planter', 38, 15, 0], ['kiosk', 19, 15, 0], ['bush', 3, 26, 0], ['bush', 44, 18, 0], ['vending', 28, 37, 0]);
+  DD.push(['shuttlestop', 22, 42, 0], ['kiosk', 26, 42, 0], ['parasol', 14, 30, 0], ['parasol', 14, 35, 0], ['flowerbed', 30, 41, 0], ['benchout', 36, 42, 0], ['arch', 20, 1, 0], ['planter', 30, 15, 0], ['planter', 38, 15, 0], ['kiosk', 19, 15, 0], ['bush', 3, 26, 0], ['bush', 44, 18, 0], ['vending', 28, 37, 0]);
   dome.zones = [
     { t: 'plaza', x0: 15, y0: 15, x1: 29, y1: 29 }, { t: 'domegrass', x0: 1, y0: 16, x1: 14, y1: 27 }, { t: 'domegrass', x0: 34, y0: 16, x1: 46, y1: 28 }, { t: 'domegrass', x0: 1, y0: 39, x1: 18, y1: 46 },
     { t: 'cafe', x0: 13, y0: 29, x1: 17, y1: 38 }, { t: 'water', x0: 34, y0: 44, x1: 46, y1: 46 },
   ];
   dome.roads = [{ x0: 20, y0: 1, x1: 22, y1: 47, axis: 'y', walk: true }, { x0: 1, y0: 20, x1: 46, y1: 22, axis: 'x', walk: true }];
-  dome.walls = [{ x: 0, y: 0, w: 48, d: 1, glass: true }, { x: 0, y: 1, w: 1, d: 47, glass: true }, { x: 47, y: 1, w: 1, d: 47, glass: true }, { x: 1, y: 47, w: 46, d: 1, glass: true }];
+  dome.links = [{ x0: 20, x1: 22, y0: 0, y1: 0, to: 'plaza', ax: 25.5, ay: 48.5, label: '🚶 중앙광장 · 상업구역으로' }];
+  dome.walls = [{ x: 0, y: 0, w: 20, d: 1, glass: true }, { x: 23, y: 0, w: 25, d: 1, glass: true }, { x: 0, y: 1, w: 1, d: 47, glass: true }, { x: 47, y: 1, w: 1, d: 47, glass: true }, { x: 1, y: 47, w: 46, d: 1, glass: true }];
   dome.spots = { 'dome.plaza': [19, 24, 0, 'stand'], 'dome.bench': [17, 19, 0, 'stand'], 'dome.shuttle': [23, 41, 0, 'stand'], 'dome.apt': [16, 8, 1, 'stand'], 'dome.lab': [35, 15, 0, 'stand'] };
   M.dome = dome;
+
+
+  // ---------------- 돔시티 중앙광장 · 상업구역 (Alpha 0.2) ----------------
+  const plaza = { id: 'plaza', name: '돔시티 · 중앙광장 · 상업구역', kind: 'out', w: 52, h: 52, dome: true, buildings: [], decor: [] };
+  plaza.buildings = [
+    { id: 'p_deck', name: '관람데크 · 별비 투영실', to: 'starroom', x: 28, y: 14, w: 8, d: 7, h: 40, wall: '#3a3f6a', roof: '#d9dde2', stripe: '#9fe6ff', icon: 'star', door: { f: 'L', u: 3 }, roofDeco: ['dish'], glass: true },
+    { id: 'p_samgyup', name: '냉삼집 (문성호네)', to: 'samgyup', x: 4, y: 13, w: 8, d: 8, h: 44, wall: '#d9c7a8', roof: '#8a5a3c', stripe: '#d0563b', icon: 'fork', door: { f: 'R', u: 3 }, roofDeco: ['vents', 'ac'], awning: '#d0563b' },
+    { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 26, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
+    { id: 'p_flower', name: '유리돔 꽃시장', to: 'flower', x: 15, y: 39, w: 8, d: 7, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
+    { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목 — 성인 콘텐츠는 이후 버전에서 플레이어가 직접 선택할 때만 열려요' },
+    { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구 · 행성 간 여행은 Beta 0.6에서 열려요' },
+  ];
+  const PD = plaza.decor;
+  PD.push(['fountain', 18, 18, 0], ['benchout', 16, 22, 2], ['benchout', 20, 22, 2], ['benchout', 16, 15, 0], ['kiosk', 23, 27, 0], ['arch', 24, 50, 0]);
+  for (const [x, y] of [[14, 14], [22, 14], [14, 36], [36, 36], [36, 23], [22, 30], [28, 30], [13, 24]]) PD.push(['streetlamp', x, y, 0]);
+  for (let x = 14; x <= 36; x += 4) PD.push(['lantern', x, 10, 0]);
+  for (let y = 14; y <= 46; y += 4) PD.push(['lantern', 27, y, 0]);
+  for (const [x, y] of [[2, 23], [2, 36], [9, 36], [14, 48], [33, 47], [46, 47], [49, 40], [49, 13]]) PD.push(['tree', x, y, 0]);
+  // 투명수로 정원
+  for (const [x, y] of [[40, 17], [40, 25], [40, 32], [47, 20], [47, 29]]) PD.push(['glowflower', x, y, 0]);
+  PD.push(['benchout', 44, 16, 0], ['benchout', 44, 34, 2], ['tree2', 48, 24, 0], ['flowerbed', 25, 42, 0]);
+  // 축제 · 야시장 매대 (행사가 열릴 때만 나타남)
+  for (const [x, y] of [[29, 25], [29, 28], [33, 25], [33, 28], [16, 31], [19, 31]]) PD.push(['stall', x, y, 0, ['LB02', 'LB04', 'LB05', 'LB09', 'LB12', 'LB13', 'LB11']]);
+  plaza.zones = [
+    { t: 'plaza', x0: 13, y0: 13, x1: 37, y1: 37 }, { t: 'glassfloor', x0: 39, y0: 15, x1: 49, y1: 35 }, { t: 'water', x0: 42, y0: 17, x1: 42, y1: 33 }, { t: 'water', x0: 46, y0: 17, x1: 46, y1: 33 },
+    { t: 'domegrass', x0: 1, y0: 34, x1: 13, y1: 50 }, { t: 'domegrass', x0: 30, y0: 39, x1: 50, y1: 50 }, { t: 'cafe', x0: 2, y0: 9, x1: 50, y1: 11 },
+  ];
+  plaza.roads = [{ x0: 24, y0: 1, x1: 26, y1: 51, axis: 'y', walk: true }, { x0: 1, y0: 24, x1: 38, y1: 26, axis: 'x', walk: true }];
+  plaza.walls = [{ x: 0, y: 0, w: 52, d: 1, glass: true }, { x: 0, y: 1, w: 1, d: 51, glass: true }, { x: 51, y: 1, w: 1, d: 51, glass: true }, { x: 1, y: 51, w: 23, d: 1, glass: true }, { x: 27, y: 51, w: 24, d: 1, glass: true }];
+  plaza.links = [{ x0: 24, x1: 26, y0: 51, y1: 51, to: 'dome', ax: 21.5, ay: 2.5, label: '🚶 연구·주거구역으로' }];
+  plaza.spots = { 'plaza.kiosk': [22, 28, 1, 'stand'], 'plaza.water': [44, 21, 3, 'stand'], 'plaza.gate': [25, 47, 0, 'stand'], 'plaza.deck': [31, 23, 2, 'stand'], 'plaza.fountain': [21, 19, 3, 'stand'], 'plaza.street': [20, 12, 0, 'stand'] };
+  M.plaza = plaza;
+
+  // 실내
+  const sg = [['kitchen', 1, 0, 0], ['stove', 3, 0, 0], ['cafecounter', 6, 1, 0, 'sg.shop'], ['@', 7, 0, 0, 'sg.boss', 'stand'], ['fridge', 10, 0, 0], ['fridge', 11, 0, 0], ['bigplant', 15, 0, 0], ['bigplant', 0, 11, 0], ['plant', 15, 11, 0], ['crates', 13, 0, 0]];
+  for (const ty of [4, 8]) for (const tx of [2, 6, 10]) { sg.push(['grilltable', tx, ty, 0, `sg.t${tx}${ty}`], ['stool', tx - 1, ty, 0, `sg.s${tx}${ty}a`], ['stool', tx - 1, ty + 1, 0], ['stool', tx + 2, ty, 0], ['stool', tx + 2, ty + 1, 0]); }
+  room('samgyup', { name: '냉삼집', w: 16, h: 12, floor: 'darkwood', wall: '#d9c7a8', exit: 8, furn: sg, date: true,
+    walls: [['B', 1.4, 'menu', 1.6], ['B', 9.0, 'notice', 1.0], ['L', 3.0, 'window', 1.2], ['L', 7.4, 'poster', 0.8]] });
+  room('flower', { name: '유리돔 꽃시장', w: 16, h: 12, floor: 'tile', wall: '#e8f4f0', exit: 8, date: true,
+    furn: [['cafecounter', 6, 1, 0, 'fl.shop'], ['@', 7, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 1, 0, 0], ['flowershelf', 10, 0, 0], ['flowershelf', 12, 0, 0], ['flowershelf', 0, 3, 3], ['flowershelf', 0, 6, 3],
+      ['flowerbed', 3, 5, 0], ['flowerbed', 9, 5, 0], ['flowerbed', 12, 8, 0], ['bench', 3, 9, 0], ['glassvase', 15, 0, 0], ['bigplant', 15, 11, 0], ['plant', 0, 11, 0]],
+    walls: [['B', 4.2, 'window', 1.4], ['B', 8.6, 'window', 1.2], ['L', 9.0, 'window', 1.4]] });
+  room('arcade', { name: '오락실', w: 18, h: 14, floor: 'darktile', wall: '#2a1f4f', exit: 9, date: true,
+    furn: [['arcade', 1, 0, 0], ['arcade', 2, 0, 0], ['arcade', 3, 0, 0], ['arcade', 4, 0, 0], ['arcade', 5, 0, 0], ['@', 3, 1, 2, 'ac.player', 'stand'],
+      ['clawmachine', 10, 0, 0], ['clawmachine', 11, 0, 0], ['clawmachine', 12, 0, 0], ['clawmachine', 13, 0, 0], ['clawmachine', 0, 4, 3], ['clawmachine', 0, 5, 3], ['clawmachine', 0, 6, 3],
+      ['shopcounter', 13, 6, 0], ['@', 14, 5, 0, 'ac.clerk', 'stand'], ['vending', 17, 3, 1], ['vending', 17, 4, 1], ['gametable', 7, 8, 0], ['stool', 6, 8, 0], ['stool', 9, 8, 0], ['bench', 2, 11, 0], ['bigplant', 17, 13, 0]],
+    walls: [['B', 6.6, 'poster', 0.8], ['B', 14.6, 'screen', 1.4], ['L', 9.4, 'poster', 0.8]] });
+  const st = [['projector', 8, 4, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 17, 0, 0]];
+  for (const ty of [8, 10]) for (let tx = 2; tx <= 15; tx++) if (tx !== 9 && tx !== 8) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
+  room('starroom', { name: '별비 투영실', w: 18, h: 14, floor: 'darktile', wall: '#141028', exit: 9, wallH: 66, date: true, stars: true, furn: st,
+    walls: [['B', 2.0, 'screen', 3.0], ['B', 12.0, 'screen', 3.0], ['L', 4.0, 'screen', 4.0]] });
 
   // 실내 → 바깥 연결
   const outOf = { q_player: ['base', 'b_quarters'], q_captain: ['base', 'b_cap'], ops: ['base', 'b_ops'], mess: ['base', 'b_mess'], med: ['base', 'b_med'], hangar: ['base', 'b_hangar'], gym: ['base', 'b_gym'],
     px: ['base', 'b_px'], lounge: ['base', 'b_lounge'], shower: ['base', 'b_shower'], admin: ['base', 'b_admin'], comms: ['base', 'b_comms'], barracks: ['base', 'b_barracks'],
-    apt_player: ['dome', 'd_apt'], lab: ['dome', 'd_lab'], cafe: ['dome', 'd_cafe'] };
+    apt_player: ['dome', 'd_apt'], lab: ['dome', 'd_lab'], cafe: ['dome', 'd_cafe'], samgyup: ['plaza', 'p_samgyup'], flower: ['plaza', 'p_flower'], arcade: ['plaza', 'p_arcade'], starroom: ['plaza', 'p_deck'] };
   for (const k in outOf) { M[k].parent = outOf[k][0]; M[k].building = outOf[k][1]; }
 
   PX.MAPS = M;

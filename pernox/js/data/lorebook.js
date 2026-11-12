@@ -7,6 +7,8 @@
   const ALL = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   const MIL = '군 소속 또는 출입 허가증';
   const L = [];
+  // Alpha 0.2: 돔시티 중앙광장·상업구역에서 실제로 체험 가능한 항목
+  const MAPPED = ['LB02', 'LB04', 'LB05', 'LB09', 'LB11', 'LB12', 'LB13', 'LB58', 'LB59', 'LB66', 'LB67', 'LB68', 'LB75'];
   // o: {kw, desc, loc, type, rule, t:[start,end], peak:[months], acc, act:[], cap, rew:[], wd:[]}
   function add(id, title, o) {
     const months = o.rule.months || ALL;
@@ -24,7 +26,7 @@
       captainReaction: o.cap || '',
       rewards: o.rew || [],
       repeatRule: o.rule,
-      implemented: o.impl || 'data', // data: 일정·정보 등록 / map: 실제 맵 구현
+      implemented: o.impl || (MAPPED.includes(id) ? 'map' : 'data'), // data: 일정·정보 등록 / map: 실제 맵 구현
     });
   }
 

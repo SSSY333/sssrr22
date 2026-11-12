@@ -94,6 +94,7 @@ PX.Cap = (() => {
         cap.goTo(m, Math.floor(bx), Math.floor(by));
         if (cap.path.length > 1) cap.path.pop(); // 바로 옆까진 안 붙음
       } else if (d < 1.2 && cap.path.length) cap.stop();
+      else if (d < 0.6 && !cap.path.length && !p.moving && repathT <= 0) { repathT = 0.5; const m = PX.W.maps[cap.map]; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1]); }
       if (d > 14 && repathT <= 0) { const t = PX.Path.nearestWalkable(PX.W.maps[cap.map], p.x - 1, p.y - 1); if (t) { cap.x = t[0] + 0.5; cap.y = t[1] + 0.5; } } // 끼임 방지
       if (!cap.path.length && !cap.holding && d < 2.5 && !cap.seat) cap.setDirTo(p.x, p.y);
       // 플레이어가 앉으면 옆자리, 일어나면 같이 일어난다
@@ -177,7 +178,8 @@ PX.Cap = (() => {
     const capOut = cap.map ? (PX.MAPS[cap.map].kind === 'out' ? cap.map : PX.MAPS[cap.map].parent) : null;
     if (pmOut === 'dome' && !job.military) { const wd = St.weekday(); if (![2, 4, 6].includes(wd)) { mode = 'sched'; schedule(S, g); return; } }
     if (capOut !== pmOut) { // 다른 구역: 셔틀로 이동
-      travel(pmOut, 30, 'seek', capOut);
+      const near = ['dome', 'plaza'].includes(pmOut) && ['dome', 'plaza'].includes(capOut);
+      travel(pmOut, near ? 6 : 30, 'seek', capOut);
       return;
     }
     if (pm === home) { // 숙소 안: 문 앞까지만
@@ -249,7 +251,11 @@ PX.Cap = (() => {
       return;
     }
     moveTo(to, g.prevMap);
-    const p = g.player; const t = PX.Path.nearestWalkable(PX.W.maps[to], p.x - 0.8, p.y - 0.8); if (t) { cap.x = t[0] + 0.5; cap.y = t[1] + 0.5; }
+    const p = g.player, m = PX.W.maps[to];
+    // 플레이어와 겹치지 않는 옆 칸
+    const px = Math.floor(p.x), py = Math.floor(p.y);
+    const cand = [[1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1]].map(([dx, dy]) => [px + dx, py + dy]).filter(([x, y]) => PX.W.walkable(m, x, y));
+    if (cand.length) { cap.x = cand[0][0] + 0.5; cap.y = cand[0][1] + 0.5; }
   }
 
   // ---------- 이벤트 ----------

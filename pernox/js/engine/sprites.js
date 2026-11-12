@@ -179,7 +179,8 @@ PX.S = (() => {
     const st = app.hair;
     if (view === 'B') { // 뒷모습: 머리 전체
       const len = { messybun: hh - 2, short: hh - 3, crew: hh - 5, bob: hh, long: hh + 6, pony: hh - 3, bun: hh - 3, curly: hh - 2, wolf: hh + 2, slick: hh - 4 }[st] || hh - 3;
-      R(hx - 1, hy - 1, hw + 2, Math.min(len, hh) + 1, col); R(hx, hy - 2, hw, 2, col);
+      if (app.big) { R(hx - 1, hy - 1, hw + 2, Math.min(len, hh) + 1, col); R(hx, hy - 2, hw, 2, col); }
+      else { R(hx, hy, hw, Math.min(len, hh), col); R(hx + 2, hy - 1, hw - 4, 1, col); R(hx - 1, hy + 2, hw + 2, Math.min(len, hh) - 2, col); }
       if (len > hh) R(hx - 1, hy + hh, hw + 2, len - hh, col);
       R(hx + 3, hy, 3, 1, hl);
       if (st === 'pony') { R(hx + hw / 2 - 2, hy + hh - 4, 4, 9, dk); R(hx + hw / 2 - 2, hy + hh - 5, 4, 2, '#e05a7a'); }
@@ -190,7 +191,8 @@ PX.S = (() => {
       return;
     }
     // 앞모습
-    R(hx, hy - 2, hw, 3, col); R(hx - 1, hy, hw + 2, 3, col); // 정수리
+    if (app.big) { R(hx, hy - 2, hw, 3, col); R(hx - 1, hy, hw + 2, 3, col); } // 정수리
+    else { R(hx + 2, hy - 1, hw - 4, 1, col); R(hx + 1, hy, hw - 2, 2, col); R(hx, hy + 1, hw, 2, col); }
     switch (st) {
       case 'crew': R(hx, hy - 1, hw, 2, col); R(hx - 1, hy + 1, 1, 3, col); R(hx + hw, hy + 1, 1, 3, col); break;
       case 'slick': // 대위: 뒤로 넘긴 머리 + 이마로 흘러내린 몇 가닥
@@ -207,7 +209,7 @@ PX.S = (() => {
       case 'bob': R(hx - 1, hy + 2, 2, hh - 2, col); R(hx + hw - 1, hy + 2, 2, hh - 2, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 3, hy - 1, 3, 1, hl); break;
       case 'long': R(hx - 1, hy + 2, 2, hh + 6, col); R(hx + hw - 1, hy + 2, 2, hh + 6, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 5, hy + 4, 2, 1, col); R(hx + 3, hy - 1, 3, 1, hl); break;
       case 'pony': R(hx, hy + 2, 2, 6, col); R(hx + hw - 2, hy + 2, 2, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 2, hy + 4, 4, 1, col); R(hx + hw - 4, hy + 4, 2, 1, col);
-        R(hx + hw, hy + 1, 2, 2, '#ff8fb0'); R(hx + hw, hy + 3, 2, 7, dk); R(hx + hw + 1, hy + 10, 1, 2, dk); R(hx + 3, hy - 1, 4, 1, hl); break;
+        R(hx + hw - 1, hy + 2, 2, 2, '#ff8fb0'); R(hx + hw, hy + 4, 2, 6, dk); R(hx + hw + 1, hy + 10, 1, 2, dk); R(hx + 3, hy - 1, 4, 1, hl); break;
       case 'bun': R(hx - 1, hy + 2, 2, 4, col); R(hx + hw - 1, hy + 2, 2, 4, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + hw / 2 - 3, hy - 6, 6, 5, col); R(hx + hw / 2 - 2, hy - 5, 2, 1, hl); break;
       case 'curly': for (let i = -1; i < hw + 1; i += 2) R(hx + i, hy - 3 + (i % 4 === 1 ? 1 : 0), 2, 2, col); R(hx - 2, hy + 2, 3, 6, col); R(hx + hw - 1, hy + 2, 3, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 2, hy + 4, 2, 1, col); R(hx + hw - 4, hy + 4, 2, 1, col); break;
       case 'wolf': R(hx - 1, hy + 2, 2, hh + 1, col); R(hx + hw - 1, hy + 2, 2, hh + 1, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 2, hy + 5, 2, 1, col); R(hx + hw - 5, hy + 5, 2, 1, col); R(hx + 3, hy - 1, 3, 1, hl); break;

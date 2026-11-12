@@ -16,10 +16,10 @@ PX.Mini = (() => {
     root.append(el('div', { class: 'mhead' }, el('b', null, title), timerEl, scoreEl), cv, tools, info);
     return tools;
   }
-  function finish(score, msg) {
+  function finish(score, msg, btn = '근무 마치기', title) {
     cancelAnimationFrame(raf);
     return new Promise(res => {
-      const box = el('div', { class: 'mres' }, el('b', null, score >= 0.8 ? '완벽해요!' : score >= 0.5 ? '잘했어요' : '수고했어요'), el('p', null, msg), el('button', { class: 'big' }, '근무 마치기'));
+      const box = el('div', { class: 'mres' }, el('b', null, title || (score >= 0.8 ? '완벽해요!' : score >= 0.5 ? '잘했어요' : '수고했어요')), el('p', null, msg), el('button', { class: 'big' }, btn));
       box.querySelector('button').onclick = () => { root.classList.add('hidden'); root.innerHTML = ''; res(score); };
       root.append(box);
     });
@@ -103,6 +103,7 @@ PX.Mini = (() => {
         if (!blink) { R(d.x - 4, d.y - 1, 8, 2, '#3a3f45'); R(d.x - 1, d.y - 4, 2, 8, '#3a3f45'); R(d.x - 2, d.y - 2, 4, 4, '#8d98a3'); R(d.x - 1, d.y - 1, 2, 2, '#ff9b42'); }
         timerEl.textContent = '⏱ ' + Math.ceil(Math.max(0, time)); scoreEl.textContent = `흔적 ${found}/4 · 드론 ${'■'.repeat(Math.max(0, d.hp))}`;
         if (found === 4 || time <= 0 || d.hp <= 0) {
+          api.lastFound = found >= 3 ? ['lizard', 'trace'] : found >= 1 ? ['lizard'] : [];
           cv.onpointerdown = cv.onpointermove = null;
           const score = U.clamp(found / 4 * (d.hp > 0 ? 1 : 0.7) + (found === 4 ? time / 120 : 0), 0, 1);
           finish(score, `흔적 ${found}개 기록${d.hp <= 0 ? ' · 드론이 손상돼 조기 복귀' : ''}. 보고서 작성 완료.`).then(resolve);
@@ -177,18 +178,19 @@ PX.Mini = (() => {
     return new Promise(resolve => {
       const tools = setup('🔬 검역 표본 분류', '표본의 특징을 보고 알맞은 곳을 누르세요.  ☠ 독성 표시 → 격리 · 빛남 → 보존 · 뿌리·열매 → 재배');
       const KINDS = [
-        { n: '유리꽃', bin: 'keep', draw: () => { R(56, 40, 8, 30, '#3fa86b'); for (let i = 0; i < 5; i++) R(48 + i * 4, 30 + (i % 2) * 4, 6, 10, 'rgba(200,240,255,0.8)'); R(58, 36, 4, 4, '#ffffff'); }, tag: '빛남' },
-        { n: '발광초', bin: 'keep', draw: () => { R(58, 40, 4, 30, '#3fa86b'); R(52, 30, 16, 12, '#9ff5d0'); R(55, 32, 4, 4, '#ffffff'); }, tag: '빛남' },
-        { n: '붉은 포자버섯', bin: 'quar', draw: () => { R(56, 50, 8, 20, '#e8e3c8'); R(46, 38, 28, 14, '#c43d4b'); R(50, 40, 3, 3, '#fff'); R(62, 42, 3, 3, '#fff'); R(76, 30, 10, 10, '#222'); R(78, 32, 6, 6, '#ffd166'); }, tag: '☠ 독성' },
-        { n: '가시 촉수 덩굴', bin: 'quar', draw: () => { for (let i = 0; i < 4; i++) R(44 + i * 8, 30 + (i % 2) * 6, 4, 36, '#6a3f8a'); R(40, 30, 40, 3, '#9b5fd0'); R(76, 30, 10, 10, '#222'); R(78, 32, 6, 6, '#ffd166'); }, tag: '☠ 독성' },
-        { n: '향열매', bin: 'farm', draw: () => { R(58, 30, 4, 10, '#6a4a3a'); R(48, 38, 24, 22, '#ff8b5e'); R(52, 42, 6, 6, '#ffd0a0'); }, tag: '열매' },
-        { n: '페르녹스 뿌리채소', bin: 'farm', draw: () => { R(52, 28, 4, 12, '#5bb07a'); R(62, 26, 4, 14, '#5bb07a'); R(50, 40, 20, 24, '#b06a8a'); R(56, 64, 8, 6, '#b06a8a'); }, tag: '뿌리' },
-        { n: '은빛 이끼', bin: 'keep', draw: () => { for (let i = 0; i < 6; i++) R(42 + i * 6, 52 - (i % 3) * 3, 6, 14, '#c9ccd6'); R(46, 50, 30, 2, '#ffffff'); }, tag: '빛남' },
-        { n: '산성 점액 꽃', bin: 'quar', draw: () => { R(58, 44, 4, 26, '#3fa86b'); R(48, 32, 24, 14, '#a8d040'); R(54, 46, 3, 6, '#c8ff6a'); R(76, 30, 10, 10, '#222'); R(78, 32, 6, 6, '#ffd166'); }, tag: '☠ 독성' },
+        { n: '유리꽃', cx: 'glassflower', bin: 'keep', draw: () => { R(56, 40, 8, 30, '#3fa86b'); for (let i = 0; i < 5; i++) R(48 + i * 4, 30 + (i % 2) * 4, 6, 10, 'rgba(200,240,255,0.8)'); R(58, 36, 4, 4, '#ffffff'); }, tag: '빛남' },
+        { n: '발광초', cx: 'glowgrass', bin: 'keep', draw: () => { R(58, 40, 4, 30, '#3fa86b'); R(52, 30, 16, 12, '#9ff5d0'); R(55, 32, 4, 4, '#ffffff'); }, tag: '빛남' },
+        { n: '붉은 포자버섯', cx: 'redspore', bin: 'quar', draw: () => { R(56, 50, 8, 20, '#e8e3c8'); R(46, 38, 28, 14, '#c43d4b'); R(50, 40, 3, 3, '#fff'); R(62, 42, 3, 3, '#fff'); R(76, 30, 10, 10, '#222'); R(78, 32, 6, 6, '#ffd166'); }, tag: '☠ 독성' },
+        { n: '가시 촉수 덩굴', cx: 'tentvine', bin: 'quar', draw: () => { for (let i = 0; i < 4; i++) R(44 + i * 8, 30 + (i % 2) * 6, 4, 36, '#6a3f8a'); R(40, 30, 40, 3, '#9b5fd0'); R(76, 30, 10, 10, '#222'); R(78, 32, 6, 6, '#ffd166'); }, tag: '☠ 독성' },
+        { n: '향열매', cx: 'fruit', bin: 'farm', draw: () => { R(58, 30, 4, 10, '#6a4a3a'); R(48, 38, 24, 22, '#ff8b5e'); R(52, 42, 6, 6, '#ffd0a0'); }, tag: '열매' },
+        { n: '페르녹스 뿌리채소', cx: 'root', bin: 'farm', draw: () => { R(52, 28, 4, 12, '#5bb07a'); R(62, 26, 4, 14, '#5bb07a'); R(50, 40, 20, 24, '#b06a8a'); R(56, 64, 8, 6, '#b06a8a'); }, tag: '뿌리' },
+        { n: '은빛 이끼', cx: 'silvermoss', bin: 'keep', draw: () => { for (let i = 0; i < 6; i++) R(42 + i * 6, 52 - (i % 3) * 3, 6, 14, '#c9ccd6'); R(46, 50, 30, 2, '#ffffff'); }, tag: '빛남' },
+        { n: '산성 점액 꽃', cx: 'acidflower', bin: 'quar', draw: () => { R(58, 44, 4, 26, '#3fa86b'); R(48, 32, 24, 14, '#a8d040'); R(54, 46, 3, 6, '#c8ff6a'); R(76, 30, 10, 10, '#222'); R(78, 32, 6, 6, '#ffd166'); }, tag: '☠ 독성' },
       ];
       const r = U.rng(Date.now());
       const queue = []; for (let i = 0; i < 12; i++) queue.push(KINDS[Math.floor(r() * KINDS.length)]);
       let idx = 0, ok = 0, bad = 0, time = 40, flash = 0, flashC = '';
+      const found = new Set(); api.lastFound = found;
       const BINS = [['keep', '🟦 보존'], ['quar', '🟥 격리'], ['farm', '🟩 재배']];
       BINS.forEach(([k, t]) => { const b = el('button', { class: 'tool big' }, t); b.onclick = () => { if (idx >= queue.length) return; if (queue[idx].bin === k) { ok++; flashC = '#7fffd4'; PX.Audio && PX.Audio.blip(1.4); } else { bad++; flashC = '#ff4d4d'; PX.Audio && PX.Audio.blip(0.5); } flash = 0.25; idx++; }; tools.append(b); });
       loop(dt => {
@@ -209,10 +211,42 @@ PX.Mini = (() => {
     });
   }
 
+  // ---------- 오락실: 인형 뽑기 ----------
+  function clawGame() {
+    return new Promise(resolve => {
+      const tools = setup('🐰 인형 뽑기', '집게가 좌우로 움직여요. 인형 위에 왔을 때 「내리기」를 누르세요!');
+      const r = U.rng(Date.now());
+      const toys = [{ x: 22, c: '#ffffff', bunny: true }, { x: 50, c: '#ffd166' }, { x: 78, c: '#ffb3c8' }, { x: 100, c: '#9fd8ff' }].map(t => Object.assign(t, { x: t.x + r() * 6 - 3 }));
+      let cx = 10, dir = 1, cy = 16, state = 'move', grab = null, t = 0;
+      const drop = el('button', { class: 'tool big' }, '⬇️ 내리기');
+      drop.onclick = () => { if (state === 'move') state = 'down'; };
+      tools.append(drop);
+      loop(dt => {
+        t += dt;
+        if (state === 'move') { cx += dir * 40 * dt; if (cx > 110 || cx < 10) dir *= -1; }
+        else if (state === 'down') { cy += 60 * dt; if (cy >= 74) { state = 'up'; const hit = toys.find(o => Math.abs(o.x - cx) < 7); if (hit && r() < (Math.abs(hit.x - cx) < 3.5 ? 0.92 : 0.6)) grab = hit; } }
+        else if (state === 'up') { cy -= 50 * dt; if (cy <= 16) { state = 'over'; } }
+        if (grab && state === 'up') { grab.x = cx; grab.y = cy + 8; }
+        R(0, 0, SZ, SZ, '#2a1f4f'); R(4, 4, SZ - 8, SZ - 8, '#cfe8f2'); R(4, 84, SZ - 8, 32, '#ff6bd5'); R(8, 88, 22, 24, '#2a1f4f');
+        for (const o of toys) { const y = o.y || 80; if (o === grab && state === 'over') continue; R(o.x - 6, y - 10, 12, 10, o.c); R(o.x - 5, y - 16, 3, 7, o.c); R(o.x + 2, y - 16, 3, 7, o.c); R(o.x - 3, y - 7, 1, 1, '#2a1e2a'); R(o.x + 2, y - 7, 1, 1, '#2a1e2a'); if (o.bunny) R(o.x - 2, y - 3, 4, 2, '#ff8fb0'); }
+        R(cx - 1, 4, 2, cy - 4, '#9aa3ad'); R(cx - 6, cy, 12, 3, '#5a6370'); R(cx - 6, cy + 3, 2, 5, '#5a6370'); R(cx + 4, cy + 3, 2, 5, '#5a6370');
+        timerEl.textContent = state === 'move' ? '조준 중' : '…'; scoreEl.textContent = '₢5';
+        if (state === 'over') {
+          const win = !!grab;
+          setTimeout(() => finish(win ? 1 : 0, win ? '인형을 뽑았다!' : '집게가 미끄러졌다…', '확인', win ? '🎉 성공!' : '아깝다!').then(() => resolve(win)), 300);
+          return false;
+        }
+      });
+    });
+  }
+  const api = {};
   function run(type, ctx = {}) {
+    api.lastFound = [];
     PX.Game.inMini = true; PX.Game.modal++;
     const p = type === 'treat' ? treat(ctx.patient || '부상병') : type === 'drone' ? drone() : type === 'circuit' ? circuit() : sort();
     return p.then(s => { PX.Game.inMini = false; PX.Game.modal--; return s; });
   }
-  return { run };
+  api.run = run;
+  api.claw = () => { PX.Game.inMini = true; PX.Game.modal++; return clawGame().then(w => { PX.Game.inMini = false; PX.Game.modal--; return w; }); };
+  return api;
 })();

@@ -26,6 +26,7 @@
   Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; };
   Game.startNew = (f) => {
     St.newGame(f);
+    St.S.quests = []; St.S.codex = {}; St.makeQuests();
     initWorld();
     const S = St.S;
     const home = PX.JOBS[S.player.job].home;
@@ -97,13 +98,15 @@
     if (!silent) { PX.Audio.door(); fade(); St.save(); }
     UI.hud();
     $('decorBtn').classList.toggle('hidden', !PX.MAPS[id].home);
+    W.updateEvents(m, St.S.time, St.S.time.min);
+    if (!silent) dateCheck(id);
     if (!silent && !St.S.done.intro && PX.MAPS[id].kind === 'out' && Game.prevMap === PX.JOBS[St.S.player.job].home && St.S.time.min < 12 * 60) Game.trigger(firstMeet);
   }
   Game.enterMap = enterMap;
   function fade() { const f = $('fade'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 260); }
   function enterBuilding(door) {
     const S = St.S;
-    if (door.closed) { UI.toast(`🚧 ${door.name} — 돔시티 확장(Alpha 0.2)에서 열려요`); return; }
+    if (door.closed) { UI.toast(door.closedMsg || `🚧 ${door.name} — 아직 문을 열지 않았어요`); return; }
     const to = door.to;
     if (to === 'q_captain') {
       const capIn = Game.cap.map === 'q_captain';
@@ -155,6 +158,14 @@
     Game.bubbles.push({ actor, el: b, until: performance.now() + sec * 1000 });
   };
   Game.log = (name, text) => { const S = St.S; if (!S) return; S.history.push([S.day, S.time.min, name, text]); if (S.history.length > 80) S.history.splice(0, S.history.length - 80); };
+  Game.codex = (id) => {
+    const S = St.S; S.codex = S.codex || {};
+    if (S.codex[id]) return false;
+    const e = PX.CODEX.find(c => c.id === id); if (!e) return false;
+    S.codex[id] = S.day;
+    UI.toast(`📗 생태도감 등록: ${e.n}`);
+    return true;
+  };
   Game.memory = (title, text, snap) => {
     const S = St.S;
     let img = null;
@@ -185,7 +196,11 @@
       case 'terminal': return UI.terminal();
       case 'album': return UI.terminal('album');
       case 'storage': return UI.terminal('inv');
-      case 'shop': return UI.shop(Game.mapId === 'cafe' ? 'cafe' : 'px');
+      case 'shop': return UI.shop({ cafe: 'cafe', samgyup: 'samgyup', flower: 'flower', arcade: 'arcade' }[Game.mapId] || 'px');
+      case 'grill': return grill(o);
+      case 'claw': return claw();
+      case 'show': return show();
+      case 'stall': return UI.shop('festival');
       case 'vending': return UI.shop('vending');
       case 'meal': return meal();
       case 'work': return work(o);
@@ -278,6 +293,8 @@
     const ctx = {};
     if (job.mini === 'treat') ctx.patient = Cap.spotKind() === 'duty' && Math.random() < 0.3 ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병']);
     const score = await PX.Mini.run(job.mini, ctx);
+    for (const id of (PX.Mini.lastFound || [])) Game.codex(id);
+    if (job.mini === 'circuit' && score > 0.6) Game.codex('mineral');
     const pay = Math.round(job.pay * (0.6 + 0.6 * score));
     S.money += pay; S.energy = Math.max(0, S.energy - 18); S.workLog[key] = 1; S.workLog[S.day] = (S.workLog[S.day] || 0) + 1; S.stats.work++;
     const end = shift === 0 ? 12 * 60 : 17 * 60;
@@ -333,8 +350,100 @@
     UI.toast(`👾 오락 점수 ${sc}점! ${sc > 8000 ? '최고 기록 갱신!' : ''}`);
     if (Cap.mode === 'follow' && Game.cap.map === Game.mapId) setTimeout(() => Game.bubble(Game.cap, sc > 6000 ? '…나보다 잘하네. 한 판 더.' : '내가 이겼다. 상품은 뽀뽀.'), 500);
   }
+  function goLink(l) {
+    St.advance(3);
+    enterMap(l.to, l.ax, l.ay);
+    UI.toast(`📍 ${PX.MAPS[l.to].name}`);
+  }
+  // 데이트 장소에 대위와 함께 들어오면 데이트로 기록
+  function dateCheck(id) {
+    const S = St.S, d = PX.MAPS[id];
+    if (!d.date || Cap.mode !== 'follow') return;
+    const own = ['samgyup', 'starroom'].includes(id); // 이 두 곳은 활동 기록이 따로 남는다
+    const key = 'date_' + id;
+    if (S.cap.lastDateDay === S.day + id) return;
+    S.cap.lastDateDay = S.day + id;
+    St.addAff(6);
+    S.stats.dates = (S.stats.dates || 0) + 1;
+    setTimeout(() => Game.bubble(Game.cap, U.pick({ samgyup: ['냄새 좋다. 오늘 고기는 내가 굽는다.', '여기 내 단골이야. 너랑 오니까 더 좋네.'], flower: ['너 꽃 좋아하잖아. 골라. 내가 살게.', '여기 너랑 어울린다.'], arcade: ['인형 뽑기 할래? 내가 뽑아 줄게.', '오락실 데이트, 나쁘지 않네.'], starroom: ['어두워지면 손 잡아도 되지?', '별 보러 온 거 맞지? 나는 너 보러 온 건데.'], cafe: ['얼음 많이. 너는 늘 먹던 거?', '여기 앉자. 창가.'] }[id] || ['데이트네.'])), 900);
+    if (!own && !S.done[key]) { S.done[key] = 1; setTimeout(() => Game.memory(`${d.name} 데이트`, `${U.josa(S.capName, '와')} 함께 ${d.name}에 왔다.`, true), 1500); }
+  }
+  async function grill(o) {
+    const S = St.S;
+    const withCap = Cap.mode === 'follow' && Game.cap.map === Game.mapId;
+    const it = await UI.menu('냉삼 주문', [{ t: '🥓 냉삼 2인분 + 즉석밥', sub: '₢36 · 40분 · 기력 +40', k: 1 }, { t: '🌶️ 매운 양념 냉삼 2인분', sub: '₢40 · 40분 · 기력 +45', k: 2 }]);
+    if (!it) return;
+    if (!St.spend(it.k === 1 ? 36 : 40)) { UI.toast('돈이 모자라요'); return; }
+    { // 테이블 옆 스툴에 앉기
+      const m = W.maps[Game.mapId], p = Game.player;
+      const stools = m.objs.filter(x => x.fid === 'stool' && x.x >= o.x - 1 && x.x <= o.x + o.fw && x.y >= o.y && x.y < o.y + o.fd && !x.seats[0].by);
+      stools.sort((a, b) => U.dist(a.x, a.y, p.x, p.y) - U.dist(b.x, b.y, p.x, p.y));
+      if (stools[0]) p.sitOn(stools[0].seats[0]);
+    }
+    if (withCap) Cap.sitNear(Game);
+    Game.player.doPose('eat', 5);
+    Game.modal++;
+    if (withCap) {
+      await Dlg.runLines(U.pick([
+        ['N:불판 위에서 냉삼이 지글지글 오그라든다.', 'C:가만있어. 굽는 건 내가 해.', 'C^:자, 제일 잘 익은 거. 아~', { q: [['받아먹기', 5, ['C*:…귀엽네. 한 점 더.']], ['제가 먹을게요!', 2, ['C:그래. 대신 쌈은 내가 싸 줄게.']]] }],
+        ['C:여기 사장님이 나 오면 고기를 두 배로 썰어.', 'C*:오늘은 너 때문에 세 배 썰었을걸.', 'N:대위는 자기 접시보다 내 접시를 더 자주 채운다.'],
+        ['C:매운 거 괜찮아?', 'P:조금요.', 'C^:그럼 덜 매운 쪽은 네 쪽에 놓을게. 물도 미리 따라 놨어.'],
+      ]));
+      St.addAff(5);
+      if (!S.done.grillDate) { S.done.grillDate = 1; Game.memory('냉삼 데이트', '대위가 고기를 굽고, 제일 잘 익은 건 늘 내 접시로 왔다.', true); }
+    } else await Dlg.runLines(['N:혼자 냉삼을 구웠다. 맛있다. …누가 구워 줬으면 더 맛있었을지도.']);
+    Dlg.close(); Game.modal--;
+    fade(); St.advance(40); S.energy = Math.min(100, S.energy + (it.k === 1 ? 40 : 45));
+    Game.codex('fruit');
+  }
+  async function claw() {
+    const S = St.S;
+    const withCap = Cap.mode === 'follow' && Game.cap.map === Game.mapId;
+    const it = await UI.menu('인형 뽑기', [{ t: '🕹️ 내가 해 보기', sub: '₢5 · 한 판', k: 'me' }].concat(withCap ? [{ t: `🎯 ${S.capName}에게 뽑아 달라고 하기`, sub: '₢5', k: 'cap' }] : []));
+    if (!it) return;
+    if (!St.spend(5)) { UI.toast('돈이 모자라요'); return; }
+    let win;
+    if (it.k === 'me') win = await PX.Mini.claw();
+    else {
+      Game.modal++;
+      await Dlg.runLines(['C*:잘 봐. 이런 건 각도랑 타이밍이야.', 'N:대위가 진지한 얼굴로 레버를 잡는다. 덩치 때문에 기계가 장난감처럼 보인다.']);
+      win = Math.random() < 0.7;
+      await Dlg.runLines(win ? ['N:집게가 토끼 인형의 리본을 정확히 걸었다!', 'C^:거봐. 자, 너 줄게.', 'C*:…인형보다 네가 더 좋아하는 얼굴이 보고 싶어서 뽑은 거야.'] : ['N:집게가 인형을 툭 놓쳤다.', 'C;:…이거 집게 힘 조작한 거 아니야?', 'C:한 판만 더. 아니, 될 때까지.']);
+      Dlg.close(); Game.modal--;
+      if (win) St.addAff(5);
+    }
+    if (win) {
+      St.addItem('bunny'); UI.toast('🐰 토끼 인형을 얻었다! (숙소 꾸미기에서 놓을 수 있어요)');
+      if (it.k === 'cap' && !S.done.capClaw) { S.done.capClaw = 1; Game.memory('인형 뽑기', `${U.josa(S.capName, '이')} 뽑아 준 토끼 인형.`, true); }
+    } else if (it.k === 'me') UI.toast('아깝다! 집게가 미끄러졌다');
+  }
+  async function show() {
+    const S = St.S;
+    const special = Cal.openAt(PX.LORE_BY_ID.LB68, S.time, S.time.min);
+    const withCap = Cap.mode === 'follow' && Game.cap.map === Game.mapId;
+    const it = await UI.menu('별비 투영실', [{ t: special ? '🌠 오늘의 특별 투영 「별비」 보기' : '✨ 정기 투영 「페르녹스의 하늘」 보기', sub: special ? '매월 1·15·마지막 날 20:00~22:30 · ₢10 · 1시간' : '₢6 · 40분', k: 1 }]);
+    if (!it) return;
+    if (!St.spend(special ? 10 : 6)) { UI.toast('돈이 모자라요'); return; }
+    const m = W.maps[Game.mapId];
+    const seat = m.objs.filter(o => o.fid === 'theaterseat' && !o.seats[0].by).sort((a, b) => U.dist(a.x, a.y, Game.player.x, Game.player.y) - U.dist(b.x, b.y, Game.player.x, Game.player.y))[0];
+    if (seat) sit(seat);
+    if (withCap) Cap.sitNear(Game);
+    Game.showing = performance.now();
+    Game.modal++;
+    await U.sleep(1800);
+    if (special) await Dlg.runLines(['N:천장 가득 빛줄기가 비처럼 쏟아진다. 별비다.', ...(withCap ? ['N:어둠 속에서 커다란 손이 내 손을 찾아 조심스럽게 감싼다.', 'C:…예쁘다.', 'P:별이요?', 'C*:아니. 너.'] : ['N:모두가 숨을 죽이고 천장을 올려다본다.'])]);
+    else await Dlg.runLines(['N:지구 바다, 페르녹스 초원, 먼 항로가 천장을 따라 흘러간다.', ...(withCap ? ['C:저기 깜빡이는 거, 우리 부대 쪽 항로등이야.', 'C^:다음엔 진짜 하늘 보러 가자. 은사막 전망대.'] : [])]);
+    Dlg.close(); Game.modal--;
+    Game.showing = 0;
+    fade(); St.advance(special ? 60 : 40);
+    if (withCap) { St.addAff(special ? 8 : 4); if (!S.done.starDate) { S.done.starDate = 1; Game.memory(special ? '별비 아래에서' : '투영실 데이트', special ? '별비가 쏟아지는 동안 대위가 내 손을 잡았다.' : '천장을 흐르는 하늘을 같이 올려다봤다.', true); } }
+  }
   function inspect(o) {
     const S = St.S;
+    if (o.fid === 'glowflower') { Game.codex('glowgrass'); Game.codex('crystaltree'); return UI.toast('✨ 발광초가 은은하게 숨 쉬듯 빛난다.'); }
+    if (o.fid === 'flowerbed') { Game.codex('glassflower'); return UI.toast('🌸 유리꽃 꽃잎이 빛을 받아 무지갯빛으로 반짝인다.'); }
+    if (o.fid === 'specimen') { Game.codex('drifter'); return UI.toast('🧪 배양조 안에서 반투명한 생명체가 천천히 떠오른다.'); }
+    if (o.fid === 'alienbench') Game.codex('chitin');
     if (o.fid === 'alienbench') { if (Game.cap.map === Game.mapId) return say1('C^:그거? 외곽에서 주운 잔해로 만드는 중이야. 완성되면 너 줄게.'); return UI.toast('🔮 외계 생명체 잔해가 은은하게 빛난다. 무언가 만드는 중인 것 같다.'); }
     if (o.fid === 'stonedisplay') return UI.toast(`🪨 ${PX.U.josa(S.capName, '이')} 준 돌. 빛을 받으면 줄무늬가 반짝인다.`);
     UI.toast('🧪 배양조 안에서 외계 식물이 천천히 흔들린다.');
@@ -424,6 +533,7 @@
   function interactables() {
     const m = W.maps[Game.mapId], list = [];
     for (const o of m.objs) {
+      if (o.hidden) continue;
       if (o.kind === 'bld' && o.door) list.push({ type: 'door', o, x: o.door.x + 0.5, y: o.door.y + 0.5, label: o.door.closed ? `🚧 ${o.b.name}` : `🚪 ${o.b.name} 들어가기`, fn: () => enterBuilding(m.doors.find(d => d.bld === o)) });
       else if (o.kind === 'furn' && (o.use || (o.seats && o.seats.length))) {
         const a = W.accessTile(m, o);
@@ -431,12 +541,15 @@
       }
     }
     if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: '🚪 밖으로 나가기', fn: leaveRoom });
+    for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });
     if (Game.cap.map === Game.mapId) list.push({ type: 'cap', a: Game.cap, x: Game.cap.x, y: Game.cap.y, label: `💗 ${St.S.capName}`, fn: capMenu });
     return list;
   }
   function objLabel(o) {
     const job = PX.JOBS[St.S.player.job], home = PX.MAPS[Game.mapId].home;
+    const L0 = { grill: '🥓 냉삼 먹기', claw: '🐰 인형 뽑기', show: '🌠 투영 보기', stall: '🏮 축제 매대' };
+    if (L0[o.use]) return L0[o.use];
     const L = { bed: home ? '🛏️ 침대' : '🛏️ 잠깐 눕기', sit: '🪑 앉기', terminal: '📟 개인 단말', album: '📷 사진첩', storage: '🗄️ 수납장', shop: '🛒 상점', vending: '🥤 자판기', meal: '🍱 식사하기', wardrobe: '👕 옷장', fridge: '🧊 냉장고', kitchen: '🍳 요리하기', tv: '📺 TV 보기', cooler: '❄️ 냉각기', shower: '🚿 샤워하기', sink: '🫧 세면대', workout: '💪 운동하기', arcade: '👾 오락기', game: '🃏 카드 게임', inspect: '🔍 살펴보기', kiosk: 'ℹ️ 안내 단말', shuttle: '🚌 셔틀 타기', desk: '🖥️ 살펴보기', work: o.spot === job.workSpot ? '🛠️ 근무하기' : '🔍 살펴보기' };
     return L[o.use] || (o.seats && o.seats.length ? '🪑 앉기' : '🔍 살펴보기');
   }
@@ -450,8 +563,10 @@
     if (hit) { const it = list.find(i => i.a === hit); return goInteract(it, hit.x, hit.y); }
     const [wx, wy] = W.toWorld(sx, sy);
     const tx = Math.floor(wx), ty = Math.floor(wy);
-    // 2) 출구 매트
+    // 2) 출구 매트 · 연결 통로
     if (m.kind === 'in' && tx === m.exit.x && ty === m.exit.y) return goInteract(list.find(i => i.type === 'exit'));
+    const lk = list.find(i => i.type === 'link' && ty >= i.l.y0 - 1 && ty <= i.l.y0 + 1 && tx >= i.l.x0 && tx <= i.l.x1);
+    if (lk) return goInteract(lk);
     // 3) 가구 · 건물 (발밑 + 스프라이트 높이 고려: 위쪽으로 몇 칸까지 확인)
     for (let k = 0; k < 4; k++) {
       const cx = wx + k * 0.5, cy = wy + k * 0.5; // 화면 위쪽 클릭 → 뒤쪽 물체
@@ -460,7 +575,7 @@
       if (o) {
         const it = list.find(i => i.o === o);
         if (it) return goInteract(it);
-        if (o.kind === 'bld') { UI.toast(`🏢 ${o.b.name}`); return; }
+        if (o.kind === 'bld') { UI.toast(o.closedMsg || `🏢 ${o.b.name}`); return; }
         if (k === 0) { UI.toast(`${o.f.name}`); return; }
       }
     }
@@ -481,6 +596,7 @@
     let gx = Math.floor(tx), gy = Math.floor(ty);
     if (it.a) { const t = PX.Path.nearestWalkable(m, it.a.x + 0.8, it.a.y + 0.8, 3); if (t) { gx = t[0]; gy = t[1]; } }
     const allow = it.type === 'exit' ? (x, y) => x === m.exit.x && y === m.exit.y : undefined;
+    if (it.type === 'link') { gy = it.l.y0 === 0 ? 1 : it.l.y0 - 1; }
     const path = PX.Path.find(m, Math.floor(p.x), Math.floor(p.y), gx, gy, { allow });
     if (!path) { UI.toast('그곳까지 갈 길이 없어요'); return; }
     p.speedNow = path.length > 8 ? 5.4 : 3.6;
@@ -543,6 +659,7 @@
     if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) p.x = nx; else if (free(p.x, ny)) p.y = ny;
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
     if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
+    for (const l of m.links || []) if (Math.floor(p.y) === l.y0 && Math.floor(p.x) >= l.x0 && Math.floor(p.x) <= l.x1) { goLink(l); break; }
   }
   function actionBtn() {
     if (Game.player.seat) { standUp(); return; }
@@ -596,6 +713,22 @@
   // 오버레이: 목적지 표시 · 감정 아이콘 · 가까운 물체 화살표
   function overlay(g) {
     PX.Decor.overlay(g);
+    const S = St.S, md = PX.MAPS[Game.mapId], now = performance.now() / 1000;
+    if (md.stars) { // 투영실 천장 별
+      const r = U.rng('stars' + Math.floor(now / 3));
+      const n = Game.showing ? 70 : 24;
+      for (let i = 0; i < n; i++) { const x = (r() * W.view.w) | 0, y = (r() * W.view.h * 0.6) | 0; g.fillStyle = r() < 0.3 ? '#bfe3ff' : '#ffffff'; g.globalAlpha = 0.4 + 0.5 * Math.abs(Math.sin(now * 2 + i)); g.fillRect(x, y, 1, 1); if (Game.showing && i % 9 === 0) { const t = (now * 40 + i * 37) % 120; g.fillRect(x, y + t * 0.6, 1, 3); } }
+      g.globalAlpha = 1;
+    }
+    if (Game.mapId === 'plaza' && Cal.openAt(PX.LORE_BY_ID.LB58, S.time, S.time.min)) { // 투명수로 정원 입체영상 물고기
+      for (let i = 0; i < 9; i++) {
+        const fx = 39.5 + ((now * (0.3 + i * 0.05) + i * 1.7) % 10), fy = 16 + (i * 2.1) % 18 + Math.sin(now + i) * 0.4;
+        const [sx, sy] = W.toScreen(fx, fy);
+        g.fillStyle = ['#7fe3ff', '#ffb36b', '#ff7ac8'][i % 3]; g.globalAlpha = 0.75;
+        g.fillRect(sx - 2, sy, 4, 2); g.fillRect(sx - 4, sy - 1, 2, 4); g.globalAlpha = 1;
+      }
+      if (!S.codex || !S.codex.holofish) { const p = Game.player; if (p.x > 39 && p.y > 15 && p.y < 35) Game.codex('holofish'); }
+    }
     const tg = Game.target;
     if (tg && Game.player.path.length) {
       tg.t += 0.05;
@@ -637,6 +770,7 @@
   // ---------- 시간 이벤트 ----------
   St.on('minute', () => {
     const S = St.S;
+    if (S.time.min % 5 === 0 && Game.mapId) W.updateEvents(W.maps[Game.mapId], S.time, S.time.min);
     if (!Game.sleeping) S.energy = Math.max(0, S.energy - 0.025);
     Cap.msgTick();
     // 새벽 2시까지 안 자면 쓰러지듯 잠든다
@@ -647,6 +781,7 @@
   });
   St.on('newDay', () => {
     const S = St.S;
+    St.makeQuests();
     S.rel.cap.talksToday = 0;
     // 계절이 바뀌면 옷 갱신
     Game.player.app = PX.S.playerApp(S.player, St.season()); Game.capOutfit();

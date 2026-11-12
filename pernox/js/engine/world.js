@@ -45,7 +45,7 @@ PX.W = (() => {
       if (plaza) fill(plaza.x0, plaza.y0, plaza.x1, plaza.y1, 'plaza');
       // 건물
       for (const b of def.buildings) {
-        const o = { kind: 'bld', id: b.id, b, x: b.x, y: b.y, fw: b.w, fd: b.d, blocks: true, name: b.name };
+        const o = { kind: 'bld', id: b.id, b, x: b.x, y: b.y, fw: b.w, fd: b.d, blocks: true, name: b.name, closedMsg: b.closedMsg };
         m.objs.push(o);
         for (let y = b.y; y < b.y + b.d; y++) for (let x = b.x; x < b.x + b.w; x++) m.walk[y * m.w + x] = 0;
         if (b.door) {
@@ -53,7 +53,7 @@ PX.W = (() => {
           const ex = b.door.f === 'L' ? b.x + b.door.u + Math.floor(dw / 2) : b.x + b.w;
           const ey = b.door.f === 'L' ? b.y + b.d : b.y + b.door.u + Math.floor(dw / 2);
           o.door = { x: ex, y: ey, to: b.to, closed: !!b.closed };
-          m.doors.push({ x: ex, y: ey, to: b.to, bld: o, closed: !!b.closed, name: b.name });
+          m.doors.push({ x: ex, y: ey, to: b.to, bld: o, closed: !!b.closed, name: b.name, closedMsg: b.closedMsg });
           // 문등 (밤)
           const lp = b.door.f === 'L' ? [b.x + b.door.u + dw / 2, b.y + b.d + 0.2] : [b.x + b.w + 0.2, b.y + b.door.u + dw / 2];
           if (!b.closed) m.lights.push({ x: lp[0], y: lp[1], z: 34, r: 3.2, c: '#ffd9a0', night: true });
@@ -71,7 +71,8 @@ PX.W = (() => {
           if (out) { m.walk[y * m.w + x] = 0; if (r() < 0.05 && !(x >= 29 && x <= 33 && y > 61)) m.objs.push(mkDecor(m, r() < 0.3 ? 'rockbig' : 'rock', x, y, 0, true)); }
         }
       }
-      (def.decor || []).forEach(([fid, x, y, rr]) => m.objs.push(mkDecor(m, fid, x, y, rr || 0)));
+      (def.decor || []).forEach(([fid, x, y, rr, ev]) => { const o = mkDecor(m, fid, x, y, rr || 0); if (ev) o.event = ev; m.objs.push(o); });
+      m.links = (def.links || []).map(l => Object.assign({}, l));
       for (const k in def.spots || {}) { const [x, y, dir, pose] = def.spots[k]; m.spots[k] = { x: x + 0.5, y: y + 0.5, dir, pose, z: 0 }; }
       // 물 타일은 못 걷는다
       for (let i = 0; i < m.tiles.length; i++) if (m.tiles[i] === 'water') m.walk[i] = 0;
@@ -87,7 +88,7 @@ PX.W = (() => {
     const [fw, fd] = O.footprint(f, r);
     const o = { kind: 'furn', fid, f, x, y, r, fw, fd, blocks: f.blocks, use: f.use, desert };
     o.seats = O.seatsOf(f, r).map(s => ({ x: x + s.x, y: y + s.y, dir: s.dir, z: s.z, obj: o, by: null }));
-    if (f.light) m.lights.push({ x: x + fw / 2, y: y + fd / 2, z: f.light.z, r: f.light.r, c: f.light.c, night: !!f.light.night, obj: o });
+    if (f.light) { o.light = { x: x + fw / 2, y: y + fd / 2, z: f.light.z, r: f.light.r, c: f.light.c, night: !!f.light.night, obj: o }; m.lights.push(o.light); }
     if (f.blocks && !desert) for (let yy = y; yy < y + fd; yy++) for (let xx = x; xx < x + fw; xx++) if (xx < m.w && yy < m.h) m.walk[yy * m.w + xx] = 0;
     return o;
   }
@@ -100,6 +101,17 @@ PX.W = (() => {
     if (f.light) { o.light = { x: x + fw / 2, y: y + fd / 2, z: f.light.z, r: f.light.r, c: f.light.c, night: !!f.light.night, obj: o }; m.lights.push(o.light); }
     m.objs.push(o);
     return o;
+  }
+  // 행사 매대: 해당 로어북 행사가 열려 있을 때만 보이고 길을 막는다
+  function updateEvents(m, date, min) {
+    for (const o of m.objs) {
+      if (!o.event) continue;
+      const on = o.event.some(id => PX.Cal.openAt(PX.LORE_BY_ID[id], date, min));
+      if (o.hidden === !on) continue;
+      o.hidden = !on;
+      for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) m.walk[y * m.w + x] = on && o.blocks ? 0 : 1;
+      if (o.light) o.light.off = !on;
+    }
   }
   // 가구 하나 다시 배치 (꾸미기 모드)
   function rebuildWalk(m) {
@@ -307,6 +319,7 @@ PX.W = (() => {
       dg.globalCompositeOperation = 'destination-out';
       const lights = m.lights.concat(extra && extra.lights || []);
       for (const L of lights) {
+        if (L.off) continue;
         const [lx, ly] = toScreen(L.x, L.y, L.z * 0.5);
         const r = L.r * 16;
         if (lx < -r || ly < -r || lx > W + r || ly > H + r) continue;
@@ -319,6 +332,7 @@ PX.W = (() => {
       // 따뜻한 빛 번짐
       g.globalCompositeOperation = 'lighter';
       for (const L of lights) {
+        if (L.off) continue;
         const [lx, ly] = toScreen(L.x, L.y, L.z * 0.5);
         const r = L.r * 9;
         if (lx < -r || ly < -r || lx > W + r || ly > H + r) continue;
@@ -365,5 +379,5 @@ PX.W = (() => {
     for (const p of parts) { p.t += env.dt; p.y -= 5 * env.dt; p.x += Math.sin(p.t + p.s * 7) * 4 * env.dt; if (p.y < -2) { p.y = H + 2; p.x = Math.random() * W; } g.fillStyle = `rgba(190,240,255,${0.3 + 0.3 * Math.sin(p.t * 2)})`; g.fillRect(p.x | 0, p.y | 0, 1, 1); }
   }
 
-  return { build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
+  return { updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
 })();

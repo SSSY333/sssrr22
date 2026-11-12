@@ -103,7 +103,7 @@ PX.Decor = (() => {
     if (FIXED.includes(sel.fid)) { PX.UI.toast('이 가구는 숙소에 고정돼 있어요'); return; }
     if ((sel.f.use === 'bed') && m.objs.filter(o => o.kind === 'furn' && o.f.use === 'bed').length <= 1) { PX.UI.toast('침대는 하나는 있어야 해요'); return; }
     m.objs.splice(m.objs.indexOf(sel), 1);
-    const item = sel.fid === 'stonedisplay' ? 'capStone' : 'f_' + sel.fid;
+    const item = sel.fid === 'stonedisplay' ? 'capStone' : (Object.values(PX.ITEMS).find(i => i.furn === sel.fid && !i.id.startsWith('f_')) || { id: 'f_' + sel.fid }).id;
     St.addItem(item); PX.UI.toast(`📦 ${PX.U.josa(sel.f.name, '을')} 보관함에 넣었어요`);
     sel = null; W.rebuildWalk(m); hint();
   }

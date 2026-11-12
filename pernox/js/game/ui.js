@@ -162,7 +162,7 @@ PX.UI = (() => {
   }
 
   // ---------- 개인 단말 ----------
-  const TABS = [['map', '🗺️ 지도'], ['cal', '📅 일정표'], ['duty', '🗓️ 근무표'], ['rel', '💞 관계도'], ['msg', '📱 메시지'], ['contacts', '👥 연락처'], ['inv', '🎒 소지품'], ['album', '📷 사진첩'], ['lore', '📚 로어북'], ['set', '⚙️ 설정·저장']];
+  const TABS = [['map', '🗺️ 지도'], ['cal', '📅 일정표'], ['duty', '🗓️ 근무표'], ['rel', '💞 관계도'], ['msg', '📱 메시지'], ['contacts', '👥 연락처'], ['inv', '🎒 소지품'], ['quest', '📋 부탁'], ['codex', '📗 생태도감'], ['album', '📷 사진첩'], ['lore', '📚 로어북'], ['set', '⚙️ 설정·저장']];
   let termTab = 'cal';
   function terminal(tab) {
     if (tab) termTab = tab;
@@ -299,6 +299,27 @@ PX.UI = (() => {
         p.append(row);
       }
       p.append(el('p', { class: 'muted' }, `소지금 ₢${S.money} · 기력 ${Math.round(S.energy)}/100`));
+    },
+    quest(p) {
+      const S = St.S;
+      const qs = (S.quests || []);
+      if (!qs.length) p.append(el('p', { class: 'muted' }, '오늘 들어온 부탁이 없어요.'));
+      for (const q of qs) {
+        const n = PX.NPC_BY_ID[q.npc], it = PX.ITEMS[q.item];
+        const npc = PX.Game.npcs.find(x => x.id === q.npc);
+        const where = npc && npc.map ? PX.MAPS[npc.map].name : '지금은 자리에 없음';
+        p.append(el('div', { class: 'ev' + (q.done ? ' done' : '') }, el('b', null, `${q.done ? '✅' : '📌'} ${n.name}: ${it.icon} ${it.name} 구해 주기`), el('small', null, `사례 ₢${q.reward} · ${q.hint} · ${n.name} 위치: ${where}${St.has(q.item) && !q.done ? ' · 가지고 있음!' : ''}`), el('p', null, q.done ? '전달 완료' : `남은 기한 ${Math.max(1, 3 - (S.day - q.day))}일 · 물건을 들고 ${n.name}에게 말을 거세요.`)));
+      }
+      p.append(el('p', { class: 'muted' }, `지금까지 들어준 부탁 ${S.stats.quests || 0}건. 매일 아침 새 부탁이 와요.`));
+    },
+    codex(p) {
+      const S = St.S, c = S.codex || {};
+      const n = PX.CODEX.filter(e => c[e.id]).length;
+      p.append(el('p', { class: 'muted' }, `등록 ${n} / ${PX.CODEX.length} · 연구원은 검역 분류, 수색 소위는 드론 정찰로 많이 채울 수 있어요. 화단·배양조를 살펴보기도 해 보세요.`));
+      for (const e of PX.CODEX) {
+        const got = c[e.id] != null;
+        p.append(el('div', { class: 'ev' }, el('b', null, got ? `${e.n}` : '??? '), el('small', null, got ? e.t : `힌트: ${e.how}`), got ? el('p', null, e.d) : null));
+      }
     },
     album(p) {
       const S = St.S;

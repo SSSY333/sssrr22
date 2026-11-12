@@ -108,15 +108,21 @@ PX.A = (() => {
   function entryPoint(mapId, fromMap) {
     const m = PX.W.maps[mapId];
     if (m.kind === 'in') return { x: m.exit.x + 0.5, y: m.exit.y - 0.5 };
-    if (fromMap) { const d = m.doors.find(d => d.to === fromMap); if (d) return { x: d.x + 0.5, y: d.y + 0.5 }; }
-    return mapId === 'base' ? { x: 31.5, y: 59.5 } : { x: 23.5, y: 40.5 };
+    if (fromMap) {
+      const d = m.doors.find(d => d.to === fromMap); if (d) return { x: d.x + 0.5, y: d.y + 0.5 };
+      const fromOut = PX.MAPS[fromMap].kind === 'out' ? fromMap : PX.MAPS[fromMap].parent;
+      const l = (m.links || []).find(l => l.to === fromOut); if (l) return { x: l.ax2 != null ? l.ax2 : (l.x0 + l.x1) / 2 + 0.5, y: l.y0 + (l.y0 === 0 ? 1.5 : -0.5) };
+    }
+    return mapId === 'base' ? { x: 31.5, y: 59.5 } : mapId === 'plaza' ? { x: 25.5, y: 47.5 } : { x: 23.5, y: 40.5 };
   }
   // 이 맵에서 목적지 맵으로 나가는 곳
   function exitPoint(m, toMap) {
     if (m.kind === 'in') return { x: m.exit.x, y: m.exit.y };
     const d = m.doors.find(d => d.to === toMap);
     if (d) return { x: d.x, y: d.y };
-    return m.id === 'base' ? { x: 31, y: 60 } : { x: 23, y: 41 };
+    const toOut = toMap ? (PX.MAPS[toMap].kind === 'out' ? toMap : PX.MAPS[toMap].parent) : null;
+    const l = (m.links || []).find(l => l.to === toOut); if (l) return { x: Math.floor((l.x0 + l.x1) / 2), y: l.y0 };
+    return m.id === 'base' ? { x: 31, y: 60 } : m.id === 'plaza' ? { x: 25, y: 51 } : { x: 23, y: 41 };
   }
 
   // ---------- NPC ----------
@@ -167,7 +173,7 @@ PX.A = (() => {
       if (d.map === this.map) { if (this.atSpot !== d.name) this.headTo(d); return; }
       // 다른 맵으로 가야 함 → 출구로 걸어가서 사라짐
       const m = PX.W.maps[this.map];
-      const target = d.map ? (PX.MAPS[d.map].kind === 'in' && PX.MAPS[d.map].parent === this.map ? d.map : (m.kind === 'in' ? m.def.parent : null)) : null;
+      const target = d.map ? (PX.MAPS[d.map].kind === 'in' && PX.MAPS[d.map].parent === this.map ? d.map : (m.kind === 'in' ? m.def.parent : d.map)) : null;
       const ep = exitPoint(m, target);
       this.atSpot = null;
       if (!this.goTo(m, ep.x, ep.y, () => { this.map = d.map; this.atSpot = null; if (d.map) { if (d.map !== playerMap) this.arrive(d); } }, { allow: (x, y) => x === ep.x && y === ep.y })) { this.map = d.map; if (d.map) this.arrive(d); }

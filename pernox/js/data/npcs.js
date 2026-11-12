@@ -127,13 +127,13 @@
     lines: { g: ['어서 오세요! 오늘 향열매 상태 최고예요.', '여름엔 빙수, 겨울엔 코코아. 그게 국룰이죠!', '단골은 얼음 추가 무료예요.', '연인이랑 오면 컵에 하트 그려 드려요.'],
       cap: ['그 덩치 큰 손님, 얼음만 세 컵 시켜요. 그리고 {pf} 님 음료는 꼭 자기가 계산해요.'] } });
   add({ id: 'moon', name: '문성호', age: 44, job: '냉삼집 사장', team: '돔시티', look: look(3, 'crew', '흑발', '갈색', { top: '#d0563b', bottom: '#3a3a3a', hat: '#f4efe4' }),
-    personality: '대위의 단골집 사장. 화끈하다.', work: '냉삼집 거리 (Alpha 0.2 개장)', home: '-',
-    sched: '10:00 dome.plaza|11:00 -', we: '10:00 dome.plaza|11:00 -',
+    personality: '대위의 단골집 사장. 화끈하다.', work: '냉삼집 (중앙광장 상업구역)', home: '-',
+    sched: '10:30 sg.boss|23:30 -', we: '10:30 sg.boss|23:30 -',
     likesFood: '냉삼', likesGift: '광물염', rel: '단골집 사장',
-    lines: { g: ['가게 수리 중이라 잠깐 나와 있어요. 곧 다시 열 거예요!', '냉삼은 불 세기가 생명이야.', '{c} 대위? 우리 집 기둥 단골이지.'] } });
+    lines: { g: ['어서 와요! 불판 달궈 놨어요.', '{c} 대위 오면 고기 두 배로 썰어 놔야 돼요. 그 양반 혼자 세 판 먹어요.', '냉삼은 불 세기가 생명이야.', '{c} 대위? 우리 집 기둥 단골이지.'] } });
   add({ id: 'go', name: '고유림', age: 27, job: '꽃시장 상인', team: '돔시티', look: look(0, 'long', '금발', '파랑', { top: '#ff9ed2', bottom: '#f4efe4' }),
-    personality: '유리꽃과 장식품을 판다. 수다스럽다.', work: '유리돔 꽃시장 (Alpha 0.2 개장)', home: '민간 주거구역',
-    sched: '10:00 dome.bench|18:00 -', we: '10:00 dome.bench|18:00 -',
+    personality: '유리꽃과 장식품을 판다. 수다스럽다.', work: '유리돔 꽃시장', home: '민간 주거구역',
+    sched: '09:30 fl.clerk|18:30 -', we: '09:30 fl.clerk|18:30 -',
     likesFood: '향열매 캔디', likesGift: '향열매 향수', rel: '이웃',
     lines: { g: ['꽃시장은 3~4월이랑 10월 주말에 열려요!', '유리꽃은 빛을 먹고 반짝여요. 진짜로요.', '선물용이면 포장 예쁘게 해 드릴게요.'] } });
   add({ id: 'cha', name: '차민호', age: 34, job: '우주항구 직원 (수송선 일정)', team: '우주항구', look: look(1, 'short', '흑발', '갈색', { top: '#3b5fa8', bottom: '#2c3e66', hat: '#3b5fa8' }),
@@ -143,12 +143,12 @@
     lines: { g: ['셔틀은 부대 정문이랑 돔시티를 30분 간격으로 오가요.', '항로 폐쇄 대기 주간엔 보급선이 안 와요. 간식 미리 사 두세요.', '지구행 수송선은 매달 마지막 금요일 아침이에요.'] } });
   add({ id: 'hong', name: '홍세아', age: 29, job: '돔시티 여행 안내원', team: '돔시티', look: look(0, 'bob', '흑발', '갈색', { top: '#ffd166', bottom: '#3a3f4a', hat: '#ffd166' }),
     personality: '관광 정보 전문가. 친절하다.', work: '중앙광장 안내 단말', home: '민간 주거구역',
-    sched: '09:00 dome.plaza|18:00 -', we: '09:00 dome.plaza|19:00 -',
+    sched: '09:00 plaza.kiosk|18:00 -', we: '09:00 plaza.kiosk|19:00 -',
     likesFood: '향열매 빙수', likesGift: '유리꽃 모조 장식', rel: '이웃',
     lines: { g: ['인공노을 회랑은 매일 17시 40분! 놓치지 마세요.', '빛먼지 산책교는 수요일이랑 토요일 밤이에요.', '별비 투영실은 1일, 15일, 그리고 마지막 날!', '은사막 전망대는 가을 새벽이 제일 예뻐요.'] } });
   add({ id: 'yu', name: '유건우', age: 40, job: '민간 경비원', team: '돔시티', look: look(2, 'crew', '갈색', '갈색', { top: '#2f3a4a', bottom: '#2a2d33', badge: '#e8c56a' }),
     personality: '도시 소문에 밝다. 듬직하다.', work: '돔시티 순찰', home: '-',
-    sched: '08:00 dome.lab|12:00 dome.apt|16:00 dome.plaza|22:00 -', we: '10:00 dome.plaza|20:00 -',
+    sched: '08:00 dome.lab|11:00 plaza.gate|14:00 plaza.water|17:00 plaza.street|20:00 dome.plaza|22:00 -', we: '10:00 plaza.fountain|15:00 plaza.water|20:00 -',
     likesFood: '냉훈제 생선', likesGift: '아이스커피', rel: '이웃',
     lines: { g: ['밤길 조심해요. 돔 안이라도요.', '봉인 화물 이야기? 반은 헛소문이에요. 반은… 모르죠.', '술집 골목엔 헌병 순찰 돌아요. 걱정 마세요.'] } });
 
