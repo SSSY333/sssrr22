@@ -203,12 +203,14 @@ PX.W = (() => {
     const pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
     view.base = Math.max(2, Math.round(pw / 250));
     view.zoom = Math.max(1, Math.min(view.base + 3, view.base + (view.zoomOff || 0)));
-    view.w = Math.ceil(pw / view.zoom); view.h = Math.ceil(ph / view.zoom);
+    // 화면보다 사방 1픽셀씩 크게 그려 두고, 카메라의 소수점만큼 CSS로 밀어서 부드럽게 스크롤한다
+    view.w = Math.ceil(pw / view.zoom) + 2; view.h = Math.ceil(ph / view.zoom) + 2;
+    view.cssScale = cw / (view.w - 2);
     view.cv.width = view.w; view.cv.height = view.h;
-    view.cv.style.width = cw + 'px'; view.cv.style.height = ch + 'px';
+    view.cv.style.width = view.w * view.cssScale + 'px'; view.cv.style.height = view.h * view.cssScale + 'px';
+    view.cv.style.inset = 'auto'; view.cv.style.left = '0'; view.cv.style.top = '0'; view.cv.style.willChange = 'transform';
     view.g.imageSmoothingEnabled = false;
     view.dark = G.canvas(view.w, view.h);
-    view.cssScale = cw / view.w;
   }
   // 화면의 한 점을 눌렀을 때 맨 위에 그려진 물체/사람 (투명한 픽셀은 통과)
   function pick(sx, sy) {

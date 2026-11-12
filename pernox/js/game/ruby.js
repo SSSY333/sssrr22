@@ -12,10 +12,12 @@ PX.Ruby = (() => {
   const SK = () => PX.S.SKINS, HC = () => Object.values(PX.S.HAIRC);
   const FANCY = ['#c2185b', '#2a1f3f', '#1f2a4a', '#5a2f6a', '#e8ebf2', '#3a3f4a', '#7a2f3f', '#2f4f5a', '#d6a2ff', '#111317'];
   const HAIRS = ['short', 'bob', 'long', 'bun', 'curly', 'wolf', 'crew', 'pony'];
-  function randomLook(seed, o = {}) {
+  const CASUAL = ['#f4efe4', '#7fb6e6', '#ffd166', '#b8f0c8', '#ff9e7a', '#d9c8ff', '#8fd3c8', '#f2b8c6', '#6b8fd0', '#e8ebf2', '#c9a27a'];
+  const PANTS = ['#4a5a7a', '#6b6f7a', '#3d3f47', '#7a6a55', '#2f4f5a'];
+  function randomLook(seed, o = {}, casual) {
     const r = (n) => { seed = (seed * 9301 + 49297) % 233280; return Math.floor(seed / 233280 * n); };
     const big = r(2);
-    return Object.assign({ big, skin: SK()[r(5)], hair: HAIRS[r(HAIRS.length)], hairColor: HC()[r(HC().length)], eye: '#2a2228', top: FANCY[r(FANCY.length)], bottom: FANCY[r(4) + 1], shoe: '#1f1c22', sleeve: r(2) ? 'long' : 'short', brows: '#2a2433' }, big ? { hair: ['short', 'crew', 'wolf'][r(3)] } : {}, o);
+    return Object.assign({ big, skin: SK()[r(5)], hair: HAIRS[r(HAIRS.length)], hairColor: HC()[r(HC().length)], eye: '#2a2228', top: casual ? CASUAL[r(CASUAL.length)] : FANCY[r(FANCY.length)], bottom: casual ? PANTS[r(PANTS.length)] : FANCY[r(4) + 1], shoe: '#1f1c22', sleeve: r(2) ? 'long' : 'short', brows: '#2a2433' }, big ? { hair: ['short', 'crew', 'wolf'][r(3)] } : {}, o);
   }
   const UNI = { top: '#4f5a3d', bottom: '#3f4a30', shoe: '#1f1c22' };
   // role: 이름 · 외형 덧씌우기 · 대사 (혼잣말 amb / 말 걸면 talk)
@@ -29,9 +31,9 @@ PX.Ruby = (() => {
     guest: { names: ['향을 고르는 손님'], talk: ['이 향, 제 애인이 좋아할까요?', '향수 이름을 직접 지을 수 있대요.'], amb: ['음… 이거 좋다.', '킁킁.'] },
     dealer: { names: ['딜러 칩'], look: { top: '#111317', bottom: '#111317', hair: 'short', big: 1 }, talk: ['여긴 큰돈 거는 데가 아니에요. 가벼운 내기, 서로 동의한 벌칙만.', '카드 하이로우 한 판? 세 번 중 두 번 맞히면 이겨요.', '벌칙은 둘 다 좋다고 해야 성립합니다. 그게 다이스키스 규칙이에요.'], amb: ['자, 한 판 더!', '주사위 굴러갑니다~'] },
     gamer: { names: ['내기 중인 손님'], talk: ['방금 벌칙으로 노래했어요. 아직 얼굴 빨개요.', '저 사람, 지고도 웃고 있어요. 벌칙이 뭐였길래.'], amb: ['한 판 더!', '아 졌다!', '벌칙! 벌칙!'] },
-    bartender: { names: ['가면 쓴 바텐더'], look: { top: '#2a2f4a', mask: '#c9ccd6' }, talk: ['여기선 이름 대신 별칭이에요. 손님 별칭은요?', '가면을 써도 웃는 입은 안 가려져요.', '…저기 저분, 가면 썼는데 덩치 때문에 다 알아봐요. 수색팀이죠?'], amb: ['한 잔 하시겠어요?', '오늘 음악 좋네요.'] },
-    maskhost: { names: ['가면 안내원'], look: { top: '#e8ebf2', mask: '#e8ebf2', big: 0, hair: 'bob' }, talk: ['가면 걸이에서 하나 골라 쓰세요. 나갈 때 두고 가시면 돼요.', '여기선 누구도 신원을 묻지 않아요. 묻는 사람은 제가 내보내요.'], amb: ['가면 쓰세요~', '별칭 정하셨어요?'] },
-    dancer: { names: ['춤추는 손님'], look: { mask: '#c9ccd6' }, talk: ['같이 출래요? 아, 일행 있으시구나.', '가면 쓰면 덜 부끄러워요.'], amb: ['♪', '오늘 음악 최고!', '한 곡 더!'] },
+    bartender: { names: ['가면 쓴 바텐더'], look: { top: '#2a2f4a', mask: 'lace' }, talk: ['여기선 이름 대신 별칭이에요. 손님 별칭은요?', '가면을 써도 웃는 입은 안 가려져요.', '…저기 저분, 가면 썼는데 덩치 때문에 다 알아봐요. 수색팀이죠?'], amb: ['한 잔 하시겠어요?', '오늘 음악 좋네요.'] },
+    maskhost: { names: ['가면 안내원'], look: { top: '#e8ebf2', mask: 'moon', big: 0, hair: 'bob' }, talk: ['가면 걸이에서 하나 골라 쓰세요. 나갈 때 두고 가시면 돼요.', '여기선 누구도 신원을 묻지 않아요. 묻는 사람은 제가 내보내요.'], amb: ['가면 쓰세요~', '별칭 정하셨어요?'] },
+    dancer: { names: ['춤추는 손님'], look: { mask: '?' }, talk: ['같이 출래요? 아, 일행 있으시구나.', '가면 쓰면 덜 부끄러워요.'], amb: ['♪', '오늘 음악 최고!', '한 곡 더!'] },
     host: { names: ['미드나잇 룸 매니저'], look: { top: '#2a1f3f', bottom: '#111317' }, talk: ['예약제 라운지입니다. 두 시간, 방음은 확실해요.', '음악 채널과 향은 손님이 직접 고르실 수 있어요.'], amb: ['조용히 쉬다 가세요.'] },
     usher: { names: ['쇼룸 안내원'], look: { top: '#3a2a4a' }, talk: ['반투명 커튼 너머 실루엣 공연이에요. 공연자와 관객의 접촉은 금지입니다.', '무대 앞에 앉으시면 공연이 시작돼요. 관람료 ₢20.', '…함께 오신 분 표정이 좀 무서운데요. 괜찮으세요?'], amb: ['곧 공연 시작합니다.'] },
     audience: { names: ['관객'], talk: ['커튼 그림자만으로도 이렇게 설렐 줄이야.', '옆자리 군인 분이 계속 한숨 쉬어요.'], amb: ['와…', '쉿.'] },
@@ -41,6 +43,27 @@ PX.Ruby = (() => {
     early: { names: ['새벽 손님'], talk: ['밤새 놀고 씻으러 왔어요. 이게 루비웨이 코스예요.', '어젯밤 다이스키스에서 벌칙으로 업혀 다녔어요.'], amb: ['하암…', '개운하다.'] },
     innclerk: { names: ['은밀숙소 프런트'], look: { top: '#5a2f3f', bottom: '#2a1f2a' }, talk: ['예약제입니다. 객실은 거울·큰 욕조·물침대 세 가지예요.', '대위님이 예약 화면 보시더니 바로 끄셨다가 다시 켜셨어요. 귀여우시던데요.'], amb: ['어서 오세요.'] },
   };
+  // ---------- 돔시티 · 부대 · 관광지의 사람들 ----------
+  const TEE = { top: '#3d3f47', bottom: '#3f4a30', shoe: '#1f1c22', sleeve: 'short' };
+  Object.assign(ROLES, {
+    citizen: { names: ['돔시티 주민', '퇴근길 연구원', '산책 나온 주민', '장 보러 나온 주민', '개척 2세대 학생'], talk: ['오늘 인공 날씨가 딱 좋네요. 관리국이 기분이 좋은가 봐요.', '보급선 들어오는 주엔 시장이 두 배로 커져요.', '꽃시장은 아침에 가야 해요. 오후엔 좋은 게 다 나가요.', '투명수로 정원, 밤에 꼭 가 보세요. 바닥에 물고기가 지나가요.', '돔 천장 청소하는 날엔 하늘이 줄무늬가 돼요. 귀엽죠.', '냉삼집 줄이 길면 그날은 군인 외출일이에요.', '여기서 태어났어요. 지구는 사진으로만 봤고요.'], amb: ['오늘 뭐 먹지.', '날씨 좋다.', '아, 늦었다.', '빵 냄새 난다.', '저기 새 가게 생겼네.'] },
+    shopper: { names: ['물건 고르는 손님', '단골손님', '구경하는 손님'], browse: true, talk: ['이거랑 저거 중에 뭐가 나을까요? …아, 혼잣말이었어요.', '여기 단골이에요. 사장님이 제 취향을 다 알아요.', '선물 고르는 중이에요. 어렵네요.', '보급선 들어온 날 와야 물건이 많아요.'], amb: ['음… 이게 나으려나.', '이거 얼마지?', '하나만 사야지. 하나만.', '어, 이거 새로 나왔네.'] },
+    cafeguest: { names: ['카페 손님', '책 읽는 손님'], talk: ['여기 빙수는 얼음이 달라요.', '카페에선 시간이 천천히 가요. 그래서 와요.', '컵에 그림 그려 주는 거 받아 보셨어요? 전 오늘 고양이였어요.'], amb: ['후… 좋다.', '한 잔 더 할까.', '여기 조용해서 좋아.'] },
+    arcader: { names: ['오락실 꼬마 고수', '점수 내는 학생', '인형 노리는 손님'], browse: true, talk: ['저 인형 뽑기, 왼쪽으로 반 칸 더 가야 돼요. 제 연구 결과예요.', '최고 점수 "LJH"가 누군지 아세요? 군인이래요.', '동전 다 썼어요. 구경만 하는 중이에요.'], amb: ['아깝다!', '한 판만 더!', '오 신기록?', '으아 떨어졌다.'] },
+    diner: { names: ['식사 중인 손님', '회식 나온 직장인'], talk: ['여기 양념장이 진짜예요.', '고기는 사장님이 뒤집으라고 할 때만 뒤집어야 해요. 혼나요.'], amb: ['한 판 더 주세요!', '아 배부르다.', '여기 밥 하나요!'] },
+    tourist: { names: ['관광객', '사진 찍는 관광객', '다른 행성에서 온 여행자', '신혼여행 온 부부'], talk: ['사진 좀 찍어 주실래요? …아, 괜찮아요. 셀카로 할게요.', '안내 책자에 없는 곳 아세요?', '제3행성에서 왔어요. 여긴 모래 색이 달라요.', '돔 밖 별이 이렇게 많은 줄 몰랐어요.', '기념품은 어디서 사야 해요?'], amb: ['와, 예쁘다!', '여기서 한 장!', '안내 책자 어디 뒀지.', '다리 아프다…'] },
+    traveler: { names: ['탑승 기다리는 승객', '마중 나온 사람', '환승객', '수송선 승무원'], talk: ['제 편이 삼십 분 지연이래요. 커피나 마셔야죠.', '동생이 귀환선으로 와요. 이 년 만이에요.', '짐이 다른 행성으로 갔대요. 저보다 여행을 많이 해요.', '환승만 세 번째예요. 창밖 구경이 제일 싸요.'], amb: ['몇 번 게이트더라.', '아직 안 왔나.', '여권… 있다.', '지연이라니.'] },
+    soldier: { names: ['606부대 병사', '경계병', '보급병', '통신병', '비번 병사'], look: Object.assign({ hat: '#3f4a30' }, UNI), talk: ['충성! …아, 편하게 하라고요? 감사합니다.', '오늘 저녁 뭔지 아십니까? 저는 그것만 기다립니다.', '휴가가 십이 일 남았습니다. 세고 있습니다.', 'PX에 초코바 들어왔답니다. 빨리 가 보십시오.', '어젯밤 불침번이었습니다. 별은 잘 봤습니다.', '헌병 중사님 지나가셨습니까? 모자 삐뚤어져서요.', '생활관 리그 연습 중입니다. 종목은 제기차기입니다.'], amb: ['하나 둘, 하나 둘.', '아 졸려.', '오늘 저녁 뭐지.', '휴가 며칠 남았더라.', '충성.'] },
+    jogger: { names: ['구보 중인 병사', '체력단련 중인 병사'], look: TEE, fast: true, talk: ['헉… 헉… 세 바퀴 남았습니다.', '뛰면 잡생각이 없어집니다. 숨만 찹니다.'], amb: ['하나! 둘!', '헉… 헉…', '한 바퀴 더!'] },
+    pxshopper: { names: ['PX 온 병사', '월급 탄 병사', '간식 사러 온 병사'], look: UNI, browse: true, talk: ['월급 들어온 날입니다. 과자 코너를 지나칠 수 없습니다.', '아이스 팩이 또 품절입니다. 누가 박스째 사 간답니다.', '선임이 라면 사 오랬는데 맛을 까먹었습니다. 큰일입니다.', '보급담당 중사님은 숨겨 둔 게 꼭 있습니다. 물어보면 나옵니다.'], amb: ['라면… 매운맛이었나.', '초코바 있다!', '이번 달 돈 벌써 다 썼네.', '이거 하나만 더.', '뭐 사 오라고 했더라.'] },
+    gymgoer: { names: ['운동하는 병사', '체력 측정 준비 중인 병사'], look: TEE, pose: 'workout', browse: true, talk: ['다음 주가 체력 측정입니다. 벼락치기 중입니다.', '수색팀 대위님 드시는 무게 보셨습니까? 저건 사람이 아닙니다.', '운동 끝나고 먹는 밥이 제일 맛있습니다.'], amb: ['후… 하나 더.', '열여덟… 열아홉…', '아 팔 떨려.', '물 좀.'] },
+    messgoer: { names: ['식사하러 온 병사', '배식 기다리는 병사'], look: UNI, talk: ['오늘 국 냄새 좋습니다. 조리장님 기분 좋으신 날입니다.', '식판은 가득, 시간은 십 분. 이게 군인의 식사입니다.', '김치찌개 나오는 날은 줄이 연병장까지 갑니다.'], amb: ['배고프다.', '오늘 메뉴 뭐지.', '한 그릇 더 받아야지.', '국 냄새 좋다.'] },
+    offduty: { names: ['쉬는 병사', '편지 쓰는 병사'], look: TEE, talk: ['소파는 선착순입니다. 저는 늦었습니다.', '집에 편지 쓰는 중입니다. 세 줄 쓰고 막혔습니다.', '오락기 순서 기다리는 중입니다. 이 하사님이 안 비켜 주십니다.'], amb: ['아 쉬고 싶다.', '편지 뭐라고 쓰지.', '오락기 언제 비지.', '하암.'] },
+    mechanic: { names: ['정비병', '부품 나르는 정비병'], look: { top: '#5a5f66', bottom: '#3f4a30', shoe: '#1f1c22' }, browse: true, talk: ['3번 드론 로터 교체 중입니다. 상사님이 소리만 듣고 아셨습니다.', '공구는 쓴 자리에. 안 그러면 상사님께 혼납니다.', '기름 냄새가 이제 안 납니다. 코가 적응했습니다.'], amb: ['렌치 어디 갔지.', '이거 맞나…', '상사님 오신다.', '나사 하나 남았는데…'] },
+    clerkmil: { names: ['행정병', '당직병'], look: UNI, browse: true, talk: ['근무표 수정이 세 번째입니다. 하사님이 공평하게 짜시느라.', '프린터가 또 삐졌습니다. 화요일이라 그렇습니다.'], amb: ['서류가 어디 갔지.', '프린터 또…', '도장, 도장.'] },
+    researcher: { names: ['연구원', '표본 정리하는 연구원'], look: { top: '#e8ebf2', bottom: '#4a5a6a' }, browse: true, talk: ['발광초가 한 송이 더 폈대요. 조 연구원님이 박수 쳤어요.', '소장님 안경은 이마에 있어요. 말씀드릴까 말까 고민 중이에요.', '표본 번호가 하나 비어요. 큰일이에요.'], amb: ['62퍼센트… 좋아.', '표본 번호가…', '소장님 점심 드셨나.'] },
+    spectator: { names: ['투영 보러 온 관람객', '데이트 중인 관람객'], talk: ['별비 투영은 뒷자리가 명당이에요.', '오늘 프로그램은 지구의 밤하늘이래요.'], amb: ['곧 시작한대.', '자리 여기 괜찮다.', '와…'] },
+  });
   PX.EXTRA = PX.EXTRA || {};
   let seq = 1;
   function spawn(m, g) {
@@ -48,14 +71,17 @@ PX.Ruby = (() => {
     for (const c of def.crowd || []) {
       const R = ROLES[c.role]; if (!R) continue;
       if (c.nightOnly && !night()) continue;
-      const n = c.fixed ? 1 : (night() ? c.n : (c.day != null ? c.day : Math.ceil(c.n / 2)));
+      const hr = St.S.time.min / 60, awake = hr >= (c.from || 7) && hr < (c.to || 22);
+      const n = c.fixed ? 1 : c.busy === 'day' ? (awake ? c.n : Math.floor(c.n / 4)) : (night() ? c.n : (c.day != null ? c.day : Math.ceil(c.n / 2)));
+      if (c.fixed && c.busy === 'day' && !awake) continue;
       for (let i = 0; i < n; i++) {
         const id = 'ex' + (seq++);
-        const look = randomLook(U.hash(m.id + c.role + i) + 7, R.look || {});
-        const a = new PX.A.Actor(id, look, { map: m.id, name: U.pick(R.names), speed: 1.4 + Math.random() * 0.6 });
+        const look = randomLook(U.hash(m.id + c.role + i) + 7, R.look || {}, !m.def.adult);
+        if (look.mask === '?') look.mask = Object.keys(PX.S.MASKS)[(U.hash(c.role + i) + i * 3) % Object.keys(PX.S.MASKS).length];
+        const a = new PX.A.Actor(id, look, { map: m.id, name: U.pick(R.names), speed: R.fast ? 3.4 : 1.4 + Math.random() * 0.8 });
         a.extra = c.role; a.box = c;
         if (c.fixed) { a.x = c.fixed[0]; a.y = c.fixed[1]; a.dir = c.fixed[2] || 0; a.fixed = true; }
-        else for (let k = 0; k < 30; k++) { const x = c.x0 + Math.floor(Math.random() * (c.x1 - c.x0 + 1)), y = c.y0 + Math.floor(Math.random() * (c.y1 - c.y0 + 1)); if (W.walkable(m, x, y)) { a.x = x + 0.5; a.y = y + 0.5; break; } }
+        else for (let k = 0; k < 40; k++) { if (c.x0 == null) { const io = m.kind === 'in'; c.x0 = io ? 1 : 4; c.y0 = io ? 2 : 4; c.x1 = m.w - (io ? 2 : 5); c.y1 = m.h - (io ? 3 : 5); } const x = c.x0 + Math.floor(Math.random() * (c.x1 - c.x0 + 1)), y = c.y0 + Math.floor(Math.random() * (c.y1 - c.y0 + 1)); if (W.walkable(m, x, y)) { a.x = x + 0.5; a.y = y + 0.5; break; } }
         if (!a.x) continue;
         a.nextMove = performance.now() + Math.random() * 4000;
         PX.EXTRA[id] = { name: a.name, look };
@@ -68,7 +94,15 @@ PX.Ruby = (() => {
     if (now < a.nextMove || a.path.length) return;
     a.nextMove = now + 3000 + Math.random() * 5000;
     if (Math.random() < 0.15 && !g.bubbles.some(b => b.actor === a) && U.dist(a.x, a.y, g.player.x, g.player.y) < 8) g.bubble(a, U.pick(ROLES[a.extra].amb), 2.6);
+    const R = ROLES[a.extra];
+    // 물건·기구 앞에 가서 들여다보기 (PX 진열대, 운동기구, 오락기 …)
+    if (R.browse && Math.random() < 0.65) {
+      const objs = m.objs.filter(o => o.kind === 'furn' && o.blocks !== false && !o.f.flat && !o.seats && (!R.pose || /bench|pullup|punch|tread|weight|dumb|bar/.test(o.fid)));
+      const o = objs.length && U.pick(objs), t = o && W.accessTile(m, o);
+      if (t && a.goTo(m, t.x, t.y, () => { a.setDirTo(o.x + o.fw / 2, o.y + o.fd / 2); if (R.pose) a.doPose(R.pose, 4 + Math.random() * 4); a.nextMove = performance.now() + 4000 + Math.random() * 5000; })) return;
+    }
     const c = a.box, x = c.x0 + Math.floor(Math.random() * (c.x1 - c.x0 + 1)), y = c.y0 + Math.floor(Math.random() * (c.y1 - c.y0 + 1));
+    if (R.fast) a.nextMove = now + 500;
     a.goTo(m, x, y);
   }
   // 말 걸기
@@ -139,7 +173,7 @@ PX.Ruby = (() => {
     { k: 'cheek', t: '😊 볼 맞대기', s: 3, txt: '볼을 맞댄 사진. 대위 귀가 빨갛게 찍혔다.' },
     { k: 'hug', t: '🤗 뒤에서 안기', s: 3, txt: '대위가 뒤에서 감싸 안은 사진. 내 머리가 대위 턱 밑에 딱 맞는다.' },
     { k: 'funny', t: '🤪 웃긴 표정', s: 0, txt: '웃긴 표정 사진. 대위는 끝까지 진지한 얼굴이다. 그게 더 웃기다.' },
-    { k: 'mask', t: '🎭 은색 가면 쓰고', s: 2, txt: '가면을 쓴 두 사람. 그래도 누군지 다 알겠다.' },
+    { k: 'mask', t: '🎭 축제 가면 쓰고', s: 2, txt: '축제 가면을 쓴 두 사람. 그래도 누군지 다 알겠다.' },
   ];
   H.photobooth = async () => {
     const S = St.S, cap = withCap();
@@ -183,7 +217,7 @@ PX.Ruby = (() => {
     if (withCap()) await lines([U.pick([[`C:${it.k[0]}… 이거 좋아하는구나. 기억해 둘게.`], ['C*:난 잘 모르겠는데, 네가 좋아하는 얼굴은 알겠어.'], ['N:대위가 시향지를 받아 코에 대더니 주머니에 넣는다.', 'C:가져갈게. 작전 나가서 꺼내 보게.']])]);
   };
   // 가면 (LB88)
-  const MASKS = [{ t: '🌙 은빛 달 가면', c: '#c9ccd6' }, { t: '🦋 나비 가면', c: '#d6a2ff' }, { t: '🖤 검은 레이스 가면', c: '#2a2433' }, { t: '🌹 루비 가면', c: '#c2185b' }];
+  const MASKS = Object.entries(PX.S.MASKS).map(([k, m]) => ({ t: `${m.icon} ${m.name}`, c: k }));
   const ALIAS = ['루나', '블루', '미스틱', '체리', '노바'];
   function setMask(actor, c) { actor.app.mask = c; delete actor.app._k; }
   function unmask() { const g = G(); for (const a of [g.player, g.cap]) if (a && a.app && a.app.mask) { delete a.app.mask; delete a.app._k; } }
@@ -202,8 +236,9 @@ PX.Ruby = (() => {
     S.maskAlias = al.k; setMask(g.player, m.k.c);
     PX.UI.toast(`🎭 오늘 밤 별칭: ${al.k}`);
     if (withCap()) {
-      setMask(g.cap, '#c9ccd6');
-      await lines(['N:대위도 은색 가면을 쓴다. 가면이 얼굴에 비해 작아 보인다.', 'C*:어때. 못 알아보겠지?', 'N:지나가던 바텐더가 꾸벅 인사한다. "대위님, 오셨어요."', 'C;:…가면 썼는데.']);
+      const cm = await PX.UI.menu('대위 가면도 골라 주기', MASKS.filter(x => x.c !== m.k.c).sort(() => Math.random() - 0.5).slice(0, 4).map(x => ({ t: x.t, k: x })));
+      setMask(g.cap, cm ? cm.k.c : 'lace');
+      await lines([`N:대위가 ${PX.S.MASKS[g.cap.app.mask].name}을 쓴다. 가면이 얼굴에 비해 작아 보인다.`, 'C*:어때. 못 알아보겠지?', 'N:지나가던 바텐더가 꾸벅 인사한다. "대위님, 오셨어요."', 'C;:…가면 썼는데.']);
       if (once('maskSpotted')) G().memory('가면 쓴 대위', '가면을 썼는데도 덩치 때문에 바로 들켰다.', true);
     }
   };

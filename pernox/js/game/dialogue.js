@@ -73,10 +73,10 @@ PX.Dlg = (() => {
     });
   }
   // AI 응답을 기다리는 동안: 대위 초상 + 점점 늘어나는 "…"
-  function thinking() {
+  function thinking(who) {
     open = true; box.classList.remove('hidden'); chEl.classList.add('hidden');
-    nameEl.textContent = St.S.capName; nameEl.style.display = ''; box.classList.remove('narr', 'mine');
-    portrait('cap', 'normal'); nextEl.classList.add('hidden');
+    nameEl.textContent = who && PX.NPC_BY_ID[who] ? PX.NPC_BY_ID[who].name : St.S.capName; nameEl.style.display = ''; box.classList.remove('narr', 'mine');
+    portrait(who || 'cap', 'normal'); nextEl.classList.add('hidden');
     let n = 0; textEl.textContent = '…';
     const iv = setInterval(() => { n = (n + 1) % 4; textEl.textContent = '…' + '.'.repeat(n); }, 350);
     return { stop: () => clearInterval(iv) };
@@ -171,6 +171,7 @@ PX.Dlg = (() => {
       }
     }
     let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
+    if (!forceCat && !firstToday && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
     if (!bd) bd = pick('greet', D.greet);
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;
@@ -225,17 +226,21 @@ PX.Dlg = (() => {
     const S = St.S, d = npc.def, r = S.rel.npc[npc.id];
     const part = Cal.partOfDay(S.time.min), w = St.weather();
     const L = d.lines || {};
-    let pool = [...(L.g || [])];
+    const PS = (PX.PERSONA || {})[npc.id];
+    const capLine = (t) => /대위|\{c/.test(t);
+    const talkCap = S.rel.cap.stage >= 1 && Math.random() < 0.12; // 대위 얘기는 가끔만
+    let pool = (L.g || []).filter(t => talkCap || !capLine(t));
+    if (PS) pool.push(...PS.p, ...PS.p);
     if (part === 'morning' && L.m) pool.push(...L.m, ...L.m);
     if ((part === 'evening' || part === 'night') && (L.e || L.night)) pool.push(...(L.e || []), ...(L.night || []));
     if (w === 'rain' && L.rain) pool.push(...L.rain, ...L.rain);
-    if (L.cap && S.rel.cap.stage >= 1) pool.push(...L.cap);
+    if (L.cap && talkCap) pool = L.cap.slice();
     if (L.job && L.job[S.player.job]) pool.push(...L.job[S.player.job], ...L.job[S.player.job]);
     // 지금 하고 있는 일에 맞는 말 (운동 중엔 운동 이야기, 식사 중엔 밥 이야기…)
     const act = npc.activity(), A = PX.NPC_ACT;
     if (act && A[act]) {
       const t = d.banmal && !['cook', 'work_cmd'].includes(act) ? (A.banmal[act] || []) : A[act].talk;
-      pool.push(...t, ...t, ...t); if (act === 'sleep' && t.length) pool = t.slice();
+      if (!talkCap) pool.push(...t, ...t); if (act === 'sleep' && t.length) pool = t.slice();
     }
     const outdoor = PX.MAPS[npc.map] && PX.MAPS[npc.map].kind === 'out' && !PX.MAPS[npc.map].dome;
     if (!d.banmal) { // 날씨·인사 공통 대사는 존댓말이라 존댓말 쓰는 사람만
@@ -270,6 +275,18 @@ PX.Dlg = (() => {
       line = d.banmal ? `아, ${PX.ITEMS[q.item].name} 구하면 나 좀 줘. ${q.hint.replace(/에요\.$/, '야.').replace(/있어요\.$/, '있어.').replace(/팔아요\.$/, '팔아.').replace(/거예요\.$/, '거야.').replace(/더라고요\.$/, '더라.')}` : `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
     }
     await say(npc.id, U.fmt(line, ctx()), 'smile');
+    // 이어서: 궁금한 것 물어보기 · (아티팩트) 자유롭게 이야기하기
+    if (PS && act !== 'sleep') {
+      S.done.askSeen = S.done.askSeen || {};
+      const qs = PS.ask.map((q, i) => ({ q, i })).sort((a, b) => (S.done.askSeen[npc.id + a.i] || 0) - (S.done.askSeen[npc.id + b.i] || 0));
+      const q = qs[0];
+      const opts = [{ t: '❓ ' + q.q[0] }]; const ai = PX.AI && PX.AI.available();
+      if (ai) opts.push({ t: '✨ 자유롭게 이야기하기' });
+      opts.push({ t: '다음에 또 봐요.' });
+      const i = await choose(opts);
+      if (i === 0) { S.done.askSeen[npc.id + q.i] = (S.done.askSeen[npc.id + q.i] || 0) + 1; await say('player', q.q[0]); await say(npc.id, U.fmt(q.q[1], ctx()), 'smile'); if (S.done.askSeen[npc.id + q.i] === 1) St.addNpcF(npc.id, 2); }
+      else if (ai && i === 1) { if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; } r.talks++; close(); G.modal--; return PX.AI.chat(npc); }
+    }
     if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; }
     r.talks++;
     close(); G.modal--;

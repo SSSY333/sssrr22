@@ -487,13 +487,17 @@
     if (PX.AI.available()) items.push({ t: '✨ 자유롭게 대화하기', k: 'ai', sub: '하고 싶은 말을 직접 입력 · AI가 대위로 대답해요' });
     if (Cap.mode === 'follow') items.push({ t: '🙋 이제 혼자 갈게요', k: 'unfollow' });
     else items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty || Cap.mode === 'visit' || Cap.mode === 'stay', offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
+    for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', fn: a.fn });
+    items.push({ t: '❓ 물어보기', k: 'topic', sub: '대위에 대해 궁금한 것' });
     items.push({ t: '🎁 선물하기', k: 'gift' });
     items.push({ t: '🤝 스킨십', k: 'skin', sub: '손잡기 · 쓰다듬기 · 포옹 …', off: duty, offMsg: '근무 중이에요' });
     items.push({ t: '😮‍💨 고민 털어놓기', k: 'comfort' });
     if (Cap.mode === 'visit') { items.push({ t: '🌙 자고 가도 돼요', k: 'stay', off: st < 2, offMsg: '아직은 조금 이른 것 같아요' }, { t: '🚪 이제 가 보세요', k: 'leave' }); }
     else items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
-    const it = await UI.menu(`${S.capName} 대위 · ${Cap.status()}`, items);
+    const it = await UI.menu(`${S.capName} 대위`, items);
     if (!it) return;
+    if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.fn(); }
+    if (it.k === 'topic') return PX.CapAct.askTopic();
     if (it.k === 'talk') return Dlg.capTalk();
     if (it.k === 'ai') return PX.AI.chat();
     if (it.k === 'follow') { Cap.startFollow(); Game.bubble(cap, U.pick(['좋아. 어디든.', '그 말 기다렸어.'])); St.addAff(1); return; }
@@ -783,7 +787,15 @@
     cx = clamp(cx, x0 + vw / 2, x1 - vw / 2); cy = clamp(cy, y0 + vh / 2, y1 - vh / 2);
     return [cx, cy];
   }
-  function snapCam() { const p = Game.player; if (!p) return; const [px, py] = camTarget(); W.view.camX = px; W.view.camY = py; }
+  // 카메라: 실수 좌표(camF)로 부드럽게 따라가고, 그리기는 정수 픽셀 + 남는 소수점은 CSS 이동
+  const camF = { x: 0, y: 0 };
+  function applyCam() {
+    const v = W.view, sc = v.cssScale || 1;
+    v.camX = Math.round(camF.x); v.camY = Math.round(camF.y);
+    const tr = `translate(${((v.camX - camF.x) - 1) * sc}px, ${((v.camY - camF.y) - 1) * sc}px)`;
+    v.cv.style.transform = tr; $('labels').style.transform = tr; $('bubbles').style.transform = tr;
+  }
+  function snapCam() { const p = Game.player; if (!p) return; const [px, py] = camTarget(); camF.x = px; camF.y = py; applyCam(); }
   function frame(t) {
     if (!Game.running) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -797,6 +809,7 @@
     if (!Game.modal) keyMove(dt);
     for (const a of Game.actors) a.update(dt);
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
+    if (PX.CapAct) PX.CapAct.tick(dt);
     capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;
     if (npcT <= 0 && !Game.sleeping) { npcT = 0.5; if (!Game.modal) for (const n of Game.npcs) n.think(S, Game.mapId); }
@@ -805,8 +818,10 @@
     // 카메라
     const p = Game.player;
     const [px, py] = camTarget();
-    W.view.camX += (px - W.view.camX) * Math.min(1, dt * 8);
-    W.view.camY += (py - W.view.camY) * Math.min(1, dt * 8);
+    const k = 1 - Math.exp(-dt * 7);
+    camF.x += (px - camF.x) * k; camF.y += (py - camF.y) * k;
+    if (Math.abs(px - camF.x) < 0.02) camF.x = px; if (Math.abs(py - camF.y) < 0.02) camF.y = py;
+    applyCam();
     // 렌더
     const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt };
     W.render(W.maps[Game.mapId], Game.critters && Game.critters.length ? Game.actors.concat(Game.critters) : Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });

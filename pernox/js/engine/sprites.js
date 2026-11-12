@@ -138,6 +138,7 @@ PX.S = (() => {
     if (view === 'F') faceDraw(R, app, hx, hy, hw, hh, pose === 'lie' ? 'sleep' : face, fr);
     hairDraw(R, app, hx, hy, hw, hh, hair, view, B);
     if (app.hat) { R(hx - 1, hy - 1, hw + 2, 4, app.hat); R(view === 'F' ? hx + 2 : hx, hy + 2, hw - 2, 2, shade(app.hat, -0.2)); }
+    if (app.mask && pose !== 'lie') maskDraw(R, app, hx, hy, hw, hh, view);
     G.outline(c, '#20172a');
     return { c, ax: B.ax, ay: B.ay, headY: hy, B };
   }
@@ -188,8 +189,64 @@ PX.S = (() => {
       const sc = '#c8746a';
       for (let i = 0; i < 5; i++) R(hx + 5 + i, ey + 2 + Math.floor(i / 2), 1, 1, '#f0c3ae');
     }
-    // 실버마스크 가면 (눈가만 덮음)
-    if (app.mask) { R(eL - 2, ey - 2, eR - eL + 6, 4, app.mask); R(eL - 3, ey - 1, 1, 2, app.mask); R(eR + 4, ey - 1, 1, 2, app.mask); R(eL, ey - 1, 2, 2, '#1d1420'); R(eR, ey - 1, 2, 2, '#1d1420'); R(eL - 1, ey - 2, eR - eL + 4, 1, shade(app.mask, 0.25)); }
+  }
+
+  // ---------- 축제 가면 (실버마스크) ----------
+  // 눈가를 덮는 반가면 + 금테 + 이마 보석, 종류마다 깃털·날개·귀·햇살 같은 장식이 붙는다
+  const MASKS = {
+    plume: { name: '깃털 장식 금빛 가면', icon: '🪶', c: '#f3d27a', c2: '#c2185b', trim: '#fff3c4', gem: '#e0245e' },
+    peacock: { name: '공작 깃 가면', icon: '🦚', c: '#1f8a8a', c2: '#2fd1b0', trim: '#ffd166', gem: '#3b5fd0' },
+    butterfly: { name: '나비 가면', icon: '🦋', c: '#d6a2ff', c2: '#7fe3ff', trim: '#ffffff', gem: '#ff8fd0' },
+    cat: { name: '검은 고양이 가면', icon: '🐈‍⬛', c: '#2a2433', c2: '#ff8fb8', trim: '#ffd166', gem: '#7fe3ff' },
+    sun: { name: '태양 가면', icon: '☀️', c: '#ffb347', c2: '#ff6b4a', trim: '#fff0a8', gem: '#e0245e' },
+    jester: { name: '어릿광대 가면', icon: '🃏', c: '#c2185b', c2: '#2f6bd0', trim: '#ffd166', gem: '#ffffff' },
+    lace: { name: '검은 레이스 가면', icon: '🖤', c: '#1d1420', c2: '#8a7aa8', trim: '#d9c8ff', gem: '#c2185b' },
+    moon: { name: '달과 별 가면', icon: '🌙', c: '#e8ebf2', c2: '#9fb8ff', trim: '#ffffff', gem: '#ffd166' },
+    rose: { name: '루비 장미 가면', icon: '🌹', c: '#a3123f', c2: '#ff6b9b', trim: '#ffd1e6', gem: '#ffd166' },
+    snow: { name: '서리꽃 가면', icon: '❄️', c: '#bfe6ff', c2: '#ffffff', trim: '#7fb6e6', gem: '#5b8fd0' },
+  };
+  function maskDraw(R, app, hx, hy, hw, hh, view) {
+    const M = MASKS[app.mask] || MASKS.plume, st = MASKS[app.mask] ? app.mask : 'plume';
+    const ey = hy + (app.big ? 9 : 8), eL = hx + 4, eR = hx + hw - 6, cx = hx + Math.floor(hw / 2);
+    const x0 = hx + 1, x1 = hx + hw - 1; // 가면 좌우 끝
+    const feather = (x, top, len, col, lean) => { R(x, top, 1, len, col); R(x + lean, top - 1, 1, Math.max(2, len - 3), shade(col, 0.25)); R(x + lean, top - 2, 1, 1, '#ffffff'); };
+    if (view !== 'F') { // 옆·뒤: 머리 위로 솟은 장식만
+      if (st === 'plume') { feather(hx + hw - 3, hy - 4, 7, M.c2, 1); feather(hx + hw - 5, hy - 3, 6, M.trim, 1); }
+      if (st === 'peacock') { feather(hx + 2, hy - 4, 7, M.c2, -1); feather(hx + hw - 3, hy - 4, 7, M.c2, 1); }
+      if (st === 'cat') { R(hx + 2, hy - 2, 3, 3, M.c); R(hx + hw - 5, hy - 2, 3, 3, M.c); }
+      if (st === 'sun') for (let x = hx + 2; x < hx + hw - 2; x += 2) R(x, hy - 2 - ((x - hx) % 4 ? 0 : 1), 1, 3, M.trim);
+      return;
+    }
+    // 바탕
+    R(x0 + 1, ey - 3, x1 - x0 - 2, 1, M.trim);
+    R(x0, ey - 2, x1 - x0, 4, M.c);
+    R(x0 + 1, ey + 2, 5, 1, M.c); R(x1 - 6, ey + 2, 5, 1, M.c);
+    R(x0 + 2, ey + 3, 3, 1, shade(M.c, -0.15)); R(x1 - 5, ey + 3, 3, 1, shade(M.c, -0.15));
+    R(cx - 1, ey + 1, 2, 2, app.skin); // 코가 나오는 자리
+    // 무늬
+    if (st === 'jester') { for (let x = x0; x < x1; x += 2) for (let y = 0; y < 4; y += 2) R(x + (y ? 0 : 0), ey - 2 + y, 2, 2, ((x - x0) / 2 + y / 2) % 2 ? M.c2 : M.c); R(cx - 1, ey + 1, 2, 2, app.skin); }
+    if (st === 'lace') { for (let x = x0 + 1; x < x1; x += 2) { R(x, ey - 2, 1, 1, M.c2); R(x, ey + 1, 1, 1, M.c2); } }
+    if (st === 'moon') { R(x0, ey - 2, Math.floor((x1 - x0) / 2), 4, M.c2); R(x1 - 3, ey + 1, 1, 1, M.gem); R(x1 - 2, ey - 2, 1, 1, M.gem); }
+    if (st === 'butterfly') { R(x0, ey - 2, 2, 4, M.c2); R(x1 - 2, ey - 2, 2, 4, M.c2); }
+    if (st === 'snow') { R(x0 + 1, ey - 2, 1, 1, M.c2); R(x1 - 2, ey - 2, 1, 1, M.c2); R(x0 + 2, ey + 1, 1, 1, M.c2); R(x1 - 3, ey + 1, 1, 1, M.c2); }
+    if (st === 'rose') { R(x0, ey - 2, 2, 2, M.c2); R(x1 - 2, ey - 2, 2, 2, M.c2); }
+    // 눈구멍: 금테를 두르고 눈동자는 그대로 보이게
+    for (const ex of [eL, eR]) { R(ex - 1, ey - 2, 4, 1, M.trim); R(ex - 1, ey + 1, 4, 1, shade(M.trim, -0.2)); R(ex - 1, ey - 1, 4, 2, shade(app.skin, -0.1)); R(ex, ey - 1, 2, 2, app.eye || '#2a2228'); R(ex, ey - 1, 1, 1, '#ffffff'); }
+    // 이마 보석
+    R(cx - 1, ey - 4, 2, 2, M.gem); R(cx - 1, ey - 4, 1, 1, '#ffffff');
+    // 반짝임
+    R(x0 + 1, ey, 1, 1, shade(M.c, 0.4)); R(x1 - 2, ey - 1, 1, 1, shade(M.c, 0.4));
+    // 종류별 장식
+    if (st === 'plume') { feather(x1 - 1, ey - 9, 7, M.c2, 1); feather(x1 - 3, ey - 11, 8, shade(M.c2, 0.2), 1); feather(x1 - 5, ey - 9, 6, M.trim, 1); R(x1 - 4, ey - 3, 4, 1, M.gem); }
+    if (st === 'peacock') { for (const [x, l] of [[x0, -1], [x0 + 2, -1], [x1 - 1, 1], [x1 - 3, 1]]) { feather(x, ey - 10, 7, M.c2, l); R(x, ey - 10, 1, 2, '#3b5fd0'); R(x, ey - 9, 1, 1, M.trim); } }
+    if (st === 'butterfly') { R(x0 - 3, ey - 4, 4, 3, M.c2); R(x0 - 2, ey - 5, 2, 1, M.c); R(x0 - 2, ey - 1, 3, 3, M.c); R(x1 - 1, ey - 4, 4, 3, M.c2); R(x1, ey - 5, 2, 1, M.c); R(x1 - 1, ey - 1, 3, 3, M.c); R(x0 - 2, ey - 3, 1, 1, '#ffffff'); R(x1 + 1, ey - 3, 1, 1, '#ffffff'); R(cx - 2, ey - 6, 1, 2, M.trim); R(cx + 1, ey - 6, 1, 2, M.trim); }
+    if (st === 'cat') { R(x0 + 1, ey - 6, 4, 3, M.c); R(x0 + 2, ey - 7, 2, 1, M.c); R(x0 + 2, ey - 5, 2, 2, M.c2); R(x1 - 5, ey - 6, 4, 3, M.c); R(x1 - 4, ey - 7, 2, 1, M.c); R(x1 - 4, ey - 5, 2, 2, M.c2); R(x0 - 2, ey + 1, 2, 1, M.trim); R(x1, ey + 1, 2, 1, M.trim); R(x0 - 2, ey + 3, 2, 1, M.trim); R(x1, ey + 3, 2, 1, M.trim); }
+    if (st === 'sun') { for (let x = x0, i = 0; x < x1; x += 2, i++) { const h = i % 2 ? 2 : 4; R(x, ey - 3 - h, 1, h, i % 2 ? M.c2 : M.trim); } R(x0 - 2, ey - 1, 2, 1, M.trim); R(x1, ey - 1, 2, 1, M.trim); R(x0 - 1, ey + 1, 1, 1, M.c2); R(x1, ey + 1, 1, 1, M.c2); }
+    if (st === 'jester') { R(x0, ey - 6, 3, 3, M.c2); R(x0 - 1, ey - 8, 2, 2, M.c2); R(x0 - 2, ey - 9, 1, 1, M.trim); R(x1 - 3, ey - 6, 3, 3, M.c); R(x1 - 1, ey - 8, 2, 2, M.c); R(x1 + 1, ey - 9, 1, 1, M.trim); R(cx - 1, ey - 6, 2, 2, M.trim); }
+    if (st === 'lace') { for (let i = 0; i < 4; i++) R(x1 - 1 + (i % 2), ey + 3 + i * 2, 1, 1, i % 2 ? M.trim : M.gem); R(x0, ey - 4, 2, 1, M.c2); R(x1 - 2, ey - 4, 2, 1, M.c2); R(x0 + 3, ey - 4, 1, 1, M.c2); R(x1 - 4, ey - 4, 1, 1, M.c2); }
+    if (st === 'moon') { R(x0, ey - 6, 2, 3, M.c2); R(x0 + 1, ey - 7, 2, 1, M.c2); R(x0 + 2, ey - 5, 1, 1, M.c2); R(x1 - 2, ey - 6, 1, 3, M.gem); R(x1 - 3, ey - 5, 3, 1, M.gem); }
+    if (st === 'rose') { R(x1 - 3, ey - 6, 4, 3, M.c2); R(x1 - 2, ey - 5, 2, 1, M.c); R(x1 - 4, ey - 4, 2, 1, '#3f8f5a'); R(x1, ey - 3, 2, 1, '#3f8f5a'); R(x0, ey - 5, 3, 2, M.c2); R(x0 + 1, ey - 5, 1, 1, M.c); }
+    if (st === 'snow') { R(x1 - 2, ey - 7, 1, 5, M.trim); R(x1 - 4, ey - 5, 5, 1, M.trim); R(x1 - 3, ey - 6, 1, 1, M.c2); R(x1 - 1, ey - 4, 1, 1, M.c2); R(x1 - 3, ey - 4, 1, 1, M.c2); R(x1 - 1, ey - 6, 1, 1, M.c2); R(x0 + 1, ey - 5, 1, 2, M.trim); R(x0, ey - 4, 3, 1, M.trim); }
   }
 
   function backHair(R, app, hx, hy, hw, hh, col, B) {
@@ -273,5 +330,5 @@ PX.S = (() => {
     skirt: { ko: '니트 · 치마', top: () => '#f2d28a', bottom: () => '#6a5aa8', shoe: '#5a3f2a', sleeve: 'long', skirt: true },
   };
 
-  return { frame, get, invalidate, playerApp, SKINS, HAIRC, EYEC, HAIRS, OUTFITS, BODY };
+  return { frame, get, invalidate, playerApp, SKINS, HAIRC, EYEC, HAIRS, OUTFITS, BODY, MASKS };
 })();

@@ -50,6 +50,49 @@ ${p}(${PX.JOBS[S.player.job].ko})에게 첫눈에 반했고, 처음 만난 지 1
 - 게임 세계에 없는 현대 지구 이야기(스마트폰 앱 이름 등)는 피하고 페르녹스의 일상 안에서 말한다.
 - 플레이어의 대사를 대신 쓰지 않는다. 오직 ${c}의 말과 짧은 행동만.`;
   }
+  // ---------- 부대원·시민 프롬프트: 인물 설정서(personas.js)를 그대로 지시문으로 쓴다 ----------
+  function npcBible(S, npc) {
+    const d = npc.def, P = (PX.PERSONA || {})[d.id] || {}, c = S.capName, p = S.player.name;
+    const ex = (P.p || []).slice().sort(() => Math.random() - 0.5).slice(0, 4).map(t => `"${t}"`).join(' / ');
+    return `너는 모바일 생활 시뮬레이션 게임 〈사랑해, 이 행성이 멸망할 때까지.〉 속 인물 "${d.name}"을(를) 연기한다. 게임 밖 이야기, AI라는 언급, 해설은 절대 하지 않는다.
+
+[세계] 외계 전쟁 이후 개척시대. 제5행성 페르녹스는 군사·연구·개척이 함께 돌아가는 전선 관리 행성이다. 매일 싸우는 곳이 아니라 경계와 관리가 일상인 곳. 붉은 사막, 은빛 모래, 발광식물, 미확인 생명체. 사람들은 인공 돔 아래 돔시티에 살고, 지구군 606부대가 주둔한다. 지구 소식은 반나절 늦게 오고, 보급선이 생활의 리듬이다.
+
+[${d.name}] ${d.age}세 · ${d.job}. 성격: ${d.personality}
+말투: ${P.tone || (d.banmal ? '편한 반말' : '자연스러운 존댓말')}
+요즘 마음 쓰는 것: ${P.care || '-'}
+버릇: ${P.quirk || '-'}
+즐겨 꺼내는 화제: ${P.topics || '-'}
+좋아하는 음식: ${d.likesFood} · 받으면 좋아하는 것: ${d.likesGift}
+평소 이런 식으로 말한다 — ${ex}
+
+[말하기 규칙]
+- ${d.banmal ? `${p}에게 반말을 쓴다(나이·계급이 위).` : `${p}에게 존댓말을 쓴다.`} 플레이어 ${p}의 직업은 ${PX.JOBS[S.player.job].ko}.
+- 자기 일, 자기 관심사, 오늘 있었던 일을 말한다. 이 사람만의 버릇과 화제가 대사에 묻어나야 한다.
+- ${c} 대위 이야기는 플레이어가 먼저 꺼냈을 때만, 한두 마디로 짧게. 먼저 연애를 캐묻거나 대위 얘기로 화제를 돌리지 않는다. 이 세계 사람들은 각자 자기 삶이 있다.
+- 지금 하고 있는 일과 장소에 맞게 말한다. 근무 중이면 손을 멈추지 않고 짧게.
+- 한 번에 1~2문장. 길게 설명하지 않는다. "하하/ㅋㅋ" 같은 웃음소리, 과한 감탄사 금지.
+- 모르는 건 모른다고 한다. 군사 기밀은 말하지 않는다. 연애 감정을 플레이어에게 드러내지 않는다(플레이어의 연애 상대는 대위다).
+- 노골적인 성적 표현, 폭력 미화, 혐오 표현은 하지 않는다. 게임 세계에 없는 현대 지구 고유명사는 피한다.
+- 플레이어의 대사를 대신 쓰지 않는다. 오직 ${d.name}의 말과 짧은 행동만.`;
+  }
+  const ACT_KO = { workout: '운동 중', cook: '조리 중', eat: '식사 중', grill: '불판 앞에서 일하는 중', shop: '가게를 보는 중', guard: '경계 근무 중', work_cmd: '지휘 업무 중', work_med: '의무동 근무 중', work_ops: '작전동 근무 중', work_hangar: '정비 중', work_lab: '연구 중', work_comms: '통신 근무 중', work_admin: '행정 업무 중', game: '오락기 하는 중', cafe: '카페에서 쉬는 중', rest: '쉬는 중', stroll: '걷는 중', sleep: '자는 중' };
+  function npcSituation(S, npc) {
+    const G = PX.Game, m = PX.MAPS[G.mapId], r = S.rel.npc[npc.id] || {};
+    const ev = Cal.eventsOn(S.time).map(e => `${e.originalTitle}(${e.location})`);
+    const w = m.dome ? '돔 안 인공 기후(맑음)' : Cal.WEATHER[St.weather()].ko;
+    const q = (S.quests || []).find(q => q.npc === npc.id && !q.done);
+    return `[지금 상황]
+날짜: ${Cal.fmtDate(S.time)} ${Cal.fmtTime(S.time.min)} · ${Cal.SEASON_KO[St.season()]} · 날씨: ${w}
+장소: ${m.name} · ${npc.def.name} 지금 하는 일: ${ACT_KO[npc.activity()] || '쉬는 중'}
+플레이어와의 친밀도: ${r.f || 0}/100 (${(r.f || 0) >= 60 ? '꽤 친함' : (r.f || 0) >= 25 ? '얼굴 아는 사이' : '아직 서먹함'}) · 지금까지 대화 ${r.talks || 0}번
+${q ? `부탁해 둔 것: ${PX.ITEMS[q.item].name}을 구해 달라고 했다.\n` : ''}오늘 행사: ${ev.join(', ') || '없음'}`;
+  }
+  const FORMAT_N = `[답 형식] 아래 JSON 하나로만 답한다.
+{"lines":[{"face":"normal|smile|sad|surprise","text":"대사"}],"aff":정수}
+- lines: 1~2개. 짧은 행동 묘사가 필요하면 text를 "(…)"로 감싼다. 각 text 60자 이내.
+- aff: 이번 대화로 친해진 정도 -1~2 (평범하면 0 또는 1).`;
+
   function situation(S, mode) {
     const G = PX.Game, m = PX.MAPS[G.mapId], r = S.rel.cap;
     const ev = Cal.eventsOn(S.time).map(e => `${e.originalTitle}(${e.location}${e.startTime ? ' ' + e.startTime + '~' + e.endTime : ''})`);
@@ -89,8 +132,9 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   // 대화 기록: 저장 파일에 최근 24턴만 남긴다
   function hist(S) { S.aiLog = S.aiLog || []; return S.aiLog; }
 
-  async function ask(text, mode) {
+  async function ask(text, mode, npc) {
     const S = St.S;
+    if (npc) return askNpc(text, npc);
     const log = hist(S);
     const rules = bible(S) + '\n\n[페르녹스의 장소와 행사 — 로어북]\n' + loreIndex() + '\n\n[606부대와 돔시티 사람들]\n' + roster(S) + '\n대위와의 관계: 박도현 중사는 7년 지기 동료, 문성호는 단골 냉삼집 사장, 강태욱 중령은 상관.\n\n' + FORMAT.replace('${C}', S.capName);
     const turns = [{ role: 'user', content: rules + '\n\n' + situation(S, mode) + '\n\n이제부터 플레이어의 말이 이어진다. 위 형식의 JSON으로만 답해.' }];
@@ -105,6 +149,19 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     if (log.length > 24) log.splice(0, log.length - 24);
     return { lines, action: String(out.action || 'none'), aff: U.clamp(Math.round(Number(out.aff) || 0), -3, 5) };
   }
+  async function askNpc(text, npc) {
+    const S = St.S;
+    S.aiLogN = S.aiLogN || {}; const log = S.aiLogN[npc.id] = S.aiLogN[npc.id] || [];
+    const turns = [{ role: 'user', content: npcBible(S, npc) + '\n\n' + FORMAT_N + '\n\n' + npcSituation(S, npc) + '\n\n이제부터 플레이어의 말이 이어진다. 위 형식의 JSON으로만 답해.' }];
+    for (const t of log.slice(-10)) turns.push({ role: t.r === 'p' ? 'user' : 'assistant', content: t.r === 'p' ? t.t : JSON.stringify({ lines: [{ face: 'normal', text: t.t }] }) });
+    turns.push({ role: 'user', content: `${S.player.name}: ${text}` });
+    const out = await sample.json(turns, { cache: false, modelTier: 'default' });
+    const lines = Array.isArray(out && out.lines) ? out.lines.filter(l => l && typeof l.text === 'string' && l.text.trim()).slice(0, 2) : [];
+    if (!lines.length) throw { code: 'invalid_json' };
+    log.push({ r: 'p', t: text }); log.push({ r: 'c', t: lines.map(l => l.text).join(' ') });
+    if (log.length > 12) log.splice(0, log.length - 12);
+    return { lines, action: 'none', aff: U.clamp(Math.round(Number(out.aff) || 0), -1, 2) };
+  }
   function errText(e) {
     const c = e && e.code;
     if (c === 'not_granted' || c === 'sampling_disabled' || c === 'not_declared' || c === 'capability_disabled' || c === 'capability_removed') { disabled = true; return 'AI 대화를 쓸 수 없어요. 고정 대사로 이어 갈게요.'; }
@@ -116,17 +173,18 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
 
   // ---------- 마주 보고 자유 대화 ----------
   const SUGGEST = ['오늘 뭐 했어요?', '보고 싶었어요.', '흉터는 어쩌다 생긴 거예요?', '저 오늘 좀 힘들었어요.', '그런 장난은 싫어요.'];
-  async function chat() {
+  async function chat(npc) {
     if (!available() || busy) return;
-    const G = PX.Game, S = St.S, cap = G.cap;
+    const G = PX.Game, S = St.S, cap = npc || G.cap, who = npc ? npc.id : 'cap', whoName = npc ? npc.def.name : S.capName;
+    const PSN = npc ? (PX.PERSONA || {})[npc.id] : null;
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
     const bar = document.getElementById('chatbar');
     const input = bar.querySelector('input'), send = bar.querySelector('.send'), end = bar.querySelector('.end'), chips = bar.querySelector('.chips2'), last = bar.querySelector('.last');
     last.textContent = '';
     chips.innerHTML = '';
-    for (const s of SUGGEST) { const b = U.el('button', null, s); b.onclick = () => { input.value = s; input.focus(); }; chips.append(b); }
-    await PX.Dlg.say('cap', U.pick(['응. 무슨 얘기 할까.', '말해. 다 들어 줄게.', '그래, 나 지금 시간 있어.']), 'smile');
+    for (const s of (npc ? ['오늘 어땠어요?', ...(PSN ? PSN.ask.map(a => a[0]).slice(0, 3) : []), '요즘 고민 있어요?'] : SUGGEST)) { const b = U.el('button', null, s); b.onclick = () => { input.value = s; input.focus(); }; chips.append(b); }
+    if (!npc) await PX.Dlg.say('cap', U.pick(['응. 무슨 얘기 할까.', '말해. 다 들어 줄게.', '그래, 나 지금 시간 있어.']), 'smile');
     let total = 0;
     for (;;) {
       PX.Dlg.close();
@@ -141,19 +199,20 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
       if (!msg) break;
       await PX.Dlg.say('player', msg);
       busy = true;
-      const thinking = PX.Dlg.thinking(); // 대위 초상 + "…" 표시
+      const thinking = PX.Dlg.thinking(npc ? npc.id : null); // 대위 초상 + "…" 표시
       let res;
-      try { res = await ask(msg, 'talk'); }
+      try { res = await ask(msg, 'talk', npc); }
       catch (e) { thinking.stop(); busy = false; PX.UI.toast('📡 ' + errText(e), 3500); if (disabled) break; continue; }
       thinking.stop(); busy = false;
       for (const l of res.lines) {
         const face = ['normal', 'smile', 'smirk', 'sad', 'surprise'].includes(l.face) ? l.face : 'normal';
         const t = l.text.trim();
-        if (/^\(.*\)$/.test(t)) { const inner = t.slice(1, -1).trim(); await PX.Dlg.say('narr', inner.startsWith(S.capName) ? inner : `${U.josa(S.capName, '이')} ${inner}`); }
-        else await PX.Dlg.say('cap', t, face);
+        if (/^\(.*\)$/.test(t)) { const inner = t.slice(1, -1).trim(); await PX.Dlg.say('narr', inner.startsWith(whoName) ? inner : `${U.josa(whoName, '이')} ${inner}`); }
+        else await PX.Dlg.say(who, t, face);
       }
-      last.textContent = `${S.capName}: ${res.lines.map(l => l.text).join(' ')}`; // 입력하는 동안 마지막 대답이 보이게
+      last.textContent = `${whoName}: ${res.lines.map(l => l.text).join(' ')}`; // 입력하는 동안 마지막 대답이 보이게
       total += res.aff;
+      if (npc) continue;
       if (res.action === 'backoff') { S.rel.cap.backoffUntil = St.absMin() + (24 * 60 - S.time.min) + 6 * 60; cap.showEmote('sweat', 2.5); }
       else if (['pat', 'hug', 'hand'].includes(res.action)) {
         const need = { pat: 1, hug: 3, hand: 2 }[res.action];
@@ -161,6 +220,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
       }
     }
     PX.Dlg.close();
+    if (npc) { if (total) St.addNpcF(npc.id, U.clamp(total, -2, 4)); G.modal--; return; }
     if (total) St.addAff(U.clamp(total, -6, 10));
     S.rel.cap.lastTalkDay = S.day;
     G.modal--;
@@ -172,5 +232,5 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     St.addAff(U.clamp(res.aff, -2, 3));
     return res.lines.map(l => l.text).join(' ');
   }
-  return { available, chat, replyMsg, get ready() { return ready; } };
+  return { available, chat, replyMsg, npcBible, bible, get ready() { return ready; } };
 })();
