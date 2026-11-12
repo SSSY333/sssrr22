@@ -514,7 +514,7 @@ function doInteraction(id) {
         break;
       }
       case 'talk': await dailyTalk(); break;
-      case 'follow': if (S.comp) { await say('det', 'smile', st >= 4 ? '벌써요? …아쉽다. 조심히 가요.' : '네, 오늘 즐거웠어요. 또 불러요.'); closeDialog(); endCompanion(); } else await requestFollow(); break;
+      case 'follow': if (S.comp) { await say('det', 'smile', typeof partLine === 'function' ? partLine() : '네, 또 불러요.'); closeDialog(); endCompanion(); } else await requestFollow(); break;
       case 'favor': await favor(); break;
       case 'gift': closeDialog(); d.talking = false; G.busy--; giftMenu(); G.busy++; return;
       case 'photo': await takePhoto(); break;

@@ -125,3 +125,10 @@ const GREET_ADD = {
   },
 };
 for (const [tod, by] of Object.entries(GREET_ADD)) for (const [st, arr] of Object.entries(by)) { const T = GREETS[tod] = GREETS[tod] || {}; T[st] = [...(T[st] || []), ...arr]; if (+st === 5 && T[6] && T[6] !== T[5]) T[6] = [...T[6], ...arr]; }
+/* 같은 벤치에 또 앉을 때 · 같이 다니다 헤어질 때 — 여러 가지로 */
+function sitAgainLine() { return pickFresh(['또 앉았네요. 여기 좋죠?', '다리 좀 쉬어요.', '잠깐만 이렇게 있어요.', '여기 앉으면 시간 가는 줄 모르겠어요.', '바람 좋네요.', '오늘 여기 자주 오네요.']); }
+function partLine() {
+  const st = S.rel.stage;
+  return pickFresh(st >= 4 ? ['벌써요? …아쉽다. 조심히 가요.', '벌써 가요? 이따 연락할게요.', '조심히 가요. 도착하면 연락해요.', '오늘 고마웠어요. 또 봐요.']
+    : ['네, 오늘 즐거웠어요. 또 불러요.', '네. 조심히 가요.', '오늘 같이 걸어서 좋았어요.', '네, 또 봐요. 섬이 좁으니까 금방 볼 거예요.', '들어가세요. 오늘 고마웠어요.']);
+}

@@ -373,7 +373,7 @@ async function sitTogether(benchKey) {
     P.sitAt(k, 0); d.sitAt(k, 1);
     await sleep(500);
     const tier = S.rel.stage >= 5 ? 2 : S.rel.stage >= 3 ? 1 : 0;
-    await talk((SIT_TALK[bk.place] || SIT_TALK.cafe)[tier]);
+    if (!S.rel.daily.sit[k]) await talk((SIT_TALK[bk.place] || SIT_TALK.cafe)[tier]); else await say('det', 'smile', typeof sitAgainLine === 'function' ? sitAgainLine() : '또 앉았네요.');
     if (!S.rel.flags.firstSit) {
       await say('det', 'normal', '이렇게 나란히 앉으니까 이상하게 말이 잘 안 나오네요.');
       await say('det', 'tease', '형사는 원래 마주 앉는 게 익숙해서요. 취조실에서.');

@@ -12,7 +12,7 @@ const NEW_ITEMS = {
   sweetpotato: { name: '군고구마', icon: '🍠', price: 2000, gift: 4, sell: 600, cat: 'snack', season: 'winter', eat: '호호 불어 가며 먹었다. 속이 노랗고 달다.', react: ['군고구마! 겨울엔 이게 최고죠. 손 녹이면서 먹어요.', 'smile'] },
   cupnoodle: { name: '컵라면', icon: '🍜', price: 1300, gift: 1, sell: 300, cat: 'snack', eat: '3분 기다려 후루룩. 바닷바람 맞고 먹으니 더 맛있다.', react: ['컵라면… 저 야근할 때 먹는 거 어떻게 알았어요? 하하.', 'laugh'] },
   cookie: { name: '버터 쿠키', icon: '🍪', price: 2500, gift: 4, sell: 800, cat: 'snack', eat: '바삭, 고소한 버터 향.', react: ['쿠키네요. 파출소에 두고 하나씩 꺼내 먹을게요.', 'smile'] },
-  onigiri: { name: '참치마요 삼각김밥', icon: '🍙', price: 1200, gift: 2, sell: 300, cat: 'snack', eat: '비닐을 잘 벗겨 냈다. 김이 바삭하다.', react: ['점심 거른 거 들켰네요. 고마워요, 잘 먹을게요.', 'smile'] },
+  onigiri: { name: '참치마요 삼각김밥', icon: '🍙', price: 1200, gift: 2, sell: 300, cat: 'snack', eat: '비닐을 잘 벗겨 냈다. 김이 바삭하다.', react: ['삼각김밥이네요. 출출했는데 고마워요, 잘 먹을게요.', 'smile'] },
   // 생활 · 선물
   umbrella: { name: '노란 우산', icon: '☂️', price: 6000, gift: 4, sell: 1500, cat: 'life', react: ['우산이요? 비 오는 날 이거 쓰고 순찰 돌게요. 눈에 잘 띄겠다.', 'smile'] },
   sunscreen: { name: '선크림', icon: '🧴', price: 5000, gift: 3, sell: 1200, cat: 'life', season: 'summer', react: ['선크림… 제 얼굴 탄 거 티 났어요? 열심히 바를게요.', 'laugh'] },

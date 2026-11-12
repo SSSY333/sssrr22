@@ -305,7 +305,7 @@ const LEISURE_LINES = {
 async function leisureTalk(kind, first) {
   const st = S.rel.stage, L = LEISURE_LINES[kind] || {};
   const key = Object.keys(L).map(Number).filter(n => n <= st).sort((a, b) => b - a)[0];
-  let pool = key ? L[key] : ['같이 앉으니까 좋다.'];
+  let pool = key ? L[key] : ['[[같이 앉으니까 좋네요.||같이 앉으니까 좋다.]]'];
   if (kind === 'pavilion' && st >= 8 && S.leisure.mem.firstPavilionDate) pool = pool.concat(['우리 처음 여기 앉았을 때 기억나?']);
   if (kind === 'pavilion' && isNight() && st >= 5) pool = pool.concat(['밤에 여기 오니까 별소리가 다 들린다. …네 숨소리까지.']);
   if (kind === 'camp' && isNight() && st >= 5) pool = pool.concat(['불멍 하니까 아무 생각이 안 나네. 너 빼고.']);
