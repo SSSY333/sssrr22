@@ -133,7 +133,7 @@ function devStart() {
   P.stop && P.stop();
   G.dev = { tool: 'select', sel: null, brush: T.GRASS, addKind: 'tree', undo: [], redo: [], dirty: false, coll: false, start: JSON.stringify(DEVDATA), drag: null, pan: null };
   G.camFocus = { x: P.x, y: P.y }; G.screen = true;
-  document.body.classList.add('devOn'); devBar(); devInfo('편집할 물건을 눌러요. 빈 곳을 끌면 화면이 움직여요');
+  document.body.classList.add('devOn'); devBar(); devInfo('물건 · 건물을 누른 채 끌어서 옮겨요. 빈 곳을 끌면 화면이 움직여요');
   toast('🛠 편집 중 — 시간과 주민이 멈춰요');
 }
 function devStop(saveIt) {
@@ -316,6 +316,15 @@ function devObjAtScreen(wx, wy, tx, ty) {
   return best;
 }
 
+/* 누른 곳의 물건 · 건물: 발밑 물건 → 건물 그림 → 물건 그림 순서 */
+function devPick(w) {
+  const f = devObjAt(Math.floor(w.tx), Math.floor(w.ty)); if (f) return { o: f };
+  if (M.id === 'island') for (const b of M.buildings) {
+    const s = buildingSprite(b, false), lx = Math.floor(w.wx - s.x), ly = Math.floor(w.wy - s.y);
+    if (lx >= 0 && ly >= 0 && lx < s.c.width && ly < s.c.height && s.mask[ly * s.c.width + lx]) return { b };
+  }
+  const o = devObjAtScreen(w.wx, w.wy, w.tx, w.ty); return o ? { o } : null;
+}
 /* ---------------- 화면 조작 ---------------- */
 function devBindInput() {
   const view = R.view; let ptrs = 0, painted = false;
@@ -325,7 +334,11 @@ function devBindInput() {
     if (ptrs > 1) { d.drag = null; d.pan = null; return; }
     const w = W(e), x = Math.floor(w.tx), y = Math.floor(w.ty);
     d.down = { cx: e.clientX, cy: e.clientY, x, y, moved: false };
-    if (d.tool === 'select' && d.sel && devFoot(d.sel).some(([a, b]) => a === x && b === y)) { d.drag = { o: d.sel, ox: x - d.sel.x, oy: y - d.sel.y, grp: devGroup(d.sel).map(o => [o, o.x, o.y]) }; return; }
+    if (d.tool === 'select') {
+      const hit = devPick(w);
+      if (hit && hit.b) { d.sel = null; d.bsel = hit.b.id; d.bdrag = { b: hit.b, x0: x, y0: y, dx: 0, dy: 0, why: [] }; devBarSel(); return; }
+      if (hit && hit.o) { d.bsel = null; d.sel = hit.o; devBarSel(); d.drag = { o: hit.o, ox: x - hit.o.x, oy: y - hit.o.y, grp: devGroup(hit.o).map(o => [o, o.x, o.y]) }; return; }
+    }
     if (d.tool === 'tile') { d.paintBefore = JSON.stringify(DEVDATA); painted = devPaint(x, y); d.painting = true; return; }
     d.pan = { cx: e.clientX, cy: e.clientY, fx: G.camFocus.x, fy: G.camFocus.y };
   }, true);
@@ -333,6 +346,7 @@ function devBindInput() {
     const d = G.dev; if (!d || !d.down || ptrs > 1) return;
     if (Math.hypot(e.clientX - d.down.cx, e.clientY - d.down.cy) > 8) d.down.moved = true;
     const w = W(e), x = Math.floor(w.tx), y = Math.floor(w.ty);
+    if (d.bdrag && d.down.moved) { const bd = d.bdrag, dx = x - bd.x0, dy = y - bd.y0; if (dx !== bd.dx || dy !== bd.dy) { bd.dx = dx; bd.dy = dy; bd.why = (dx || dy) && typeof bmCheck === 'function' ? bmCheck(bd.b, dx, dy) : []; devInfo(bd.why.length ? `🚫 ${bd.why.slice(0, 2).join(' · ')}` : `🏠 ${bd.b.name} — 여기에 놓으려면 손을 떼요`); } return; }
     if (d.drag && d.down.moved) { const o = d.drag.o, nx = x - d.drag.ox, ny = y - d.drag.oy, dx = nx - o.x, dy = ny - o.y; if (dx || dy) for (const g of d.drag.grp) { g[0].x += dx; g[0].y += dy; } d.hover = [nx, ny]; return; }
     if (d.painting) { if (devPaint(x, y)) painted = true; return; }
     if (d.pan && d.down.moved) { const k = R.cur || 1, ddx = (e.clientX - d.pan.cx) / k, ddy = (e.clientY - d.pan.cy) / k; G.camFocus = { x: d.pan.fx - (ddx / 16 + ddy / 8) / 2, y: d.pan.fy - (ddy / 8 - ddx / 16) / 2 }; G.camSnap = true; }
@@ -340,6 +354,7 @@ function devBindInput() {
   const up = (e) => {
     const d = G.dev; ptrs = Math.max(0, ptrs - 1); if (!d || !d.down) return;
     const dn = d.down; d.down = null;
+    if (d.bdrag) { const bd = d.bdrag; d.bdrag = null; d.pan = null; if (dn.moved && (bd.dx || bd.dy) && typeof bmDrop === 'function') bmDrop(bd.b, bd.dx, bd.dy); else devBarSel(); return; }
     if (d.drag) { const dr = d.drag; d.drag = null; d.hover = null; if (dn.moved) { const o = dr.o, nx = o.x, ny = o.y; for (const g of dr.grp) { g[0].x = g[1]; g[0].y = g[2]; } devMove(o, nx, ny); return; } }
     if (d.painting) { d.painting = false; if (painted) { d.undo.push(d.paintBefore); d.redo = []; d.dirty = true; devRebuild(); devInfo(`🖌 ${DEV_TILES.find(t => t[0] === d.brush)[1]}으로 칠했어요`); devCheck(); } painted = false; return; }
     d.pan = null;
@@ -347,11 +362,11 @@ function devBindInput() {
     const w = W(e), x = Math.floor(w.tx), y = Math.floor(w.ty);
     devTap(w, x, y);
   };
-  view.addEventListener('pointerup', up, true); view.addEventListener('pointercancel', (e) => { const d = G.dev; ptrs = Math.max(0, ptrs - 1); if (d) { if (d.drag) for (const g of d.drag.grp) { g[0].x = g[1]; g[0].y = g[2]; } d.drag = null; d.pan = null; d.down = null; d.painting = false; } }, true);
+  view.addEventListener('pointerup', up, true); view.addEventListener('pointercancel', (e) => { const d = G.dev; ptrs = Math.max(0, ptrs - 1); if (d) { if (d.drag) for (const g of d.drag.grp) { g[0].x = g[1]; g[0].y = g[2]; } d.drag = null; d.bdrag = null; d.pan = null; d.down = null; d.painting = false; } }, true);
 }
 function devTap(w, x, y) {
   const d = G.dev;
-  if (d.tool === 'select') { d.sel = devObjAtScreen(w.wx, w.wy, w.tx, w.ty); if (!d.sel) { const any = M.objects.find(o => !devId(o) && !o.water && o.x === x && o.y === y); if (any) toast('이벤트 · 시스템용 물건이라 편집할 수 없어요'); } devBarSel(); return; }
+  if (d.tool === 'select') { const hit = devPick(w); if (hit && hit.b) { d.sel = null; d.bsel = hit.b.id; devBarSel(); return; } d.bsel = null; d.sel = hit && hit.o || null; if (!d.sel) { const any = M.objects.find(o => !devId(o) && !o.water && o.x === x && o.y === y); if (any) toast('이벤트 · 시스템용 물건이라 편집할 수 없어요'); } devBarSel(); return; }
   if (d.tool === 'add') { devAddAt(d.addKind, x, y); return; }
   if (d.tool === 'fence') { devFenceAt(x, y); return; }
   if (d.tool === 'light') { devLightAt(x, y); return; }
@@ -401,7 +416,7 @@ function devToolClick(t) {
   d.tool = t; if (t !== 'select') { d.sel = null; devBarSel(); }
   if (t === 'add') { openSheet({ title: '＋ 무엇을 놓을까요?', sub: '<div class="relneed">고른 뒤 땅을 누르면 놓여요. 돈 · 개수 제한 없음</div>', cols: 4, items: [...DEV_ADD.map(([k, n, i]) => ({ icon: i, label: n, onClick: () => { d.addKind = k; devInfo(`＋ ${n} — 놓을 곳을 눌러요`); } })), ...(M.interior ? Object.keys(FURN).filter(k => !FURN[k].wall).slice(0, 24).map(k => ({ icon: '🛋', label: FURN[k].name, onClick: () => { d.addKind = 'furn:' + k; devInfo(`＋ ${FURN[k].name} — 놓을 곳을 눌러요`); } })) : [])] }); }
   if (t === 'tile') { if (M.interior) d.brush = T.FLOOR; openSheet({ title: '🖌 바닥 붓', sub: '<div class="relneed">고른 뒤 땅을 누르거나 끌어서 칠해요. 물 · 건물 칸은 칠해지지 않아요</div>', cols: 5, items: DEV_TILES.map(([v, n, i]) => ({ icon: i, label: n, onClick: () => { d.brush = v; devInfo(`🖌 ${n} — 누르거나 끌어서 칠해요`); } })) }); }
-  const hint = { select: '물건을 눌러 고르고, 끌어서 옮겨요', fence: '칸을 누르면 울타리가 놓이고, 다시 누르면 걷혀요. 모서리는 자동으로 이어져요', light: '물건을 누르면 밤 조명이 켜지고 꺼져요. 빈 칸은 가로등 추가', seat: '칸을 누르면 2인 쉼터 자리가 생겨요(아래 칸이 서는 자리). 주민도 와서 쉬어요' }[t];
+  const hint = { select: '물건이나 건물을 누른 채 끌면 옮겨져요', fence: '칸을 누르면 울타리가 놓이고, 다시 누르면 걷혀요. 모서리는 자동으로 이어져요', light: '물건을 누르면 밤 조명이 켜지고 꺼져요. 빈 칸은 가로등 추가', seat: '칸을 누르면 2인 쉼터 자리가 생겨요(아래 칸이 서는 자리). 주민도 와서 쉬어요' }[t];
   if (hint) devInfo(hint);
   devBarTools();
 }
