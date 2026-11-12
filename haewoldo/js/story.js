@@ -288,13 +288,13 @@ function compUpdate(dt, plan) {
       if (G.compIdle > 11 && !d.bubble && Math.random() < dt * 0.09) {
         const pl = curPlace(), st = Math.min(8, S.rel.stage);
         const pool = [...IDLE[st], ...(PLACE_IDLE[pl] || []), ...SEASON_IDLE[season()], ...(WEATHER_IDLE[S.weather] || [])];
-        d.lookAt(P); d.say(typeof compLine === 'function' && Math.random() < 0.7 ? compLine() : pick(pool), 3.2);
+        d.lookAt(P); d.say(typeof compLine === 'function' && Math.random() < 0.7 ? compLine() : pickFresh(pool), 3.2);
       }
     }
   }
   if (G.compDutyUntil && S.min > G.compDutyUntil && !G.busy) {
     G.compDutyUntil = null;
-    runEvent(async () => { await say('det', 'sad', '아, 슬슬 파출소 들어가 봐야겠어요. 무전이 와서.'); await say('det', 'smile', '퇴근하고 또 같이 걸어요. 약속.'); closeDialog(); endCompanion(); });
+    runEvent(async () => { const [e1, e2] = dutyWalkEndLines(); await say('det', 'sad', e1); await say('det', 'smile', e2); closeDialog(); endCompanion(); });
   }
 }
 
@@ -509,8 +509,8 @@ function doInteraction(id) {
       case 'greet': {
         const tod = S.min < 11 * 60 ? 'morning' : S.min < 17 * 60 ? 'day' : 'evening';
         d.emo('👋');
-        await say('det', st >= 4 ? 'blush' : 'smile', pick(GREETS[tod][Math.min(8, st)]));
-        if (!r.daily.greet) { r.daily.greet = true; addAff(1); if (DET_OUTFIT_LINES[d.outfit] && st >= 2) await say('det', 'tease', DET_OUTFIT_LINES[d.outfit]); } else await say('det', 'laugh', '또 인사해요? 하하, 좋아요.');
+        await say('det', st >= 4 ? 'blush' : 'smile', pickFresh(GREETS[tod][Math.min(8, st)], ['안녕하세요.', '또 만났네요.', '오늘 하루 어때요?']));
+        if (!r.daily.greet) { r.daily.greet = true; addAff(1); if (DET_OUTFIT_LINES[d.outfit] && st >= 2) await say('det', 'tease', DET_OUTFIT_LINES[d.outfit]); } else await say('det', 'smile', greetAgainLine());
         break;
       }
       case 'talk': await dailyTalk(); break;
@@ -577,7 +577,7 @@ async function dailyTalk() {
   if (r.daily.fight) { await fightTalk(); return; }
   if (r.daily.talk >= 2) {
     if (r.daily.talk === 2) await say('det', 'laugh', '오늘 말 많이 하네요? 좋아요, 저 수다 좋아해요.');
-    await say('det', 'smile', pick([...SMALLTALK[st], ...SEASON_IDLE[season()]]));
+    await say('det', 'smile', pickFresh([...SMALLTALK[st], ...SEASON_IDLE[season()]]));
     r.daily.talk++; return;
   }
   const pool = TALKS[st] || [], idx = r.talkIdx[st] || 0;
@@ -585,7 +585,7 @@ async function dailyTalk() {
     const tp = pool[idx].job ? JOB_TALK[S.job] : pool[idx];
     await topic(tp);
     r.talkIdx[st] = idx + 1;
-  } else { await say('det', 'smile', pick([...SMALLTALK[st], ...SEASON_IDLE[season()], ...(WEATHER_IDLE[S.weather] || [])])); addAff(1); }
+  } else { await say('det', 'smile', pickFresh([...SMALLTALK[st], ...SEASON_IDLE[season()], ...(WEATHER_IDLE[S.weather] || [])])); addAff(1); }
   r.daily.talk++;
 }
 async function requestFollow() {
@@ -605,7 +605,8 @@ async function favor() {
     return;
   }
   if (r.daily.favor) { await say('det', 'tease', '오늘은 부탁할 거 없어요. 당신 얼굴 본 걸로 충분해요.'); return; }
-  const i = Math.floor(Math.random() * FAVORS.length);
+  let i = Math.floor(Math.random() * FAVORS.length);
+  for (let t = 0; t < 10 && /점심|도시락/.test(FAVORS[i].ask) && !(S.min >= 10.5 * 60 && S.min < 14 * 60); t++) i = Math.floor(Math.random() * FAVORS.length);
   await say('det', 'normal', FAVORS[i].ask);
   const c = await choose(['맡겨 주세요', '다음에요']);
   if (c === 0) { r.favor = { i, day: S.day }; await say('det', 'smile', '고마워요. 역시 믿을 사람은 당신뿐.'); toast(`📝 부탁: ${ITEMS[FAVORS[i].item].name} 전해 주기`); }

@@ -144,7 +144,7 @@ dailyTalk = async function () {
   if (cas && r.daily.talk === 1 && Math.random() < 0.5) { const m = memoryLine(); if (m) { await say('det', 'smile', m); r.daily.talk++; addAff(1); return; } }
   const pool = TALKS[st] || [], idx = r.talkIdx[st] || 0;
   if (idx < pool.length && r.daily.talk === 0) { const tp = pool[idx].job ? JOB_TALK[S.job] : pool[idx]; await topic(tp); r.talkIdx[st] = idx + 1; }
-  else { await say('det', 'smile', pick(smallPool())); addAff(1); }
+  else { await say('det', 'smile', pickFresh(smallPool())); addAff(1); }
   r.daily.talk++;
   memRecent('talk', '형사님과 이야기했다');
 };

@@ -101,7 +101,7 @@ dailyTalk = async function () {
   if (casualOn() || r.stage !== 1 || r.daily.fight) return _dailyTalkT1();
   const native = S.job === 'haenyeo', fits = (tp) => (!tp.only || tp.only.includes(S.job)) && (!tp.not || !tp.not.includes(S.job));
   const list = TALKS[1].filter(fits), idx = Math.min(r.talkIdx[1] || 0, list.length);
-  const small = () => pick([...SMALL1_ALL, ...(native ? SMALL1_NATIVE : SMALL1_NEW), ...(SEASON1[season()] || []), ...(WEATHER1[S.weather] || [])]);
+  const small = () => pickFresh([...SMALL1_ALL, ...(native ? SMALL1_NATIVE : SMALL1_NEW), ...(SEASON1[season()] || []), ...(WEATHER1[S.weather] || [])]);
   if (r.daily.talk === 0 && idx < list.length) {
     const tp = list[idx].job ? JOB_TALK[S.job] : list[idx];
     await topic(tp); r.talkIdx[1] = idx + 1;

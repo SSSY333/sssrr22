@@ -297,7 +297,7 @@ const SIT_TALK = {
 
 /* 데이트 장소 (16곳) */
 const DATES = {
-  pier: { name: '부두 산책', icon: '⚓', map: 'island', bench: 'pier', pos: 'harbor', lines: [['smile', '바다 보면서 아무 말 안 해도 괜찮은 사람, 처음이에요.'], ['tease', '…그래도 말은 할 거예요. 저 수다쟁이거든요.']], c: [['계속 얘기해 줘요', '그럼 오늘 밤새도록.'], ['조용히 있어요', '네. …손은 잡고 있어도 되죠?']] },
+  pier: { name: '부두 산책', icon: '⚓', map: 'island', bench: 'pier', pos: 'harbor', lines: [['smile', '바다 보면서 아무 말 안 해도 괜찮은 사람, 처음이에요.'], ['tease', '…그래도 말은 할 거예요. 저 수다쟁이거든요.']], c: [['계속 얘기해 줘요', '그럼 해 질 때까지 계속할게요.'], ['조용히 있어요', '네. …손은 잡고 있어도 되죠?']] },
   cafe: { name: '카페 데이트', icon: '☕', map: 'island', bench: 'cafe', pos: 'cafeBench', lines: [['smile', '귤 라떼 두 잔. 하나는 덜 달게. 당신 취향 맞죠?'], ['tease', '이 정도면 제가 당신 전문가예요.']], c: [['맞아요, 감동이에요', '수사력이 이런 데 쓰이네요.'], ['제가 계산할게요', '안 돼요. 첫 잔은 제 거예요.']] },
   lighthouse: { name: '등대 노을', icon: '🌅', map: 'island', bench: 'lighthouse', pos: 'lighthouse', time: 18 * 60, lines: [['normal', '타이밍 맞췄다. 지금이에요.'], ['blush', '…노을보다 당신을 더 많이 본 건 비밀로 해 줘요.']], c: [['다 봤어요', '들켰다. 그럼 숨길 필요 없겠네.'], ['저도요', '…우리 둘 다 노을 하나도 안 봤네요.']] },
   beach: { name: '해변 산책', icon: '🐚', map: 'island', bench: 'beach', pos: 'beachBench', lines: [['smile', '손잡고 걸으니까 모래가 더 부드러운 것 같아요.'], ['tease', '과학적으론 말이 안 되는데, 느낌상 그래요.']], c: [['조금 더 걸어요', '네. 섬 끝까지 가도 돼요.'], ['신발 벗을래요', '그럼 저도 벗을게요. 근무 아니니까.']] },
