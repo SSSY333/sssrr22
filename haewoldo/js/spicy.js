@@ -525,7 +525,16 @@ function spFreeBench(mapId) {
   return ks[0] || null;
 }
 async function spDetSitNear() {
-  const d = G.det, k = spFreeBench(M.id); if (!k) return false; const bk = M.benches[k], st = bk.stand[bk.stand.length - 1];
+  const d = G.det, k = spFreeBench(M.id);
+  if (!k) { // 의자 가구 위에 앉기 (자리 등록이 없는 실내)
+    const P = G.player, ch = M.objects.filter(o => o.kind === 'furn' && /chair|stool|sofa|cushion/i.test(o.k)).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0];
+    if (!ch) return false;
+    const [sx, sy] = nearestWalkable(ch.x + 0.5, ch.y + 1.5, M); d.walkTo(sx, sy); await waitUntil(() => !d.path.length, 8);
+    d.x = ch.x + 0.5; d.y = ch.y + 0.5; d.pose = 'sit'; d.lookAt(P);
+    waitUntil(() => G.player.map !== d.map || dist(G.player, d) > 2.6 || d.state === 'sched', 240).then(() => { if (d.pose === 'sit' && !d.seat) { d.pose = 'stand'; [d.x, d.y] = nearestWalkable(d.x, d.y + 1, MAPS[d.map] || M); } });
+    return true;
+  }
+  const bk = M.benches[k], st = bk.stand[bk.stand.length - 1];
   d.walkTo(st[0] + 0.5, st[1] + 0.5); await waitUntil(() => !d.path.length, 8);
   try { d.sitAt(k, bk.seats.length - 1); } catch (e) { return false; }
   return true;
@@ -578,7 +587,7 @@ SP_EVENTS.push(
   { id: 'sp_workVisit', cd: 3, st: 2, far: true, ok: () => spWorkMap() && G.player.map === spWorkMap() && G.player.map !== 'in_cafe' && spOffDuty() && !S.comp, run: async () => {
     const d = G.det; await spComeClose();
     const k = pick(['coffee', 'snack', 'tangerine']); S.inv[k] = (S.inv[k] || 0) + 1;
-    await spAct(`형사님이 문을 열고 들어와, ${ITEMS[k] ? ITEMS[k].name : '간식'}을 내민다.`);
+    await spAct(`형사님이 문을 열고 들어와, ${josa(ITEMS[k] ? ITEMS[k].name : '간식', '을', '를')} 내민다.`);
     await spDet('normal', spBeatText(spB(['지나가다가. 먹고 해.', '오늘 바쁘지. 이거 먹어.', '끝나면 연락해. 데리러 올게.'], ['지나가다가요. 드시고 하세요.', '오늘 바쁘죠. 이거 드세요.', '끝나면 연락 주세요. 데리러 올게요.'])));
     const i = await spChoose(['고마워요', '(잠깐 손을 잡는다)']);
     if (i === 1) { burst(d, 'heart', 3); await spAct('형사님이 맞잡은 손을 엄지로 한 번 쓸고 놓는다.'); await spDet('normal', spB('이따 보자.', '이따 봬요.')); addAff(4); }
