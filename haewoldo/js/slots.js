@@ -76,6 +76,22 @@ openSheet = function (o) {
   }
   return _openSheetSlot(o);
 };
-/* 예전 실험 모드 기록 정리 */
-const _startGameSlot = startGame;
-startGame = function (state, isNew) { if (state) { delete state.romanceMode; delete state.spicy; } return _startGameSlot(state, isNew); };
+/* 아찔한 모드로 플레이한 저장은 지워요 (모드 표시 · 그 모드에서만 생기던 기억 · 앨범으로 찾아요) */
+const SP_ALBUM = ['형사님이 먼저 신청한 저녁', '뜻밖의 하룻밤, 그다음 아침', '밤바다에서 잡은 손', '캠핑장의 밤', '모닥불 앞 고백 같은 이야기', '사랑한다고 말한 날', '사랑이라는 걸 깨달은 날', '슬쩍 잡은 손', '네컷의 마지막 컷'];
+function slotWasSpicy(s) {
+  if (!s) return false;
+  if (s.romanceMode === 'SPICY' || s.spicy) return true;
+  const perm = s.mem && s.mem.perm || {}; if (perm.spAttract || perm.spFirstNight) return true;
+  const fl = s.rel && s.rel.flags || {}; if (fl.spDinner || fl.spTent || fl.spBooth) return true;
+  return (s.album || []).some(a => SP_ALBUM.includes(a.title));
+}
+function slotPurgeSpicy() {
+  const gone = [];
+  for (const n of [1, 2]) { let s = null; try { s = JSON.parse(localStorage.getItem(slotKey(n)) || 'null'); } catch (e) { } if (slotWasSpicy(s)) { try { localStorage.removeItem(slotKey(n)); } catch (e) { } gone.push(n); } }
+  return gone;
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const gone = slotPurgeSpicy(); if (!gone.length) return;
+  slotTitle();
+  setTimeout(() => toast(`🗑 아찔한 모드로 하던 저장 ${gone.join(' · ')} 칸을 지웠어요`), 800);
+});
