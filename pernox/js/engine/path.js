@@ -29,7 +29,7 @@ PX.Path = (() => {
         if (dx && dy && (!ok(cx + dx, cy) || !ok(cx, cy + dy))) continue;
         const ni = ny * W + nx;
         if (closed[ni]) continue;
-        const ng = g[cur] + (dx && dy ? 1.414 : 1);
+        const ng = g[cur] + (dx && dy ? 1.414 : 1) + (opt.cost ? opt.cost(nx, ny) : 0);
         if (ng < g[ni]) { g[ni] = ng; f[ni] = ng + hfn(nx, ny); from[ni] = cur; push(ni); }
       }
     }

@@ -519,7 +519,8 @@
     Game.modal++;
     Game.player.doPose('carry', 1.2);
     await Dlg.say('player', `${it.icon} 이거 드릴게요.`);
-    await Dlg.runLines(U.pick(PX.DLG_CAP.giftReact[like]));
+    const own = PX.DLG_GIFT && PX.DLG_GIFT[id];
+    await Dlg.runLines(own && (r['gifted_' + id] = (r['gifted_' + id] || 0) + 1) <= 2 ? U.pick(own) : U.pick(PX.DLG_CAP.giftReact[like]));
     Dlg.close(); Game.modal--;
     const giftsToday = r.giftDay === S.day ? (r.giftsToday || 0) : 0;
     r.giftDay = S.day; r.giftsToday = giftsToday + 1; r.gifts++;
@@ -668,6 +669,25 @@
     if (e.key === 't' || e.key === 'T' || e.key === 'Tab') { e.preventDefault(); UI.terminal(); }
   });
   window.addEventListener('keyup', e => { keys[e.key] = false; });
+  const everyone = () => Game.critters && Game.critters.length ? Game.actors.concat(Game.critters) : Game.actors;
+  // 서 있는 사람들이 차지한 칸 (길찾기가 돌아가도록) + 한 칸에 겹쳐 선 사람 떼어 놓기
+  let occT = 0;
+  function crowdTick(dt) {
+    occT -= dt; if (occT > 0) return; occT = 0.4;
+    const m = W.maps[Game.mapId], occ = new Map(), here = everyone().filter(a => a.map === Game.mapId && !a.hidden);
+    for (const a of here) {
+      if (a.moving || a.path.length || a.seat) continue;
+      const k = Math.floor(a.y) * m.w + Math.floor(a.x), b = occ.get(k);
+      if (!b) { occ.set(k, a); continue; }
+      // 같은 칸에 둘: 플레이어·대위·제자리 직원이 아닌 쪽이 옆 칸으로 비켜 선다
+      const mover = [a, b].find(x => x !== Game.player && x !== Game.cap && !x.fixed && !x.critter) || (a !== Game.player && a !== Game.cap ? a : b !== Game.player && b !== Game.cap ? b : null);
+      if (!mover || mover === Game.player || Game.modal) continue;
+      const cx = Math.floor(mover.x), cy = Math.floor(mover.y);
+      const spots = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => [cx + dx, cy + dy]).filter(([x, y]) => W.walkable(m, x, y) && !occ.has(y * m.w + x));
+      if (spots.length) { const s = U.pick(spots.slice(0, 4)); mover.walkPath([[s[0], s[1]]]); occ.set(s[1] * m.w + s[0], mover); }
+    }
+    Game.occ = occ;
+  }
   function keyMove(dt) {
     const p = Game.player;
     let dx = 0, dy = 0; // 화면 기준 → 타일 기준 변환
@@ -690,9 +710,18 @@
     const sp = (run ? 5.4 : 3.6 * mag) * (St.S.energy < 15 ? 0.7 : 1) * dt;
     p.speedNow = sp / dt;
     const m = W.maps[Game.mapId];
-    const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return true; };
+    // 벽·가구 + 서 있는 사람(뚫고 지나가지 않게. 이미 겹쳐 있으면 빠져나올 수는 있다)
+    const others = everyone().filter(a => a !== p && a.map === Game.mapId && !a.hidden && !a.seat && !a.moving);
+    let bumped = null;
+    const hit = (x, y) => { for (const a of others) { const d = U.dist(x, y, a.x, a.y); if (d < 0.55 && d < U.dist(p.x, p.y, a.x, a.y) - 0.001) { bumped = a; return true; } } return false; };
+    const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return !hit(x, y); };
     const nx = p.x + dx * sp, ny = p.y + dy * sp;
     if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) p.x = nx; else if (free(p.x, ny)) p.y = ny;
+    else if (bumped && !bumped.fixed && !bumped.critter && !bumped.path.length) { // 길을 막고 선 사람은 옆으로 비켜 준다
+      const bx = Math.floor(bumped.x), by = Math.floor(bumped.y), px0 = Math.floor(p.x), py0 = Math.floor(p.y);
+      const sp2 = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([ax, ay]) => [bx + ax, by + ay]).filter(([x, y]) => W.walkable(m, x, y) && !(x === px0 && y === py0)).sort((u, v) => U.dist(v[0], v[1], p.x, p.y) - U.dist(u[0], u[1], p.x, p.y));
+      if (sp2.length) { bumped.walkPath([sp2[0]]); if (Math.random() < 0.3 && bumped !== Game.cap) Game.bubble(bumped, U.pick(['앗.', '어이쿠.', '…!']), 1.4); }
+    }
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
     if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
     for (const l of m.links || []) if (Math.floor(p.y) === l.y0 && Math.floor(p.x) >= l.x0 && Math.floor(p.x) <= l.x1) { goLink(l); break; }
@@ -807,6 +836,7 @@
     }
     // 이동 · AI
     if (!Game.modal) keyMove(dt);
+    crowdTick(dt);
     for (const a of Game.actors) a.update(dt);
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
     if (PX.CapAct) PX.CapAct.tick(dt);
@@ -896,8 +926,34 @@
   function ambient(dt) {
     ambT -= dt; if (ambT > 0) return;
     ambT = 4 + Math.random() * 4;
-    if (Game.modal || Math.random() < 0.45) return;
+    if (Game.modal) return;
     const p = Game.player;
+    // 지나가면 먼저 인사 (하루에 한 번씩)
+    const S0 = St.S; S0.done.hiDay = S0.done.hiDay === S0.day ? S0.done.hiDay : (S0.done.hiSet = {}, S0.day);
+    const hiN = Game.npcs.find(n => n.map === Game.mapId && PX.HI && PX.HI[n.id] && !S0.done.hiSet[n.id] && n.activity() !== 'sleep' && U.dist(n.x, n.y, p.x, p.y) < 2.4 && !Game.bubbles.some(b => b.actor === n));
+    if (hiN) { S0.done.hiSet[hiN.id] = 1; if (!hiN.path.length && !hiN.seat) hiN.setDirTo(p.x, p.y); Game.bubble(hiN, U.pick(PX.HI[hiN.id]), 2.2); ambT = 2.5; return; }
+    if (Math.random() < 0.4) return;
+    // 가까이 있는 두 사람이 말을 주고받는다
+    if (PX.CHATTER && Math.random() < 0.4) {
+      const here = Game.npcs.filter(n => n.map === Game.mapId && n.activity() !== 'sleep' && U.dist(n.x, n.y, p.x, p.y) < 9 && !Game.bubbles.some(b => b.actor === n));
+      for (const a of here) for (const b2 of here) {
+        if (a === b2 || U.dist(a.x, a.y, b2.x, b2.y) > 3.2) continue;
+        const pl = PX.CHATTER.pair[a.id + '+' + b2.id];
+        if (!pl) continue;
+        const ex = U.pick(pl);
+        Game.bubble(a, ex[0], 2.6); setTimeout(() => { if (b2.map === Game.mapId && !Game.modal) Game.bubble(b2, ex[1], 2.6); }, 1900);
+        ambT = 6; return;
+      }
+      const exs = (Game.critters || []).filter(c => c.extra && !c.fixed && U.dist(c.x, c.y, p.x, p.y) < 8 && !Game.bubbles.some(b => b.actor === c));
+      for (const a of exs) for (const b2 of exs) {
+        if (a === b2 || a.extra !== b2.extra || U.dist(a.x, a.y, b2.x, b2.y) > 3) continue;
+        const k = { messgoer: 'eat', gymgoer: 'workout', offduty: 'rest', arcader: 'game', soldier: 'stroll', citizen: 'stroll', cafeguest: 'cafe', patron: 'rest' }[a.extra];
+        if (!k) continue;
+        const ex = U.pick(PX.CHATTER.act[k]);
+        Game.bubble(a, ex[0], 2.4); setTimeout(() => { if (b2.map === Game.mapId && !Game.modal) Game.bubble(b2, ex[1], 2.4); }, 1700);
+        ambT = 6; return;
+      }
+    }
     const near = Game.npcs.filter(n => n.map === Game.mapId && n !== lastAmb && U.dist(n.x, n.y, p.x, p.y) < 9 && !Game.bubbles.some(b => b.actor === n));
     if (!near.length) return;
     const n = U.pick(near), act = n.activity(), A = PX.NPC_ACT[act];

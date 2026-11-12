@@ -15,7 +15,10 @@ PX.A = (() => {
     goTo(m, tx, ty, onArrive, opt) {
       const tgt = PX.Path.nearestWalkable(m, tx, ty, 4);
       if (!tgt) return false;
-      const p = PX.Path.find(m, Math.floor(this.x), Math.floor(this.y), tgt[0], tgt[1], opt);
+      // 서 있는 사람이 있는 칸은 돌아서 간다 (사람을 뚫고 지나가지 않게)
+      const occ = PX.Game && PX.Game.occ, me = this;
+      const o2 = occ ? Object.assign({ cost: (x, y) => { const a = occ.get(y * m.w + x); return a && a !== me ? 6 : 0; } }, opt || {}) : opt;
+      const p = PX.Path.find(m, Math.floor(this.x), Math.floor(this.y), tgt[0], tgt[1], o2);
       if (!p) return false;
       return this.walkPath(p, onArrive);
     }
