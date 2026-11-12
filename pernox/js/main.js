@@ -469,6 +469,7 @@
     const duty = Cap.onDuty() && Cap.mode !== 'follow';
     const st = r.stage;
     const items = [{ t: '💬 대화하기', k: 'talk' }];
+    if (PX.AI.available()) items.push({ t: '✨ 자유롭게 대화하기', k: 'ai', sub: '하고 싶은 말을 직접 입력 · AI가 대위로 대답해요' });
     if (Cap.mode === 'follow') items.push({ t: '🙋 이제 혼자 갈게요', k: 'unfollow' });
     else items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty || Cap.mode === 'visit' || Cap.mode === 'stay', offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
     items.push({ t: '🎁 선물하기', k: 'gift' });
@@ -479,6 +480,7 @@
     const it = await UI.menu(`${S.capName} 대위 · ${Cap.status()}`, items);
     if (!it) return;
     if (it.k === 'talk') return Dlg.capTalk();
+    if (it.k === 'ai') return PX.AI.chat();
     if (it.k === 'follow') { Cap.startFollow(); Game.bubble(cap, U.pick(['좋아. 어디든.', '그 말 기다렸어.'])); St.addAff(1); return; }
     if (it.k === 'unfollow') { Cap.release(U.pick(['응. 이따 또 보자.', '아쉽네. 조심히 가.'])); return; }
     if (it.k === 'gift') return gift();

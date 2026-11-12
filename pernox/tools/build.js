@@ -12,6 +12,13 @@ html = html.replace(/<link rel="stylesheet" href="css\/style\.css" \/>/, () => `
 html = html.replace(/<script src="([^"]+)"><\/script>/g, (_, src) => `<script>\n/* ${src} */\n${read(src).replace(/<\/script/gi, '<\\/script')}\n</script>`);
 fs.mkdirSync(path.join(ROOT, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(ROOT, 'dist/pernox.html'), html);
+// claude.ai 아티팩트용: 문서 껍데기(doctype/html/head/body)는 게시할 때 붙으므로 뺀다
+let art = html
+  .replace(/<!doctype html>\s*/i, '').replace(/<html[^>]*>\s*/i, '').replace(/<\/html>\s*$/i, '')
+  .replace(/<head>\s*/i, '').replace(/<\/head>\s*/i, '').replace(/<body>\s*/i, '').replace(/<\/body>\s*/i, '')
+  .replace(/\s*<meta charset="utf-8" \/>/i, '').replace(/\s*<meta name="viewport"[^>]*>/i, '').replace(/\s*<meta name="theme-color"[^>]*>/i, '')
+  .replace('<style>', '<style>\n:root { color-scheme: dark; }');
+fs.writeFileSync(path.join(ROOT, 'dist/pernox-artifact.html'), art.trimStart());
 // APK 자산: 분리된 파일 그대로 복사 (WebView에서 file:///android_asset 로 실행)
 const www = path.join(ROOT, 'android/assets/www');
 fs.rmSync(www, { recursive: true, force: true });

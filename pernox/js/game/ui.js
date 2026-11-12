@@ -28,6 +28,18 @@ PX.UI = (() => {
     build(body, close);
     return close;
   }
+  // 페이지 안 확인 창 (아티팩트에서는 브라우저 confirm()이 막혀 있다)
+  function ask(title, text, yes = '확인', no = '취소') {
+    return new Promise(res => {
+      let done = false;
+      sheet(title, (b, close) => {
+        b.append(el('p', null, text));
+        const y = el('button', { class: 'menu-btn' }, el('span', null, yes)); y.onclick = () => { done = true; close(); res(true); };
+        const n = el('button', { class: 'menu-btn ghost' }, el('span', null, no)); n.onclick = () => { done = true; close(); res(false); };
+        b.append(y, n);
+      }, { onClose: () => { if (!done) res(false); } });
+    });
+  }
   function menu(title, items) { // items: [{t, fn, sub, off}]
     return new Promise(res => {
       let picked = false;
@@ -75,9 +87,9 @@ PX.UI = (() => {
         const p = St.peek(n);
         const info = p ? (p.broken ? '손상된 저장' : `${p.name} (${p.job}) · ${p.date} · ${p.cap}와(과) ${p.stage}`) : '비어 있음';
         const btn = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}`), el('small', null, info));
-        btn.onclick = () => {
+        btn.onclick = async () => {
           if (kind === 'load') { if (!p || p.broken) { toast('불러올 저장이 없어요'); return; } close(); PX.Game.loadSlot(n); return; }
-          if (p && !confirm(`저장 칸 ${n}의 기록을 지우고 새로 시작할까요?`)) return;
+          if (p && !(await ask('새로 시작', `저장 칸 ${n}번의 기록(${p.name})을 지우고 새로 시작할까요?`, '지우고 새로 시작'))) return;
           close(); create(n);
         };
         b.append(btn);
@@ -268,10 +280,26 @@ PX.UI = (() => {
       if (!S.messages.length) p.append(el('p', { class: 'muted' }, `${S.capName}에게 온 메시지가 없어요. 떨어져 있으면 가끔 연락이 와요.`));
       for (const m of S.messages) {
         const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t));
-        if (m.reply != null) { box.append(el('div', { class: 'bub me' }, m.r[m.reply][0]), el('div', { class: 'bub cap' }, m.r[m.reply][2])); }
+        if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
+        else if (m.reply != null) { box.append(el('div', { class: 'bub me' }, m.r[m.reply][0]), el('div', { class: 'bub cap' }, m.r[m.reply][2])); }
         else {
           const ch = el('div', { class: 'msgch' });
           m.r.forEach((rr, i) => { const b = el('button', null, rr[0]); b.onclick = () => { m.reply = i; St.addAff(rr[1]); badge(); p.innerHTML = ''; PANES.msg(p); }; ch.append(b); });
+          if (PX.AI.available()) { // 직접 답장 쓰기 → 대위가 AI로 답장
+            const free = el('button', { class: 'free' }, '✍️ 직접 쓰기');
+            free.onclick = () => {
+              const row = el('div', { class: 'msgfree' }), inp = el('input', { type: 'text', maxlength: '120', placeholder: '답장을 입력하세요' }), go = el('button', null, '보내기');
+              row.append(inp, go); ch.replaceWith(row); inp.focus();
+              const sendIt = async () => {
+                const v = inp.value.trim(); if (!v) return;
+                go.disabled = true; go.textContent = '…';
+                try { const ans = await PX.AI.replyMsg(m, v); m.reply = 'free'; m.mine = v; m.ans = ans; badge(); p.innerHTML = ''; PANES.msg(p); }
+                catch (e) { go.disabled = false; go.textContent = '보내기'; toast('📡 답장을 보내지 못했어요. 다시 시도해 주세요.'); }
+              };
+              go.onclick = sendIt; inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) sendIt(); };
+            };
+            ch.append(free);
+          }
           box.append(ch);
         }
         p.append(box);
@@ -356,7 +384,7 @@ PX.UI = (() => {
       for (const n of [1, 2]) {
         const pk = St.peek(n);
         const b = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}에 저장${S.slot === n ? ' (사용 중)' : ''}`), el('small', null, pk ? `${pk.name} · ${pk.date}` : '비어 있음'));
-        b.onclick = () => { if (pk && S.slot !== n && !confirm(`저장 칸 ${n}번을 덮어쓸까요?`)) return; const ok = St.save(n, false); toast(ok ? `💾 저장 칸 ${n}에 저장했어요` : '저장하지 못했어요 (저장 공간 부족)'); p.innerHTML = ''; PANES.set(p, close); };
+        b.onclick = async () => { if (pk && S.slot !== n && !(await ask('저장', `저장 칸 ${n}번(${pk.name})을 덮어쓸까요?`, '덮어쓰기'))) return; const ok = St.save(n, false); toast(ok ? `💾 저장 칸 ${n}에 저장했어요` : '저장하지 못했어요 (저장 공간 부족)'); p.innerHTML = ''; PANES.set(p, close); };
         p.append(b);
       }
       p.append(el('p', { class: 'muted' }, `자동 저장: 지금 쓰는 저장 칸 ${S.slot}에 장소 이동·잠·5분마다 자동으로 저장돼요. (저장 버전 v${St.SAVE_VERSION})`));
@@ -392,5 +420,5 @@ PX.UI = (() => {
     });
   }
 
-  return { toast, sheet, menu, hud, badge, title, create, terminal, shop, pickGift, PANES };
+  return { ask, toast, sheet, menu, hud, badge, title, create, terminal, shop, pickGift, PANES };
 })();

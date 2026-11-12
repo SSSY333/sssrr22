@@ -71,6 +71,15 @@ PX.Dlg = (() => {
       document.addEventListener('keydown', onKey);
     });
   }
+  // AI 응답을 기다리는 동안: 대위 초상 + 점점 늘어나는 "…"
+  function thinking() {
+    open = true; box.classList.remove('hidden'); chEl.classList.add('hidden');
+    nameEl.textContent = St.S.capName; nameEl.style.display = ''; box.classList.remove('narr', 'mine');
+    portrait('cap', 'normal'); nextEl.classList.add('hidden');
+    let n = 0; textEl.textContent = '…';
+    const iv = setInterval(() => { n = (n + 1) % 4; textEl.textContent = '…' + '.'.repeat(n); }, 350);
+    return { stop: () => clearInterval(iv) };
+  }
   function close() { open = false; box.classList.add('hidden'); chEl.classList.add('hidden'); }
 
   // 대사 줄 실행 → { aff, tags }
@@ -249,5 +258,5 @@ PX.Dlg = (() => {
     if (!['kang', 'nam', 'ryu', 'moon', 'song'].includes(npc.id)) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
   }
 
-  return { init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  return { thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();
