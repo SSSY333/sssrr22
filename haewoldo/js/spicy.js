@@ -246,7 +246,7 @@ const SP_EVENTS = [
     await spDet('normal', spB('나랑 저녁 먹자.', '같이 식사할래요?'));
     const i = await spChoose(['좋아요', '오늘은 어려워요'], 'dinner');
     if (i === 1) { await spDet('normal', spB('알았어. 다음에 또 물어볼게.', '알겠어요. 다음에 또 물어볼게요.')); return; }
-    startCompanion({}); await walkBothTo(P_('sashimiDoor'), [P_('sashimiDoor')[0] + 1, P_('sashimiDoor')[1]]);
+    await walkBothTo(P_('sashimiDoor'), [P_('sashimiDoor')[0] + 1, P_('sashimiDoor')[1]]);
     await fade(true); advanceTime(80); await sleep(300); await fade(false);
     await spAct('🍣 마주 앉은 저녁. 형사님은 말수가 적었지만, 이쪽 접시가 비면 말없이 채워 주었다.');
     await spAct('식당을 나서는 길, 형사님이 잠깐 걸음을 늦춘다.');
@@ -258,7 +258,7 @@ const SP_EVENTS = [
     const d = G.det; await spComeClose();
     await spDet('normal', spB('바다 쪽 좀 걸을래?', '바다 쪽 좀 걸을래요?'));
     if (await spChoose(['좋아요', '오늘은 피곤해요']) === 1) { await spDet('normal', spB('그래. 집 앞까지 데려다줄게.', '그래요. 집 앞까지 데려다줄게요.')); return; }
-    startCompanion({}); await walkBothTo(P_('promenade'), [P_('promenade')[0] + 1, P_('promenade')[1]]);
+    await walkBothTo(P_('promenade'), [P_('promenade')[0] + 1, P_('promenade')[1]]);
     spNear(3); await spAct('🌊 밤바람이 분다. 파도 소리 말고는 아무 소리도 없다.');
     await spDet('normal', spB('바람 좀 부네. 추우면 말해.', '바람 좀 부네요. 추우면 말해요.'));
     await spAct('형사님이 손을 내민다.');
@@ -284,7 +284,7 @@ const SP_EVENTS = [
   { id: 'sp_tent', cd: 7, st: 2, ok: () => S.min >= 18 * 60 && S.min < 23.5 * 60 && !M.interior && !rainy(), run: async () => {
     await spComeClose(); await spDet('normal', spB('캠핑장 가서 고기 구워 먹을래?', '캠핑장 가서 고기 구워 먹을래요?'));
     if (await spChoose(['좋아요', '다음에요']) === 1) { await spDet('normal', spB('그래. 다음에 가자.', '그래요. 다음에 가요.')); return; }
-    startCompanion({}); const t = P_('tentA'); await walkBothTo([t[0], t[1] + 1], [t[0] + 1, t[1] + 1]);
+    const t = P_('tentA'); await walkBothTo([t[0], t[1] + 1], [t[0] + 1, t[1] + 1]);
     spNear(3); G.det.prop = 'tongs';
     await spDet('normal', spB('내가 구울게. 너는 앉아 있어.', '제가 구울게요. 앉아 있어요.'));
     await spAct('🔥 형사님이 잘 익은 고기를 이쪽 접시에 먼저 올려 준다.');
@@ -292,7 +292,7 @@ const SP_EVENTS = [
     await spDet('normal', spB('먹고 텐트에서 좀 쉴까?', '먹고 텐트에서 좀 쉴까요?'));
     const i = await spChoose(['응, 쉬자', '여기서 불 보자'], 'tent');
     if (i === 0 && MAPS.in_tentA) {
-      endCompanion(true); await spGoInside('in_tentA');
+      if (S.comp) endCompanion(true); await spGoInside('in_tentA');
       spNear(3); await spDet('normal', spB('여기 생각보다 괜찮네.', '여기 생각보다 괜찮네요.'));
       await spAct('형사님이 침낭 옆자리를 비워 준다.');
       await spDet('normal', spB('옆으로 와. 기대도 돼.', '옆으로 와요. 기대도 돼요.'));
@@ -321,8 +321,8 @@ const SP_EVENTS = [
     await spDet('normal', rainy() ? '비 많이 오네. 우리 집 가까워. 그칠 때까지 있다 가.' : '벌써 시간이 이렇게 됐네. 우리 집에서 차 한잔하고 갈래?');
     const i = await spChoose(['응, 갈게', '오늘은 데려다줘'], 'sataek');
     if (i === 1) { await spDet('normal', '응. 집 앞까지 갈게.'); return; }
-    startCompanion({}); S.hold = true; await walkBothTo(P_('sataekDoor'), [P_('sataekDoor')[0] + 1, P_('sataekDoor')[1]]);
-    endCompanion(true); await spGoInside('in_sataek');
+    S.hold = true; await walkBothTo(P_('sataekDoor'), [P_('sataekDoor')[0] + 1, P_('sataekDoor')[1]]);
+    if (S.comp) endCompanion(true); await spGoInside('in_sataek');
     spNear(3); await spDet('normal', '편하게 있어. 물 마실래?');
     G.player.prop = 'tea'; await spAct('형사님이 잔을 건네고, 맞은편이 아니라 바로 옆에 앉는다.');
     await spDet('normal', rainy() ? '급하게 갈 필요 없어.' : '더 있다 가.');
@@ -365,7 +365,7 @@ const SP_EVENTS = [
     if (i === 2) { s.nightDeclinedDay = S.day; await spDet('normal', spB('응. 알았어. 데려다줄게.', '네. 알겠어요. 데려다줄게요.')); addAff(3, { event: true }); return; }
     const where = await spChoose(['형사님 집으로', '우리 집으로', '조금만 더 걸어요'], 'night1where');
     if (where === 2) {
-      startCompanion({}); await walkBothTo(P_('promenade'), [P_('promenade')[0] + 1, P_('promenade')[1]]);
+      await walkBothTo(P_('promenade'), [P_('promenade')[0] + 1, P_('promenade')[1]]);
       spNear(3); await spAct('🌙 늦은 밤 해안 산책로. 형사님이 손을 내민다.');
       await spDet('normal', spB('손잡을래?', '손잡을래요?')); S.hold = true; burst(d, 'heart', 4);
       await spAct('한참을 걷다가, 형사님이 잡은 손에 힘을 준다.');
@@ -380,9 +380,9 @@ const SP_EVENTS = [
     const c2 = await spChoose(['응', '…생각해 보니 오늘은 아니야'], 'night1confirm');
     if (c2 === 1) { spReset(); s.nightDeclinedDay = S.day; await spDet('normal', spB('응. 괜찮아. 데려다줄게.', '괜찮아요. 데려다줄게요.')); return; }
     await kissAnim('♥'); S.rel.flags.kiss = true; S.rel.flags.cheek = true; S.rel.flags.hand = true;
-    S.hold = true; startCompanion({});
+    S.hold = true;
     const place = where === 1 ? 'home' : 'sataek', door = place === 'home' ? P_('homeDoor') : P_('sataekDoor');
-    await walkBothTo(door, [door[0] + 1, door[1]]); endCompanion(true);
+    await walkBothTo(door, [door[0] + 1, door[1]]); if (S.comp) endCompanion(true);
     await spGoInside(place === 'home' ? 'in_home' : 'in_sataek');
     spNear(5); await spAct('문이 닫히고, 바깥 파도 소리가 멀어졌다.');
     await spDet('normal', place === 'home' ? spB('편하게 있어. 여긴 네 집이지만.', '편하게 있어요. 여긴 {me} 집이지만요.') : spB('편하게 있어.', '편하게 있어요.'));
