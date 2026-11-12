@@ -182,7 +182,7 @@ function spReset() { const P = G.player, d = G.det; P.ox = P.oy = d.ox = d.oy = 
 async function spHug() { spNear(5); burst(G.det, 'heart', 6); burst(G.player, 'heart', 4); Sound.sfx('heart'); await sleep(500); }
 async function spComeClose() {
   const d = G.det, P = G.player; scriptDet();
-  if (d.map !== P.map || !d.visible) { d.map = P.map; d.visible = true; [d.x, d.y] = nearestWalkable(P.x + 3, P.y + 1, M); }
+  if (d.map !== P.map || !d.visible) { d.map = P.map; d.visible = true; if (M.interior && M.exit) { [d.x, d.y] = nearestWalkable(M.exit[0] + 0.5, M.exit[1] - 0.5, M); } else { [d.x, d.y] = nearestWalkable(P.x + 5, P.y + 3, M); } }
   if (dist(d, P) > 1.6) { d.walkTo(P.x, P.y); if (d.path.length) d.path.pop(); await waitUntil(() => !d.path.length, 7); }
   d.lookAt(P); P.lookAt(d);
 }
@@ -464,10 +464,13 @@ function spCheck() {
   const near = d.visible && d.map === P.map && dist(d, P) < 7 && d.state !== 'script';
   G._spT = (G._spT || 0) + 1;
   if (near && dist(d, P) < 4 && G._spT % 900 === 0) d.say(spPick(SP.bubble[spBand()]), 2.6);
-  if (!near || G._spT % 90 !== 0) return false;
-  const now = S.day * 1440 + S.min; if (now - (s.last._any || -1e9) < (s.firstAttractionTriggered ? 75 : 0)) return false;
-  for (const ev of SP_EVENTS) {
+  if (G._spT % 90 !== 0) return false;
+  const detFree = !d.scripted && d.state !== 'script' && !S.rel.daily.fight && (d.task !== 'wedding');
+  const now = S.day * 1440 + S.min; if (now - (s.last._any || -1e9) < (s.firstAttractionTriggered ? 60 : 0)) return false;
+  const list = !s.firstAttractionTriggered ? SP_EVENTS.filter(e => e.id === 'sp_number') : SP_EVENTS.slice().sort(() => Math.random() - 0.5);
+  for (const ev of list) {
     if (r.stage < (ev.st || 1)) continue;
+    if (ev.far ? !detFree : !near) continue;
     if (ev.once && s.unlockedSpicyEvents[ev.id]) continue;
     if (ev.cd && s.last[ev.id] != null && S.day - s.last[ev.id] < ev.cd) continue;
     let ok = false; try { ok = ev.ok(); } catch (e) { ok = false; }
@@ -477,7 +480,7 @@ function spCheck() {
     runEvent(async () => { try { await ev.run(); } finally { spReset(); } });
     return true;
   }
-  if (!S.comp && Math.random() < 0.3 && now - (s.last._appr || -1e9) > 120) { s.last._appr = now; s.last._any = now; spLog('approach', 'approach'); runEvent(detApproach); return true; }
+  if (near && !S.comp && Math.random() < 0.3 && now - (s.last._appr || -1e9) > 120) { s.last._appr = now; s.last._any = now; spLog('approach', 'approach'); runEvent(detApproach); return true; }
   return false;
 }
 const _checkEventsSp = checkEvents;
@@ -508,3 +511,276 @@ sitTogether = async function (benchKey) {
     closeDialog(); toast('화면을 누르면 일어나요');
   });
 };
+
+/* =====================================================================
+   🥵 일상 속 아찔한 순간들 — 슬쩍 다가와 손잡기, 카페에 와서 앉아 있기, 일터 · 집 찾아오기 …
+   · far: 형사님이 근처에 없어도 직접 찾아와요
+   ===================================================================== */
+const spWorkMap = () => JOBS[S.job] && JOBS[S.job].place ? 'in_' + JOBS[S.job].place : null;
+const spOffDuty = () => { const pl = detPlan(S.min); return !pl.duty || pl.k === 'lunch'; };
+function spFreeBench(mapId) {
+  const m = MAPS[mapId]; if (!m) return null; const P = G.player;
+  const ks = Object.keys(m.benches).filter(k => !(P.seat && P.seat.bench === k));
+  ks.sort((a, b) => { const A = m.benches[a].stand[0], B = m.benches[b].stand[0]; return Math.hypot(A[0] - P.x, A[1] - P.y) - Math.hypot(B[0] - P.x, B[1] - P.y); });
+  return ks[0] || null;
+}
+async function spDetSitNear() {
+  const d = G.det, k = spFreeBench(M.id); if (!k) return false; const bk = M.benches[k], st = bk.stand[bk.stand.length - 1];
+  d.walkTo(st[0] + 0.5, st[1] + 0.5); await waitUntil(() => !d.path.length, 8);
+  try { d.sitAt(k, bk.seats.length - 1); } catch (e) { return false; }
+  return true;
+}
+/* 이 장면 뒤에도 형사님이 곁에 머물게 (같이 다니기) */
+function spStay(min = 90) { if (!S.comp) { try { startCompanion({}); } catch (e) { } } G.det.state = 'comp'; void min; }
+SP_EVENTS.push(
+  /* 슬쩍 와서 손잡기 — 같이 걷는 중 */
+  { id: 'sp_sneakHand', cd: 1, st: 2, ok: () => S.comp && !S.hold && !S.arm && G.player.moving, run: async () => {
+    const d = G.det; spNear(3);
+    await spAct('나란히 걷다가, 형사님 손이 슬쩍 손등에 닿는다. 그러다 그대로 손을 잡는다.');
+    if (S.rel.stage < 4 && !S.rel.flags.hand) {
+      await spDet('normal', spB('괜찮아?', '괜찮아요?'));
+      const i = await spChoose(['(그대로 잡고 있는다)', '(살짝 손을 뺀다)'], 'sneakHand');
+      if (i === 1) { spReset(); await spDet('normal', spB('응. 알았어.', '네. 알겠어요.')); return; }
+      S.rel.flags.hand = true; await addAlbum('슬쩍 잡은 손', 'hand');
+    }
+    S.hold = true; S.arm = false; burst(d, 'heart', 3); addAff(3);
+    await spAct('형사님은 아무 말 없이 앞을 보며 걷는다. 손에 살짝 힘이 들어간다.');
+  } },
+  /* 뒤에서 다가와 손잡기 — 혼자 걷는 중 */
+  { id: 'sp_sneakFromBehind', cd: 2, st: 4, far: true, ok: () => !S.comp && !M.interior && spOffDuty() && S.min >= 9 * 60 && S.min < 21.5 * 60, run: async () => {
+    const d = G.det, P = G.player; await spComeClose();
+    await spAct('뒤에서 발소리가 가까워지더니, 누군가 손을 잡는다. 돌아보니 형사님이다.');
+    await spDet('normal', spBeatText(['찾았다.', '어디 가? 같이 가.', '혼자 걷길래.']));
+    S.hold = true; spStay(); burst(d, 'heart', 3); addAff(3);
+  } },
+  /* 카페에 와서 앉아 있기 */
+  { id: 'sp_cafeSit', cd: 2, st: 1, far: true, ok: () => G.player.map === 'in_cafe' && spOffDuty() && !S.comp, run: async () => {
+    const d = G.det; await spComeClose(); await sleep(200);
+    const sat = await spDetSitNear();
+    if (S.job === 'cafe') {
+      await spAct(sat ? '형사님이 들어와 창가 자리에 앉는다. 주문은 하지 않고, 일하는 쪽을 가만히 본다.' : '형사님이 들어와 카운터 앞에 선다. 주문은 하지 않고, 일하는 쪽을 가만히 본다.');
+      await spDet('normal', spBeatText(spB(['일하는 거 보러 왔어. 신경 쓰지 마.', '마감까지 여기 있을게. 끝나면 같이 가자.', '아메리카노 하나. 천천히 줘.'], ['일하시는 거 보러 왔어요. 신경 쓰지 마세요.', '마감까지 여기 있을게요. 끝나면 같이 가요.', '아메리카노 하나요. 천천히 주세요.'])));
+      const i = await spChoose(['(커피를 내려 건넨다)', '(옆에 잠깐 앉는다)', '(일하러 간다)']);
+      if (i === 0) { G.det.prop = 'tea'; await spAct('형사님이 잔을 받으며 손가락이 잠깐 겹친다. 형사님은 손을 바로 떼지 않는다.'); await spDet('normal', spB('고마워.', '고마워요.')); addAff(4); }
+      else if (i === 1) { await spAct('옆에 앉자, 형사님이 의자를 조금 당겨 앉는다.'); await spDet('normal', spB('잠깐만 이러고 있자.', '잠깐만 이러고 있어요.')); addAff(4); }
+      else { await spAct('형사님은 말없이 고개를 끄덕이고, 다시 이쪽을 본다.'); addAff(2); }
+    } else {
+      await spAct(sat ? '형사님이 카페에 들어와, 말없이 맞은편 자리에 앉는다.' : '형사님이 카페에 들어와 옆에 선다.');
+      await spDet('normal', spBeatText(spB(['여기 있을 것 같았어.', '나도 커피 마시러 왔어. 같이 앉아도 되지?', '오늘은 여기서 쉬다 가자.'], ['여기 계실 것 같았어요.', '저도 커피 마시러 왔어요. 같이 앉아도 되죠?', '오늘은 여기서 쉬다 가요.'])));
+      const i = await spChoose(['(같이 앉아 있는다)', '(형사님 커피도 주문한다)']);
+      if (i === 1) { G.det.prop = 'tea'; await spAct('형사님이 잔을 받아 들고, 한 모금 마신 뒤 이쪽을 본다.'); await spDet('normal', spB('다음엔 내가 살게.', '다음엔 제가 살게요.')); }
+      else { await spAct('창밖으로 사람들이 지나간다. 형사님은 바깥보다 이쪽을 더 오래 본다.'); }
+      addAff(4);
+    }
+    G.det.prop = null; spStay();
+  } },
+  /* 일터로 찾아오기 */
+  { id: 'sp_workVisit', cd: 3, st: 2, far: true, ok: () => spWorkMap() && G.player.map === spWorkMap() && G.player.map !== 'in_cafe' && spOffDuty() && !S.comp, run: async () => {
+    const d = G.det; await spComeClose();
+    const k = pick(['coffee', 'snack', 'tangerine']); S.inv[k] = (S.inv[k] || 0) + 1;
+    await spAct(`형사님이 문을 열고 들어와, ${ITEMS[k] ? ITEMS[k].name : '간식'}을 내민다.`);
+    await spDet('normal', spBeatText(spB(['지나가다가. 먹고 해.', '오늘 바쁘지. 이거 먹어.', '끝나면 연락해. 데리러 올게.'], ['지나가다가요. 드시고 하세요.', '오늘 바쁘죠. 이거 드세요.', '끝나면 연락 주세요. 데리러 올게요.'])));
+    const i = await spChoose(['고마워요', '(잠깐 손을 잡는다)']);
+    if (i === 1) { burst(d, 'heart', 3); await spAct('형사님이 맞잡은 손을 엄지로 한 번 쓸고 놓는다.'); await spDet('normal', spB('이따 보자.', '이따 봬요.')); addAff(4); }
+    else { await spDet('normal', spB('응. 이따 봐.', '네. 이따 봬요.')); addAff(3); }
+    d.state = 'sched'; d.scripted = false;
+  } },
+  /* 저녁에 집으로 찾아오기 */
+  { id: 'sp_homeKnock', cd: 4, st: 2, far: true, ok: () => G.player.map === 'in_home' && !S.rel.flags.married && S.min >= 18.5 * 60 && S.min < 22 * 60, run: async () => {
+    const d = G.det; Sound.sfx('tap'); await spAct('똑똑. 현관문 두드리는 소리가 난다.'); await spComeClose();
+    await spDet('normal', spBeatText(spB(['지나가다가. 밥 먹었어?', '저녁 같이 먹을까 해서. 재료 사 왔어.', '얼굴만 보고 갈게.'], ['지나가다가요. 저녁 드셨어요?', '저녁 같이 먹을까 해서요. 재료 사 왔어요.', '얼굴만 보고 갈게요.'])));
+    const i = await spChoose(['들어와요', '오늘은 피곤해요'], 'homeKnock');
+    if (i === 1) { await spDet('normal', spB('응. 푹 쉬어.', '네. 푹 쉬세요.')); d.state = 'sched'; d.scripted = false; return; }
+    d.prop = 'pan'; await spAct('형사님이 소매를 걷고 부엌에 선다.'); await spDet('normal', spB('너 쉬어. 내가 할게.', '쉬어요. 제가 할게요.'));
+    await fade(true); advanceTime(50); await sleep(250); await fade(false); d.prop = null;
+    await spAct('🍲 둘이 마주 앉아 저녁을 먹었다. 설거지까지 끝내고 나서야 형사님이 겉옷을 집는다.');
+    await spDet('normal', spB('다 끝났으면 이리 와.', '다 끝났으면 이리 와요.'));
+    const k = await spChoose(['(다가간다)', '(문 앞까지 배웅한다)']);
+    if (k === 0) { await spHug(); await spAct('형사님이 한동안 안고 있다가 천천히 놓는다.'); addAff(6, { event: true }); }
+    else { await spAct('현관 앞, 형사님이 잠깐 돌아본다.'); await spDet('normal', spB('잘 자.', '잘 자요.')); addAff(4, { event: true }); }
+    spReset(); d.state = 'sched'; d.scripted = false; d.visible = false; d.map = 'island';
+  } },
+  /* 밤에 온 메시지 */
+  { id: 'sp_nightText', cd: 2, st: 2, far: true, ok: () => G.player.map === 'in_home' && !S.rel.flags.married && S.min >= 22 * 60 && S.spicy && S.spicy.phone !== false, run: async () => {
+    Sound.sfx('bell'); await spAct('📱 휴대폰이 짧게 울린다. 형사님이다.');
+    const L = spB([['자?', '목소리 듣고 싶어서.'], ['뭐 해?', '그냥. 생각나서.'], ['오늘 고마웠어.', '내일 아침에 데리러 갈게.']], [['주무세요?', '그냥 생각나서요.'], ['뭐 하세요?', '목소리 듣고 싶어서요.'], ['오늘 고마웠어요.', '내일 또 봬요.']]);
+    const [a, b] = pick(L); await spAct(`💬 「${a}」`); await spAct(`💬 「${b}」`);
+    const i = await spChoose(['(전화를 건다)', '(답장한다: 나도요)', '(이미 잠들었다)']);
+    if (i === 0) { await spAct('신호음이 한 번 가기도 전에 형사님이 받는다.'); await spDet('normal', spB('…받을 줄 알았어.', '…받을 줄 알았어요.')); await spAct('별 얘기 없이 한참 통화했다. 끊기 전 형사님이 낮게 말한다.'); await spDet('normal', spB('잘 자.', '잘 자요.')); addAff(5, { event: true }); }
+    else if (i === 1) { await spAct('💬 「나도요」 — 곧바로 답장이 온다.'); await spAct(spB('💬 「내일 보자. 일찍.」', '💬 「내일 봬요. 일찍요.」')); addAff(3); }
+    else addAff(1);
+  } },
+  /* 아침 커피 배달 */
+  { id: 'sp_morningCoffee', cd: 3, st: 2, far: true, ok: () => S.min >= 7 * 60 && S.min < 9 * 60 && !M.interior && !S.comp && G.player.map === 'island' && curPlace() === 'home', run: async () => {
+    const d = G.det; await spComeClose(); S.inv.coffee = (S.inv.coffee || 0) + 1;
+    await spAct('집 앞에서 형사님이 커피 두 잔을 들고 기다리고 있었다.');
+    await spDet('normal', spB('출근길에. 하나는 네 거.', '출근길에요. 하나는 {me} 거예요.'));
+    await spAct('잔을 건네며 형사님이 흘러내린 머리카락을 귀 뒤로 넘겨 준다.');
+    await spDet('normal', spB('이따 점심 같이 먹자.', '이따 점심 같이 먹어요.')); addAff(4);
+    d.state = 'sched'; d.scripted = false;
+  } },
+  /* 머리 정리 · 겉옷 걸쳐 주기 */
+  { id: 'sp_jacket', cd: 3, st: 2, ok: () => !M.interior && (S.min >= 19 * 60 || ['winter', 'autumn'].includes(season()) || S.weather === 'rain'), run: async () => {
+    await spComeClose(); spNear(3);
+    await spAct('바람이 차다. 형사님이 아무 말 없이 겉옷을 벗어 어깨에 걸쳐 준다.');
+    await spDet('normal', spB('입고 있어.', '입고 있어요.'));
+    const i = await spChoose(['형사님은요?', '(옷깃을 여민다)']);
+    await spDet('normal', i === 0 ? spB('난 괜찮아.', '저는 괜찮아요.') : spB('잘 맞네.', '잘 맞네요.')); addAff(4); spReset();
+  } },
+  { id: 'sp_hair', cd: 2, st: 2, ok: () => true, run: async () => {
+    await spComeClose(); spNear(4);
+    await spAct('형사님이 손을 뻗어 흐트러진 앞머리를 정리해 준다. 손이 생각보다 오래 머문다.');
+    await spDet('normal', spB('됐다.', '됐어요.'));
+    const i = await spChoose(['(가만히 있는다)', '(그 손을 잡는다)']);
+    if (i === 1) { burst(G.det, 'heart', 4); await spAct('형사님이 잡힌 손을 내려다보다가, 그대로 손가락을 엮는다.'); S.hold = true; addAff(5); } else addAff(3);
+    spReset();
+  } },
+  /* 시선 들킴 */
+  { id: 'sp_caughtLooking', cd: 2, st: 1, ok: () => true, run: async () => {
+    await spComeClose();
+    await spAct('고개를 들었더니 형사님과 눈이 마주쳤다. 형사님은 시선을 피하지 않는다.');
+    await spDet('normal', spBeatText(spB(['봤어. 계속 보고 있었어.', '왜. 보면 안 돼?', '…그냥 보고 싶어서.'], ['네, 보고 있었어요.', '보면 안 돼요?', '…그냥 보고 싶어서요.'])));
+    const i = await spChoose(['(나도 계속 본다)', '(먼저 시선을 피한다)']);
+    if (i === 0) { await spAct('몇 초가 길게 느껴진다. 먼저 웃은 건 형사님이다.'); addAff(4); } else { await spAct('형사님이 조용히 웃는다.'); addAff(2); }
+  } },
+  /* 귓속말 */
+  { id: 'sp_whisper', cd: 3, st: 4, ok: () => !!(G.villagers || []).find(v => v.visible && v.map === G.player.map && dist(v, G.player) < 6), run: async () => {
+    await spComeClose(); spNear(5);
+    await spAct('주변에 사람이 있는데도, 형사님이 몸을 기울여 귓가에 낮게 말한다.');
+    await spDet('normal', spBeatText(['오늘 저녁 비워 둬.', '이따 우리 집 와.', '나 지금 너 안고 싶어.']));
+    const i = await spChoose(['(고개를 끄덕인다)', '여기서 그런 말 하면…']);
+    await spDet('normal', i === 0 ? '좋아.' : '알아. 그래서 귓속말했어.'); addAff(i === 0 ? 5 : 3); spReset();
+  } },
+  /* 벤치에서 기다리기 */
+  { id: 'sp_benchWait', cd: 3, st: 2, far: true, ok: () => !M.interior && !S.comp && spOffDuty() && S.min >= 16 * 60 && S.min < 20 * 60 && Object.keys(M.benches).length > 0, run: async () => {
+    const d = G.det, P = G.player, k = spFreeBench(M.id); if (!k) return; const bk = M.benches[k];
+    d.map = P.map; d.visible = true; [d.x, d.y] = nearestWalkable(bk.stand[0][0] + 0.5, bk.stand[0][1] + 0.5, M); scriptDet();
+    try { d.sitAt(k, 1 < bk.seats.length ? 1 : 0); } catch (e) { }
+    await spAct('벤치에 형사님이 앉아 있다. 이쪽을 보더니 옆자리를 손바닥으로 툭 친다.');
+    await spDet('normal', spB('여기 앉아.', '여기 앉아요.'));
+    const i = await spChoose(['(옆에 앉는다)', '(지나간다)']);
+    if (i === 1) { await spDet('normal', spB('응. 이따 봐.', '네. 이따 봐요.')); d.standUp && d.standUp(); return; }
+    await walkBothTo([bk.stand[0][0] + 0.5, bk.stand[0][1] + 0.5], [d.x, d.y]); try { P.sitAt(k, 0); } catch (e) { }
+    spNear(3); await spAct('앉자마자 형사님이 어깨를 붙여 온다. 한동안 말없이 노을을 본다.');
+    await spDet('normal', spB('오늘 하루 어땠어?', '오늘 하루 어땠어요?')); addAff(5);
+    spReset(); spStay();
+  } },
+  /* 부두에서 같이 낚싯대 잡기 */
+  { id: 'sp_fishTogether', cd: 4, st: 4, ok: () => G.det.task === 'fishing' || curPlace() === 'fishing' || curPlace() === 'pier', run: async () => {
+    const d = G.det; await spComeClose(); spNear(6);
+    await spAct('형사님이 낚싯대를 건네더니, 뒤에 서서 손 위에 자기 손을 겹친다.');
+    await spDet('normal', '이렇게 잡아. 힘 빼고.');
+    await spAct('등 뒤로 체온이 느껴진다. 찌가 흔들려도, 둘 다 한동안 움직이지 않는다.');
+    const i = await spChoose(['(찌를 본다)', '(뒤돌아본다)']);
+    if (i === 1) { await spAct('돌아보자 얼굴이 아주 가깝다. 형사님이 잠깐 멈춘다.'); await spDet('normal', '…키스해도 돼?'); const k = await spChoose(['(눈을 감는다)', '물고기 도망가요']); if (k === 0) { await kissAnim('♥'); addAff(6, { event: true }); } else { await spDet('normal', '그럼 하나 잡고.'); addAff(3); } }
+    else { await spAct('결국 아무것도 못 잡았다. 형사님은 별로 아쉬워 보이지 않는다.'); addAff(4); }
+    spReset();
+  } },
+  /* 노을 · 어깨 맞대기 */
+  { id: 'sp_sunset', cd: 3, st: 2, ok: () => S.min >= 17.5 * 60 && S.min < 19.5 * 60 && !M.interior && ['beach', 'coast', 'promenade', 'lighthouse', 'pier', 'hill'].includes(curPlace()), run: async () => {
+    await spComeClose(); spNear(4);
+    await spAct('🌅 노을이 진다. 형사님이 옆에 서서, 어깨가 닿을 만큼 다가온다.');
+    await spDet('normal', spB('좀 더 있다 가자.', '좀 더 있다 가요.'));
+    const i = await spChoose(['(어깨에 머리를 기댄다)', '(손을 잡는다)', '(말없이 노을을 본다)']);
+    if (i === 0) { G.player.lean = true; await spAct('형사님이 기댄 머리 위로 뺨을 살짝 얹는다.'); addAff(6, { event: true }); }
+    else if (i === 1) { S.hold = true; await spAct('형사님이 잡은 손을 자기 코트 주머니에 같이 넣는다.'); addAff(5); }
+    else { await spAct('해가 다 질 때까지, 둘 다 말이 없었다.'); addAff(3); }
+    spReset();
+  } },
+  /* 비 피하기 — 처마 밑 */
+  { id: 'sp_rainEave', cd: 4, st: 2, ok: () => S.weather === 'rain' && !M.interior, run: async () => {
+    await spComeClose(); spNear(5);
+    await spAct('☔ 갑자기 빗발이 굵어졌다. 형사님이 팔을 잡아끌어 가게 처마 밑으로 들어간다.');
+    await spAct('좁은 처마. 비를 피하려니 가슴께가 거의 닿는다.');
+    await spDet('normal', spB('그칠 때까지 여기 있자.', '그칠 때까지 여기 있어요.'));
+    const i = await spChoose(['(가만히 있는다)', '(형사님 셔츠를 살짝 잡는다)']);
+    if (i === 1) { await spAct('형사님이 내려다본다. 그리고 한 팔로 등을 감싸, 비 들이치는 쪽을 막는다.'); addAff(6, { event: true }); }
+    else { await spAct('빗소리만 들린다. 형사님의 숨소리가 가깝다.'); addAff(4); }
+    spReset();
+  } },
+  /* 별 보며 눕기 */
+  { id: 'sp_stars', cd: 5, st: 4, ok: () => (S.min >= 20.5 * 60 || S.min < 2 * 60) && !M.interior && !rainy() && ['hill', 'observatory', 'beach', 'field'].includes(curPlace()), run: async () => {
+    const P = G.player, d = G.det; await spComeClose();
+    await spDet('normal', '누워 보자. 별 진짜 많아.');
+    P.lie = -1; d.lie = -1; P.oy = d.oy = 3; spNear(3);
+    await spAct('⭐ 풀밭에 나란히 누웠다. 형사님이 팔을 뻗어 베개 삼으라고 내준다.');
+    const i = await spChoose(['(팔을 벤다)', '(옆에 그냥 눕는다)']);
+    if (i === 0) { await spAct('팔을 베자 형사님이 몸을 살짝 돌려 이쪽을 본다. 별보다 가까운 얼굴.'); await spDet('normal', '…별 안 봐?'); await spDet('normal', '나도 안 보고 있었어.'); addAff(7, { event: true }); }
+    else { await spAct('별똥별이 하나 떨어진다. 형사님 손이 풀밭 위에서 손을 찾아 잡는다.'); addAff(5); }
+    P.lie = d.lie = 0; P.oy = d.oy = 0; spReset();
+  } },
+  /* 장 보기 — 바구니 들어 주기 */
+  { id: 'sp_shopping', cd: 4, st: 2, far: true, ok: () => G.player.map === 'in_super' && spOffDuty(), run: async () => {
+    const d = G.det; await spComeClose();
+    await spAct('장바구니를 들고 있는데, 형사님이 다가와 말없이 손잡이를 가져간다.');
+    await spDet('normal', spB('뭐 사? 내가 들게.', '뭐 사요? 제가 들게요.'));
+    await spAct('진열대 사이를 같이 돈다. 형사님이 자꾸 이쪽이 좋아하는 과자를 바구니에 넣는다.');
+    S.inv.snack = (S.inv.snack || 0) + 1; await spDet('normal', spB('이거 좋아하잖아.', '이거 좋아하잖아요.')); addAff(4); spStay();
+  } },
+  /* 집 앞 굿나잇 */
+  { id: 'sp_goodnight', cd: 2, st: 4, ok: () => S.min >= 21 * 60 && !M.interior && G.player.map === 'island' && curPlace() === 'home' && S.comp, run: async () => {
+    await spComeClose(); spNear(5);
+    await spAct('집 앞. 헤어질 시간인데 형사님은 잡은 손을 놓지 않는다.');
+    await spDet('normal', '벌써 시간이 이렇게 됐네.');
+    await spDet('normal', S.rel.stage >= 5 ? '들어가기 전에… 키스해도 돼?' : '오늘 좋았어.');
+    if (S.rel.stage >= 5) { const i = await spChoose(['(눈을 감는다)', '(볼에 먼저 입을 맞춘다)', '잘 자요']); if (i === 0) await kissAnim('♥'); else if (i === 1) { await kissAnim('쪽'); await spDet('normal', '…반대쪽도.'); } else await spDet('normal', '응. 잘 자.'); addAff(i === 2 ? 2 : 5); }
+    else { await spAct('형사님이 손을 한 번 꽉 잡았다가 놓는다.'); addAff(3); }
+    spReset();
+  } },
+  /* 뒤에서 안기 (연인) */
+  { id: 'sp_backhugSurprise', cd: 3, st: 5, ok: () => !G.player.moving, run: async () => {
+    const d = G.det, P = G.player; await spComeClose(); spNear(6);
+    await spAct('뒤에서 두 팔이 허리를 감싼다. 어깨에 턱이 얹힌다.');
+    await spDet('normal', pick(['잠깐만. 이러고 있을게.', '오늘 많이 보고 싶었어.', '움직이지 마. 조금만.']));
+    const i = await spChoose(['(손을 겹친다)', '(돌아서 안는다)']);
+    if (i === 1) { await spHug(); await spAct('형사님이 안은 팔에 조금 더 힘을 준다.'); }
+    else await spAct('겹친 손 위로 형사님이 엄지를 천천히 움직인다.');
+    addAff(5); spReset();
+  } },
+  /* 무릎 베개 (연인) */
+  { id: 'sp_lap', cd: 4, st: 5, ok: () => !!G.player.seat && !!G.det.seat && G.det.seat.bench === G.player.seat.bench, run: async () => {
+    const P = G.player;
+    await spDet('normal', '피곤하면 누워.');
+    await spAct('형사님이 무릎을 툭툭 친다.');
+    const i = await spChoose(['(무릎을 벤다)', '(형사님이 누워요)']);
+    if (i === 0) { P.lie = G.det.left ? 1 : -1; P.oy = 3; await spAct('형사님 손가락이 머리카락 사이를 천천히 쓸어내린다.'); await spDet('normal', '자도 돼. 깨워 줄게.'); }
+    else { G.det.lie = -1; G.det.oy = 3; await spAct('형사님이 무릎을 베고 눕더니, 눈을 감은 채 손을 찾아 잡는다.'); await spDet('normal', '…좋다.'); }
+    await fade(true); advanceTime(30); await sleep(250); await fade(false);
+    P.lie = 0; P.oy = 0; G.det.lie = 0; G.det.oy = 0; addAff(6, { event: true });
+  } },
+  /* 같이 요리하다 백허그 (깊은 연인 · 부부) */
+  { id: 'sp_cooking', cd: 4, st: 6, far: true, ok: () => G.player.map === 'in_home' && S.min >= 17.5 * 60 && S.min < 21 * 60, run: async () => {
+    const d = G.det, P = G.player; await spComeClose(); P.prop = 'pan';
+    await spAct('저녁을 만드는데, 형사님이 뒤로 와서 허리를 감싸 안는다.');
+    await spDet('normal', '뭐 만들어?');
+    const i = await spChoose(['칼 들고 있어요', '(그대로 둔다)']);
+    if (i === 0) { await spDet('normal', '알아. 조심할게.'); await spAct('형사님은 팔을 풀지 않고, 그대로 어깨너머로 냄비를 들여다본다.'); }
+    else { await spAct('형사님이 목덜미에 짧게 입을 맞추고, 그대로 기대어 선다.'); }
+    P.prop = null; addAff(5); spReset();
+  } },
+  /* 네컷 사진 — 마지막 컷 */
+  { id: 'sp_booth', cd: 6, st: 4, ok: () => curPlace() === 'booth' && !M.interior, run: async () => {
+    await spComeClose(); spNear(6);
+    await spAct('📸 좁은 사진 부스. 하나, 둘, 셋 — 세 컷은 웃으며 찍었다.');
+    await spAct('마지막 컷 직전, 형사님이 이쪽을 돌아본다.');
+    await spDet('normal', '마지막은 이렇게 찍자.');
+    const i = await spChoose(['(볼에 입 맞추게 둔다)', '(내가 먼저 돌아본다)', '(브이를 한다)']);
+    if (i === 0) { await kissAnim('찰칵♥'); await spAct('사진 속 마지막 컷: 눈 감은 얼굴, 볼에 닿은 입술.'); }
+    else if (i === 1) { await kissAnim('찰칵♥♥'); await spAct('사진 속 마지막 컷: 둘 다 눈을 감고 있다.'); }
+    else await spAct('사진 속 마지막 컷: 브이를 한 이쪽, 그걸 보고 있는 형사님.');
+    S.lastPhotoDay = S.day; addAff(5, { event: true }); if (!S.rel.flags.spBooth) { S.rel.flags.spBooth = true; await addAlbum('네컷의 마지막 컷', 'photo'); } spReset();
+  } },
+  /* 광장에서 천천히 춤 (밤 · 연인) */
+  { id: 'sp_dance', cd: 6, st: 5, ok: () => (S.min >= 20 * 60 && S.min < 23.5 * 60) && !M.interior && ['plaza', 'beach', 'pier', 'lighthouse'].includes(curPlace()), run: async () => {
+    const d = G.det; await spComeClose(); spNear(6);
+    await spAct('어디선가 라디오 노래가 흘러나온다. 형사님이 손을 내민다.');
+    await spDet('normal', '춤출래? 아무도 안 봐.');
+    const i = await spChoose(['(손을 잡는다)', '나 춤 못 춰요']);
+    if (i === 1) await spDet('normal', '나도 못 춰. 그냥 흔들기만 하면 돼.');
+    await spAct('한 손은 허리에, 한 손은 맞잡고. 박자도 없이 천천히 흔들렸다.');
+    burst(d, 'heart', 6); Sound.sfx('heart');
+    await spDet('normal', '…노래 끝나도 조금만 더.'); addAff(7, { event: true }); spReset();
+  } },
+);
+/* 같은 말을 고르는 도우미 (문자열 배열 → 하나) */
+function spBeatText(arr) { return spPick(arr); }
