@@ -1,0 +1,47 @@
+<!doctype html><meta charset=utf-8><body><pre id=o></pre>
+<script src="../js/core/util.js"></script><script src="../js/core/calendar.js"></script><script src="../js/engine/gfx.js"></script>
+<script src="../js/data/furniture.js"></script><script src="../js/engine/objects.js"></script><script src="../js/engine/sprites.js"></script>
+<script src="../js/data/maps.js"></script><script src="../js/data/items.js"></script><script src="../js/data/npcs.js"></script><script src="../js/data/lorebook.js"></script>
+<script src="../js/engine/path.js"></script><script src="../js/engine/world.js"></script>
+<script>
+const R={errors:[],warnings:[],stats:{}};
+const E=(s)=>R.errors.push(s), Wn=(s)=>R.warnings.push(s);
+for(const id in PX.MAPS){
+  const m=PX.W.build(id); const def=m.def;
+  const occ={};
+  for(const o of m.objs){ if(o.kind!=='furn'||o.desert) continue;
+    if(o.x<0||o.y<0||o.x+o.fw>m.w||o.y+o.fd>m.h) E(`${id}: ${o.fid}@${o.x},${o.y} r${o.r} 맵 밖`);
+    if(!o.blocks) continue;
+    for(let y=o.y;y<o.y+o.fd;y++)for(let x=o.x;x<o.x+o.fw;x++){const k=x+','+y; if(occ[k]) E(`${id}: ${o.fid}@${o.x},${o.y} 와 ${occ[k]} 겹침 (${k})`); occ[k]=o.fid+'@'+o.x+','+o.y;}
+  }
+  // 건물끼리 · 건물과 장식 겹침
+  if(m.kind==='out'){
+    const bo={};
+    for(const o of m.objs){ if(o.kind==='wall') continue; if(o.kind==='furn'&&(o.desert||!o.blocks)) continue;
+      for(let y=o.y;y<o.y+o.fd;y++)for(let x=o.x;x<o.x+o.fw;x++){const k=x+','+y; if(bo[k]) E(`${id}: ${o.kind==='bld'?o.id:o.fid}@${o.x},${o.y} 와 ${bo[k]} 겹침 (${k})`); bo[k]=(o.kind==='bld'?o.id:o.fid)+'@'+o.x+','+o.y;}}
+    // 문 앞이 막혔는지, 정문/셔틀에서 도달 가능한지
+    const start = id==='base'?[31,58]:[23,40];
+    const reach=PX.Path.reachableSet(m,start[0],start[1]);
+    for(const d of m.doors){ if(!PX.W.walkable(m,d.x,d.y)) E(`${id}: ${d.name} 문 앞 (${d.x},${d.y}) 막힘`); else if(!reach[d.y*m.w+d.x]) E(`${id}: ${d.name} 문 앞에 갈 수 없음`); }
+    for(const o of m.objs){ if(o.kind==='furn'&&o.use&&!o.desert){ const a=PX.W.accessTile(m,o); if(!a||!reach[a.y*m.w+a.x]) E(`${id}: ${o.fid}@${o.x},${o.y} 사용 불가(접근 칸 없음)`);} }
+    let cnt=0; for(let i=0;i<reach.length;i++) cnt+=reach[i]; R.stats[id]={walkable:cnt, objs:m.objs.length};
+  } else {
+    const e=m.exit; if(!PX.W.walkable(m,e.x,e.y)) E(`${id}: 출구 매트 막힘`);
+    const reach=PX.Path.reachableSet(m,e.x,e.y);
+    let total=0,cnt=0; for(let i=0;i<m.walk.length;i++){ if(m.walk[i]) {total++; if(reach[i]) cnt++;} }
+    if(cnt<total) Wn(`${id}: 걸을 수 있지만 닿지 않는 칸 ${total-cnt}개`);
+    for(const o of m.objs){ if(o.kind!=='furn') continue;
+      if(o.use||o.seats.length){ const a=PX.W.accessTile(m,o); if(!a||!reach[a.y*m.w+a.x]) E(`${id}: ${o.fid}@${o.x},${o.y} r${o.r} 접근 불가`); }
+      // 벽 붙은 가구 방향 점검: 뒷벽/왼벽에 붙었는데 정면이 벽을 향하면 경고
+      const front=PX.O.rotDir(0,o.r);
+      if(o.fid!=='rug'&&!o.f.flat){ if(o.y===0&&front===2) Wn(`${id}: ${o.fid}@${o.x},${o.y} 정면이 뒷벽을 봄`); if(o.x===0&&front===3) Wn(`${id}: ${o.fid}@${o.x},${o.y} 정면이 왼벽을 봄`); }
+    }
+    R.stats[id]={size:m.w+'x'+m.h, walkable:cnt, furn:m.objs.length, density:(1-total/(m.w*m.h)).toFixed(2)};
+  }
+}
+// NPC 일정 스폿 확인
+const allSpots={}; for(const id in PX.W.maps){ for(const k in PX.W.maps[id].spots) allSpots[k]=id; }
+for(const n of PX.NPCS){ for(const key of ['sched','sched2','we']){ if(!n[key]) continue; for(const part of n[key].split('|')){ const sp=part.split(' ')[1]; if(sp==='-'||sp==='field'||sp==='free') continue; if(!allSpots[sp]) E(`NPC ${n.name}: 스폿 ${sp} 없음`);} } }
+R.stats.lore=PX.LORE.length; R.stats.npcs=PX.NPCS.length;
+document.getElementById('o').textContent=JSON.stringify(R,null,1); window.result=R;
+</script>

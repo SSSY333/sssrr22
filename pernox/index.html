@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b1430" />
+  <title>사랑해, 이 행성이 멸망할 때까지.</title>
+  <meta name="description" content="제5행성 페르녹스 · 지구군 606부대 — 쿼터뷰 SD 도트 생활 · 연애 시뮬레이션" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="bubbles"></div>
+  <div id="fade"></div>
+
+  <div id="loading"><b>페르녹스 접속 중…</b></div>
+
+  <!-- 타이틀 -->
+  <section id="title" class="screen hidden">
+    <canvas id="titleArt"></canvas>
+    <div class="tcard">
+      <p class="eyebrow">제5행성 페르녹스 · 지구군 606부대</p>
+      <h1>사랑해,<br />이 행성이 멸망할 때까지.</h1>
+      <div id="titleBtns"></div>
+      <p class="ver">Alpha 0.1 · 외부 이미지 없이 코드로 그린 도트</p>
+    </div>
+  </section>
+
+  <!-- 캐릭터 생성 -->
+  <section id="create" class="screen hidden">
+    <div class="ccard">
+      <div class="chead">
+        <button id="createBack" class="ghost sm">← 뒤로</button>
+        <b>캐릭터 만들기</b>
+        <span></span>
+      </div>
+      <div class="cprev"><canvas id="createPreview"></canvas><small id="createName"></small></div>
+      <div id="createBody"></div>
+      <button id="createGo" class="big" disabled>페르녹스로 출발</button>
+    </div>
+  </section>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="top">
+      <div class="clock"><b id="hTime">07:00</b><span id="hDate"></span></div>
+      <div class="info"><span id="hWx"></span><span id="hMoney"></span><span class="ebar"><i id="hEnergy"></i></span></div>
+    </div>
+    <div class="loc" id="hLoc"></div>
+    <button id="capChip" class="chip-cap"></button>
+    <div class="side">
+      <button id="termBtn" aria-label="개인 단말">📟<i id="termBadge" class="badge"></i></button>
+      <button id="photoBtn" aria-label="사진 찍기">📷</button>
+      <button id="decorBtn" class="hidden" aria-label="숙소 꾸미기">🛋️</button>
+    </div>
+    <button id="actBtn" class="hidden"></button>
+  </div>
+
+  <!-- 대화창 -->
+  <div id="dlg" class="hidden">
+    <canvas width="64" height="60"></canvas>
+    <div class="dbody"><b class="dname"></b><p class="dtext"></p><span class="dnext hidden">▼</span></div>
+  </div>
+  <div id="choices" class="hidden"></div>
+
+  <div id="sheets"></div>
+  <div id="mini" class="hidden"></div>
+  <div id="toasts"></div>
+
+  <!-- 코어 -->
+  <script src="js/core/util.js"></script>
+  <script src="js/core/calendar.js"></script>
+  <!-- 엔진 -->
+  <script src="js/engine/gfx.js"></script>
+  <script src="js/data/furniture.js"></script>
+  <script src="js/engine/objects.js"></script>
+  <script src="js/engine/sprites.js"></script>
+  <!-- 데이터 -->
+  <script src="js/data/lorebook.js"></script>
+  <script src="js/data/maps.js"></script>
+  <script src="js/data/items.js"></script>
+  <script src="js/data/npcs.js"></script>
+  <script src="js/data/dialogue_captain.js"></script>
+  <!-- 엔진 (월드) -->
+  <script src="js/engine/path.js"></script>
+  <script src="js/engine/world.js"></script>
+  <!-- 게임 -->
+  <script src="js/game/state.js"></script>
+  <script src="js/game/audio.js"></script>
+  <script src="js/game/actors.js"></script>
+  <script src="js/game/dialogue.js"></script>
+  <script src="js/game/captain.js"></script>
+  <script src="js/game/ui.js"></script>
+  <script src="js/game/minigames.js"></script>
+  <script src="js/game/decor.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

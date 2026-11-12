@@ -1,0 +1,670 @@
+// 게임 본체: 루프 · 입력 · 상호작용 · 맵 이동 · 잠 · 근무 · 사진첩
+'use strict';
+(() => {
+  const U = PX.U, St = PX.St, Cal = PX.Cal, W = PX.W, A = PX.A, UI = PX.UI, Dlg = PX.Dlg, Cap = PX.Cap;
+  const $ = id => document.getElementById(id);
+  const Game = PX.Game = {
+    player: null, cap: null, npcs: [], actors: [], mapId: null, prevMap: null, modal: 0, sleeping: false, inMini: false, transition: false, running: false,
+    queue: [], target: null, bubbles: [], logLines: [],
+  };
+
+  // ---------- 시작 ----------
+  function initWorld() {
+    for (const id in PX.MAPS) W.build(id);
+    A.indexSpots();
+    const S = St.S;
+    const home = W.maps[PX.JOBS[S.player.job].home];
+    if (S.homeLayout && S.homeMap === home.id) PX.Decor.applyLayout(home, S.homeLayout);
+    Game.player = new A.Actor('player', PX.S.playerApp(S.player, St.season()), { name: S.player.name, speed: 3.4 });
+    Game.cap = new A.NPC(PX.NPC_BY_ID.cap); Game.capOutfit(); Game.cap.name = S.capName; Game.cap.speed = 3.3; Game.cap.big = true;
+    Game.npcs = PX.NPCS.filter(n => n.id !== 'cap').map(n => new A.NPC(n));
+    Game.actors = [Game.player, Game.cap, ...Game.npcs];
+    Cap.init(Game.cap);
+    if (S.cap.stay) Cap.mode = 'stay';
+  }
+  // 대위 복장: 여름엔 재킷 없이 군용 나시, 그 외엔 나시 위에 앞이 열린 위장 재킷
+  Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; };
+  Game.startNew = (f) => {
+    St.newGame(f);
+    initWorld();
+    const S = St.S;
+    const home = PX.JOBS[S.player.job].home;
+    enterMap(home, 7.5, 5.5, true);
+    Game.player.dir = 0;
+    for (const n of Game.npcs) n.place(S);
+    Game.cap.place(S);
+    St.save();
+    run();
+    Game.trigger(intro);
+  };
+  Game.loadSlot = (n) => {
+    if (!St.load(n)) { UI.toast('불러오지 못했어요'); return; }
+    $('title').classList.add('hidden');
+    initWorld();
+    const S = St.S;
+    enterMap(S.pos.map, S.pos.x, S.pos.y, true);
+    for (const n2 of Game.npcs) n2.place(S);
+    if (Cap.mode === 'stay') { const m = W.maps[Cap.homeId()]; Cap.moveTo(Cap.homeId()); const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa')); if (sofa) Game.cap.sitOn(sofa.seats[0]); Game.cap.pose = 'lie'; }
+    else Game.cap.place(S);
+    run();
+    UI.toast(`📂 저장 칸 ${n} 불러옴 · ${Cal.fmtDate(S.time)} ${Cal.fmtTime(S.time.min)}`);
+  };
+  Game.toTitle = () => { Game.running = false; $('hud').classList.add('hidden'); UI.title(); };
+  Game.beforeSave = (S) => { S.pos = { map: Game.mapId, x: Game.player.x, y: Game.player.y }; };
+
+  async function intro() {
+    const S = St.S, job = PX.JOBS[S.player.job];
+    Game.modal++;
+    await Dlg.say('narr', `${Cal.fmtDate(S.time)}. 제5행성 페르녹스, 지구군 606부대.`);
+    await Dlg.say('narr', '전쟁은 끝나 가고, 이 붉은 행성에선 경계와 관리의 날들이 이어진다.');
+    await Dlg.say('narr', `${S.player.name} — ${job.ko}. 이곳에 온 지 꼭 일 년이 되었다.`);
+    await Dlg.say('narr', `그리고 일 년 전 처음 만난 날부터, ${U.josa(S.capName, '은')} 한 번도 마음을 숨긴 적이 없다.`);
+    Dlg.close(); Game.modal--;
+    UI.toast('👆 화면을 누르면 그곳으로 걸어가요. 문·가구·사람을 누르면 상호작용해요.', 5000);
+    setTimeout(() => UI.toast('📟 단말에서 일정표·근무표·관계도를 볼 수 있어요.', 4500), 5200);
+  }
+  // 첫 외출: 대위가 문 앞에서 기다린다
+  async function firstMeet() {
+    const S = St.S;
+    S.done.intro = 1;
+    const m = W.maps[Game.mapId];
+    const p = Game.player;
+    const t = PX.Path.nearestWalkable(m, p.x + 1.5, p.y + 0.5);
+    Cap.moveTo(Game.mapId); if (t) { Game.cap.x = t[0] + 0.5; Game.cap.y = t[1] + 0.5; }
+    Game.cap.setDirTo(p.x, p.y);
+    Game.modal++;
+    await Dlg.runLines(['N:문을 나서자 커다란 그림자가 기다리고 있다.', 'C*:어, 나왔네. 좋은 아침.', 'P:…또 기다리셨어요?', 'C:응. 브리핑 전에 얼굴 보려고.', 'C^:오늘도 무사히. 근무 끝나면 찾으러 갈게.']);
+    Dlg.close(); Game.modal--;
+    St.addAff(3);
+    Game.memory('일 년째 아침', `${PX.U.josa(S.capName, '이')} 숙소 앞에서 기다리고 있었다. 오늘도.`, true);
+    Cap.mode = 'sched';
+  }
+
+  // ---------- 맵 이동 ----------
+  function enterMap(id, x, y, silent) {
+    Game.prevMap = Game.mapId;
+    Game.mapId = id;
+    const p = Game.player;
+    p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;
+    const m = W.maps[id];
+    const t = PX.Path.nearestWalkable(m, x, y); if (t && !W.walkable(m, Math.floor(x), Math.floor(y))) { p.x = t[0] + 0.5; p.y = t[1] + 0.5; }
+    // 이 맵에 있어야 할 NPC 즉시 배치 (보이지 않던 사이 위치 동기화)
+    for (const n of Game.npcs) { if (n.map === id || n.desired(St.S).map === id) n.place(St.S); }
+    if (Cap.mode === 'sched' && Game.cap.map !== id && Game.cap.desired(St.S).map === id) Game.cap.place(St.S);
+    Game.target = null;
+    W.view.camX = W.G ? 0 : 0;
+    snapCam();
+    if (!silent) { PX.Audio.door(); fade(); St.save(); }
+    UI.hud();
+    $('decorBtn').classList.toggle('hidden', !PX.MAPS[id].home);
+    if (!silent && !St.S.done.intro && PX.MAPS[id].kind === 'out' && Game.prevMap === PX.JOBS[St.S.player.job].home && St.S.time.min < 12 * 60) Game.trigger(firstMeet);
+  }
+  Game.enterMap = enterMap;
+  function fade() { const f = $('fade'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 260); }
+  function enterBuilding(door) {
+    const S = St.S;
+    if (door.closed) { UI.toast(`🚧 ${door.name} — 돔시티 확장(Alpha 0.2)에서 열려요`); return; }
+    const to = door.to;
+    if (to === 'q_captain') {
+      const capIn = Game.cap.map === 'q_captain';
+      if (!(capIn || Cap.mode === 'follow' || S.rel.cap.stage >= 4)) { UI.toast('🔒 대위 개인 막사 — 문이 잠겨 있다. 대위가 있을 때 오자.'); return; }
+      if (capIn && Cap.mode !== 'follow') Game.trigger(async () => { Game.modal++; await Dlg.runLines(['N:똑똑.', 'C!:어? 너야?', 'C*:들어와. 냉각기 최저야, 춥다?']); Dlg.close(); Game.modal--; });
+    }
+    if (to === 'apt_player' && S.player.job !== 'researcher' || to === 'q_player' && S.player.job === 'researcher') { UI.toast('🔒 다른 사람의 숙소예요'); return; }
+    if (PX.MAPS[to].parent === 'base' && !PX.JOBS[S.player.job].military && !St.has('pass')) { UI.toast('🪪 출입 허가증이 필요해요'); return; }
+    const m = W.maps[to];
+    enterMap(to, m.exit.x + 0.5, m.exit.y - 0.5);
+    Game.player.dir = 2;
+  }
+  function leaveRoom() {
+    const m = W.maps[Game.mapId];
+    const out = W.maps[m.def.parent];
+    const d = out.doors.find(d => d.to === m.id);
+    enterMap(out.id, d.x + 0.5, d.y + 0.5);
+    const b = d.bld.b;
+    Game.player.dir = b.door.f === 'L' ? 0 : 1;
+  }
+  Game.goOutside = () => { if (PX.MAPS[Game.mapId].kind === 'in') leaveRoom(); };
+  function shuttle() {
+    const S = St.S, from = Game.mapId, to = from === 'base' ? 'dome' : 'base';
+    if (to === 'base' && !PX.JOBS[S.player.job].military && !St.has('pass')) { UI.toast('🪪 부대 출입 허가증이 필요해요'); return; }
+    UI.menu('셔틀 정류장', [{ t: to === 'dome' ? '🚌 돔시티행 셔틀 타기' : '🚌 606부대행 셔틀 타기', sub: '30분 · 무료', fn: async () => {
+      const following = Cap.mode === 'follow';
+      fade(); St.advance(30);
+      const sp = to === 'dome' ? [23.5, 40.5] : [27.5, 58.5];
+      enterMap(to, sp[0], sp[1]);
+      if (following) { Cap.moveTo(to); Game.cap.x = sp[0] + 1; Game.cap.y = sp[1]; Cap.mode = 'follow'; }
+      UI.toast(`🚌 ${PX.MAPS[to].name} 도착`);
+    } }]);
+  }
+
+  // ---------- 이벤트 큐 ----------
+  Game.trigger = (fn) => { Game.queue.push(fn); };
+  async function pump() {
+    if (Game.busyEvent || Game.modal || !Game.queue.length) return;
+    Game.busyEvent = true;
+    const fn = Game.queue.shift();
+    try { await fn(); } catch (e) { console.error(e); Game.modal = Math.max(0, Game.modal); }
+    Game.busyEvent = false;
+  }
+
+  // ---------- 말풍선 · 기록 · 사진 ----------
+  Game.bubble = (actor, text, sec = 3) => {
+    const b = U.el('div', { class: 'bubble' }, text);
+    $('bubbles').append(b);
+    Game.bubbles.push({ actor, el: b, until: performance.now() + sec * 1000 });
+  };
+  Game.log = (name, text) => { const S = St.S; if (!S) return; S.history.push([S.day, S.time.min, name, text]); if (S.history.length > 80) S.history.splice(0, S.history.length - 80); };
+  Game.memory = (title, text, snap) => {
+    const S = St.S;
+    let img = null;
+    if (snap) {
+      try {
+        const v = W.view, p = Game.player;
+        const [sx, sy] = W.toScreen(p.x, p.y);
+        const c = PX.G.canvas(96, 72), g = c.getContext('2d');
+        g.drawImage(v.cv, sx - 48, sy - 50, 96, 72, 0, 0, 96, 72);
+        img = c.toDataURL('image/png');
+      } catch (e) { img = null; }
+    }
+    S.album.push({ title, text, date: Cal.fmtDate(S.time) + ' ' + Cal.fmtTime(S.time.min), place: PX.MAPS[Game.mapId].name, img });
+    if (S.album.length > 30) S.album.splice(0, S.album.length - 30);
+    UI.toast(`📷 추억 기록: ${title}`);
+  };
+
+  // ---------- 상호작용 ----------
+  const MEALS = [['07:00', '09:00'], ['11:30', '13:30'], ['17:30', '19:30']];
+  const MENU = ['김치찌개', '된장국과 즉석밥', '통조림 햄 볶음밥', '냉동 만두 국', '라면 (보급 지연)', '뿌리채소 카레', '냉동 삼겹살 구이'];
+  function useObj(o) {
+    const S = St.S, f = o.f, home = PX.MAPS[Game.mapId].home, job = PX.JOBS[S.player.job];
+    switch (o.use) {
+      case 'bed':
+        if (home) return sleepMenu();
+        return sit(o, '잠깐 눕기');
+      case 'sit': return sit(o);
+      case 'terminal': return UI.terminal();
+      case 'album': return UI.terminal('album');
+      case 'storage': return UI.terminal('inv');
+      case 'shop': return UI.shop(Game.mapId === 'cafe' ? 'cafe' : 'px');
+      case 'vending': return UI.shop('vending');
+      case 'meal': return meal();
+      case 'work': return work(o);
+      case 'wardrobe': return wardrobe();
+      case 'fridge': return fridge();
+      case 'kitchen': return cook();
+      case 'tv': return tv();
+      case 'cooler': return say1(Cap.mode === 'visit' || Game.cap.map === Game.mapId ? 'C*:최저로 해. 아니, 너 추우면 내가 안아 줄게.' : 'N:냉각기를 켰다. 서늘한 바람이 나온다.');
+      case 'shower': St.advance(15); S.energy = Math.min(100, S.energy + 10); fade(); return UI.toast('🚿 개운하게 씻었다 (기력 +10)');
+      case 'sink': return UI.toast('🫧 손을 씻었다');
+      case 'workout': { St.advance(30); S.energy = Math.max(0, S.energy - 8); Game.player.doPose('workout', 2.5); UI.toast('💪 30분 운동했다 (기력 -8)'); if (Game.cap.map === Game.mapId && Math.random() < 0.5) Game.bubble(Game.cap, U.pick(['자세 좋다.', '무리하지 마.', '나랑 같이 할래?'])); return; }
+      case 'arcade': return arcade();
+      case 'game': St.advance(30); return UI.toast('🃏 카드 게임 한 판. ' + U.pick(['이겼다!', '졌다…', '비겼다.']));
+      case 'inspect': return inspect(o);
+      case 'kiosk': return kiosk();
+      case 'shuttle': return shuttle();
+      case 'desk': return UI.toast(U.pick(['📄 서류가 가지런히 쌓여 있다.', '🖥️ 화면에 근무 일정표가 떠 있다.', '📡 통신 기록이 흘러간다.']));
+    }
+  }
+  async function say1(line) { Game.modal++; await Dlg.runLines([line]); Dlg.close(); Game.modal--; }
+  function sit(o, label) {
+    const p = Game.player;
+    const seat = o.seats.filter(s => !s.by).sort((a, b) => U.dist(a.x, a.y, p.x, p.y) - U.dist(b.x, b.y, p.x, p.y))[0];
+    if (!seat) { UI.toast('빈자리가 없어요'); return; }
+    p.sitOn(seat);
+  }
+  function standUp() {
+    Game.player.leaveSeat();
+    if (Game.cap.seat && (Cap.mode === 'follow' || Cap.mode === 'visit')) { if (Cap.mode === 'follow') Game.cap.leaveSeat(); }
+  }
+  async function sleepMenu() {
+    const S = St.S;
+    const it = await UI.menu('침대', [
+      { t: '😴 잠자기 (아침 6시)', k: 6 }, { t: '😴 잠자기 (아침 7시)', k: 7 }, { t: '😪 늦잠 (아침 9시)', k: 9 }, { t: '🛏️ 낮잠 1시간', k: 'nap' }]);
+    if (!it) return;
+    await Cap.beforeSleep();
+    if (it.k === 'nap') { fade(); St.advance(60); S.energy = Math.min(100, S.energy + 15); UI.toast('💤 한숨 잤다 (기력 +15)'); return; }
+    await sleepUntil(it.k);
+  }
+  async function sleepUntil(hour, passOut) {
+    const S = St.S;
+    if (Cap.forceLeave()) UI.toast(`${PX.U.josa(S.capName, '은')} 조용히 막사로 돌아갔다`);
+    if (Cap.mode === 'follow') Cap.release();
+    Game.sleeping = true;
+    const f = $('fade'); f.classList.add('on', 'long');
+    const mins = ((hour * 60 - S.time.min) + 1440) % 1440 || 1440;
+    await U.sleep(600);
+    St.advance(mins);
+    S.energy = passOut ? 55 : Math.min(100, 70 + Math.min(30, mins / 16));
+    if (passOut) { const home = PX.JOBS[S.player.job].home, m = W.maps[home]; enterMap(home, m.exit.x + 0.5, m.exit.y - 1.5, true); }
+    for (const n of Game.npcs) n.place(S);
+    if (Cap.mode !== 'stay') Game.cap.place(S);
+    Game.sleeping = false;
+    St.save();
+    await U.sleep(400);
+    f.classList.remove('on', 'long');
+    const ev = Cal.eventsOn(S.time);
+    UI.toast(`☀️ ${Cal.fmtDate(S.time)} ${Cal.fmtTime(S.time.min)} · ${Cal.WEATHER[St.weather()].icon} ${Cal.WEATHER[St.weather()].ko}`, 3500);
+    if (ev.length) setTimeout(() => UI.toast('📅 오늘: ' + ev.map(e => e.originalTitle).join(', '), 4500), 1200);
+    if (S.cap.stay) Game.trigger(() => Cap.morningAfter());
+  }
+  async function meal() {
+    const S = St.S, t = S.time.min;
+    const open = MEALS.some(([a, b]) => t >= Cal.toMin(a) && t < Cal.toMin(b));
+    if (!open) { UI.toast('🍽️ 배식 시간이 아니에요 (07:00~09:00 · 11:30~13:30 · 17:30~19:30)'); return; }
+    if (S.ateMeal === S.day + ':' + Math.floor(t / 300)) { UI.toast('이번 끼니는 이미 먹었어요'); return; }
+    const special = Cal.eventsOn(S.time).some(e => e.id === 'LB82');
+    const menu = special ? '🎉 부대 특식: 냉동 삼겹살 구이 + 김치찌개' : MENU[(S.day + Math.floor(t / 300)) % MENU.length];
+    const civ = !PX.JOBS[S.player.job].military;
+    if (civ && !St.spend(8)) { UI.toast('돈이 모자라요 (민간인 식권 ₢8)'); return; }
+    S.ateMeal = S.day + ':' + Math.floor(t / 300);
+    S.energy = Math.min(100, S.energy + (special ? 45 : 35));
+    UI.toast(`🍱 오늘 메뉴: ${menu}${civ ? ' (₢8)' : ''} · 기력 +${special ? 45 : 35}`);
+    // 빈자리에 앉아 먹기
+    const m = W.maps[Game.mapId], p = Game.player;
+    let best = null, bd = 99;
+    for (const o of m.objs) if (o.fid === 'bench') for (const s of o.seats) if (!s.by) { const d = U.dist(s.x, s.y, p.x, p.y); if (d < bd) { bd = d; best = s; } }
+    if (best) { const a = W.accessTile(m, best.obj); p.goTo(m, a.x, a.y, () => { p.sitOn(best); p.doPose('eat', 6); St.advance(20); }); }
+  }
+  async function work(o) {
+    const S = St.S, job = PX.JOBS[S.player.job];
+    if (o.spot !== job.workSpot) { UI.toast(`🔧 ${o.f.name} — ${job.short}의 업무 자리가 아니에요`); return; }
+    if (St.isWeekend()) { UI.toast('🏖️ 오늘은 비번(주말)이에요'); return; }
+    const t = S.time.min;
+    const shift = t >= 9 * 60 && t < 12 * 60 ? 0 : t >= 13 * 60 && t < 17 * 60 ? 1 : -1;
+    if (shift < 0) { UI.toast('⏰ 근무 시간이 아니에요 (09:00~12:00, 13:00~17:00)'); return; }
+    const key = S.day + ':' + shift;
+    if (S.workLog[key]) { UI.toast('이번 근무는 이미 마쳤어요'); return; }
+    if (S.energy < 12) { UI.toast('😵 너무 피곤해서 일할 수 없어요. 뭘 좀 먹거나 쉬어요.'); return; }
+    const ctx = {};
+    if (job.mini === 'treat') ctx.patient = Cap.spotKind() === 'duty' && Math.random() < 0.3 ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병']);
+    const score = await PX.Mini.run(job.mini, ctx);
+    const pay = Math.round(job.pay * (0.6 + 0.6 * score));
+    S.money += pay; S.energy = Math.max(0, S.energy - 18); S.workLog[key] = 1; S.workLog[S.day] = (S.workLog[S.day] || 0) + 1; S.stats.work++;
+    const end = shift === 0 ? 12 * 60 : 17 * 60;
+    if (S.time.min < end) St.advance(end - S.time.min);
+    UI.toast(`💰 급여 ₢${pay} · 기력 -18`);
+    PX.Audio.coin();
+    if (ctx.patient && ctx.patient.startsWith(S.capName)) Game.trigger(async () => { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; });
+    if (!S.done.firstWork) { S.done.firstWork = 1; Game.memory('첫 근무', `${job.ko}로서의 하루. 급여 ₢${pay}.`, true); }
+    for (const n of Game.npcs) n.place(S);
+  }
+  async function wardrobe() {
+    const S = St.S;
+    const it = await UI.menu('옷장', Object.entries(PX.S.OUTFITS).map(([k, o]) => ({ t: (S.player.outfit === k ? '✔ ' : '') + o.ko, k })));
+    if (!it) return;
+    S.player.outfit = it.k; Game.player.app = PX.S.playerApp(S.player, St.season());
+    UI.toast('👕 옷을 갈아입었다');
+    if (Cap.mode === 'visit' || (Game.cap.map === Game.mapId && Cap.mode === 'follow')) setTimeout(() => Game.bubble(Game.cap, U.pick(['오, 그거 잘 어울린다.', '…나 지금 눈 둘 데가 없다.', '예쁘다. 그거 입고 나랑 나가자.'])), 600);
+  }
+  function fridge() {
+    const S = St.S;
+    if ((S.fridgeDay || '') === S.day + ':' + (S.fridgeN || 0) && (S.fridgeN || 0) >= 3) { UI.toast('냉장고가 텅 비었다'); return; }
+    if (S.fridgeDay && !S.fridgeDay.startsWith(S.day + ':')) S.fridgeN = 0;
+    S.fridgeN = (S.fridgeN || 0) + 1; S.fridgeDay = S.day + ':' + S.fridgeN;
+    S.energy = Math.min(100, S.energy + 5);
+    UI.toast('🧊 시원한 물 한 잔 (기력 +5)');
+  }
+  async function cook() {
+    const S = St.S;
+    const withCap = Cap.mode === 'visit' && Game.cap.map === Game.mapId;
+    fade(); St.advance(30); S.energy = Math.min(100, S.energy + 20);
+    Game.player.doPose('work', 2);
+    if (withCap) {
+      Game.modal++;
+      await Dlg.runLines(['N:좁은 주방에 둘이 서니 어깨가 자꾸 닿는다.', 'C*:칼질은 내가 할게. 넌 간 봐.', 'C^:…맛있다. 우리 둘이 하면 뭐든 되네.']);
+      Dlg.close(); Game.modal--; St.addAff(5);
+      if (!S.done.cookTogether) { S.done.cookTogether = 1; Game.memory('함께 요리하기', '좁은 주방에서 같이 만든 저녁.', true); }
+    } else UI.toast('🍳 간단히 요리해 먹었다 (기력 +20)');
+  }
+  async function tv() {
+    const S = St.S;
+    const withCap = Cap.mode === 'visit' && Game.cap.map === Game.mapId;
+    fade(); St.advance(60);
+    if (withCap) {
+      Game.modal++;
+      await Dlg.runLines([U.pick(['N:옛날 지구 영화. 무서운 장면마다 대위가 슬쩍 가까이 온다.', 'N:로맨스 영화. 대위는 화면보다 내 옆얼굴을 더 오래 본다.', 'N:우주 전쟁 영화. 대위가 "저건 고증이 틀렸어"를 다섯 번 말한다.']), 'C*:재밌었다. 다음에 또 보자. 핑계 삼아.']);
+      Dlg.close(); Game.modal--; St.addAff(4);
+      if (!S.done.movie) { S.done.movie = 1; Game.memory('같이 영화 보기', '소파에 나란히. 영화 내용은 별로 기억나지 않는다.', true); }
+    } else UI.toast('📺 한 시간 동안 TV를 봤다');
+  }
+  function arcade() {
+    St.advance(20);
+    const sc = Math.floor(Math.random() * 9000) + 1000;
+    UI.toast(`👾 오락 점수 ${sc}점! ${sc > 8000 ? '최고 기록 갱신!' : ''}`);
+    if (Cap.mode === 'follow' && Game.cap.map === Game.mapId) setTimeout(() => Game.bubble(Game.cap, sc > 6000 ? '…나보다 잘하네. 한 판 더.' : '내가 이겼다. 상품은 뽀뽀.'), 500);
+  }
+  function inspect(o) {
+    const S = St.S;
+    if (o.fid === 'alienbench') { if (Game.cap.map === Game.mapId) return say1('C^:그거? 외곽에서 주운 잔해로 만드는 중이야. 완성되면 너 줄게.'); return UI.toast('🔮 외계 생명체 잔해가 은은하게 빛난다. 무언가 만드는 중인 것 같다.'); }
+    if (o.fid === 'stonedisplay') return UI.toast(`🪨 ${PX.U.josa(S.capName, '이')} 준 돌. 빛을 받으면 줄무늬가 반짝인다.`);
+    UI.toast('🧪 배양조 안에서 외계 식물이 천천히 흔들린다.');
+  }
+  function kiosk() {
+    const S = St.S;
+    const ev = Cal.eventsOn(S.time);
+    const places = PX.LORE.filter(e => e.eventType === 'place' && e.startTime && Cal.openAt(e, S.time, S.time.min)).slice(0, 4);
+    UI.sheet('안내 단말', b => {
+      b.append(U.el('h4', null, Cal.fmtDate(S.time) + ' 오늘의 행사'));
+      if (!ev.length) b.append(U.el('p', { class: 'muted' }, '오늘은 예정된 행사가 없어요.'));
+      for (const e of ev) b.append(U.el('div', { class: 'ev' }, U.el('b', null, e.originalTitle), U.el('small', null, e.location + (e.startTime ? ` · ${e.startTime}~${e.endTime}` : '')), U.el('p', null, e.description)));
+      b.append(U.el('h4', null, '지금 운영 중인 명소'));
+      if (!places.length) b.append(U.el('p', { class: 'muted' }, '지금 시간대에 특별히 운영 중인 곳은 없어요.'));
+      for (const e of places) b.append(U.el('div', { class: 'ev' }, U.el('b', null, e.originalTitle), U.el('small', null, `${e.location} · ${e.startTime}~${e.endTime}`)));
+      b.append(U.el('p', { class: 'muted' }, '돔시티 관광지 맵은 Alpha 0.2~Beta 0.5에서 차례로 열려요. 전체 정보는 단말 → 로어북.'));
+    });
+  }
+
+  // ---------- 대위 메뉴 ----------
+  async function capMenu() {
+    const S = St.S, r = S.rel.cap, cap = Game.cap;
+    const duty = Cap.onDuty() && Cap.mode !== 'follow';
+    const st = r.stage;
+    const items = [{ t: '💬 대화하기', k: 'talk' }];
+    if (Cap.mode === 'follow') items.push({ t: '🙋 이제 혼자 갈게요', k: 'unfollow' });
+    else items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty || Cap.mode === 'visit' || Cap.mode === 'stay', offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
+    items.push({ t: '🎁 선물하기', k: 'gift' });
+    items.push({ t: '🤝 스킨십', k: 'skin', sub: '손잡기 · 쓰다듬기 · 포옹 …', off: duty, offMsg: '근무 중이에요' });
+    items.push({ t: '😮‍💨 고민 털어놓기', k: 'comfort' });
+    if (Cap.mode === 'visit') { items.push({ t: '🌙 자고 가도 돼요', k: 'stay', off: st < 2, offMsg: '아직은 조금 이른 것 같아요' }, { t: '🚪 이제 가 보세요', k: 'leave' }); }
+    else items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
+    const it = await UI.menu(`${S.capName} 대위 · ${Cap.status()}`, items);
+    if (!it) return;
+    if (it.k === 'talk') return Dlg.capTalk();
+    if (it.k === 'follow') { Cap.startFollow(); Game.bubble(cap, U.pick(['좋아. 어디든.', '그 말 기다렸어.'])); St.addAff(1); return; }
+    if (it.k === 'unfollow') { Cap.release(U.pick(['응. 이따 또 보자.', '아쉽네. 조심히 가.'])); return; }
+    if (it.k === 'gift') return gift();
+    if (it.k === 'skin') return skinMenu();
+    if (it.k === 'comfort') return Dlg.capTalk('comfort');
+    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; Cap.release(); Cap.mode = 'sched'; return; }
+    if (it.k === 'stay') { S.cap.lastStayAskDay = -1; Game.modal++; await Dlg.say('player', '…자고 가도 돼요.', 'blush'); await Dlg.runLines(U.pick(PX.DLG_CAP.stayYes)); Dlg.close(); Game.modal--; S.cap.stay = 'sofa'; S.cap.lastStayAskDay = S.day; Cap.mode = 'stay'; St.addAff(6); const m = W.maps[Game.mapId]; const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa')); if (sofa) { cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]); cap.pose = 'lie'; } if (!S.done.firstStay) { S.done.firstStay = 1; Game.memory('첫 숙박', '먼저 자고 가라고 했다. 대위는 소파에서 웃으며 잠들었다.', true); } return; }
+    if (it.k === 'leave') { Game.modal++; await Dlg.say('player', '이제 가 보세요.'); await Dlg.say('cap', U.pick(['응. 오늘 고마웠어. 잘 자.', '알았어. 쫓겨나는 것도 좋다. 또 올게.']), 'smile'); Dlg.close(); Game.modal--; const m = W.maps[Game.mapId]; cap.leaveSeat(); Cap.mode = 'sched'; r.noFollowUntil = (S.day + 1) * 1440 + 6 * 60; cap.goTo(m, m.exit.x, m.exit.y, () => Cap.moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); }
+  }
+  async function gift() {
+    const S = St.S, r = S.rel.cap;
+    const id = await UI.pickGift();
+    if (!id) return;
+    const it = PX.ITEMS[id];
+    St.addItem(id, -1);
+    const like = it.capLike;
+    Game.modal++;
+    Game.player.doPose('carry', 1.2);
+    await Dlg.say('player', `${it.icon} 이거 드릴게요.`);
+    await Dlg.runLines(U.pick(PX.DLG_CAP.giftReact[like]));
+    Dlg.close(); Game.modal--;
+    const giftsToday = r.giftDay === S.day ? (r.giftsToday || 0) : 0;
+    r.giftDay = S.day; r.giftsToday = giftsToday + 1; r.gifts++;
+    const base = { 2: 14, 1: 9, 0: 5, '-1': 2 }[like];
+    St.addAff(Math.round(base / (1 + giftsToday)));
+    Game.cap.showEmote(like >= 1 ? 'heart' : 'note', 2);
+    if (like >= 1) PX.Audio.heart();
+    if (!S.done.firstGiftToCap) { S.done.firstGiftToCap = 1; Game.memory('내가 준 선물', `${S.capName}에게 ${PX.U.josa(it.name, '을')} 줬다.`, true); }
+  }
+  async function skinMenu() {
+    const S = St.S, st = S.rel.cap.stage, cap = Game.cap;
+    const holding = cap.holding;
+    const opts = [
+      { t: holding ? '🤝 손 놓기' : '🤝 손잡기', k: holding ? 'unhand' : 'hand', need: 2 },
+      { t: '💞 팔짱 끼기', k: 'armlink', need: 4 },
+      { t: '✋ 머리 쓰다듬어 주기', k: 'pat', need: 1 },
+      { t: '🫂 안아 주기', k: 'hug', need: 3 },
+      { t: '😚 볼에 입맞춤', k: 'cheek', need: 4 },
+      { t: '💋 입맞춤', k: 'kiss', need: 4 },
+      { t: '🧗 업어 달라고 하기', k: 'carry', need: 4 },
+    ].map(o => Object.assign(o, { off: st < o.need, offMsg: '아직은 조금 이른 것 같아요', sub: st < o.need ? `(${St.STAGES[o.need]} 이상)` : null }));
+    const it = await UI.menu('스킨십', opts);
+    if (!it) return;
+    if (it.k === 'unhand') { cap.holding = false; Game.player.holding = false; UI.toast('손을 놓았다'); Game.bubble(cap, '…아쉽다.'); return; }
+    const lines = { hand: ['C^:이거 내가 먼저 하려 했는데.'], armlink: ['C*:팔 더 꽉 잡아. 놓치면 안 되니까.'], pat: ['N:대위가 순순히 고개를 숙인다.', 'C^:…이거 매일 해 줘.'], hug: ['N:넓은 품이 뜨끈하다.', 'C:…좀 더 이러고 있자.'], cheek: ['C!:…', 'C^:한 번 더. 반대쪽도.'], kiss: ['C*:먼저 해 주는 거야? 오늘 무슨 날이야.'], carry: ['C*:업혀. 꽉 잡아.'] };
+    if (it.k !== 'hand' && it.k !== 'armlink' && Cap.mode !== 'follow' && Cap.mode !== 'visit' && Cap.mode !== 'stay') Cap.startFollow();
+    await Cap.doSkin(it.k, false);
+    Game.modal++; await Dlg.runLines(lines[it.k]); Dlg.close(); Game.modal--;
+  }
+
+  // ---------- 탭 → 행동 ----------
+  function interactables() {
+    const m = W.maps[Game.mapId], list = [];
+    for (const o of m.objs) {
+      if (o.kind === 'bld' && o.door) list.push({ type: 'door', o, x: o.door.x + 0.5, y: o.door.y + 0.5, label: o.door.closed ? `🚧 ${o.b.name}` : `🚪 ${o.b.name} 들어가기`, fn: () => enterBuilding(m.doors.find(d => d.bld === o)) });
+      else if (o.kind === 'furn' && (o.use || (o.seats && o.seats.length))) {
+        const a = W.accessTile(m, o);
+        if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
+      }
+    }
+    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: '🚪 밖으로 나가기', fn: leaveRoom });
+    for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });
+    if (Game.cap.map === Game.mapId) list.push({ type: 'cap', a: Game.cap, x: Game.cap.x, y: Game.cap.y, label: `💗 ${St.S.capName}`, fn: capMenu });
+    return list;
+  }
+  function objLabel(o) {
+    const job = PX.JOBS[St.S.player.job], home = PX.MAPS[Game.mapId].home;
+    const L = { bed: home ? '🛏️ 침대' : '🛏️ 잠깐 눕기', sit: '🪑 앉기', terminal: '📟 개인 단말', album: '📷 사진첩', storage: '🗄️ 수납장', shop: '🛒 상점', vending: '🥤 자판기', meal: '🍱 식사하기', wardrobe: '👕 옷장', fridge: '🧊 냉장고', kitchen: '🍳 요리하기', tv: '📺 TV 보기', cooler: '❄️ 냉각기', shower: '🚿 샤워하기', sink: '🫧 세면대', workout: '💪 운동하기', arcade: '👾 오락기', game: '🃏 카드 게임', inspect: '🔍 살펴보기', kiosk: 'ℹ️ 안내 단말', shuttle: '🚌 셔틀 타기', desk: '🖥️ 살펴보기', work: o.spot === job.workSpot ? '🛠️ 근무하기' : '🔍 살펴보기' };
+    return L[o.use] || (o.seats && o.seats.length ? '🪑 앉기' : '🔍 살펴보기');
+  }
+  function tapAt(sx, sy) {
+    const m = W.maps[Game.mapId], p = Game.player;
+    // 1) 사람 (스프라이트 영역)
+    const people = [Game.cap, ...Game.npcs].filter(a => a.map === Game.mapId && a.screen);
+    let hit = null;
+    for (const a of people) { const s = a.screen; if (sx > s.x - 9 && sx < s.x + 9 && sy > s.top + 4 && sy < s.foot + 2) { if (!hit || a.y + a.x > hit.y + hit.x) hit = a; } }
+    const list = interactables();
+    if (hit) { const it = list.find(i => i.a === hit); return goInteract(it, hit.x, hit.y); }
+    const [wx, wy] = W.toWorld(sx, sy);
+    const tx = Math.floor(wx), ty = Math.floor(wy);
+    // 2) 출구 매트
+    if (m.kind === 'in' && tx === m.exit.x && ty === m.exit.y) return goInteract(list.find(i => i.type === 'exit'));
+    // 3) 가구 · 건물 (발밑 + 스프라이트 높이 고려: 위쪽으로 몇 칸까지 확인)
+    for (let k = 0; k < 4; k++) {
+      const cx = wx + k * 0.5, cy = wy + k * 0.5; // 화면 위쪽 클릭 → 뒤쪽 물체
+      const fx = Math.floor(cx), fy = Math.floor(cy);
+      const o = m.objs.find(o => (o.kind === 'bld' || (o.kind === 'furn' && !o.f.flat)) && fx >= o.x && fx < o.x + o.fw && fy >= o.y && fy < o.y + o.fd);
+      if (o) {
+        const it = list.find(i => i.o === o);
+        if (it) return goInteract(it);
+        if (o.kind === 'bld') { UI.toast(`🏢 ${o.b.name}`); return; }
+        if (k === 0) { UI.toast(`${o.f.name}`); return; }
+      }
+    }
+    // 4) 바닥
+    const tgt = PX.Path.nearestWalkable(m, tx, ty, 3);
+    if (!tgt) return;
+    if (p.seat) standUp();
+    const path = PX.Path.find(m, Math.floor(p.x), Math.floor(p.y), tgt[0], tgt[1]);
+    if (path) { p.speedNow = path.length > 8 ? 5.4 : 3.6; if (St.S.energy < 15) p.speedNow *= 0.7; p.walkPath(path); Game.target = { x: tgt[0], y: tgt[1], t: 0 }; }
+  }
+  function goInteract(it, ax, ay) {
+    if (!it) return;
+    const m = W.maps[Game.mapId], p = Game.player;
+    const tx = it.x, ty = it.y;
+    const near = U.dist(p.x, p.y, tx, ty) < 1.3 || (it.a && U.dist(p.x, p.y, it.a.x, it.a.y) < 1.8);
+    if (near) { p.stop(); if (it.cx != null) p.setDirTo(it.cx, it.cy); else if (it.a) p.setDirTo(it.a.x, it.a.y); it.fn(); return; }
+    if (p.seat) standUp();
+    let gx = Math.floor(tx), gy = Math.floor(ty);
+    if (it.a) { const t = PX.Path.nearestWalkable(m, it.a.x + 0.8, it.a.y + 0.8, 3); if (t) { gx = t[0]; gy = t[1]; } }
+    const allow = it.type === 'exit' ? (x, y) => x === m.exit.x && y === m.exit.y : undefined;
+    const path = PX.Path.find(m, Math.floor(p.x), Math.floor(p.y), gx, gy, { allow });
+    if (!path) { UI.toast('그곳까지 갈 길이 없어요'); return; }
+    p.speedNow = path.length > 8 ? 5.4 : 3.6;
+    Game.target = { x: gx, y: gy, t: 0 };
+    p.walkPath(path, () => { Game.target = null; if (it.cx != null) p.setDirTo(it.cx, it.cy); else if (it.a) p.setDirTo(it.a.x, it.a.y); if (!it.a || U.dist(p.x, p.y, it.a.x, it.a.y) < 2.6) it.fn(); });
+  }
+  // 가까운 상호작용 (행동 버튼 · E키)
+  function nearest() {
+    const p = Game.player; let best = null, bd = 1.6;
+    for (const it of interactables()) { const d = U.dist(p.x, p.y, it.a ? it.a.x : it.x, it.a ? it.a.y : it.y); const lim = it.a ? 1.9 : 1.3; if (d < lim && d < bd + (it.a ? 0.4 : 0)) { bd = d; best = it; } }
+    return best;
+  }
+
+  // ---------- 입력 ----------
+  const cv = $('game');
+  const toInternal = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W.view.w, (e.clientY - r.top) / r.height * W.view.h]; };
+  let downAt = null;
+  cv.addEventListener('pointerdown', e => {
+    PX.Audio.unlock();
+    if (!Game.running || Game.modal && !PX.Decor.active) return;
+    const [x, y] = toInternal(e);
+    downAt = { x, y, t: performance.now() };
+    if (PX.Decor.active) { PX.Decor.down(x, y); cv.setPointerCapture(e.pointerId); }
+  });
+  cv.addEventListener('pointermove', e => { if (PX.Decor.active && downAt) { const [x, y] = toInternal(e); PX.Decor.move(x, y); } });
+  cv.addEventListener('pointerup', e => {
+    if (!downAt) return;
+    const [x, y] = toInternal(e);
+    if (PX.Decor.active) { PX.Decor.up(); downAt = null; return; }
+    if (!Game.modal && Math.hypot(x - downAt.x, y - downAt.y) < 8) tapAt(x, y);
+    downAt = null;
+  });
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    keys[e.key] = true;
+    if (!Game.running) return;
+    if (Game.modal) { if (e.key === 'Escape') { const x = document.querySelector('.sheet-wrap:last-child .x'); if (x) x.click(); } return; }
+    if (e.key === 'e' || e.key === 'E' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); actionBtn(); }
+    if (e.key === 't' || e.key === 'T' || e.key === 'Tab') { e.preventDefault(); UI.terminal(); }
+  });
+  window.addEventListener('keyup', e => { keys[e.key] = false; });
+  function keyMove(dt) {
+    const p = Game.player;
+    let dx = 0, dy = 0; // 화면 기준 → 타일 기준 변환
+    if (keys.ArrowUp || keys.w || keys.W) { dx -= 1; dy -= 1; }
+    if (keys.ArrowDown || keys.s || keys.S) { dx += 1; dy += 1; }
+    if (keys.ArrowLeft || keys.a || keys.A) { dx -= 1; dy += 1; }
+    if (keys.ArrowRight || keys.d || keys.D) { dx += 1; dy -= 1; }
+    p.kbMoving = false;
+    if (!dx && !dy) return;
+    if (p.seat) standUp();
+    p.stop(); Game.target = null;
+    const l = Math.hypot(dx, dy); dx /= l; dy /= l;
+    const sp = (keys.Shift ? 5.4 : 3.6) * (St.S.energy < 15 ? 0.7 : 1) * dt;
+    p.speedNow = sp / dt;
+    const m = W.maps[Game.mapId];
+    const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return true; };
+    const nx = p.x + dx * sp, ny = p.y + dy * sp;
+    if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) p.x = nx; else if (free(p.x, ny)) p.y = ny;
+    p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
+    if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
+  }
+  function actionBtn() {
+    if (Game.player.seat) { standUp(); return; }
+    const it = nearest();
+    if (it) { Game.player.stop(); if (it.cx != null) Game.player.setDirTo(it.cx, it.cy); it.fn(); }
+  }
+  $('actBtn').onclick = actionBtn;
+  $('termBtn').onclick = () => { if (!Game.modal) UI.terminal(); };
+  $('photoBtn').onclick = () => { if (!Game.modal) { Game.memory('사진', `${PX.MAPS[Game.mapId].name}에서 찰칵.`, true); PX.Audio.blip(2); } };
+  $('decorBtn').onclick = () => { if (!Game.modal) PX.Decor.start(); };
+  $('capChip').onclick = () => { if (!Game.modal) UI.terminal('rel'); };
+
+  // ---------- 루프 ----------
+  let last = 0, acc = 0, hudT = 0, npcT = 0, saveT = 0, minuteAcc = 0;
+  function run() {
+    $('hud').classList.remove('hidden');
+    $('title').classList.add('hidden'); $('create').classList.add('hidden');
+    UI.badge();
+    if (!Game.running) { Game.running = true; last = performance.now(); requestAnimationFrame(frame); }
+  }
+  function snapCam() { const p = Game.player; if (!p) return; const [px, py] = PX.G.proj(p.x, p.y); W.view.camX = px; W.view.camY = py - 14; }
+  function frame(t) {
+    if (!Game.running) return;
+    const dt = Math.min(0.05, (t - last) / 1000); last = t;
+    const S = St.S;
+    // 시간
+    if (!Game.modal && !Game.sleeping && !Game.transition) {
+      minuteAcc += dt * 1000 * Cal.SPEEDS[S.settings.speed];
+      if (minuteAcc >= 1) { const n = Math.floor(minuteAcc); minuteAcc -= n; St.advance(n); }
+    }
+    // 이동 · AI
+    if (!Game.modal) keyMove(dt);
+    for (const a of Game.actors) a.update(Game.modal && a !== Game.player ? dt * 0 + dt : dt);
+    npcT -= dt;
+    if (npcT <= 0 && !Game.sleeping) { npcT = 0.5; if (!Game.modal) for (const n of Game.npcs) n.think(S, Game.mapId); }
+    if (!Game.modal || Cap.mode === 'follow') Cap.update(Game.modal ? 0 : dt);
+    pump();
+    // 카메라
+    const p = Game.player;
+    const [px, py] = PX.G.proj(p.x, p.y);
+    W.view.camX += (px - W.view.camX) * Math.min(1, dt * 8);
+    W.view.camY += (py - 14 - W.view.camY) * Math.min(1, dt * 8);
+    // 렌더
+    const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt };
+    W.render(W.maps[Game.mapId], Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
+    positionBubbles();
+    hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); }
+    saveT += dt; if (saveT > 300) { saveT = 0; St.save(); }
+    requestAnimationFrame(frame);
+  }
+  // 오버레이: 목적지 표시 · 감정 아이콘 · 가까운 물체 화살표
+  function overlay(g) {
+    PX.Decor.overlay(g);
+    const tg = Game.target;
+    if (tg && Game.player.path.length) {
+      tg.t += 0.05;
+      const a = W.toScreen(tg.x + 0.2, tg.y + 0.2), b = W.toScreen(tg.x + 0.8, tg.y + 0.2), c = W.toScreen(tg.x + 0.8, tg.y + 0.8), d = W.toScreen(tg.x + 0.2, tg.y + 0.8);
+      g.globalAlpha = 0.5 + 0.3 * Math.sin(tg.t * 4);
+      PX.G.line(g, a[0], a[1], b[0], b[1], '#ffffff'); PX.G.line(g, b[0], b[1], c[0], c[1], '#ffffff'); PX.G.line(g, c[0], c[1], d[0], d[1], '#ffffff'); PX.G.line(g, d[0], d[1], a[0], a[1], '#ffffff');
+      g.globalAlpha = 1;
+    }
+    for (const a of Game.actors) {
+      if (!a.emote || a.map !== Game.mapId || !a.screen) continue;
+      const x = a.screen.x - 3, y = a.screen.top - 6 + Math.round(Math.sin(performance.now() / 200) * 1);
+      if (a.emote === 'heart') PX.G.icon(g, 'heart', x, y, '#ff5a7a');
+      else if (a.emote === 'stars') { g.fillStyle = '#ffd166'; g.fillRect(x, y + 2, 2, 2); g.fillRect(x + 5, y, 2, 2); g.fillRect(x + 3, y + 5, 1, 1); }
+      else if (a.emote === 'sweat') PX.G.icon(g, 'drop', x + 4, y, '#7fd3ef');
+      else if (a.emote === 'note') PX.G.icon(g, 'star', x, y, '#ffd166');
+    }
+    if (!Game.modal && !PX.Decor.active) {
+      const it = nearest();
+      if (it) {
+        const sx = it.a ? it.a.screen && it.a.screen.x : W.toScreen(it.cx != null ? it.cx : it.x, it.cy != null ? it.cy : it.y)[0];
+        let sy = it.a ? it.a.screen && it.a.screen.top - 4 : W.toScreen(it.cx != null ? it.cx : it.x, it.cy != null ? it.cy : it.y, 26)[1];
+        if (sx != null && sy != null) { sy += Math.round(Math.sin(performance.now() / 180) * 1.5); g.fillStyle = '#ffd166'; g.fillRect(sx - 2, sy - 3, 5, 1); g.fillRect(sx - 1, sy - 2, 3, 1); g.fillRect(sx, sy - 1, 1, 1); }
+      }
+    }
+  }
+  function positionBubbles() {
+    const now = performance.now(), sc = W.view.cssScale;
+    Game.bubbles = Game.bubbles.filter(b => { if (now > b.until || b.actor.map !== Game.mapId) { b.el.remove(); return false; } return true; });
+    for (const b of Game.bubbles) { const s = b.actor.screen; if (!s) continue; b.el.style.transform = `translate(${s.x * sc}px, ${(s.top - 4) * sc}px) translate(-50%, -100%)`; }
+  }
+  function updateAction() {
+    const btn = $('actBtn');
+    if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); return; }
+    if (Game.player.seat) { btn.textContent = '⬆️ 일어나기'; btn.classList.remove('hidden'); return; }
+    const it = nearest();
+    if (it) { btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
+  }
+
+  // ---------- 시간 이벤트 ----------
+  St.on('minute', () => {
+    const S = St.S;
+    if (!Game.sleeping) S.energy = Math.max(0, S.energy - 0.025);
+    Cap.msgTick();
+    // 새벽 2시까지 안 자면 쓰러지듯 잠든다
+    if (!Game.sleeping && S.time.min >= 2 * 60 && S.time.min < 2 * 60 + 2 && !Game.passing) {
+      Game.passing = true;
+      Game.trigger(async () => { UI.toast('😵 너무 늦었다… 쓰러지듯 잠들었다', 3000); await U.sleep(800); await sleepUntil(8, true); Game.passing = false; });
+    }
+  });
+  St.on('newDay', () => {
+    const S = St.S;
+    S.rel.cap.talksToday = 0;
+    // 계절이 바뀌면 옷 갱신
+    Game.player.app = PX.S.playerApp(S.player, St.season()); Game.capOutfit();
+    if (S.time.d === 1) setTimeout(() => UI.toast(`🗓️ ${S.time.m}월 · ${Cal.SEASON_KO[St.season()]}`), 500);
+  });
+  window.addEventListener('resize', () => { W.resize(); snapCam(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && Game.running && St.S) St.save(); });
+
+  // ---------- 부팅 ----------
+  async function boot() {
+    W.setCanvas(cv); W.resize();
+    Dlg.init();
+    try { await Promise.race([document.fonts.load('16px Jua'), U.sleep(2500)]); } catch (e) { /* 글꼴 없이 진행 */ }
+    $('loading').classList.add('hidden');
+    UI.title();
+  }
+  Game.boot = boot;
+  // 디버그/테스트용 훅
+  window.__px = { Game, St, W, Cap, Dlg, UI, tapAt, interactables, nearest, enterBuilding, leaveRoom, sleepUntil, useObj, capMenu };
+  boot();
+})();

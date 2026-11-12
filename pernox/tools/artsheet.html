@@ -1,0 +1,22 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#2a2238">
+<canvas id=c width=900 height=700 style="image-rendering:pixelated;width:1800px;height:1400px"></canvas>
+<script src="../js/core/util.js"></script><script src="../js/core/calendar.js"></script>
+<script src="../js/engine/gfx.js"></script><script src="../js/data/furniture.js"></script>
+<script src="../js/engine/objects.js"></script><script src="../js/engine/sprites.js"></script><script src="../js/data/maps.js"></script>
+<script>
+const c=document.getElementById('c'),g=c.getContext('2d');g.imageSmoothingEnabled=false;
+let x=20,y=40,rowH=0;
+const ids=Object.keys(PX.FURN);
+for(const id of ids){const s=PX.O.furniture(id,0,'spring');if(x+s.c.width>880){x=20;y+=rowH+6;rowH=0}
+g.drawImage(s.c,x,y);x+=s.c.width+4;rowH=Math.max(rowH,s.c.height)}
+y+=rowH+10;x=20;
+for(let r=0;r<4;r++){for(const id of ['sofa','bed','desk','kitchen','chair','briefing']){const s=PX.O.furniture(id,r,'autumn');g.drawImage(s.c,x,y);x+=s.c.width+4}}
+y+=70;x=20;
+const cap={big:1,skin:'#e9b48c',hair:'slick',hairColor:'#1f1b26',eye:'#1d1820',top:'#3d4a33',bottom:'#4a5240',shoe:'#2a241e',sleeve:'none',scar:1,brows:'#1f1b26'};
+const pl={skin:'#fde3cf',hair:'bob',hairColor:'#6b4430',eye:'#6b3d22',top:'#f4efe4',bottom:'#3a3f4a',shoe:'#5a3f2a',sleeve:'long',coat:'#ffffff'};
+const poses=['idle','walk','sit','wave','hug','hold','pat','work','workout','bend','surprise','lie'];
+for(const a of [cap,pl]){for(const v of ['F','B'])for(const p of poses){for(const f of [0,1]){const s=PX.S.frame(a,p,f,v,p==='idle'?'smirk':'normal');g.drawImage(s.c,x,y);x+=s.c.width-6;}}x=20;y+=64}
+for(const f of ['normal','smile','smirk','sad','surprise','blush','angry']){const s=PX.S.frame(cap,'idle',0,'F',f);g.drawImage(s.c,x,y);x+=40;const t=PX.S.frame(pl,'idle',0,'F',f);g.drawImage(t.c,x,y+10);x+=34}
+const b=PX.MAPS.base.buildings[0];const sb=PX.O.building(b,'spring',false);g.drawImage(sb.c,20,y+60);const sn=PX.O.building(PX.MAPS.base.buildings[5],'spring',true);g.drawImage(sn.c,480,y+60);
+window.done=1;
+</script>
