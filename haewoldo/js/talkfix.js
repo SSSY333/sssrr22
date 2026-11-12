@@ -87,3 +87,41 @@ requestFollow = async function () {
   return _requestFollowTalkFix();
 };
 function dutyWalkEndLines() { return pickFresh(dw('end')); }
+/* 같이 걷다 헤어진 직후엔 형사님이 다시 와서 같이 걷자고 하지 않음 (두 시간쯤) */
+const _endCompanionTalkFix = endCompanion;
+endCompanion = function (silent) { if (S) S.rel.daily.compEndAt = S.day * 1440 + S.min; return _endCompanionTalkFix(silent); };
+const justParted = (gap = 120) => S && S.rel.daily.compEndAt != null && (S.day * 1440 + S.min) - S.rel.daily.compEndAt < gap;
+const _surpriseTickTalkFix = surpriseTick;
+surpriseTick = function () { if (justParted()) return false; return _surpriseTickTalkFix(); };
+const _detApproachTalkFix = detApproach;
+detApproach = async function () {
+  if (!justParted(180)) return _detApproachTalkFix();
+  // 인사만 하고 같이 걷자고는 하지 않음
+  const d = G.det, P = G.player; scriptDet(); d.lookAt(P); P.lookAt(d);
+  await say('det', 'smile', pickFresh(casualOn() ? ['아까 잘 들어갔어?', '또 봤네.', '오늘 자주 보네.'] : ['아까 잘 들어가셨어요?', '또 봤네요.', '오늘 자주 마주치네요.']));
+};
+/* 인사 늘리기 — 단계 · 시간마다 여러 가지 (존댓말로 쓰면 말 놓은 뒤엔 자동 반말) */
+const GREET_ADD = {
+  morning: {
+    1: ['좋은 아침이에요. 일찍 나오셨네요.', '안녕하세요. 아침 공기 좋죠?'],
+    2: ['좋은 아침이에요. 잘 잤어요?', '아침부터 보니까 좋네요.', '출근길이에요? 조심히 가요.'],
+    3: ['잘 잤어요? 얼굴 좋아 보여요.', '아침에 보니까 하루가 잘 풀릴 것 같네요.', '오늘도 일찍 나왔네요.'],
+    4: ['아침부터 보니까 기분 좋다.', '잘 잤어요? 저는 일찍 깼어요.', '오늘 하루도 잘 보내요.'],
+    5: ['잘 잤어요? 보고 싶었어요.', '아침부터 얼굴 보니까 좋다.', '오늘 저녁에 시간 비워 둬요.'],
+  },
+  day: {
+    1: ['안녕하세요. 오늘 날씨 괜찮네요.', '또 뵙네요. 섬 구경은 좀 했어요?'],
+    2: ['안녕하세요! 오늘 하루 어때요?', '또 만났네요. 바빠요?', '오늘도 수고 많아요.'],
+    3: ['또 만났네요. 반가워요.', '어디 가는 길이에요?', '오늘 하루 잘 보내고 있어요?'],
+    4: ['찾았다. 어디 가요?', '오늘 하루 어땠어요? 아직 반나절이지만.', '마침 생각하고 있었어요.'],
+    5: ['보고 싶었어요.', '오늘 많이 바빴어요?', '잠깐 얼굴 보러 왔어요.'],
+  },
+  evening: {
+    1: ['오늘 하루 수고 많았어요.', '해가 지네요. 조심히 들어가요.'],
+    2: ['오늘 하루 어땠어요?', '수고 많았어요. 저도 이제 퇴근이에요.', '저녁은 먹었어요?'],
+    3: ['오늘 하루 어땠어요?', '저녁 먹었어요? 아직이면 같이 먹어요.', '수고했어요. 오늘도.'],
+    4: ['오늘 하루 어땠어요? 다 들을게요.', '수고 많았어요. 보고 싶었어요.', '하루 끝에 보니까 좋다.'],
+    5: ['오늘 하루 고생했어요. 이리 와요.', '저녁 같이 먹어요.', '보고 싶어서 일찍 나왔어요.'],
+  },
+};
+for (const [tod, by] of Object.entries(GREET_ADD)) for (const [st, arr] of Object.entries(by)) { const T = GREETS[tod] = GREETS[tod] || {}; T[st] = [...(T[st] || []), ...arr]; if (+st === 5 && T[6] && T[6] !== T[5]) T[6] = [...T[6], ...arr]; }

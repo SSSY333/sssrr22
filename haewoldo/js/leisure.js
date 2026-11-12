@@ -572,7 +572,7 @@ autoUpdate = function (dt) {
   const A = G.detAuto, d = G.det;
   if (!A || A.kind !== 'rest') return _autoUpdateL(dt);
   A.t += dt;
-  if (A.phase === 'go') { if (Math.hypot(d.x - A.target[0], d.y - A.target[1]) < 0.5 || (!d.path.length && A.t > 2)) { d.sitAt(A.b, A.i); A.phase = 'sit'; A.t = 0; d.say(pick(['아이고, 오늘은 좀 피곤하다.', '바람 시원하네.', '잠깐만 쉬었다 가자.']), 3); } else if (!d.path.length) d.walkTo(...A.target); if (A.t > 25) endAuto(); return; }
+  if (A.phase === 'go') { if (Math.hypot(d.x - A.target[0], d.y - A.target[1]) < 0.5 || (!d.path.length && A.t > 2)) { d.sitAt(A.b, A.i); A.phase = 'sit'; A.t = 0; d.say(pick(['[[오늘은 좀 피곤하네요.||아이고, 오늘은 좀 피곤하다.]]', '[[바람 시원하네요.||바람 시원하네.]]', '[[잠깐만 쉬었다 갈게요.||잠깐만 쉬었다 가자.]]']), 3); } else if (!d.path.length) d.walkTo(...A.target); if (A.t > 25) endAuto(); return; }
   if (A.t > 24) { d.standUp(); endAuto(); }
 };
 const _endAutoL = endAuto;

@@ -113,7 +113,7 @@ async function sevScene(id) {
     if (!S.comp) await say('narr', '', '어느새 형사님이 옆에 와 서 있었다.');
     await say('det', b === 'high' ? 'blush' : b === 'mid' ? 'smile' : 'surprise', E.det[b]);
     const c = await choose(b === 'low' ? ['같이 보길 잘했어요', '(조용히 고개를 끄덕인다)'] : ['나도 같은 생각 했어', '(살짝 기댄다)']);
-    if (c === 1 && b !== 'low') { burst(d, 'heart', 6); await say('det', 'blush', '…이대로 조금만 더 있자.'); }
+    if (c === 1 && b !== 'low') { burst(d, 'heart', 6); await say('det', 'blush', '[[…이대로 조금만 더 있어요.||…이대로 조금만 더 있자.]]'); }
     burst(d, 'heart', 4); addAff(b === 'low' ? 4 : 6, { event: true });
   } else { await say('narr', '', '…혼자 보기 아까운 풍경이다. 누군가와 함께였다면.'); }
   let rw = ''; if (E.reward) rw = E.reward();

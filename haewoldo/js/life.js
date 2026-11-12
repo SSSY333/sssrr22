@@ -112,7 +112,7 @@ function tentCoupleMenu() {
 async function tentAct(id, vis) {
   if (id === 'morning') {
     if (S.min < 20 * 60) { toast('밤이 깊어지면 함께 아침을 맞을 수 있어요 (20시 이후)'); return; }
-    await runEvent(async () => { await say('det', 'smile', '오늘은 여기서 자고 가자. 별 보면서 잠들고, 해 보면서 깨는 거야.'); });
+    await runEvent(async () => { await say('det', 'smile', '[[오늘은 여기서 자고 가요. 별 보면서 잠들고, 해 보면서 깨는 거예요.||오늘은 여기서 자고 가자. 별 보면서 잠들고, 해 보면서 깨는 거야.]]'); });
     G._tentMorning = M.id; await endDay(false);
     return;
   }
@@ -202,7 +202,7 @@ async function bbqCouple() {
     d.sitAt('bbq', seats[1]); P.prop = 'meat'; d.prop = 'meat'; G.bbqOn = false;
     await say('det', 'laugh', c ? '아이고, 뜨거워. 천천히 먹어.' : '뜨거우니까 천천히 드세요.');
     if (ev === 'best') await say('det', 'blush', c ? '제일 맛있는 부위는 네 거. 원래 굽는 사람 마음이야.' : '제일 맛있는 부위는 드릴게요. 굽는 사람 마음이에요.');
-    if (ev === 'ssam') { await say('det', 'blush', '쌈 싸 줄게. 아~ 해 봐.'); burst(d, 'heart', 5); const k = await choose(['(받아먹는다)', '나도 싸 줄게!']); await say('det', 'laugh', k === 0 ? '어때, 내가 싸 준 게 제일 맛있지?' : '…와, 이거 진짜 맛있다. 네가 싸 줘서 그런가.'); }
+    if (ev === 'ssam') { await say('det', 'blush', '[[쌈 싸 드릴게요. 아~ 해 봐요.||쌈 싸 줄게. 아~ 해 봐.]]'); burst(d, 'heart', 5); const k = await choose(['(받아먹는다)', '나도 싸 줄게!']); await say('det', 'laugh', k === 0 ? '어때, 내가 싸 준 게 제일 맛있지?' : '…와, 이거 진짜 맛있다. 네가 싸 줘서 그런가.'); }
     if (ev === 'tease') { await say('det', 'tease', '고기 한 점에 뽀뽀 한 번. 거래할래? 하하, 농담이야.'); }
     if (ev === 'stars' && isNight()) await say('det', 'smile', c ? '별 봐. 고기 먹으면서 별 보는 거, 이거 최고 사치다.' : '별 좀 보세요. 고기 먹으면서 별 보는 거, 최고의 사치네요.');
     await say('det', 'smile', pick(BBQ_LINES.slice(2)));
@@ -437,7 +437,7 @@ Object.assign(PLACE_ACTS, {
   ],
   playground: [
     { icon: '🧒', label: '아이들과 이야기', cond: () => G.villagers.some(v => v.look.kid && v.visible && dist(v, G.player) < 9), ui: true, run: async () => { const k = G.villagers.filter(v => v.look.kid && v.visible && v.map === G.player.map).sort((a, b) => dist(a, G.player) - dist(b, G.player))[0]; if (!k) { toast('지금은 놀이터에 아이들이 없어요'); return; } approach(k); } },
-    { icon: '😜', label: '형사님과 장난치기', cond: () => detNearby(6) && S.rel.stage >= 3, run: async () => { const d = G.det; d.emo('😆', 2); await say('det', 'laugh', pick(['잡아 봐라~! …아이고, 숨차. 나이는 못 속인다.', '야, 미끄럼틀 누가 빨리 내려오나 내기하자. 지면 아이스크림!', '그네 타는 너 밀어줄게. 하나, 둘— 하하, 세게는 안 밀었어.'])); addAff(1); } },
+    { icon: '😜', label: '형사님과 장난치기', cond: () => detNearby(6) && S.rel.stage >= 3, run: async () => { const d = G.det; d.emo('😆', 2); await say('det', 'laugh', pick(['[[잡아 봐요~! …아이고, 숨차요. 나이는 못 속이네요.||잡아 봐라~! …아이고, 숨차. 나이는 못 속인다.]]', '[[미끄럼틀 누가 빨리 내려오나 내기해요. 지면 아이스크림!||미끄럼틀 누가 빨리 내려오나 내기하자. 지면 아이스크림!]]', '[[그네 밀어 줄게요. 하나, 둘— 세게는 안 밀었어요.||그네 타는 너 밀어줄게. 하나, 둘— 세게는 안 밀었어.]]'])); addAff(1); } },
   ],
   rocks: [
     { icon: '🧰', label: '낚시 용품 구경', run: async () => { await say('narr', '', '만복 아저씨의 도구 상자에는 찌, 바늘, 그리고 왜인지 사탕이 한가득 들어 있다.'); } },
