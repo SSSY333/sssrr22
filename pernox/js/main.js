@@ -84,6 +84,7 @@
 
   // ---------- 맵 이동 ----------
   function enterMap(id, x, y, silent) {
+    if (id !== 'mask' && PX.Ruby) PX.Ruby.unmask();
     Game.prevMap = Game.mapId;
     Game.mapId = id;
     const p = Game.player;
@@ -113,6 +114,8 @@
   function enterBuilding(door) {
     const S = St.S;
     if (door.closed) { UI.toast(door.closedMsg || `🚧 ${door.name} — 아직 문을 열지 않았어요`); return; }
+    const hrs = door.bld && door.bld.b.hours;
+    if (hrs) { const t = S.time.min, a = Cal.toMin(hrs[0]), b = Cal.toMin(hrs[1]); const open = a < b ? t >= a && t < b : t >= a || t < b; if (!open) { UI.toast(`🌙 ${door.name} — 영업시간 ${hrs[0]}~${hrs[1]}`); return; } }
     const to = door.to;
     if (to === 'q_captain') {
       const capIn = Game.cap.map === 'q_captain';
@@ -556,7 +559,7 @@
     }
     if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
-    for (const c of Game.critters || []) if (!c.hidden) list.push({ type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
+    for (const c of Game.critters || []) if (!c.hidden) list.push(c.extra ? { type: 'extra', a: c, x: c.x, y: c.y, label: `💬 ${c.name}`, fn: () => PX.Ruby.talk(c) } : { type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });
     if (Game.cap.map === Game.mapId) list.push({ type: 'cap', a: Game.cap, x: Game.cap.x, y: Game.cap.y, label: `💗 ${St.S.capName}`, fn: capMenu });
     return list;

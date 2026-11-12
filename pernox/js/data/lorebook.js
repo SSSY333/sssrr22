@@ -8,7 +8,7 @@
   const MIL = '군 소속 또는 출입 허가증';
   const L = [];
   // Alpha 0.2: 돔시티 중앙광장·상업구역에서 실제로 체험 가능한 항목
-  const MAPPED = ['LB02', 'LB04', 'LB05', 'LB09', 'LB11', 'LB12', 'LB13', 'LB58', 'LB59', 'LB66', 'LB67', 'LB68', 'LB75'];
+  const MAPPED = ['LB02', 'LB04', 'LB05', 'LB09', 'LB11', 'LB12', 'LB13', 'LB58', 'LB59', 'LB66', 'LB67', 'LB68', 'LB75', 'LB76', 'LB77', 'LB83', 'LB84', 'LB85', 'LB86', 'LB87', 'LB88', 'LB89'];
   // o: {kw, desc, loc, type, rule, t:[start,end], peak:[months], acc, act:[], cap, rew:[], wd:[]}
   function add(id, title, o) {
     const months = o.rule.months || ALL;

@@ -34,6 +34,8 @@
   it('hotpack', { name: '핫팩', price: 6, capLike: -1, icon: '🔥', desc: '추위 타는 사람용. 대위에겐… 글쎄.' });
   it('patch', { name: '수제 부대 패치', price: 25, capLike: 1, icon: '🎖️', desc: '606 마크를 수놓은 패치.' });
   it('book', { name: '페르녹스 생태도감 (보급판)', price: 30, capLike: 0, icon: '📗', desc: '외계 생물 그림이 가득하다.' });
+  it('rubyrose', { name: '루비 장미', price: 8, capLike: 1, icon: '🌹', desc: '루비웨이 노점의 붉은 장미 한 송이.' });
+  it('rosebunch', { name: '루비 장미 다발', price: 30, capLike: 1, icon: '💐', desc: '네온 아래서 더 붉게 보이는 장미 다발.' });
   it('perfume', { name: '향열매 향수', price: 55, capLike: 1, icon: '🧴', desc: '은은하고 시원한 향.' });
   it('pass', { name: '606부대 출입 허가증', cat: 'key', price: 0, icon: '🪪', desc: '민간인이 부대 시설에 들어갈 때 필요하다.' });
   it('capStone', { name: '대위가 주운 이상한 돌', cat: 'gift', price: 0, capLike: 0, icon: '🪨', desc: '"네가 좋아할 것 같아서." 반짝이는 줄무늬가 있다.', noGift: true });

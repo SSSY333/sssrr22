@@ -188,6 +188,8 @@ PX.S = (() => {
       const sc = '#c8746a';
       for (let i = 0; i < 5; i++) R(hx + 5 + i, ey + 2 + Math.floor(i / 2), 1, 1, '#f0c3ae');
     }
+    // 실버마스크 가면 (눈가만 덮음)
+    if (app.mask) { R(eL - 2, ey - 2, eR - eL + 6, 4, app.mask); R(eL - 3, ey - 1, 1, 2, app.mask); R(eR + 4, ey - 1, 1, 2, app.mask); R(eL, ey - 1, 2, 2, '#1d1420'); R(eR, ey - 1, 2, 2, '#1d1420'); R(eL - 1, ey - 2, eR - eL + 4, 1, shade(app.mask, 0.25)); }
   }
 
   function backHair(R, app, hx, hy, hw, hh, col, B) {

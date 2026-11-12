@@ -436,10 +436,12 @@ PX.Act = (() => {
       a.box = c; a.nextMove = performance.now() + Math.random() * 3000;
       g.critters.push(a);
     }
+    if (PX.Ruby) PX.Ruby.spawn(m, g);
   }
   function critterThink() {
     const g = G(), now = performance.now(), m = W.maps[g.mapId];
     for (const a of g.critters || []) {
+      if (a.extra) { PX.Ruby.think(a, m, g, now); continue; }
       if (now < a.nextMove || a.path.length) continue;
       a.nextMove = now + 2500 + Math.random() * 4000;
       const c = a.box, x = c.x0 + Math.floor(Math.random() * (c.x1 - c.x0)), y = c.y0 + Math.floor(Math.random() * (c.y1 - c.y0));
@@ -452,6 +454,7 @@ PX.Act = (() => {
     if (o.use === 'shuttle') return travelMenu();
     if (o.use === 'event') return eventBooth();
     if (o.use === 'shop' && G().mapId === 'inn') return innDesk();
+    if (PX.Ruby && PX.Ruby.H[o.use]) { await PX.Ruby.H[o.use](o); return true; }
     if (H[o.use]) { await H[o.use](o); return true; }
     return false;
   }

@@ -82,18 +82,23 @@
   // ================= 루비웨이 (성인 · 직접 선택) =================
   const ruby = out('rubyway', { name: '루비웨이', w: 36, h: 28, fill: 'neonfloor', arrive: [18, 24], adult: true, amb: 0.4, tint: ['#ff6bd5', 0.08], travel: [{ to: 'plaza', label: '🚶 중앙광장', mins: 10 }] });
   ruby.buildings = [
-    { id: 'r_perfume', name: '퍼퓸덴', to: 'perfume', x: 3, y: 3, w: 7, d: 6, h: 38, wall: '#4a2f4a', roof: '#2a1f2a', stripe: '#ff9ed2', icon: 'drop', door: { f: 'R', u: 2 }, awning: '#ff9ed2' },
-    { id: 'r_dice', name: '다이스키스', to: 'dice', x: 3, y: 12, w: 7, d: 6, h: 40, wall: '#2a2f4a', roof: '#1a1f2a', stripe: '#ffd166', icon: 'star', door: { f: 'R', u: 2 } },
-    { id: 'r_mask', name: '실버마스크', to: 'mask', x: 3, y: 20, w: 7, d: 5, h: 40, wall: '#3a3f4a', roof: '#c9ccd6', stripe: '#c9ccd6', icon: 'star', door: { f: 'R', u: 2 } },
-    { id: 'r_midnight', name: '미드나잇 룸', to: 'midnight', x: 25, y: 3, w: 8, d: 6, h: 42, wall: '#2a1f3f', roof: '#1a1428', stripe: '#9b5fd0', icon: 'heart', door: { f: 'L', u: 3 } },
+    { id: 'r_perfume', name: '퍼퓸덴', to: 'perfume', x: 3, y: 3, w: 7, d: 6, h: 38, wall: '#4a2f4a', roof: '#2a1f2a', stripe: '#ff9ed2', icon: 'drop', door: { f: 'R', u: 2 }, awning: '#ff9ed2', hours: ['14:00', '02:00'] },
+    { id: 'r_dice', name: '다이스키스', to: 'dice', x: 3, y: 12, w: 7, d: 6, h: 40, wall: '#2a2f4a', roof: '#1a1f2a', stripe: '#ffd166', icon: 'star', door: { f: 'R', u: 2 }, awning: '#ffd166', hours: ['18:00', '05:00'] },
+    { id: 'r_mask', name: '실버마스크', to: 'mask', x: 3, y: 20, w: 7, d: 5, h: 40, wall: '#3a3f4a', roof: '#c9ccd6', stripe: '#c9ccd6', icon: 'star', door: { f: 'R', u: 2 }, hours: ['18:00', '05:00'] },
+    { id: 'r_midnight', name: '미드나잇 룸', to: 'midnight', x: 25, y: 3, w: 8, d: 6, h: 42, wall: '#2a1f3f', roof: '#1a1428', stripe: '#9b5fd0', icon: 'heart', door: { f: 'L', u: 3 }, hours: ['18:00', '05:00'] },
     { id: 'r_inn', name: '돔시티 은밀숙소', to: 'inn', x: 25, y: 12, w: 8, d: 6, h: 56, wall: '#5a2f3f', roof: '#3a1f2a', stripe: '#ff6b8b', icon: 'bed', door: { f: 'L', u: 3 } },
-    { id: 'r_show', name: '블라인드 쇼룸', to: 'showroom', x: 13, y: 3, w: 8, d: 5, h: 40, wall: '#3a2a4a', roof: '#2a1f3a', stripe: '#ff8bea', icon: 'star', door: { f: 'L', u: 3 } },
-    { id: 'r_pub', name: '술집 골목', to: 'pub', x: 25, y: 20, w: 8, d: 5, h: 40, wall: '#4a3a30', roof: '#2a2020', stripe: '#ffb070', icon: 'cup', door: { f: 'L', u: 3 } },
-    { id: 'r_shower', name: '새벽 샤워실', to: 'dawnshower', x: 13, y: 11, w: 6, d: 5, h: 34, wall: '#3f5a6a', roof: '#2a3f4a', stripe: '#7fe3ff', icon: 'drop', door: { f: 'L', u: 2 } },
+    { id: 'r_show', name: '블라인드 쇼룸', to: 'showroom', x: 13, y: 3, w: 8, d: 5, h: 40, wall: '#3a2a4a', roof: '#2a1f3a', stripe: '#ff8bea', icon: 'star', door: { f: 'L', u: 3 }, hours: ['19:00', '02:00'] },
+    { id: 'r_pub', name: '술집 골목', to: 'pub', x: 25, y: 20, w: 8, d: 5, h: 40, wall: '#4a3a30', roof: '#2a2020', stripe: '#ffb070', icon: 'cup', door: { f: 'L', u: 3 }, awning: '#ffb070', hours: ['18:00', '03:00'] },
+    { id: 'r_shower', name: '새벽 샤워실', to: 'dawnshower', x: 13, y: 11, w: 6, d: 5, h: 34, wall: '#3f5a6a', roof: '#2a3f4a', stripe: '#7fe3ff', icon: 'drop', door: { f: 'L', u: 2 }, hours: ['02:00', '08:00'] },
   ];
   for (const [x, y] of [[12, 10], [22, 10], [12, 18], [22, 18]]) ruby.decor.push(['neonsign', x, y, 0]);
   for (let y = 4; y <= 24; y += 5) ruby.decor.push(['lantern', 11, y, 0], ['lantern', 23, y, 0]);
-  ruby.decor.push(['benchout', 15, 20, 0]);
+  ruby.zones = [{ t: 'darktile', x0: 11, y0: 1, x1: 23, y1: 27 }, { t: 'mosaic', x0: 13, y0: 17, x1: 21, y1: 25 }, { t: 'darktile', x0: 10, y0: 4, x1: 10, y1: 23 }, { t: 'darktile', x0: 24, y0: 8, x1: 24, y1: 26 }];
+  ruby.decor.push(['benchout', 15, 20, 0], ['benchout', 19, 17, 0], ['neonarch', 15, 26, 0], ['rubystatue', 20, 13, 0], ['rosecart', 12, 22, 0], ['cocktailcart', 21, 21, 0], ['fortune', 22, 15, 0], ['photobooth', 12, 15, 0], ['amp', 17, 19, 0],
+    ['neontree', 12, 5, 0], ['neontree', 21, 5, 0], ['hoload', 10, 10, 0], ['hoload', 24, 10, 0], ['velvetrope', 14, 9, 0], ['velvetrope', 18, 9, 0], ['vending', 24, 26, 0], ['planter', 13, 24, 0], ['planter', 20, 24, 0]);
+  // 거리 사람들: 밤에 붐비고 낮엔 한산 · 헌병 순찰(LB76) · 노점 주인 · 버스커
+  ruby.crowd = [{ role: 'walker', n: 7, day: 2, x0: 11, y0: 8, x1: 23, y1: 26 }, { role: 'mp', n: 1, nightOnly: true, x0: 11, y0: 2, x1: 24, y1: 26 },
+    { role: 'rosevendor', fixed: [14.5, 22.5, 3] }, { role: 'cocktailer', fixed: [21.5, 20.4, 0], nightOnly: true }, { role: 'busker', fixed: [18.5, 19.5, 0], nightOnly: true }];
 
   // ================= 우주항구 · 궤도정거장 =================
   const port = out('port', { name: '페르녹스 우주항구', w: 44, h: 34, fill: 'concrete', dome: false, edge: 'rock', arrive: [22, 30], lore: 'LB51', travel: [{ to: 'plaza', label: '🚌 돔시티 중앙광장', mins: 20 }, { to: 'bridge', label: '🚶 빛먼지 산책교', mins: 10 }] });
@@ -182,18 +187,22 @@
     furn: [['crystalcluster', 1, 0, 0], ['crystalcluster', 4, 1, 0], ['crystalcluster', 9, 0, 0], ['crystalcluster', 12, 2, 0], ['crystalcluster', 0, 5, 0], ['crystalcluster', 11, 6, 0], ['rock', 3, 5, 0], ['rockbig', 6, 3, 0], ['debris', 8, 7, 0]],
     walls: [], critters: [{ kind: 'drifter', x0: 2, y0: 2, x1: 12, y1: 8, n: 2 }] });
   room('pub', { name: '술집 골목', w: 13, h: 9, floor: 'darkwood', wall: '#4a3a30', exit: 6, amb: 0.3, date: true, adult: true,
-    furn: [['barcounter', 2, 1, 0], ['barcounter', 5, 1, 0], ['stool', 2, 2, 0], ['stool', 3, 2, 0], ['stool', 5, 2, 0], ['stool', 6, 2, 0], ['cafetable', 9, 4, 0], ['chair', 8, 4, 3], ['chair', 10, 4, 1], ['cafetable', 2, 6, 0], ['chair', 1, 6, 3], ['chair', 3, 6, 1], ['@', 3, 0, 0, 'pub.boss', 'stand'], ['bigplant', 12, 8, 0]],
-    walls: [['B', 9.0, 'menu', 1.4], ['L', 4.4, 'poster', 0.7]] });
-  room('perfume', { name: '퍼퓸덴', w: 11, h: 8, floor: 'mosaic', wall: '#4a2f4a', exit: 5, date: true, adult: true,
-    furn: [['perfumebar', 3, 1, 0], ['shelf', 0, 0, 0], ['shelf', 8, 0, 0], ['sofa', 0, 4, 3], ['glassvase', 10, 4, 0], ['plant', 10, 7, 0]], walls: [['B', 2.8, 'mirrorw', 1.6]] });
-  room('dice', { name: '다이스키스', w: 12, h: 9, floor: 'neonfloor', wall: '#2a2f4a', exit: 6, date: true, adult: true,
-    furn: [['dicetable', 2, 3, 0], ['chair', 1, 3, 3], ['chair', 4, 4, 1], ['dicetable', 8, 3, 0], ['chair', 7, 3, 3], ['chair', 10, 4, 1], ['barcounter', 4, 0, 0], ['arcade', 0, 0, 0], ['arcade', 11, 0, 0]], walls: [['B', 2.0, 'poster', 0.7], ['B', 8.6, 'poster', 0.7]] });
-  room('mask', { name: '실버마스크', w: 13, h: 10, floor: 'neonfloor', wall: '#3a3f4a', exit: 6, amb: 0.35, date: true, adult: true,
-    furn: [['dancefloor', 5, 3, 0], ['barcounter', 0, 1, 3], ['sofa', 10, 0, 0], ['sofa', 12, 4, 1], ['cafetable', 10, 2, 0], ['lamp', 0, 8, 0]], walls: [['B', 3.0, 'mirrorw', 2.0]] });
-  room('midnight', { name: '미드나잇 룸', w: 11, h: 8, floor: 'carpet', wall: '#2a1f3f', exit: 5, amb: 0.4, date: true, adult: true,
-    furn: [['sofa', 1, 0, 0], ['sofa', 3, 0, 0], ['sofa', 0, 2, 3], ['cafetable', 2, 2, 0], ['tv', 7, 0, 0], ['lamp', 10, 0, 0], ['sidetable', 0, 4, 0]], walls: [['B', 5.6, 'screen', 1.2]] });
+    furn: [['barcounter', 2, 1, 0], ['barcounter', 5, 1, 0], ['stool', 2, 2, 0], ['stool', 3, 2, 0], ['stool', 5, 2, 0], ['stool', 6, 2, 0], ['cafetable', 9, 4, 0], ['chair', 8, 4, 3], ['chair', 10, 4, 1], ['cafetable', 2, 6, 0], ['chair', 1, 6, 3], ['chair', 3, 6, 1], ['dartboard', 12, 1, 0], ['jukebox', 0, 0, 0], ['bigplant', 12, 8, 0], ['lamp', 9, 0, 0]],
+    walls: [['B', 9.6, 'poster', 0.7], ['L', 3.0, 'window', 1.2]], crowd: [{ role: 'pubboss', fixed: [3.5, 0.5, 0] }, { role: 'patron', n: 3, x0: 1, y0: 3, x1: 11, y1: 7 }, { role: 'mp', n: 1, nightOnly: true, x0: 4, y0: 4, x1: 9, y1: 7 }] });
+  room('perfume', { name: '퍼퓸덴', w: 11, h: 8, floor: 'mosaic', wall: '#4a2f4a', exit: 5, date: true, adult: true, amb: 0.2,
+    furn: [['perfumebar', 3, 1, 0], ['scentshelf', 0, 0, 0], ['scentshelf', 8, 0, 0], ['sofa', 0, 4, 3], ['cafetable', 1, 4, 0], ['diffuser', 9, 3, 0], ['glassvase', 10, 5, 0], ['plant', 10, 7, 0], ['moodlamp', 0, 7, 0], ['candles', 6, 0, 0]],
+    walls: [['B', 2.8, 'mirrorw', 1.6], ['L', 1.0, 'window', 1.2]], crowd: [{ role: 'perfumer', fixed: [4.5, 0.5, 0] }, { role: 'guest', n: 1, x0: 5, y0: 3, x1: 9, y1: 6 }] });
+  room('dice', { name: '다이스키스', w: 12, h: 9, floor: 'neonfloor', wall: '#2a2f4a', exit: 6, date: true, adult: true, amb: 0.35,
+    furn: [['dicetable', 1, 3, 0], ['chair', 0, 3, 3], ['chair', 3, 4, 1], ['cardtable', 8, 3, 0], ['chair', 7, 3, 3], ['chair', 10, 4, 1], ['barcounter', 4, 1, 0], ['arcade', 0, 0, 0], ['arcade', 11, 0, 0], ['velvetrope', 4, 7, 0], ['velvetrope', 8, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 11, 8, 0]],
+    walls: [['B', 2.0, 'poster', 0.7], ['B', 8.6, 'poster', 0.7]], crowd: [{ role: 'dealer', fixed: [5.5, 0.5, 0] }, { role: 'gamer', n: 2, x0: 1, y0: 5, x1: 10, y1: 7 }] });
+  room('mask', { name: '실버마스크', w: 13, h: 10, floor: 'neonfloor', wall: '#3a3f4a', exit: 6, amb: 0.4, date: true, adult: true,
+    furn: [['dancefloor', 5, 3, 0], ['barcounter', 1, 1, 0], ['sofa', 9, 0, 0], ['sofa', 12, 4, 1], ['cafetable', 10, 2, 0], ['jukebox', 12, 0, 0], ['maskrack', 11, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 0, 4, 0], ['velvetrope', 3, 7, 0], ['velvetrope', 9, 7, 0]],
+    walls: [['B', 5.0, 'mirrorw', 2.0], ['L', 2.0, 'mirrorw', 1.4]], crowd: [{ role: 'bartender', fixed: [2.5, 0.5, 0] }, { role: 'maskhost', fixed: [10.5, 7.5, 2] }, { role: 'dancer', n: 3, x0: 4, y0: 2, x1: 8, y1: 6 }] });
+  room('midnight', { name: '미드나잇 룸', w: 11, h: 8, floor: 'carpet', wall: '#2a1f3f', exit: 5, amb: 0.45, date: true, adult: true,
+    furn: [['sofa', 1, 0, 0], ['sofa', 3, 0, 0], ['sofa', 0, 2, 3], ['cafetable', 2, 2, 0], ['rug', 2, 3, 0], ['jukebox', 7, 0, 0], ['diffuser', 9, 0, 0], ['moodlamp', 10, 0, 0], ['sidetable', 0, 4, 0], ['candles', 3, 2, 0], ['bigplant', 10, 4, 0]],
+    walls: [['B', 5.6, 'screen', 1.2], ['L', 1.0, 'window', 1.2]], crowd: [{ role: 'host', fixed: [7.5, 6.5, 2] }] });
   room('inn', { name: '은밀숙소 로비', w: 11, h: 8, floor: 'carpet', wall: '#5a2f3f', exit: 5, amb: 0.25, adult: true,
-    furn: [['shopcounter', 4, 1, 0, 'inn.desk'], ['@', 4, 0, 0, 'inn.clerk', 'stand'], ['sofa', 0, 4, 3], ['bigplant', 10, 0, 0], ['lamp', 0, 0, 0], ['mirror', 10, 4, 1]], walls: [['B', 7.0, 'board', 1.2]] });
+    furn: [['shopcounter', 4, 1, 0, 'inn.desk'], ['sofa', 0, 4, 3], ['bigplant', 10, 0, 0], ['lamp', 0, 0, 0], ['mirror', 10, 4, 1]], walls: [['B', 7.0, 'board', 1.2]], crowd: [{ role: 'innclerk', fixed: [4.5, 0.5, 0] }] });
   // 은밀숙소 테마 객실: 로비 프런트에서 예약하면 올라감 (나가면 로비로)
   const INN = { w: 10, h: 8, exit: 5, adult: true, date: true, innRoom: true, exitTo: 'inn', amb: 0.3, parent: 'rubyway' };
   room('inn_mirror', Object.assign({}, INN, { name: '은밀숙소 · 거울 객실', floor: 'carpet', wall: '#3f2a4a',
@@ -205,10 +214,12 @@
   room('inn_water', Object.assign({}, INN, { name: '은밀숙소 · 물침대 객실', floor: 'neonfloor', wall: '#1f2a4a', stars: true,
     furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 9, 4, 1], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
     walls: [['B', 2.0, 'window', 1.4], ['B', 7.0, 'window', 1.4]] }));
-  room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.45, adult: true,
-    furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0]], walls: [] });
+  room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.5, adult: true,
+    furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0], ['velvetrope', 2, 4, 0], ['velvetrope', 9, 4, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 12, 0, 0]], walls: [],
+    crowd: [{ role: 'usher', fixed: [2.5, 8.5, 2] }, { role: 'audience', n: 2, x0: 2, y0: 5, x1: 10, y1: 7 }] });
   room('dawnshower', { name: '새벽 샤워실', w: 11, h: 8, floor: 'tile', wall: '#3f5a6a', exit: 5, adult: true,
-    furn: [['showerstall', 1, 0, 0], ['showerstall', 2, 0, 0], ['showerstall', 3, 0, 0], ['sink', 0, 2, 3], ['sink', 0, 3, 3], ['locker', 7, 0, 0], ['locker', 8, 0, 0], ['bench', 6, 4, 0], ['plant', 10, 7, 0]], walls: [['L', 1.4, 'mirrorw', 1.6]] });
+    furn: [['spastall', 1, 0, 0], ['spastall', 2, 0, 0], ['spastall', 3, 0, 0], ['sink', 0, 2, 3], ['sink', 0, 3, 3], ['locker', 7, 0, 0], ['locker', 8, 0, 0], ['reviewboard', 9, 0, 0], ['bench', 6, 4, 0], ['diffuser', 10, 4, 0], ['plant', 10, 7, 0]],
+    walls: [['L', 1.4, 'mirrorw', 1.6]], crowd: [{ role: 'attendant', fixed: [5.5, 1.5, 0] }, { role: 'early', n: 2, x0: 4, y0: 3, x1: 9, y1: 6 }] });
 
   // 기존 지역의 이동 목록
   M.dome.travel = [{ to: 'base', label: '🚌 606부대 정문 (30분)', mins: 30, need: 'pass' }, { to: 'lake', label: '🌳 인공호수 공원', mins: 20 }, { to: 'farm', label: '🌱 농업돔 체험장', mins: 25 }, { to: 'glasshouse', label: '🌸 유리꽃 온실', mins: 15 },

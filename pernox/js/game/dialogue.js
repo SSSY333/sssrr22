@@ -18,6 +18,7 @@ PX.Dlg = (() => {
     if (speaker === 'cap') app = PX.Game.cap.app;
     else if (speaker === 'player') app = PX.Game.player.app;
     else if (PX.NPC_BY_ID[speaker]) app = PX.NPC_BY_ID[speaker].look;
+    else if (PX.EXTRA && PX.EXTRA[speaker]) app = PX.EXTRA[speaker].look;
     portEl.style.visibility = app ? 'visible' : 'hidden';
     if (!app) return;
     const f = PX.S.get(app, 'idle', 0, 'F', face || 'normal');
@@ -32,7 +33,7 @@ PX.Dlg = (() => {
   function say(speaker, text, face) {
     return new Promise(res => {
       open = true; box.classList.remove('hidden'); chEl.innerHTML = ''; chEl.classList.add('hidden');
-      const nm = speaker === 'cap' ? St.S.capName : speaker === 'player' ? St.S.player.name : speaker === 'narr' ? '' : (PX.NPC_BY_ID[speaker] || { name: speaker }).name;
+      const nm = speaker === 'cap' ? St.S.capName : speaker === 'player' ? St.S.player.name : speaker === 'narr' ? '' : (PX.NPC_BY_ID[speaker] || (PX.EXTRA && PX.EXTRA[speaker]) || { name: speaker }).name;
       nameEl.textContent = nm; nameEl.style.display = nm ? '' : 'none';
       box.classList.toggle('narr', speaker === 'narr');
       box.classList.toggle('mine', speaker === 'player');
@@ -99,6 +100,8 @@ PX.Dlg = (() => {
         if (pick[2]) { const r = await runLines(pick[2]); res.aff += r.aff; res.tags.push(...r.tags); }
         continue;
       }
+      const xm = /^X:([a-z0-9_]+):(.*)$/.exec(ln);
+      if (xm) { await say(xm[1], U.fmt(xm[2], c)); continue; }
       const m = /^([CPN])([*^;!~]?):(.*)$/.exec(ln);
       if (!m) { await say('narr', U.fmt(ln, c)); continue; }
       const who = m[1] === 'C' ? (opt.speaker || 'cap') : m[1] === 'P' ? 'player' : 'narr';
