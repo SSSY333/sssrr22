@@ -102,7 +102,7 @@ PX.UI = (() => {
     g.fillStyle = '#ffe2a0'; for (let i = 0; i < 14; i++) g.fillRect(56 + (r() * 70 | 0), 236 + (r() * 12 | 0), 1, 2);
     // 두 사람 실루엣
     const cap = PX.NPC_BY_ID.cap.look;
-    const f1 = PX.S.get(cap, 'hold', 0, 'B', 'normal'), f2 = PX.S.get({ skin: PX.S.SKINS[0], hair: 'messybun', hairColor: '#2a2433', eye: '#6b3d22', top: '#e6e2ea', bottom: '#8a8794', sleeve: 'long', hood: 1 }, 'holdL', 0, 'B', 'normal');
+    const f1 = PX.S.get(cap, 'hold', 0, 'B', 'normal'), f2 = PX.S.get({ skin: PX.S.SKINS[0], hair: 'pony', hairColor: '#2a2433', eye: '#6b3d22', top: '#e6e2ea', bottom: '#8a8794', sleeve: 'long', hood: 1 }, 'holdL', 0, 'B', 'normal');
     g.drawImage(f1.c, 66, 222); g.drawImage(f2.c, 96, 234);
   }
 
@@ -110,7 +110,7 @@ PX.UI = (() => {
   function create(slot) {
     $('title').classList.add('hidden');
     const C = $('create'); C.classList.remove('hidden');
-    const f = { name: '', gender: '여성', skin: 0, hair: 'messybun', hairColor: '흑발', eye: '갈색', outfit: 'hoodie', job: 'medic', capName: '서무진', mode: 'normal', start: { y: 2027, m: 1, d: 1 } };
+    const f = { name: '', gender: '여성', skin: 0, hair: 'pony', hairColor: '흑발', eye: '갈색', outfit: 'hoodie', job: 'medic', capName: '서무진', mode: 'normal', start: { y: 2027, m: 1, d: 1 } };
     const body = $('createBody'); body.innerHTML = '';
     const row = (label, ...kids) => el('div', { class: 'row' }, el('label', null, label), el('div', { class: 'ctl' }, ...kids));
     const swatches = (list, key, colorOf) => { const w = el('div', { class: 'sw' }); list.forEach((v, i) => { const b = el('button', { class: 'swb', style: `background:${colorOf(v, i)}`, title: typeof v === 'string' ? v : '' }); b.onclick = () => { f[key] = typeof v === 'string' ? v : i; [...w.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); preview(); }; if ((typeof v === 'string' ? v : i) === f[key]) b.classList.add('on'); w.append(b); }); return w; };

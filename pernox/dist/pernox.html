@@ -1131,7 +1131,7 @@ PX.S = (() => {
   const SKINS = ['#fde3cf', '#f6cba6', '#e2a77c', '#b97a52', '#8a5438'];
   const HAIRC = { '흑발': '#2a2433', '갈색': '#6b4430', '밝은 갈색': '#a0703f', '금발': '#e3bf6c', '붉은색': '#b8543a', '분홍': '#e78ab0', '은발': '#c9ccd6', '푸른색': '#4a6fb8' };
   const EYEC = { '검정': '#2a2030', '갈색': '#6b3d22', '파랑': '#3b6fd0', '초록': '#3a9a5a', '회색': '#707a88', '호박색': '#c9862a', '보라': '#8a5ad0' };
-  const HAIRS = { messybun: '앞머리 올림머리', short: '짧은 머리', crew: '스포츠 머리', bob: '단발', long: '긴 머리', pony: '포니테일', bun: '올림머리', curly: '곱슬', wolf: '울프컷' };
+  const HAIRS = { pony: '포니테일', messybun: '앞머리 올림머리', short: '짧은 머리', crew: '스포츠 머리', bob: '단발', long: '긴 머리', bun: '올림머리', curly: '곱슬', wolf: '울프컷' };
   // 신체 비율
   const BODY = {
     n: { fw: 32, fh: 48, ax: 16, ay: 45, hw: 16, hh: 15, tw: 10, th: 8, aw: 2, lh: 8, lw: 4, gap: 2 },
@@ -1232,8 +1232,11 @@ PX.S = (() => {
     const hy = pose === 'lie' ? footY - hh - 6 : tTop - hh + 1 + (pose === 'bend' ? 2 : 0) + (pose === 'bump' ? 1 : 0);
     // 머리 뒤 머리카락 (긴 머리 등)
     if (view === 'F' && pose !== 'lie') backHair(R, app, hx, hy, hw, hh, hair, B);
-    R(hx + 1, hy, hw - 2, hh - 2, skin); R(hx, hy + 1, hw, hh - 4, skin); R(hx + 2, hy + hh - 2, hw - 4, 1, skin); R(hx + 3, hy + hh - 1, hw - 6, 1, skin);
-    R(hx + 1, hy + hh - 4, 1, 1, shade(skin, -0.08)); R(hx + hw - 2, hy + hh - 4, 1, 1, shade(skin, -0.08)); // 턱 음영
+    if (app.big) { // 대위: 갸름한 턱선
+      R(hx + 1, hy, hw - 2, hh - 2, skin); R(hx, hy + 1, hw, hh - 4, skin); R(hx + 2, hy + hh - 2, hw - 4, 1, skin); R(hx + 3, hy + hh - 1, hw - 6, 1, skin);
+    } else { // 동글동글한 얼굴
+      R(hx + 2, hy, hw - 4, hh, skin); R(hx + 1, hy + 1, hw - 2, hh - 2, skin); R(hx, hy + 3, hw, hh - 6, skin);
+    }
     R(hx - 1, hy + 8, 1, 3, skin); R(hx + hw, hy + 8, 1, 3, skin); // 귀
     if (view === 'F') faceDraw(R, app, hx, hy, hw, hh, pose === 'lie' ? 'sleep' : face, fr);
     hairDraw(R, app, hx, hy, hw, hh, hair, view, B);
@@ -1253,27 +1256,27 @@ PX.S = (() => {
       R(eL, ey - 1, 2, 3, eye); R(eR, ey - 1, 2, 3, eye); R(eL, ey - 1, 1, 1, '#fff'); R(eR, ey - 1, 1, 1, '#fff');
     } else if (face === 'angry') {
       R(eL, ey, 2, 2, eye); R(eR, ey, 2, 2, eye); R(eL - 1, ey - 2, 3, 1, eye); R(eR, ey - 2, 3, 1, eye);
-    } else if (app.eyeStyle === 'sharp') { // 길고 날카로운 눈매
-      const lash = '#140f1a';
-      R(eL - 1, ey - 1, 3, 1, lash); R(eR, ey - 1, 3, 1, lash); R(eL - 2, ey, 1, 1, lash); R(eR + 3, ey, 1, 1, lash);
+    } else if (app.eyeStyle === 'sharp') { // 대위: 깔끔하고 또렷한 눈 (검은 픽셀 최소)
+      const lid = shade(app.skin, -0.5);
       const tall = face === 'smirk' ? 1 : 2;
-      R(eL - 1, ey, 3, tall, eye); R(eR, ey, 3, tall, eye); R(eL, ey, 1, 1, '#c8c0d8'); R(eR + 1, ey, 1, 1, '#c8c0d8');
-      if (face === 'sad') { R(eL - 2, ey - 4, 3, 1, lash); R(eR + 1, ey - 4, 3, 1, lash); }
-    } else if (app.eyeStyle === 'big') { // 크고 반짝이는 눈
-      const lash = '#1d1420';
-      R(eL - 1, ey - 2, 4, 1, lash); R(eR - 1, ey - 2, 4, 1, lash); R(eL - 2, ey - 2, 1, 1, lash); R(eR + 3, ey - 2, 1, 1, lash);
-      R(eL - 1, ey - 1, 3, 3, eye); R(eR - 1, ey - 1, 3, 3, eye); R(eL - 1, ey + 1, 3, 1, shade(eye, 0.3)); R(eR - 1, ey + 1, 3, 1, shade(eye, 0.3));
-      R(eL - 1, ey - 1, 1, 1, '#ffffff'); R(eR - 1, ey - 1, 1, 1, '#ffffff'); R(eL + 1, ey, 1, 1, '#ffffffcc'); R(eR + 1, ey, 1, 1, '#ffffffcc');
+      R(eL - 1, ey - 1, 3, 1, lid); R(eR, ey - 1, 3, 1, lid);
+      R(eL, ey, 2, tall, eye); R(eR, ey, 2, tall, eye);
+      R(eL, ey, 1, 1, '#ffffff'); R(eR, ey, 1, 1, '#ffffff');
+    } else if (app.eyeStyle === 'big') { // 동그랗고 큰 눈
+      R(eL, ey - 2, 2, 1, '#2a1e2a'); R(eR, ey - 2, 2, 1, '#2a1e2a');
+      R(eL, ey - 1, 2, 3, eye); R(eR, ey - 1, 2, 3, eye);
+      R(eL, ey + 1, 2, 1, shade(eye, 0.35)); R(eR, ey + 1, 2, 1, shade(eye, 0.35));
+      R(eL, ey - 1, 1, 1, '#ffffff'); R(eR, ey - 1, 1, 1, '#ffffff');
     } else {
       R(eL, ey - 1, 2, 3, eye); R(eR, ey - 1, 2, 3, eye); R(eL, ey - 1, 1, 1, '#ffffff'); R(eR, ey - 1, 1, 1, '#ffffff');
       if (face === 'smirk') { R(eL, ey - 1, 2, 1, shade(app.skin, -0.1)); }
       if (face === 'sad') { R(eL - 1, ey - 2, 2, 1, eye); R(eR + 1, ey - 2, 2, 1, eye); }
     }
-    if (app.brows && app.eyeStyle === 'sharp') { const bc = app.brows; R(eL - 2, ey - 4, 4, 1, bc); R(eR, ey - 4, 4, 1, bc); R(eL - 2, ey - 3, 1, 1, bc); R(eR + 3, ey - 3, 1, 1, bc); R(hx + Math.floor(hw / 2), ey + 2, 1, 2, shade(app.skin, -0.14)); }
+    if (app.brows && app.eyeStyle === 'sharp') { const bc = shade(app.brows, 0.18); R(eL - 1, ey - 3, 3, 1, bc); R(eR, ey - 3, 3, 1, bc); R(hx + Math.floor(hw / 2), ey + 3, 1, 1, shade(app.skin, -0.18)); }
     else if (app.brows) { R(eL - 1, ey - 2, 3, 1, app.brows); R(eR, ey - 2, 3, 1, app.brows); }
     // 입
     const my = hy + hh - 3, mx = hx + Math.floor(hw / 2) - 1;
-    const mc = '#8a3a3a';
+    const mc = app.big ? '#9a5048' : '#c0506a';
     if (face === 'surprise') R(mx, my - 1, 2, 2, mc);
     else if (face === 'smirk') { R(mx - 1, my, 3, 1, mc); R(mx + 2, my - 1, 1, 1, mc); if (app.big) R(mx, my + 1, 2, 1, shade(app.skin, -0.12)); }
     else if (face === 'smile') { R(mx - 1, my - 1, 1, 1, mc); R(mx, my, 2, 1, mc); R(mx + 2, my - 1, 1, 1, mc); }
@@ -1281,12 +1284,12 @@ PX.S = (() => {
     else if (face !== 'sleep') R(mx, my, 2, 1, mc);
     // 볼터치
     const bc = face === 'blush' ? '#ff7a8f' : blushC;
-    if (!app.scar || face === 'blush') { R(hx + 2, hy + 11, 2, 1, bc); R(hx + hw - 4, hy + 11, 2, 1, bc); }
+    if (!app.scar || face === 'blush') { R(eL - 1, ey + 3, 2, 1, bc); R(eR + 1, ey + 3, 2, 1, bc); }
     if (face === 'blush') { R(hx + 1, hy + 10, 3, 1, bc); R(hx + hw - 4, hy + 10, 3, 1, bc); R(hx + 2, hy + 12, 1, 1, bc); R(hx + hw - 3, hy + 12, 1, 1, bc); }
     // 대위 전용: 코를 가로지르는 흉터
     if (app.scar) {
       const sc = '#c8746a';
-      for (let i = 0; i < 7; i++) R(hx + 4 + i, ey + 2 + Math.floor(i / 3), 1, 1, '#f3c6b2');
+      for (let i = 0; i < 5; i++) R(hx + 5 + i, ey + 2 + Math.floor(i / 2), 1, 1, '#f0c3ae');
     }
   }
 
@@ -1317,7 +1320,7 @@ PX.S = (() => {
       case 'crew': R(hx, hy - 1, hw, 2, col); R(hx - 1, hy + 1, 1, 3, col); R(hx + hw, hy + 1, 1, 3, col); break;
       case 'slick': // 대위: 뒤로 넘긴 머리 + 이마로 흘러내린 몇 가닥
         R(hx - 1, hy - 1, hw + 2, 3, col); R(hx - 1, hy + 2, 2, 5, col); R(hx + hw - 1, hy + 2, 2, 4, col); R(hx + 1, hy + 2, 2, 1, col);
-        R(hx + 5, hy + 2, 1, 3, col); R(hx + 6, hy + 2, 1, 2, col); R(hx + 9, hy + 2, 1, 1, col); R(hx, hy + 7, 1, 2, col);
+        R(hx + 5, hy + 2, 1, 2, col);
         R(hx + 2, hy - 2, hw - 4, 1, col); R(hx + 3, hy - 1, 5, 1, hl); R(hx + 9, hy, 4, 1, hl); break;
       case 'messybun': // 앞머리 + 헝클어진 올림머리
         R(hx - 1, hy + 2, 2, hh - 4, col); R(hx + hw - 1, hy + 2, 2, hh - 4, col); R(hx + 1, hy + 2, hw - 2, 3, col);
@@ -1328,7 +1331,8 @@ PX.S = (() => {
       case 'short': R(hx - 1, hy + 2, 2, 5, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 4, hy + 4, 3, 1, col); R(hx + 3, hy - 1, 3, 1, hl); break;
       case 'bob': R(hx - 1, hy + 2, 2, hh - 2, col); R(hx + hw - 1, hy + 2, 2, hh - 2, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 3, hy - 1, 3, 1, hl); break;
       case 'long': R(hx - 1, hy + 2, 2, hh + 6, col); R(hx + hw - 1, hy + 2, 2, hh + 6, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 5, hy + 4, 2, 1, col); R(hx + 3, hy - 1, 3, 1, hl); break;
-      case 'pony': R(hx - 1, hy + 2, 2, 5, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + hw, hy + 3, 2, 6, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'pony': R(hx, hy + 2, 2, 6, col); R(hx + hw - 2, hy + 2, 2, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 2, hy + 4, 4, 1, col); R(hx + hw - 4, hy + 4, 2, 1, col);
+        R(hx + hw, hy + 1, 2, 2, '#ff8fb0'); R(hx + hw, hy + 3, 2, 7, dk); R(hx + hw + 1, hy + 10, 1, 2, dk); R(hx + 3, hy - 1, 4, 1, hl); break;
       case 'bun': R(hx - 1, hy + 2, 2, 4, col); R(hx + hw - 1, hy + 2, 2, 4, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + hw / 2 - 3, hy - 6, 6, 5, col); R(hx + hw / 2 - 2, hy - 5, 2, 1, hl); break;
       case 'curly': for (let i = -1; i < hw + 1; i += 2) R(hx + i, hy - 3 + (i % 4 === 1 ? 1 : 0), 2, 2, col); R(hx - 2, hy + 2, 3, 6, col); R(hx + hw - 1, hy + 2, 3, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 2, hy + 4, 2, 1, col); R(hx + hw - 4, hy + 4, 2, 1, col); break;
       case 'wolf': R(hx - 1, hy + 2, 2, hh + 1, col); R(hx + hw - 1, hy + 2, 2, hh + 1, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 2, hy + 5, 2, 1, col); R(hx + hw - 5, hy + 5, 2, 1, col); R(hx + 3, hy - 1, 3, 1, hl); break;
@@ -3910,7 +3914,7 @@ PX.UI = (() => {
     g.fillStyle = '#ffe2a0'; for (let i = 0; i < 14; i++) g.fillRect(56 + (r() * 70 | 0), 236 + (r() * 12 | 0), 1, 2);
     // 두 사람 실루엣
     const cap = PX.NPC_BY_ID.cap.look;
-    const f1 = PX.S.get(cap, 'hold', 0, 'B', 'normal'), f2 = PX.S.get({ skin: PX.S.SKINS[0], hair: 'messybun', hairColor: '#2a2433', eye: '#6b3d22', top: '#e6e2ea', bottom: '#8a8794', sleeve: 'long', hood: 1 }, 'holdL', 0, 'B', 'normal');
+    const f1 = PX.S.get(cap, 'hold', 0, 'B', 'normal'), f2 = PX.S.get({ skin: PX.S.SKINS[0], hair: 'pony', hairColor: '#2a2433', eye: '#6b3d22', top: '#e6e2ea', bottom: '#8a8794', sleeve: 'long', hood: 1 }, 'holdL', 0, 'B', 'normal');
     g.drawImage(f1.c, 66, 222); g.drawImage(f2.c, 96, 234);
   }
 
@@ -3918,7 +3922,7 @@ PX.UI = (() => {
   function create(slot) {
     $('title').classList.add('hidden');
     const C = $('create'); C.classList.remove('hidden');
-    const f = { name: '', gender: '여성', skin: 0, hair: 'messybun', hairColor: '흑발', eye: '갈색', outfit: 'hoodie', job: 'medic', capName: '서무진', mode: 'normal', start: { y: 2027, m: 1, d: 1 } };
+    const f = { name: '', gender: '여성', skin: 0, hair: 'pony', hairColor: '흑발', eye: '갈색', outfit: 'hoodie', job: 'medic', capName: '서무진', mode: 'normal', start: { y: 2027, m: 1, d: 1 } };
     const body = $('createBody'); body.innerHTML = '';
     const row = (label, ...kids) => el('div', { class: 'row' }, el('label', null, label), el('div', { class: 'ctl' }, ...kids));
     const swatches = (list, key, colorOf) => { const w = el('div', { class: 'sw' }); list.forEach((v, i) => { const b = el('button', { class: 'swb', style: `background:${colorOf(v, i)}`, title: typeof v === 'string' ? v : '' }); b.onclick = () => { f[key] = typeof v === 'string' ? v : i; [...w.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); preview(); }; if ((typeof v === 'string' ? v : i) === f[key]) b.classList.add('on'); w.append(b); }); return w; };
