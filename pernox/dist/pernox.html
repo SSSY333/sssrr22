@@ -84,7 +84,7 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 #hud .side { position: absolute; right: 8px; top: calc(100px + var(--safe-t)); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
 #hud .side button { position: relative; width: 48px; height: 48px; border-radius: 14px; border: 3px solid var(--line); background: var(--panel2); font-size: 22px; box-shadow: 0 3px 0 var(--line); }
 .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--pink); color: #2a1020; font-style: normal; font-size: 12px; line-height: 20px; border: 2px solid var(--line); display: none; }
-#actBtn { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(22px + var(--safe-b)); pointer-events: auto; padding: 12px 22px; border-radius: 99px; border: 3px solid var(--line); background: var(--gold); color: #2a1020; font-size: 17px; box-shadow: 0 4px 0 var(--line); white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
+#actBtn { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(40px + var(--safe-b)); pointer-events: auto; padding: 12px 22px; border-radius: 99px; border: 3px solid var(--line); background: var(--gold); color: #2a1020; font-size: 17px; box-shadow: 0 4px 0 var(--line); white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
 
 /* 말풍선 · 토스트 */
 #bubbles { position: fixed; inset: 0; pointer-events: none; z-index: 22; }
@@ -209,6 +209,17 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .msgch .free { background: var(--panel2); color: var(--ink); }
 .msgfree { display: flex; gap: 6px; } .msgfree input { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 10px; border: 2px solid var(--line); background: #fff7ef; color: #2a1020; } .msgfree button { padding: 6px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--pink); color: #2a1020; }
 
+/* 조이스틱 (왼쪽 아래) — 끝까지 밀면 달리기 */
+#joy { position: absolute; left: max(22px, env(safe-area-inset-left, 0px)); bottom: calc(26px + var(--safe-b)); width: 128px; height: 128px; border-radius: 50%;
+  background: rgba(27, 20, 48, 0.42); border: 3px solid rgba(255, 247, 239, 0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); touch-action: none; pointer-events: auto; }
+#joy::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 2px dashed rgba(255, 209, 102, 0.35); pointer-events: none; }
+#knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(255, 247, 239, 0.92); border: 3px solid var(--line); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3); pointer-events: none; transition: background .15s; }
+#joy.run #knob { background: var(--gold); }
+#joy.run::before { content: '달리기'; position: absolute; left: 50%; top: -26px; transform: translateX(-50%); font-size: 13px; color: var(--gold); text-shadow: 0 2px 0 var(--line); white-space: nowrap; }
+/* 확대·축소 */
+#hud .zoom { position: absolute; right: 8px; top: calc(278px + var(--safe-t)); display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+#hud .zoom button { width: 48px; height: 40px; border-radius: 12px; border: 3px solid var(--line); background: var(--panel2); font-size: 20px; box-shadow: 0 3px 0 var(--line); }
+
 </style>
 </head>
 <body>
@@ -257,6 +268,8 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
       <button id="decorBtn" class="hidden" aria-label="숙소 꾸미기">🛋️</button>
     </div>
     <button id="actBtn" class="hidden"></button>
+    <div id="joy" class="hidden" aria-label="이동 조이스틱 (끝까지 밀면 달리기)"><div id="knob"></div></div>
+    <div class="zoom"><button id="zoomIn" aria-label="확대">＋</button><button id="zoomOut" aria-label="축소">－</button></div>
   </div>
 
   <!-- 대화창 -->
@@ -2714,13 +2727,23 @@ PX.W = (() => {
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const cw = window.innerWidth, ch = window.innerHeight;
     const pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
-    view.zoom = Math.max(2, Math.round(pw / 250));
+    view.base = Math.max(2, Math.round(pw / 250));
+    view.zoom = Math.max(1, Math.min(view.base + 3, view.base + (view.zoomOff || 0)));
     view.w = Math.ceil(pw / view.zoom); view.h = Math.ceil(ph / view.zoom);
     view.cv.width = view.w; view.cv.height = view.h;
     view.cv.style.width = cw + 'px'; view.cv.style.height = ch + 'px';
     view.g.imageSmoothingEnabled = false;
     view.dark = G.canvas(view.w, view.h);
     view.cssScale = cw / view.w;
+  }
+  // 확대·축소: 픽셀이 뭉개지지 않게 정수 배율로만 (기본 배율 -3 ~ +3)
+  function zoomBy(step) {
+    const lo = Math.max(1, view.base - 3), hi = view.base + 3;
+    const nz = Math.max(lo, Math.min(hi, view.zoom + step));
+    if (nz === view.zoom) return false;
+    view.zoomOff = nz - view.base;
+    resize();
+    return true;
   }
   const toScreen = (x, y, z = 0) => { const p = G.proj(x, y, z); return [Math.round(p[0] - view.camX + view.w / 2), Math.round(p[1] - view.camY + view.h / 2)]; };
   function toWorld(sx, sy) { // 화면(내부 픽셀) → 타일 좌표 (z=0)
@@ -2903,7 +2926,7 @@ PX.W = (() => {
     for (const p of parts) { p.t += env.dt; p.y -= 5 * env.dt; p.x += Math.sin(p.t + p.s * 7) * 4 * env.dt; if (p.y < -2) { p.y = H + 2; p.x = Math.random() * W; } g.fillStyle = `rgba(190,240,255,${0.3 + 0.3 * Math.sin(p.t * 2)})`; g.fillRect(p.x | 0, p.y | 0, 1, 1); }
   }
 
-  return { updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
+  return { zoomBy, updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
 })();
 
 </script>
@@ -5658,7 +5681,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     if (!downAt) return;
     const [x, y] = toInternal(e);
     if (PX.Decor.active) { PX.Decor.up(); downAt = null; return; }
-    if (!Game.modal && Math.hypot(x - downAt.x, y - downAt.y) < 8) tapAt(x, y);
+    if (!Game.modal && !(Game.pinchUntil > performance.now()) && Math.hypot(x - downAt.x, y - downAt.y) < 8) tapAt(x, y);
     downAt = null;
   });
   const keys = {};
@@ -5678,12 +5701,19 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     if (keys.ArrowDown || keys.s || keys.S) { dx += 1; dy += 1; }
     if (keys.ArrowLeft || keys.a || keys.A) { dx -= 1; dy += 1; }
     if (keys.ArrowRight || keys.d || keys.D) { dx += 1; dy -= 1; }
+    let run = !!keys.Shift, mag = 1;
+    if (joy.active && (joy.x || joy.y)) { // 화면 오른쪽 = 타일 (+1,-1), 화면 아래 = (+1,+1)
+      const sx = joy.x, sy = joy.y;
+      dx += sx + sy; dy += sy - sx;
+      const d = Math.hypot(sx, sy);
+      run = run || d > 0.92; mag = Math.max(0.45, Math.min(1, d / 0.7));
+    }
     p.kbMoving = false;
-    if (!dx && !dy) return;
+    if (Math.hypot(dx, dy) < 0.08) return;
     if (p.seat) standUp();
     p.stop(); Game.target = null;
     const l = Math.hypot(dx, dy); dx /= l; dy /= l;
-    const sp = (keys.Shift ? 5.4 : 3.6) * (St.S.energy < 15 ? 0.7 : 1) * dt;
+    const sp = (run ? 5.4 : 3.6 * mag) * (St.S.energy < 15 ? 0.7 : 1) * dt;
     p.speedNow = sp / dt;
     const m = W.maps[Game.mapId];
     const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return true; };
@@ -5699,6 +5729,56 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     if (it) { Game.player.stop(); if (it.cx != null) Game.player.setDirTo(it.cx, it.cy); it.fn(); }
   }
   $('actBtn').onclick = actionBtn;
+  // ---------- 조이스틱 (왼쪽 아래) ----------
+  const joy = { x: 0, y: 0, active: false };
+  {
+    const pad = document.getElementById('joy'), knob = document.getElementById('knob');
+    const touch = ('ontouchstart' in window) || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+    if (touch) pad.classList.remove('hidden');
+    let id = null, cx = 0, cy = 0;
+    const R = 46;
+    const move = (e) => {
+      if (e.pointerId !== id) return;
+      let dx = e.clientX - cx, dy = e.clientY - cy;
+      const d = Math.hypot(dx, dy);
+      if (d > R) { dx *= R / d; dy *= R / d; }
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      joy.x = dx / R; joy.y = dy / R; joy.active = true;
+      pad.classList.toggle('run', Math.hypot(joy.x, joy.y) > 0.92);
+    };
+    const end = (e) => { if (e.pointerId !== id) return; id = null; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; pad.classList.remove('run'); };
+    pad.addEventListener('pointerdown', (e) => {
+      if (Game.modal) return;
+      PX.Audio.unlock();
+      id = e.pointerId; pad.setPointerCapture(id);
+      const r = pad.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+      move(e); e.preventDefault();
+    });
+    pad.addEventListener('pointermove', move);
+    pad.addEventListener('pointerup', end);
+    pad.addEventListener('pointercancel', end);
+    Game.joy = joy; Game.joyEnd = () => { id = null; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; pad.classList.remove('run'); };
+  }
+  // ---------- 확대 · 축소 (버튼 · 휠 · 두 손가락) ----------
+  const zoom = (step) => { if (W.zoomBy(step)) { snapCam(); try { St.S.settings.zoomOff = W.view.zoomOff; } catch (e) { /* 저장 전 */ } } };
+  $('zoomIn').onclick = () => zoom(1);
+  $('zoomOut').onclick = () => zoom(-1);
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); if (!Game.running || PX.Decor.active) return; zoom(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+  const pts = new Map(); let pinch = null;
+  cv.addEventListener('pointerdown', (e) => {
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) }; downAt = null; }
+  }, true);
+  cv.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && pts.size === 2) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (d > pinch.d * 1.25) { zoom(1); pinch.d = d; } else if (d < pinch.d / 1.25) { zoom(-1); pinch.d = d; }
+    }
+  }, true);
+  const lift = (e) => { pts.delete(e.pointerId); if (pts.size < 2 && pinch) { pinch = null; downAt = null; Game.pinchUntil = performance.now() + 300; } };
+  cv.addEventListener('pointerup', lift, true); cv.addEventListener('pointercancel', lift, true);
   $('termBtn').onclick = () => { if (!Game.modal) UI.terminal(); };
   $('photoBtn').onclick = () => { if (!Game.modal) { Game.memory('사진', `${PX.MAPS[Game.mapId].name}에서 찰칵.`, true); PX.Audio.blip(2); } };
   $('decorBtn').onclick = () => { if (!Game.modal) PX.Decor.start(); };
@@ -5707,6 +5787,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   // ---------- 루프 ----------
   let last = 0, acc = 0, hudT = 0, npcT = 0, saveT = 0, minuteAcc = 0;
   function run() {
+    W.view.zoomOff = (St.S.settings && St.S.settings.zoomOff) || 0; W.resize(); snapCam();
     $('hud').classList.remove('hidden');
     $('title').classList.add('hidden'); $('create').classList.add('hidden');
     UI.badge();
@@ -5793,6 +5874,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   }
   function updateAction() {
     const btn = $('actBtn');
+    document.getElementById('joy').style.visibility = Game.modal || PX.Decor.active ? 'hidden' : '';
+    if (Game.modal && Game.joy && Game.joy.active) Game.joyEnd();
     if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); return; }
     if (Game.player.seat) { btn.textContent = '⬆️ 일어나기'; btn.classList.remove('hidden'); return; }
     const it = nearest();

@@ -190,13 +190,23 @@ PX.W = (() => {
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const cw = window.innerWidth, ch = window.innerHeight;
     const pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
-    view.zoom = Math.max(2, Math.round(pw / 250));
+    view.base = Math.max(2, Math.round(pw / 250));
+    view.zoom = Math.max(1, Math.min(view.base + 3, view.base + (view.zoomOff || 0)));
     view.w = Math.ceil(pw / view.zoom); view.h = Math.ceil(ph / view.zoom);
     view.cv.width = view.w; view.cv.height = view.h;
     view.cv.style.width = cw + 'px'; view.cv.style.height = ch + 'px';
     view.g.imageSmoothingEnabled = false;
     view.dark = G.canvas(view.w, view.h);
     view.cssScale = cw / view.w;
+  }
+  // 확대·축소: 픽셀이 뭉개지지 않게 정수 배율로만 (기본 배율 -3 ~ +3)
+  function zoomBy(step) {
+    const lo = Math.max(1, view.base - 3), hi = view.base + 3;
+    const nz = Math.max(lo, Math.min(hi, view.zoom + step));
+    if (nz === view.zoom) return false;
+    view.zoomOff = nz - view.base;
+    resize();
+    return true;
   }
   const toScreen = (x, y, z = 0) => { const p = G.proj(x, y, z); return [Math.round(p[0] - view.camX + view.w / 2), Math.round(p[1] - view.camY + view.h / 2)]; };
   function toWorld(sx, sy) { // 화면(내부 픽셀) → 타일 좌표 (z=0)
@@ -379,5 +389,5 @@ PX.W = (() => {
     for (const p of parts) { p.t += env.dt; p.y -= 5 * env.dt; p.x += Math.sin(p.t + p.s * 7) * 4 * env.dt; if (p.y < -2) { p.y = H + 2; p.x = Math.random() * W; } g.fillStyle = `rgba(190,240,255,${0.3 + 0.3 * Math.sin(p.t * 2)})`; g.fillRect(p.x | 0, p.y | 0, 1, 1); }
   }
 
-  return { updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
+  return { zoomBy, updateEvents, build, maps, view, setCanvas, resize, toScreen, toWorld, render, walkable, accessTile, addFurn, rebuildWalk, refreshObj, groundCanvas };
 })();

@@ -628,7 +628,7 @@
     if (!downAt) return;
     const [x, y] = toInternal(e);
     if (PX.Decor.active) { PX.Decor.up(); downAt = null; return; }
-    if (!Game.modal && Math.hypot(x - downAt.x, y - downAt.y) < 8) tapAt(x, y);
+    if (!Game.modal && !(Game.pinchUntil > performance.now()) && Math.hypot(x - downAt.x, y - downAt.y) < 8) tapAt(x, y);
     downAt = null;
   });
   const keys = {};
@@ -648,12 +648,19 @@
     if (keys.ArrowDown || keys.s || keys.S) { dx += 1; dy += 1; }
     if (keys.ArrowLeft || keys.a || keys.A) { dx -= 1; dy += 1; }
     if (keys.ArrowRight || keys.d || keys.D) { dx += 1; dy -= 1; }
+    let run = !!keys.Shift, mag = 1;
+    if (joy.active && (joy.x || joy.y)) { // 화면 오른쪽 = 타일 (+1,-1), 화면 아래 = (+1,+1)
+      const sx = joy.x, sy = joy.y;
+      dx += sx + sy; dy += sy - sx;
+      const d = Math.hypot(sx, sy);
+      run = run || d > 0.92; mag = Math.max(0.45, Math.min(1, d / 0.7));
+    }
     p.kbMoving = false;
-    if (!dx && !dy) return;
+    if (Math.hypot(dx, dy) < 0.08) return;
     if (p.seat) standUp();
     p.stop(); Game.target = null;
     const l = Math.hypot(dx, dy); dx /= l; dy /= l;
-    const sp = (keys.Shift ? 5.4 : 3.6) * (St.S.energy < 15 ? 0.7 : 1) * dt;
+    const sp = (run ? 5.4 : 3.6 * mag) * (St.S.energy < 15 ? 0.7 : 1) * dt;
     p.speedNow = sp / dt;
     const m = W.maps[Game.mapId];
     const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return true; };
@@ -669,6 +676,56 @@
     if (it) { Game.player.stop(); if (it.cx != null) Game.player.setDirTo(it.cx, it.cy); it.fn(); }
   }
   $('actBtn').onclick = actionBtn;
+  // ---------- 조이스틱 (왼쪽 아래) ----------
+  const joy = { x: 0, y: 0, active: false };
+  {
+    const pad = document.getElementById('joy'), knob = document.getElementById('knob');
+    const touch = ('ontouchstart' in window) || (window.matchMedia && matchMedia('(pointer: coarse)').matches);
+    if (touch) pad.classList.remove('hidden');
+    let id = null, cx = 0, cy = 0;
+    const R = 46;
+    const move = (e) => {
+      if (e.pointerId !== id) return;
+      let dx = e.clientX - cx, dy = e.clientY - cy;
+      const d = Math.hypot(dx, dy);
+      if (d > R) { dx *= R / d; dy *= R / d; }
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      joy.x = dx / R; joy.y = dy / R; joy.active = true;
+      pad.classList.toggle('run', Math.hypot(joy.x, joy.y) > 0.92);
+    };
+    const end = (e) => { if (e.pointerId !== id) return; id = null; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; pad.classList.remove('run'); };
+    pad.addEventListener('pointerdown', (e) => {
+      if (Game.modal) return;
+      PX.Audio.unlock();
+      id = e.pointerId; pad.setPointerCapture(id);
+      const r = pad.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+      move(e); e.preventDefault();
+    });
+    pad.addEventListener('pointermove', move);
+    pad.addEventListener('pointerup', end);
+    pad.addEventListener('pointercancel', end);
+    Game.joy = joy; Game.joyEnd = () => { id = null; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; pad.classList.remove('run'); };
+  }
+  // ---------- 확대 · 축소 (버튼 · 휠 · 두 손가락) ----------
+  const zoom = (step) => { if (W.zoomBy(step)) { snapCam(); try { St.S.settings.zoomOff = W.view.zoomOff; } catch (e) { /* 저장 전 */ } } };
+  $('zoomIn').onclick = () => zoom(1);
+  $('zoomOut').onclick = () => zoom(-1);
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); if (!Game.running || PX.Decor.active) return; zoom(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+  const pts = new Map(); let pinch = null;
+  cv.addEventListener('pointerdown', (e) => {
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) }; downAt = null; }
+  }, true);
+  cv.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && pts.size === 2) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (d > pinch.d * 1.25) { zoom(1); pinch.d = d; } else if (d < pinch.d / 1.25) { zoom(-1); pinch.d = d; }
+    }
+  }, true);
+  const lift = (e) => { pts.delete(e.pointerId); if (pts.size < 2 && pinch) { pinch = null; downAt = null; Game.pinchUntil = performance.now() + 300; } };
+  cv.addEventListener('pointerup', lift, true); cv.addEventListener('pointercancel', lift, true);
   $('termBtn').onclick = () => { if (!Game.modal) UI.terminal(); };
   $('photoBtn').onclick = () => { if (!Game.modal) { Game.memory('사진', `${PX.MAPS[Game.mapId].name}에서 찰칵.`, true); PX.Audio.blip(2); } };
   $('decorBtn').onclick = () => { if (!Game.modal) PX.Decor.start(); };
@@ -677,6 +734,7 @@
   // ---------- 루프 ----------
   let last = 0, acc = 0, hudT = 0, npcT = 0, saveT = 0, minuteAcc = 0;
   function run() {
+    W.view.zoomOff = (St.S.settings && St.S.settings.zoomOff) || 0; W.resize(); snapCam();
     $('hud').classList.remove('hidden');
     $('title').classList.add('hidden'); $('create').classList.add('hidden');
     UI.badge();
@@ -763,6 +821,8 @@
   }
   function updateAction() {
     const btn = $('actBtn');
+    document.getElementById('joy').style.visibility = Game.modal || PX.Decor.active ? 'hidden' : '';
+    if (Game.modal && Game.joy && Game.joy.active) Game.joyEnd();
     if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); return; }
     if (Game.player.seat) { btn.textContent = '⬆️ 일어나기'; btn.classList.remove('hidden'); return; }
     const it = nearest();

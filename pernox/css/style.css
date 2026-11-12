@@ -75,7 +75,7 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 #hud .side { position: absolute; right: 8px; top: calc(100px + var(--safe-t)); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
 #hud .side button { position: relative; width: 48px; height: 48px; border-radius: 14px; border: 3px solid var(--line); background: var(--panel2); font-size: 22px; box-shadow: 0 3px 0 var(--line); }
 .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--pink); color: #2a1020; font-style: normal; font-size: 12px; line-height: 20px; border: 2px solid var(--line); display: none; }
-#actBtn { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(22px + var(--safe-b)); pointer-events: auto; padding: 12px 22px; border-radius: 99px; border: 3px solid var(--line); background: var(--gold); color: #2a1020; font-size: 17px; box-shadow: 0 4px 0 var(--line); white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
+#actBtn { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(40px + var(--safe-b)); pointer-events: auto; padding: 12px 22px; border-radius: 99px; border: 3px solid var(--line); background: var(--gold); color: #2a1020; font-size: 17px; box-shadow: 0 4px 0 var(--line); white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; }
 
 /* 말풍선 · 토스트 */
 #bubbles { position: fixed; inset: 0; pointer-events: none; z-index: 22; }
@@ -199,3 +199,14 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 #chatbar .end { align-self: center; padding: 4px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--panel2); font-size: 13px; }
 .msgch .free { background: var(--panel2); color: var(--ink); }
 .msgfree { display: flex; gap: 6px; } .msgfree input { flex: 1; min-width: 0; padding: 7px 10px; border-radius: 10px; border: 2px solid var(--line); background: #fff7ef; color: #2a1020; } .msgfree button { padding: 6px 12px; border-radius: 10px; border: 2px solid var(--line); background: var(--pink); color: #2a1020; }
+
+/* 조이스틱 (왼쪽 아래) — 끝까지 밀면 달리기 */
+#joy { position: absolute; left: max(22px, env(safe-area-inset-left, 0px)); bottom: calc(26px + var(--safe-b)); width: 128px; height: 128px; border-radius: 50%;
+  background: rgba(27, 20, 48, 0.42); border: 3px solid rgba(255, 247, 239, 0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); touch-action: none; pointer-events: auto; }
+#joy::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 2px dashed rgba(255, 209, 102, 0.35); pointer-events: none; }
+#knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(255, 247, 239, 0.92); border: 3px solid var(--line); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3); pointer-events: none; transition: background .15s; }
+#joy.run #knob { background: var(--gold); }
+#joy.run::before { content: '달리기'; position: absolute; left: 50%; top: -26px; transform: translateX(-50%); font-size: 13px; color: var(--gold); text-shadow: 0 2px 0 var(--line); white-space: nowrap; }
+/* 확대·축소 */
+#hud .zoom { position: absolute; right: 8px; top: calc(278px + var(--safe-t)); display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+#hud .zoom button { width: 48px; height: 40px; border-radius: 12px; border: 3px solid var(--line); background: var(--panel2); font-size: 20px; box-shadow: 0 3px 0 var(--line); }
