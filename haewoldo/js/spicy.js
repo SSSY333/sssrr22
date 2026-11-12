@@ -460,7 +460,7 @@ async function spMorningAfter(place) {
 /* ---------------- 이벤트 고르기 · 먼저 다가오기 · 말풍선 ---------------- */
 function spCheck() {
   const r = S.rel, d = G.det, P = G.player, s = spState();
-  if (!r.flags.met || G.busy || G.dialog || G.sheet || G.mgOn || G.dev) return false;
+  if (!r.flags.met || G.busy || G.dialog || G.sheet || G.screen || G.mgOn || G.dev || paused()) return false;
   const near = d.visible && d.map === P.map && dist(d, P) < 7 && d.state !== 'script';
   G._spT = (G._spT || 0) + 1;
   if (near && dist(d, P) < 4 && G._spT % 900 === 0) d.say(spPick(SP.bubble[spBand()]), 2.6);
