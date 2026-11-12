@@ -390,3 +390,23 @@ body.yardOn #actBtn, body.yardOn #actChips, body.yardOn #decorBtn { display: non
 .lbl.bday select { font-family: inherit; font-size: 16px; padding: 6px 4px; border: 3px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
 body.wide #newgame .pop.wide > .bdayRow { grid-column: 1; grid-row: 6; }
 body.wide #newgame .pop.wide > .ng-btns { grid-row: 7; }
+
+/* ---------------- 미니게임 ---------------- */
+#mg { position: fixed; inset: 0; z-index: 200; background: rgba(30,24,40,.62); display: flex; align-items: center; justify-content: center; padding: 10px; touch-action: none; user-select: none; -webkit-user-select: none; }
+#mg .mgCard { width: min(100%, 380px); background: #fffaf0; border: 3px solid #3a2a26; border-radius: 18px; box-shadow: 0 6px 0 rgba(58,42,38,.35); overflow: hidden; display: flex; flex-direction: column; }
+#mg .mgHead { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #ffe7a8; border-bottom: 3px solid #3a2a26; font-family: Jua, sans-serif; color: #3a2a26; }
+#mg .mgHead b { font-weight: normal; font-size: 17px; white-space: nowrap; }
+#mg #mgHud { flex: 1; text-align: right; font-size: 14px; color: #5b4450; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#mg .mgX { width: 34px; height: 34px; border-radius: 10px; border: 2px solid #3a2a26; background: #fff; font-size: 16px; flex: none; }
+#mg .mgStage { position: relative; width: 100%; aspect-ratio: 320 / 400; max-height: calc(100vh - 140px); }
+#mg canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+#mg .mgOver { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,250,240,.82); padding: 14px; }
+#mg .mgOver.hidden { display: none; }
+#mg .mgBox { text-align: center; font-family: Jua, sans-serif; color: #3a2a26; display: flex; flex-direction: column; gap: 10px; align-items: center; max-width: 290px; }
+#mg .mgBig { font-size: 34px; }
+#mg .mgTxt { font-size: 15px; line-height: 1.55; text-align: left; }
+#mg .mgOpts { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+#mg .mgBtn { font-family: Jua, sans-serif; font-size: 15px; padding: 9px 14px; border-radius: 12px; border: 2px solid #3a2a26; background: #fff; color: #3a2a26; width: 100%; }
+#mg .mgBtn.on { background: #ffe7a8; }
+#mg .mgBtn.ok { background: #ff9ec4; font-size: 17px; }
+#mg .mgHint { font-family: Jua, sans-serif; font-size: 13px; color: #5b4450; padding: 7px 10px; text-align: center; border-top: 2px dashed #e2cfb0; }
