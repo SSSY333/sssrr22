@@ -225,14 +225,26 @@ PX.Dlg = (() => {
     if (w === 'rain' && L.rain) pool.push(...L.rain, ...L.rain);
     if (L.cap && S.rel.cap.stage >= 1) pool.push(...L.cap);
     if (L.job && L.job[S.player.job]) pool.push(...L.job[S.player.job], ...L.job[S.player.job]);
+    // 지금 하고 있는 일에 맞는 말 (운동 중엔 운동 이야기, 식사 중엔 밥 이야기…)
+    const act = npc.activity(), A = PX.NPC_ACT;
+    if (act && A[act]) {
+      const t = d.banmal && !['cook', 'work_cmd'].includes(act) ? (A.banmal[act] || []) : A[act].talk;
+      pool.push(...t, ...t, ...t); if (act === 'sleep' && t.length) pool = t.slice();
+    }
+    const outdoor = PX.MAPS[npc.map] && PX.MAPS[npc.map].kind === 'out' && !PX.MAPS[npc.map].dome;
+    if (!d.banmal) { // 날씨·인사 공통 대사는 존댓말이라 존댓말 쓰는 사람만
+      if (outdoor && A.weather[w]) pool.push(...A.weather[w], ...A.weather[w]);
+      if (part === 'morning') pool.push(...A.weather.morning); else if (part === 'night') pool.push(...A.weather.night);
+    }
     // 오늘 행사 안내
     const ev = PX.Cal.eventsOn(S.time);
-    if (ev.length && Math.random() < 0.35) pool = [`오늘 ${ev[0].originalTitle} 있는 날이에요. ${ev[0].startTime ? ev[0].startTime + '부터요.' : ''}`];
+    const evLine = ev.length ? (d.banmal ? `오늘 ${ev[0].originalTitle} 있는 날이야.${ev[0].startTime ? ' ' + ev[0].startTime + '부터.' : ''}` : `오늘 ${ev[0].originalTitle} 있는 날이에요.${ev[0].startTime ? ' ' + ev[0].startTime + '부터요.' : ''}`) : null;
+    if (evLine && act !== 'sleep' && !(S.recent['npc_' + npc.id] || []).includes(evLine) && Math.random() < 0.25) pool = [evLine];
     const key = 'npc_' + npc.id;
     const recent = S.recent[key] || [];
     let cand = pool.filter(t => !recent.includes(t));
     if (!cand.length) cand = pool;
-    let line = U.pick(cand);
+    let line = U.pick(cand).replace(/\{cs\}/g, PX.Cap.status());
     S.recent[key] = [line, ...recent].slice(0, Math.max(1, pool.length - 2));
     const G = PX.Game; G.modal++;
     npc.setDirTo(G.player.x, G.player.y); G.player.setDirTo(npc.x, npc.y);
@@ -244,12 +256,12 @@ PX.Dlg = (() => {
       if (i === 0) {
         await say('player', `부탁하신 ${it.name} 여기요.`);
         St.addItem(q.item, -1); q.done = true; S.money += q.reward; St.addNpcF(npc.id, 8); S.stats.quests = (S.stats.quests || 0) + 1;
-        await say(npc.id, U.pick(['와, 진짜 고마워요! 이건 사례예요.', '구해 주셨네요! 덕분에 살았어요.', '역시 믿을 만해요. 받아 주세요.']), 'smile');
+        await say(npc.id, U.pick(d.banmal ? ['오, 구해 왔네. 고맙다. 이건 사례야.', '덕분에 살았다. 받아 둬.'] : ['와, 진짜 고마워요! 이건 사례예요.', '구해 주셨네요! 덕분에 살았어요.', '역시 믿을 만해요. 받아 주세요.']), 'smile');
         PX.UI.toast(`✅ 부탁 완료 · ₢${q.reward} · ${d.name}와(과) 친해졌다`.replace('와(과)', U.hasBatchim(d.name) ? '과' : '와'));
         close(); G.modal--; return;
       }
     } else if (q && Math.random() < 0.5) {
-      line = `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
+      line = d.banmal ? `아, ${PX.ITEMS[q.item].name} 구하면 나 좀 줘. ${q.hint.replace(/에요\.$/, '야.').replace(/있어요\.$/, '있어.').replace(/팔아요\.$/, '팔아.').replace(/거예요\.$/, '거야.').replace(/더라고요\.$/, '더라.')}` : `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
     }
     await say(npc.id, U.fmt(line, ctx()), 'smile');
     if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; }

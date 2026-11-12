@@ -10,6 +10,7 @@
 </head>
 <body>
   <canvas id="game"></canvas>
+  <div id="labels"></div>
   <div id="bubbles"></div>
   <div id="fade"></div>
 
@@ -65,6 +66,7 @@
   </div>
   <div id="choices" class="hidden"></div>
   <div id="chatbar" class="hidden">
+    <p class="last"></p>
     <div class="chips2"></div>
     <div class="row2"><input type="text" maxlength="200" placeholder="대위에게 하고 싶은 말" autocomplete="off" enterkeyhint="send" /><button class="send">보내기</button></div>
     <button class="end">대화 끝내기</button>
@@ -88,6 +90,7 @@
   <script src="js/data/items.js"></script>
   <script src="js/data/npcs.js"></script>
   <script src="js/data/dialogue_captain.js"></script>
+  <script src="js/data/dialogue_npc.js"></script>
   <!-- 엔진 (월드) -->
   <script src="js/engine/path.js"></script>
   <script src="js/engine/world.js"></script>

@@ -17,13 +17,13 @@
     likesFood: '냉삼, 김치찌개, 차가운 건 전부', likesGift: '외계 광물 조각, 공구, 냉각 선풍기, 플레이어가 준 것 전부', rel: '플레이어에게 첫눈에 반함 (만난 지 1년)',
     special: ['장기작전', '숙소 방문', '숙박 요청', '문틀 박치기'] });
 
-  add({ id: 'kang', name: '강태욱', age: 52, job: '606부대 중령 · 부대 지휘관', team: '지휘부', look: look(2, 'crew', '은발', '갈색', { top: '#4f5a3d', bottom: '#3f4a30', badge: '#e8c56a', brows: '#8a8a8a' }),
+  add({ banmal: true, id: 'kang', name: '강태욱', age: 52, job: '606부대 중령 · 부대 지휘관', team: '지휘부', look: look(2, 'crew', '은발', '갈색', { top: '#4f5a3d', bottom: '#3f4a30', badge: '#e8c56a', brows: '#8a8a8a' }),
     personality: '무뚝뚝하지만 부하들을 아낀다.', work: '행정동', home: '지휘관 숙소',
     sched: '07:00 -|08:00 ops.b3|09:00 adm.cmd|12:00 mess.b00a/0|13:00 adm.cmd|18:00 mess.b00a/0|19:00 base.flag|19:30 -', we: '09:00 -|10:00 base.flag|11:00 adm.cmd|12:00 mess.b00a/0|13:00 -',
     likesFood: '된장국', likesGift: '지구산 커피', rel: '상관',
     lines: { g: ['오늘도 별일 없지? 별일 없어야지.', '전선 행성이라고 매일 싸우는 건 아니야. 관리하는 거지.', '보고서는 짧고 정확하게. 그게 다다.', '{c} 대위? 실력은 내가 보증하지. 입이 문제지만.'],
       m: ['일찍 나왔군. 좋아.'], e: ['늦게까지 고생 많다. 들어가 쉬어.'], cap: ['그 녀석이 요즘 표정이 밝아. 누구 덕인지는 알 것 같고.', '{c} 녀석 문틀에 머리 박는 소리, 행정동까지 들려.'] } });
-  add({ id: 'park', name: '박도현', age: 38, job: '수색팀 중사', team: '수색팀', look: look(2, 'crew', '흑발', '갈색', { brows: '#2a2433' }),
+  add({ banmal: true, id: 'park', name: '박도현', age: 38, job: '수색팀 중사', team: '수색팀', look: look(2, 'crew', '흑발', '갈색', { brows: '#2a2433' }),
     personality: '대위의 오랜 동료. 묵묵하고 믿음직하다.', work: '수색팀 작전동', home: '간부 숙소동',
     sched: '06:30 base.train1|07:30 mess.b01a/0|08:00 ops.b2|09:00 ops.d1|12:00 mess.b01a/0|13:00 field|17:30 ops.d1|18:00 mess.b01b/0|19:00 lng.g1|22:00 -', we: '08:00 -|09:30 gym.wt|11:30 mess.b01b/0|13:00 lng.sofa3/0|17:00 -',
     likesFood: '김치찌개', likesGift: '정밀 공구 세트', rel: '동료',
@@ -65,7 +65,7 @@
     likesFood: '지구산 과자', likesGift: '지구산 과자', rel: '친구',
     lines: { g: ['소문 하나 들으실래요? 공짜예요.', '통신탑 쪽에서 이상한 신호가 잡혔대요. 아니래요. 또 맞대요.', '헌병 중사님 오늘 기분 안 좋아요. 피하세요.', '휴게실 새 오락기 들어온대요! …아마도요.'],
       cap: ['부대에 대위님이 {pf} 님한테 프러포즈한다는 소문이 돌아요. 아직은 소문이에요.', '대위님이 의무동 올 때마다 아픈 척하는 거, 저만 아는 거 아니에요.'], rain: ['비 오는 날엔 소문도 축축해요. 무슨 말인지 모르겠죠? 저도요.'] } });
-  add({ id: 'oh', name: '오지훈', age: 45, job: '정비팀 상사', team: '기술정비팀', look: look(3, 'crew', '흑발', '갈색', { top: '#3d5a7a', bottom: '#34506e', brows: '#2a2433' }),
+  add({ banmal: true, id: 'oh', name: '오지훈', age: 45, job: '정비팀 상사', team: '기술정비팀', look: look(3, 'crew', '흑발', '갈색', { top: '#3d5a7a', bottom: '#34506e', brows: '#2a2433' }),
     personality: '장비에 집착하는 기술자.', work: '정비격납고', home: '간부 숙소동',
     sched: '06:30 -|07:30 mess.b03a/0|08:00 hg.w1|12:00 mess.b03a/0|13:00 hg.w1|18:30 mess.b03b/0|19:30 hg.w1|21:00 -', we: '09:00 hg.w1|12:00 mess.b03a/0|13:00 hg.w1|17:00 -',
     likesFood: '라면', likesGift: '정밀 공구 세트', rel: '동료',
@@ -77,13 +77,13 @@
     likesFood: '향열매 빙수', likesGift: '유리꽃 모조 장식', rel: '동료',
     lines: { g: ['천천히 하면 빨라요.', '방호복 봉제선 점검은 제가 할게요.', '오늘 드론 세 대 살렸어요.', '손 다치지 않게 장갑 끼세요.'],
       cap: ['대위님이 만든 장비, 설계는 엉망인데 이상하게 잘 돌아가요.'] } });
-  add({ id: 'song', name: '송재민', age: 36, job: '보급담당 중사', team: '보급팀', look: look(2, 'short', '갈색', '갈색', { top: '#6b6a45', bottom: '#4a5240' }),
+  add({ banmal: true, id: 'song', name: '송재민', age: 36, job: '보급담당 중사', team: '보급팀', look: look(2, 'short', '갈색', '갈색', { top: '#6b6a45', bottom: '#4a5240' }),
     personality: '간식과 물자 관리의 달인.', work: '보급창고', home: '간부 숙소동',
     sched: '07:00 -|07:30 mess.b10a/0|08:30 px.clerk|12:00 mess.b10a/0|13:00 px.clerk|19:00 mess.b10a/0|19:40 -', we: '10:00 px.clerk|12:00 mess.b10a/0|13:00 px.clerk|18:00 -',
     likesFood: '지구산 과자', likesGift: '지구산 커피', rel: '친구',
     lines: { g: ['어서 와. 오늘 냉삼 도시락 들어왔어.', '재고는 거짓말 안 해. 근데 과자는 자꾸 사라지지.', '보급선 둘째 주말에 와. 장터 열리면 놓치지 마.', '외상은 안 돼. …대위는 예외고.'],
       cap: ['{c} 대위가 냉각 선풍기를 다섯 개째 사 갔어. 다 어디 쓰는 거야?'] } });
-  add({ id: 'nam', name: '남기철', age: 48, job: '식당동 조리장', team: '보급팀', look: look(2, 'crew', '흑발', '갈색', { top: '#f4f6f8', bottom: '#4a4a52', hat: '#ffffff' }),
+  add({ banmal: true, id: 'nam', name: '남기철', age: 48, job: '식당동 조리장', team: '보급팀', look: look(2, 'crew', '흑발', '갈색', { top: '#f4f6f8', bottom: '#4a4a52', hat: '#ffffff' }),
     personality: '푸짐한 식사를 내준다.', work: '식당동', home: '-',
     sched: '05:30 mess.cook|09:00 mess.cook2|11:00 mess.cook|14:00 mess.cook2|16:30 mess.cook|20:00 -', we: '06:30 mess.cook|13:00 mess.cook2|16:30 mess.cook|20:00 -',
     likesFood: '남이 맛있게 먹는 모습', likesGift: '광물염 조미료', rel: '단골 손님',

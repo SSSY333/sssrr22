@@ -122,7 +122,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
     const bar = document.getElementById('chatbar');
-    const input = bar.querySelector('input'), send = bar.querySelector('.send'), end = bar.querySelector('.end'), chips = bar.querySelector('.chips2');
+    const input = bar.querySelector('input'), send = bar.querySelector('.send'), end = bar.querySelector('.end'), chips = bar.querySelector('.chips2'), last = bar.querySelector('.last');
+    last.textContent = '';
     chips.innerHTML = '';
     for (const s of SUGGEST) { const b = U.el('button', null, s); b.onclick = () => { input.value = s; input.focus(); }; chips.append(b); }
     await PX.Dlg.say('cap', U.pick(['응. 무슨 얘기 할까.', '말해. 다 들어 줄게.', '그래, 나 지금 시간 있어.']), 'smile');
@@ -151,6 +152,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
         if (/^\(.*\)$/.test(t)) { const inner = t.slice(1, -1).trim(); await PX.Dlg.say('narr', inner.startsWith(S.capName) ? inner : `${U.josa(S.capName, '이')} ${inner}`); }
         else await PX.Dlg.say('cap', t, face);
       }
+      last.textContent = `${S.capName}: ${res.lines.map(l => l.text).join(' ')}`; // 입력하는 동안 마지막 대답이 보이게
       total += res.aff;
       if (res.action === 'backoff') { S.rel.cap.backoffUntil = St.absMin() + (24 * 60 - S.time.min) + 6 * 60; cap.showEmote('sweat', 2.5); }
       else if (['pat', 'hug', 'hand'].includes(res.action)) {

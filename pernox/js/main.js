@@ -706,6 +706,15 @@
     pad.addEventListener('pointercancel', end);
     Game.joy = joy; Game.joyEnd = () => { id = null; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; pad.classList.remove('run'); };
   }
+  // ---------- 키보드: 입력창에 포커스가 가면 화면 위쪽으로 올려 가리지 않게 ----------
+  {
+    const bar = document.getElementById('chatbar');
+    bar.addEventListener('focusin', () => bar.classList.add('kbtop'));
+    bar.addEventListener('focusout', () => setTimeout(() => { if (!bar.contains(document.activeElement)) bar.classList.remove('kbtop'); }, 50));
+    const sh = document.getElementById('sheets');
+    sh.addEventListener('focusin', (e) => { if (e.target.tagName === 'INPUT') { const w = e.target.closest('.sheet-wrap'); if (w) w.classList.add('kbtop'); } });
+    sh.addEventListener('focusout', (e) => { const w = e.target.closest && e.target.closest('.sheet-wrap'); if (w) setTimeout(() => { if (!w.contains(document.activeElement)) w.classList.remove('kbtop'); }, 50); });
+  }
   // ---------- 확대 · 축소 (버튼 · 휠 · 두 손가락) ----------
   const zoom = (step) => { if (W.zoomBy(step)) { snapCam(); try { St.S.settings.zoomOff = W.view.zoomOff; } catch (e) { /* 저장 전 */ } } };
   $('zoomIn').onclick = () => zoom(1);
@@ -765,7 +774,7 @@
     // 렌더
     const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt };
     W.render(W.maps[Game.mapId], Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
-    positionBubbles();
+    positionBubbles(); positionLabels(); ambient(dt);
     hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); }
     saveT += dt; if (saveT > 300) { saveT = 0; St.save(); }
     requestAnimationFrame(frame);
@@ -813,6 +822,39 @@
         if (sx != null && sy != null) { sy += Math.round(Math.sin(performance.now() / 180) * 1.5); g.fillStyle = '#ffd166'; g.fillRect(sx - 2, sy - 3, 5, 1); g.fillRect(sx - 1, sy - 2, 3, 1); g.fillRect(sx, sy - 1, 1, 1); }
       }
     }
+  }
+  // 건물 이름표 (지붕 위에 떠 있음)
+  const labelEls = new Map(); let labelMap = null;
+  function positionLabels() {
+    const box = document.getElementById('labels'), sc = W.view.cssScale, m = W.maps[Game.mapId];
+    if (labelMap !== Game.mapId) { box.innerHTML = ''; labelEls.clear(); labelMap = Game.mapId; }
+    if (m.kind !== 'out') return;
+    for (const o of m.objs) {
+      if (o.kind !== 'bld') continue;
+      let e = labelEls.get(o.id);
+      if (!e) { e = U.el('div', { class: 'blabel' + (o.b.closed ? ' closed' : '') }, U.el('i', { style: `background:${o.b.stripe}` }), o.b.name.replace(/ \(.*\)$/, '')); box.append(e); labelEls.set(o.id, e); }
+      const [sx, sy] = W.toScreen(o.x + o.fw / 2, o.y + o.fd / 2, o.b.h + 22);
+      const vis = sx > -60 && sx < W.view.w + 60 && sy > -10 && sy < W.view.h + 10;
+      e.style.display = vis ? '' : 'none';
+      if (vis) e.style.transform = `translate(${sx * sc}px, ${sy * sc}px) translate(-50%, -100%)`;
+    }
+  }
+  // NPC 혼잣말 말풍선 (지금 하는 일에 맞춰)
+  let ambT = 4, lastAmb = null;
+  function ambient(dt) {
+    ambT -= dt; if (ambT > 0) return;
+    ambT = 4 + Math.random() * 4;
+    if (Game.modal || Math.random() < 0.45) return;
+    const p = Game.player;
+    const near = Game.npcs.filter(n => n.map === Game.mapId && n !== lastAmb && U.dist(n.x, n.y, p.x, p.y) < 9 && !Game.bubbles.some(b => b.actor === n));
+    if (!near.length) return;
+    const n = U.pick(near), act = n.activity(), A = PX.NPC_ACT[act];
+    if (!A) return;
+    let pool = A.amb;
+    const md = PX.MAPS[n.map], w = St.weather();
+    if (md.kind === 'out' && !md.dome && PX.NPC_ACT.weather[w] && Math.random() < 0.3) pool = PX.NPC_ACT.weather[w];
+    lastAmb = n;
+    Game.bubble(n, U.pick(pool).replace(/\{c\}/g, St.S.capName).replace(/\{cs\}/g, Cap.status()), 2.6);
   }
   function positionBubbles() {
     const now = performance.now(), sc = W.view.cssScale;

@@ -210,3 +210,15 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 /* 확대·축소 */
 #hud .zoom { position: absolute; right: 8px; top: calc(278px + var(--safe-t)); display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
 #hud .zoom button { width: 48px; height: 40px; border-radius: 12px; border: 3px solid var(--line); background: var(--panel2); font-size: 20px; box-shadow: 0 3px 0 var(--line); }
+
+/* 건물 이름표 */
+#labels { position: fixed; inset: 0; pointer-events: none; z-index: 19; }
+.blabel { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 99px; background: rgba(27, 20, 48, 0.78); border: 2px solid var(--line); color: var(--ink); font-size: 12px; white-space: nowrap; }
+.blabel i { width: 8px; height: 8px; border-radius: 3px; border: 1px solid var(--line); }
+.blabel.closed { opacity: .6; }
+/* 키보드가 올라오면 입력창을 화면 위쪽으로 (키보드에 가리지 않게) */
+#chatbar .last { margin: 0; font-size: 14px; color: var(--muted); display: none; line-height: 1.4; }
+#chatbar .last:not(:empty) { display: block; }
+#chatbar.kbtop { top: calc(var(--safe-t) + 96px); bottom: auto; }
+.sheet-wrap.kbtop { align-items: flex-start; padding-top: calc(var(--safe-t) + 12px); }
+.sheet-wrap.kbtop .sheet { border-radius: 18px; border-bottom: 3px solid var(--line); max-height: 46vh; }

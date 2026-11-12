@@ -153,6 +153,44 @@ PX.A = (() => {
       else { this.x = s.x; this.y = s.y; this.dir = s.dir; this.pose = s.pose === 'stand' ? 'idle' : s.pose; }
       this.atSpot = d.name;
     }
+    // 지금 하고 있는 일 → 상황별 대사 고르기에 쓴다
+    activity() {
+      if (!this.map) return null;
+      const sp = this.atSpot || '', m = this.map, pose = this.tempPose || this.pose;
+      if (pose === 'lie') return 'sleep';
+      if (this.path.length || this.wandering) return PX.MAPS[m].kind === 'out' ? 'stroll' : (m === 'mess' ? 'eat' : 'rest');
+      if (pose === 'workout' || m === 'gym' || sp.startsWith('base.train')) return 'workout';
+      if (sp.startsWith('mess.cook')) return 'cook';
+      if (m === 'mess' && this.seat) return 'eat';
+      if (sp === 'sg.boss') return 'grill';
+      if (/clerk|barista/.test(sp) || sp === 'plaza.kiosk') return 'shop';
+      if (sp === 'base.gate' || sp === 'base.gate2') return 'guard';
+      if (sp === 'adm.cmd') return 'work_cmd';
+      const work = { med: 'work_med', ops: 'work_ops', hangar: 'work_hangar', lab: 'work_lab', comms: 'work_comms', admin: 'work_admin' }[m];
+      if (work && !(m === 'hangar' && sp === 'hg.rest')) return work;
+      if (sp === 'lng.arcade' || sp.startsWith('lng.g') || m === 'arcade') return 'game';
+      if (m === 'cafe') return 'cafe';
+      if (m === 'lounge' || m === 'barracks' || this.seat) return 'rest';
+      return PX.MAPS[m].kind === 'out' ? 'stroll' : 'rest';
+    }
+    // 자리 근처를 잠깐 거닐다 돌아온다 (앉아 있거나 운동·계산대 근무 중이면 제자리)
+    maybeWander(d) {
+      const now = performance.now();
+      if (!this.nextWander) { this.nextWander = now + 4000 + Math.random() * 12000; return; }
+      if (now < this.nextWander) return;
+      this.nextWander = now + 6000 + Math.random() * 14000;
+      const sp = d.name || '';
+      if (this.seat || /clerk|barista|boss|cook/.test(sp) || ['workout', 'work', 'lie', 'sit', 'eat'].includes(this.pose)) return;
+      const m = PX.W.maps[this.map];
+      if (this.wandering) { this.wandering = false; this.headTo(d); return; }
+      const R = m.kind === 'out' ? 5 : 3;
+      for (let k = 0; k < 8; k++) {
+        const tx = Math.floor(d.s.x + (Math.random() * 2 - 1) * R), ty = Math.floor(d.s.y + (Math.random() * 2 - 1) * R);
+        if (!PX.W.walkable(m, tx, ty)) continue;
+        const p = PX.Path.find(m, Math.floor(this.x), Math.floor(this.y), tx, ty);
+        if (p && p.length && p.length <= R * 2) { this.speedNow = this.speed * 0.75; this.wandering = true; this.walkPath(p, () => { this.speedNow = 0; this.pose = 'idle'; }); return; }
+      }
+    }
     unstick() { const m = PX.W.maps[this.map]; const t = PX.Path.nearestWalkable(m, this.x, this.y); if (t) { this.x = t[0] + 0.5; this.y = t[1] + 0.5; } }
     think(S, playerMap) {
       if (this.busy) return;
@@ -170,7 +208,7 @@ PX.A = (() => {
         return;
       }
       if (this.path.length) return;
-      if (d.map === this.map) { if (this.atSpot !== d.name) this.headTo(d); return; }
+      if (d.map === this.map) { if (this.atSpot !== d.name) { this.wandering = false; this.headTo(d); } else if (d.kind === 'spot') this.maybeWander(d); return; }
       // 다른 맵으로 가야 함 → 출구로 걸어가서 사라짐
       const m = PX.W.maps[this.map];
       const target = d.map ? (PX.MAPS[d.map].kind === 'in' && PX.MAPS[d.map].parent === this.map ? d.map : (m.kind === 'in' ? m.def.parent : d.map)) : null;
