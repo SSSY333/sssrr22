@@ -349,13 +349,15 @@ PX.Cap = (() => {
       }
     }
     if (r.stage >= 2 && PX.Rom && !PX.Rom.nextDate() && !(PX.Mind && PX.Mind.refused('dateAsk')) && St.isWeekend() === false && Math.random() < 0.2) { PX.Dlg.close(); g.modal--; await PX.Rom.capAskDate(); g.modal++; }
-    const opts = [{ t: '같이 다녀요.', k: 'follow' }, { t: '잠깐 얘기해요.', k: 'talk' }, { t: '오늘은 혼자 있고 싶어요.', k: 'alone' }, { t: '이따 봐요.', k: 'later' }];
-    const i = await PX.Dlg.choose(opts);
-    const k = opts[i].k;
-    await PX.Dlg.say('player', opts[i].t);
-    if (k === 'follow') { await PX.Dlg.say('cap', U.pick(['그 말 기다렸어.', '좋아. 어디든.', '오케이. 네 속도에 맞출게.']), 'smile'); startFollow(); St.addAff(2); }
-    else if (k === 'alone') { if (PX.Mind) PX.Mind.noteRefuse('follow', 600); await PX.Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; mode = 'sched'; }
-    else if (k === 'later') { if (PX.Mind) PX.Mind.noteRefuse('follow', 90); await PX.Dlg.say('cap', '응. 이따 꼭 보자.'); r.lastApproach = St.absMin() + 30; mode = 'sched'; r.noFollowUntil = St.absMin() + 60; }
+    // 상황에 맞는 제안 · 질문과 그 질문에 맞는 대답 (말투는 관계에 따라)
+    const { k } = await PX.Ask.propose();
+    if (['follow', 'meal', 'walk', 'escort'].includes(k)) {
+      startFollow(); St.addAff(2);
+      if (k === 'meal') PX.UI.toast('🍚 같이 식당에 가요 · 식당에서 앉으면 같이 먹을 수 있어요', 3200);
+      if (k === 'escort') PX.UI.toast('🏠 대위가 숙소까지 데려다줘요', 2600);
+    }
+    else if (k === 'alone' || k === 'rest') { if (PX.Mind) PX.Mind.noteRefuse('follow', 600); r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; mode = 'sched'; }
+    else if (k === 'later') { if (PX.Mind) PX.Mind.noteRefuse('follow', 90); r.lastApproach = St.absMin() + 30; mode = 'sched'; r.noFollowUntil = St.absMin() + 60; }
     PX.Dlg.close(); g.modal--;
     if (k === 'talk') await PX.Dlg.capTalk();
   }

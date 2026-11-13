@@ -79,12 +79,13 @@ PX.Dlg = (() => {
       chEl.innerHTML = ''; chEl.classList.remove('hidden'); nextEl.classList.add('hidden');
       box.classList.remove('hidden');
       opts.forEach((o, i) => {
-        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, (i + 1) + '. ' + o.t);
-        b.addEventListener('click', (e) => { e.stopPropagation(); document.removeEventListener('keydown', onKey); chEl.classList.add('hidden'); res(i); });
+        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, o.t);
+        b.addEventListener('click', (e) => { e.stopPropagation(); if (navigator.vibrate) try { navigator.vibrate(8); } catch (_) {} chEl.classList.add('hidden'); res(i); });
         chEl.append(b);
       });
-      const onKey = (e) => { const n = parseInt(e.key, 10); if (n >= 1 && n <= opts.length) { document.removeEventListener('keydown', onKey); chEl.classList.add('hidden'); res(n - 1); } };
-      document.addEventListener('keydown', onKey);
+      // 선택지는 대화창 바로 위에 (대화창 높이에 맞춰), 넘치면 스크롤
+      document.documentElement.style.setProperty('--dlgH', (box.offsetHeight || 120) + 'px');
+      chEl.scrollTop = 0;
     });
   }
   // AI 응답을 기다리는 동안: 대위 초상 + 점점 늘어나는 "…"
@@ -214,9 +215,10 @@ PX.Dlg = (() => {
         const X = PX.DLG_CAP2;
         if (X && X.place[G.mapId] && Math.random() < 0.32) cat = 'place';
         else if (X && Math.random() < 0.22) cat = 'small';
+        else if (PX.Ask && Math.random() < 0.3) cat = 'qa';
       }
     }
-    let bd = cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
+    let bd = cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'qa' ? pick('qa', PX.Ask.QA) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
     if (cat === 'v:reunion' && M) M.mem().reunion = null;
     if (!forceCat && !cat.startsWith('v:') && cat !== 'jobVisit' && cat !== 'working' && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
     if (!bd) bd = pick('small', PX.DLG_CAP2.small) || pick('praise', D.praise);

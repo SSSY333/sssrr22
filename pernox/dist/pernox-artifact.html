@@ -72,8 +72,9 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .ebar { display: inline-block; width: 56px; height: 9px; border-radius: 6px; background: #120c20; overflow: hidden; border: 2px solid #120c20; }
 .ebar i { display: block; height: 100%; background: var(--mint); transition: width .3s; }
 .ebar.low i { background: var(--red); }
-.loc { position: absolute; top: calc(66px + var(--safe-t)); left: 8px; padding: 3px 10px; font-size: 13px; color: var(--ink); }
-.chip-cap { position: absolute; top: calc(66px + var(--safe-t)); right: 8px; max-width: 66%; padding: 3px 10px; font-size: 12px; pointer-events: auto; text-align: right; color: var(--ink); }
+.loc { position: absolute; top: calc(66px + var(--safe-t)); left: max(8px, env(safe-area-inset-left, 0px)); max-width: calc(100% - 76px); padding: 3px 10px; font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 위치 아래 줄에 대위 상태 (좁은 폰에서도 겹치지 않게) */
+.chip-cap { position: absolute; top: calc(94px + var(--safe-t)); left: max(8px, env(safe-area-inset-left, 0px)); max-width: calc(100% - 76px); padding: 3px 10px; font-size: 12px; pointer-events: auto; text-align: left; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chip-cap b { font-weight: 400; color: var(--pink); }
 .chip-cap .heart { color: var(--pink); margin-left: 4px; white-space: nowrap; }
 #hud .side { position: absolute; right: 8px; top: calc(100px + var(--safe-t)); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
@@ -86,7 +87,7 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .bubble { position: absolute; left: 0; top: 0; width: max-content; max-width: 190px; padding: 6px 10px; background: #fff7ef; color: #2a1020; border: 3px solid var(--line); border-radius: 12px; font-size: 14px; line-height: 1.35; white-space: normal; word-break: keep-all; overflow-wrap: anywhere; text-align: center; animation: pop .2s; }
 .bubble::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--line); }
 @keyframes pop { from { transform: scale(.6); opacity: 0; } }
-#toasts { position: fixed; left: 50%; transform: translateX(-50%); top: calc(118px + var(--safe-t)); z-index: 80; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; width: min(92vw, 420px); }
+#toasts { position: fixed; left: 50%; transform: translateX(-50%); top: calc(128px + var(--safe-t)); z-index: 80; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; width: min(92vw, 420px); }
 .toast { background: rgba(27,20,48,.95); border: 3px solid var(--line); border-radius: 12px; padding: 7px 13px; font-size: 14px; text-align: center; transition: opacity .4s, transform .4s; }
 .toast.out { opacity: 0; transform: translateY(-8px); }
 
@@ -102,8 +103,8 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .dtext { margin: 0; font-size: 17px; line-height: 1.5; word-break: keep-all; white-space: pre-wrap; }
 .dnext { position: absolute; right: 2px; bottom: -4px; color: var(--gold); animation: bob .8s infinite; }
 @keyframes bob { 50% { transform: translateY(3px); } }
-#choices { position: fixed; left: 12px; right: 12px; bottom: calc(132px + var(--safe-b)); z-index: 51; display: flex; flex-direction: column; gap: 7px; max-width: 520px; margin: 0 auto; }
-.choice { text-align: left; padding: 11px 14px; border-radius: 12px; border: 3px solid var(--line); background: #fff7ef; color: #2a1020; font-size: 16px; box-shadow: 0 3px 0 var(--line); }
+#choices { position: fixed; left: 12px; right: 12px; bottom: calc(var(--dlgH, 120px) + 18px + var(--safe-b)); z-index: 51; display: flex; flex-direction: column; gap: 6px; max-width: 520px; margin: 0 auto; max-height: calc(100dvh - var(--dlgH, 120px) - 140px - var(--safe-t) - var(--safe-b)); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; padding-bottom: 3px; }
+.choice { flex: none; min-height: 44px; text-align: left; padding: 9px 14px; line-height: 1.3; border-radius: 12px; border: 3px solid var(--line); background: #fff7ef; color: #2a1020; font-size: 16px; box-shadow: 0 3px 0 var(--line); }
 .choice:active { transform: translateY(2px); }
 .choice.hurt { background: #e6dcf0; color: #4a3a5a; }
 
@@ -239,6 +240,31 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 
 /* 대화·선택지 글자: 한국어 단어 중간에서 끊기지 않게 */
 #dlg .dtext, #choices .choice, .toast, .bubble, .menu-btn span, .menu-btn small { word-break: keep-all; overflow-wrap: anywhere; }
+
+/* ---------- 모바일 전용 마감 ---------- */
+html, body { overscroll-behavior: none; -webkit-touch-callout: none; -webkit-text-size-adjust: 100%; }
+canvas { -webkit-touch-callout: none; }
+#chatbar input, .msgfree input, .row input[type=text] { font-size: 16px; -webkit-user-select: text; user-select: text; }
+button { touch-action: manipulation; }
+@media (max-width: 360px) { .choice { font-size: 15px; padding: 8px 12px; } #dlg canvas { width: 52px; height: 50px; } #hud .side button { width: 44px; height: 44px; font-size: 20px; } }
+@media (max-height: 640px) and (orientation: portrait) { #hud .zoom { top: calc(250px + var(--safe-t)); } #hud .zoom button { height: 36px; } #joy { width: 112px; height: 112px; } }
+/* 가로 화면: 대화창은 왼쪽, 선택지는 오른쪽 · 버튼은 위쪽 가로줄 */
+@media (orientation: landscape) and (max-height: 520px) {
+  #dlg { right: 50%; left: max(8px, env(safe-area-inset-left, 0px)); padding: 8px; }
+  #dlg canvas { width: 48px; height: 46px; }
+  #choices { left: calc(50% + 8px); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(10px + var(--safe-b)); max-height: calc(100dvh - 76px - var(--safe-t) - var(--safe-b)); margin: 0; }
+  .choice { font-size: 15px; min-height: 40px; padding: 7px 12px; }
+  #hud .side { flex-direction: row; top: calc(60px + var(--safe-t)); right: max(8px, env(safe-area-inset-right, 0px)); }
+  #hud .side button { width: 42px; height: 42px; font-size: 19px; }
+  #hud .zoom { flex-direction: row; top: calc(110px + var(--safe-t)); right: max(8px, env(safe-area-inset-right, 0px)); }
+  #hud .zoom button { width: 42px; height: 36px; }
+  .loc, .chip-cap { max-width: calc(100% - 260px); }
+  #joy { width: 104px; height: 104px; bottom: calc(14px + var(--safe-b)); }
+  #actBtn { bottom: calc(18px + var(--safe-b)); }
+  #capBtns, #moreBtn { bottom: calc(76px + var(--safe-b)); }
+  #capBtns:not(.hidden) ~ #moreBtn { bottom: calc(136px + var(--safe-b)); }
+  .sheet { max-height: 92dvh; }
+}
 
 </style>
 <canvas id="game"></canvas>
@@ -4797,12 +4823,13 @@ PX.Dlg = (() => {
       chEl.innerHTML = ''; chEl.classList.remove('hidden'); nextEl.classList.add('hidden');
       box.classList.remove('hidden');
       opts.forEach((o, i) => {
-        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, (i + 1) + '. ' + o.t);
-        b.addEventListener('click', (e) => { e.stopPropagation(); document.removeEventListener('keydown', onKey); chEl.classList.add('hidden'); res(i); });
+        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, o.t);
+        b.addEventListener('click', (e) => { e.stopPropagation(); if (navigator.vibrate) try { navigator.vibrate(8); } catch (_) {} chEl.classList.add('hidden'); res(i); });
         chEl.append(b);
       });
-      const onKey = (e) => { const n = parseInt(e.key, 10); if (n >= 1 && n <= opts.length) { document.removeEventListener('keydown', onKey); chEl.classList.add('hidden'); res(n - 1); } };
-      document.addEventListener('keydown', onKey);
+      // 선택지는 대화창 바로 위에 (대화창 높이에 맞춰), 넘치면 스크롤
+      document.documentElement.style.setProperty('--dlgH', (box.offsetHeight || 120) + 'px');
+      chEl.scrollTop = 0;
     });
   }
   // AI 응답을 기다리는 동안: 대위 초상 + 점점 늘어나는 "…"
@@ -4932,9 +4959,10 @@ PX.Dlg = (() => {
         const X = PX.DLG_CAP2;
         if (X && X.place[G.mapId] && Math.random() < 0.32) cat = 'place';
         else if (X && Math.random() < 0.22) cat = 'small';
+        else if (PX.Ask && Math.random() < 0.3) cat = 'qa';
       }
     }
-    let bd = cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
+    let bd = cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'qa' ? pick('qa', PX.Ask.QA) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
     if (cat === 'v:reunion' && M) M.mem().reunion = null;
     if (!forceCat && !cat.startsWith('v:') && cat !== 'jobVisit' && cat !== 'working' && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
     if (!bd) bd = pick('small', PX.DLG_CAP2.small) || pick('praise', D.praise);
@@ -5081,17 +5109,43 @@ PX.Reply = (() => {
 
   // ---------- 질문 분류 ----------
   const CATS = [
-    ['permit', /(해도|가도|들어가도|잡아도|안아도|앉아도|만져도|봐도|써도|돼)\s*\??$|괜찮지\?$|줄래\?$|빌려줘/],
+    ['capTired', /^나 .*(피곤해 보|아파 보|힘들어 보|지쳐 보|살 빠|말랐)/],
+    ['comfort', /나랑 (있으면|있는 거|같이 있으면).*(편해|좋아|재밌|어때)|나 (좋아|싫어)\?/],
+    ['self', /^(나|내가|나랑|나한테|내) .*(티 나|보여|어때|멋있|편해|어울|괜찮아 보|좋아\?|싫어\?)|^나 (오늘|요즘)/],
+    ['plan', /(뭐 하고 싶|뭐 할 거|계획|하고 싶은 거|뭐 하지|제일 먼저 뭐)/],
+    ['past', /(본 적|해 본|가 본|오기 전|고향|어릴 때|예전엔|생각 날 때)/],
+    ['fav', /(제일 (좋아|재밌|맛있)|좋아하는 (거|장소|노래|음식)|뭐 들어|취향|재밌는 거|좋아해\?$)/],
+    ['gift', /(주는 거야|나한테\?|만든 거야|받는 거야|반지야|네 건데)/],
+    ['rival', /\{rival|그 사람이|누구랑 그렇게|질투|내가 더 낫/],
+    ['miss', /보고 싶|나 보러|기대해도|운명|먼저 찾아왔/],
+    ['check', /냄새 나|뭐 묻었|면도|얼굴에 .*있어|땀 냄새/],
+    ['feel', /화났|행복했|괜찮았|풀렸|진심이야|진짜\?$|진짜지\?$|정말\?$|좋았어\?|피하는 거/],
+    ['going', /(집에|샤워하러|여기|어디) ?가(려고)?\?$|벌써\?$|보내려고\?/],
+    ['avail', /더 있어 줄|더 있고 싶|시간 있어|비었지|한가해|바빠\?/],
+    ['offer', /(줄까|할까|잡을까|끌까|갈까|놓을까|꿇을까|말할까|잡을래|볼까)\?$/],
+    ['permit', /되는 상황인가|뽀뽀는\?|호는\?|만지면 혼나|(해도|가도|들어가도|잡아도|안아도|앉아도|만져도|봐도|써도|돼)\s*\??$|괜찮지\?$|줄래\?$|빌려줘/],
     ['know', /알아\?|아세요\?|아시|봤어\?|보셨|들었어\?|들으셨|알지\?|기억나\?|기억나세요|기억해\?|아는/],
     ['meal', /밥|먹었|드셨|먹을래|드실래|배고프|메뉴|국 |간식|커피 마|뭐 먹|저녁 뭔|점심 뭔/],
-    ['tired', /피곤|힘들|아파|다친 데|잘 잤|잠은|괜찮아\?|괜찮으세요|어디 아|졸려|추워|더워|춥지|덥지/],
-    ['day', /너는\?|넌\?|너는 어땠|오늘 (어땠|뭐 했|하루)|뭐 했어|그새|하루 어땠|별일 없었|근무 어땠|무슨 일 있었|어떻게 지냈/],
+    ['tired', /안 자\?|잠이 안 와|손 안 떨렸|피곤|힘들|아파|다친 데|잘 잤|잠은|괜찮아\?|괜찮으세요|어디 아|졸려|추워|더워|춥지|덥지/],
+    ['day', /바빴어|끝났어\?|좋은 일 있|할 말 있|빠뜨렸|너는\?|넌\?|너는 어땠|오늘 (어땠|뭐 했|하루)|뭐 했어|그새|하루 어땠|별일 없었|근무 어땠|무슨 일 있었|어떻게 지냈/],
     ['invite', /(할래|갈래|볼래|올래|먹을래|마실래|탈래|출래|걸을래|앉을래|들을래|하실래요|가실래요|보실래요)\?|(하자|가자|보자|먹자)[.?]?$|어때\?$|어떠|한 판|같이 /],
     ['like', /좋아해\?|좋아\?|마음에 들|좋지\?|예쁘지|맛있지|재밌지|괜찮지\?|어울려\?/],
     ['why', /왜\?|왜 그렇게|왜 웃|왜 봐/],
-    ['what', /뭐야\?|뭐 해\?|뭐 할|어디|언제|누구|몇|뭐 사|뭐 봐|무슨/],
+    ['what', /뭐 써\?|뭐 뿌렸|어떻게 알았|뭐야\?|뭐 해\?|뭐 할|어디|언제|누구|몇|뭐 사|뭐 봐|무슨/],
+    ['tag', /신청이야|는데\?$|컸다\?|맞아\?$|기억해 둔다\?|(지|죠|그치|맞지|않아|거지|거야|잖아|냐|돼)\?$/],
   ];
-  const catOf = (t) => { for (const [k, re] of CATS) if (re.test(t)) return k; return 'misc'; };
+  // 'A야, B야?' / 'A 좋아해, B 좋아해?' / 'A? 아니면 B?' 처럼 둘 중 하나를 고르는 질문
+  function choiceOf(t) {
+    const x = t.replace(/^.*?[.!]\s+/, '').trim();
+    let m = /([가-힣A-Za-z0-9 ]{1,12}?)\s*(?:이야|야|좋아해|형이야|파야)[,?]?\s*(?:아니면\s*)?([가-힣A-Za-z0-9 ]{1,12}?)\s*(?:이야|야|좋아해|형이야|파야)\?$/.exec(x)
+      || /([가-힣A-Za-z0-9 ]{1,12}?)\?\s*아니면\s*([가-힣A-Za-z0-9 ]{1,12}?)\?$/.exec(x);
+    if (!m) return null;
+    const a = m[1].trim(), b = m[2].trim();
+    if (!a || !b || a === b) return null;
+    const suf = /형이야/.test(x) ? '형' : '';
+    return [a + suf, b + suf];
+  }
+  const catOf = (t) => { if (choiceOf(t)) return 'choice'; for (const [k, re] of CATS) if (re.test(t)) return k; return 'misc'; };
   const isQ = (t) => /[?？]\s*$/.test(t.trim());
 
   // ---------- 대답 (말투별) ----------
@@ -5109,6 +5163,22 @@ PX.Reply = (() => {
     know: [R('pos', '네, 알아요.', '알아요, 알아.', '알지.', '알지.'), R('neu', '아뇨, 처음 들어요. 뭔데요?', '처음 들어요. 뭔데요?', '처음 듣는데. 뭔데?', '처음 들어. 뭔데?'), R('neg', '기억이 잘 안 나요…', '가물가물해요.', '가물가물해.', '잘 기억 안 나.'), R('flirt', '대위님 얘기라면 다 기억해요.', '대위님 얘기는 다 기억하죠.', '네 얘기는 다 기억해.')],
     why: [R('neu', '그냥요.', '그냥이에요.', '그냥.', '그냥.'), R('pos', '비밀이에요.', '비밀.', '비밀이야.', '비밀.'), R('flirt', '대위님이 좋아서요.', '대위님이 좋으니까요.', '네가 좋으니까.'), R('neg', '아무것도 아니에요.', '아니에요, 아무것도.', '아무것도 아니야.', '아무것도 아냐.')],
     what: [R('neu', '음, 아직 생각 중이에요.', '아직 생각 중이에요.', '아직 생각 중.', '생각 중이야.'), R('pos', '대위님이 정해 주세요.', '대위님이 정해요.', '네가 정해.', '네가 정해.'), R('neu', '그러게요. 뭐가 좋을까요?', '뭐가 좋을까요?', '뭐가 좋을까?', '뭐가 좋을까?'), R('flirt', '대위님이 있는 데요.', '대위님 있는 곳이요.', '너 있는 데.')],
+    self: [R('pos', '네, 잘 어울려요.', '응, 잘 어울려요.', '응, 잘 어울려.', '잘 어울려.'), R('neu', '음… 잘 모르겠어요. 다시 볼게요.', '음, 다시 봐야겠어요.', '음, 다시 봐야겠다.', '글쎄, 다시 볼게.'), R('neg', '솔직히 별 차이 없어요.', '솔직히 별 차이 없는데요?', '솔직히 별 차이 없는데?', '별 차이 없어.'), R('flirt', '대위님은 늘 멋있어요.', '대위님은 맨날 멋있잖아요.', '넌 맨날 멋있잖아.'),],
+    capTired: [R('pos', '아뇨, 괜찮아 보여요.', '아뇨, 괜찮아 보이는데요?', '아니, 괜찮아 보여.', '괜찮아 보여.'), R('neg', '네, 좀 피곤해 보여요. 오늘은 쉬어요.', '좀 그래 보여요. 쉬어요, 오늘은.', '응, 좀. 오늘은 쉬어.', '좀. 쉬어.'), R('neu', '조금요. 어제 늦게 잤어요?', '조금요. 어제 늦게 잤죠?', '조금. 어제 늦게 잤지?', '조금. 늦게 잤지?'), R('flirt', '피곤해도 멋있어요.', '피곤해 보여도 멋있는데요.', '피곤해도 멋있어.')],
+    comfort: [R('pos', '네, 편해요. 제일 편해요.', '편해요, 제일.', '편해. 제일.', '편하지.'), R('neu', '편한데… 가끔은 떨려요.', '편한데 가끔 떨려요.', '편한데 가끔 떨려.', '편해. 가끔 떨리고.'), R('neg', '아직은 조금 어색해요.', '아직 좀 어색해요.', '아직 좀 어색해.', '좀 어색해.'), R('flirt', '대위님이랑 있을 때가 제일 좋아요.', '대위님 옆이 제일 좋아요.', '네 옆이 제일 좋아.')],
+    plan: [R('pos', '대위님이랑 놀고 싶어요.', '대위님이랑 놀래요.', '너랑 놀래.', '같이 놀자.'), R('neu', '아직 생각 중이에요.', '아직 생각 중이에요, 음.', '아직 생각 중.', '생각 중이야.'), R('neg', '아무것도 안 하고 쉬고 싶어요.', '그냥 푹 쉬고 싶어요.', '그냥 푹 쉬고 싶어.', '푹 쉴래.'), R('neu', '돔시티 구경도 하고, 맛있는 것도 먹고요.', '돔시티 가서 맛있는 거 먹을래요.', '돔시티 가서 맛있는 거 먹을래.', '맛있는 거 먹을래.'), R('flirt', '대위님이 하고 싶은 거요.', '대위님 하고 싶은 거 같이 해요.', '너 하고 싶은 거 같이 하자.')],
+    past: [R('pos', '네, 있어요. 좋은 기억이에요.', '있어요. 좋았어요.', '있어. 좋았어.', '있지.'), R('neu', '아뇨, 아직요. 대위님은요?', '아직이요. 대위님은요?', '아직. 너는?', '아직. 너는?'), R('neg', '가끔요. 그럴 땐 좀 쓸쓸해요.', '가끔요. 좀 쓸쓸해요.', '가끔. 좀 쓸쓸해.', '가끔.'), R('neu', '얘기하자면 길어요.', '얘기하면 길어요, 그거.', '얘기하면 길어.', '길어, 그 얘기.'), R('flirt', '지금은 여기가 더 좋아요.', '지금은 여기가 좋아요. 대위님 있으니까.', '지금은 여기가 좋아. 너 있으니까.')],
+    fav: [R('pos', '요즘은 일 끝나고 산책하는 거요.', '요즘은 산책이 좋아요.', '요즘은 산책이 좋아.', '산책.'), R('neu', '음, 딱 하나 고르기 어려워요.', '하나만 고르기 어려운데요.', '하나만 고르긴 어려워.', '어렵다, 그거.'), R('pos', '카페 창가 자리요.', '카페 창가 자리요, 저는.', '카페 창가 자리.', '창가 자리.'), R('neg', '요즘은 딱히 없어요.', '요즘은 딱히요.', '요즘은 딱히 없어.', '딱히.'), R('flirt', '대위님이랑 있는 거요.', '대위님이랑 있는 거.', '너랑 있는 거.')],
+    choice: [],
+    gift: [R('pos', '네, 대위님 거예요.', '네, 대위님 거.', '응, 네 거야.', '네 거야.'), R('neu', '마음에 들었으면 좋겠어요.', '마음에 들어요?', '마음에 들어?', '마음에 들어?'), R('flirt', '대위님 생각하면서 골랐어요.', '대위님 생각하면서 골랐어요, 이거.', '너 생각하면서 골랐어.'), R('neg', '그냥… 남아서요.', '그냥 남아서요.', '그냥 남아서.', '남아서.')],
+    rival: [R('neu', '그냥 동료예요.', '그냥 동료예요, 진짜.', '그냥 동료야.', '그냥 동료.'), R('pos', '조금 친해요. 좋은 사람이에요.', '좀 친해요. 좋은 사람이고.', '좀 친해. 좋은 사람이야.', '좀 친해.'), R('flirt', '대위님이 훨씬 좋아요.', '대위님이 더 좋은데요.', '네가 훨씬 좋아.'), R('neg', '그건 대위님이 상관할 일 아니에요.', '그건 비밀이에요.', '그건 비밀이야.', '비밀.')],
+    miss: [R('pos', '네, 보고 싶어서요.', '응, 보고 싶어서요.', '응, 보고 싶어서.', '보고 싶어서.'), R('neu', '우연이에요, 우연.', '그냥 우연이에요.', '그냥 우연이야.', '우연이야.'), R('neg', '…아닌데요?', '아닌데요?', '아닌데?', '아닌데?'), R('flirt', '들켰네요.', '들켰다, 나.', '들켰네.')],
+    check: [R('pos', '아뇨, 하나도 안 나요.', '아뇨, 괜찮은데요?', '아니, 괜찮아.', '괜찮아.'), R('neu', '음… 조금요? 제가 봐 줄게요.', '조금요. 제가 봐 줄게요.', '조금. 내가 봐 줄게.', '조금.'), R('neg', '네, 조금요. 씻고 와요.', '좀요. 씻고 와요.', '응, 좀. 씻고 와.', '좀.'), R('flirt', '그래도 멋있어요.', '그래도 멋있는데요.', '그래도 멋있어.')],
+    feel: [R('pos', '네. 진짜예요.', '응, 진짜예요.', '응. 진짜야.', '진짜야.'), R('neu', '조금요.', '조금이요.', '조금.', '조금.'), R('neg', '아직은 좀요.', '아직 좀요.', '아직 좀.', '아직.'), R('flirt', '대위님 덕분에요.', '대위님 덕분이에요.', '너 덕분에.')],
+    going: [R('neu', '네, 들어가 보려고요.', '네, 들어가려고요.', '응, 들어가려고.', '응.'), R('pos', '금방 올게요. 기다려요.', '금방 와요. 기다려요.', '금방 와. 기다려.', '금방 와.'), R('pos', '같이 갈래요?', '같이 가요, 그럼.', '같이 갈래?', '같이 가자.'), R('flirt', '아쉬워요?', '왜요, 아쉬워요?', '왜, 아쉬워?')],
+    avail: [R('pos', '네, 있어요.', '있어요, 시간.', '있어. 시간.', '있어.'), R('neu', '왜요? 무슨 일 있어요?', '왜요? 무슨 일?', '왜? 무슨 일 있어?', '왜?'), R('neg', '오늘은 좀 바빠요.', '오늘은 좀 바빠요, 미안.', '오늘은 좀 바빠. 미안.', '좀 바빠.'), R('flirt', '대위님 위해서 비워 둘게요.', '대위님 거면 비워 둘게요.', '너라면 비워 둘게.')],
+    offer: [R('pos', '네, 좋아요.', '응, 좋아요.', '응, 좋아.', '좋지.'), R('neg', '괜찮아요, 안 그래도 돼요.', '괜찮아요, 됐어요.', '괜찮아, 됐어.', '됐어.'), R('neu', '음… 조금만요.', '조금만이에요.', '조금만.', '조금만.'), R('flirt', '빨리요.', '빨리 해 줘요.', '빨리.')],
+    tag: [R('pos', '맞아요.', '맞아요, 그거.', '맞아.', '그치.'), R('neu', '음, 글쎄요?', '글쎄요?', '글쎄?', '글쎄.'), R('neg', '아닌데요?', '아닌데요, 전혀.', '아닌데?', '아닌데.'), R('flirt', '…알면서 왜 물어요.', '알면서 물어요?', '알면서 묻기는.')],
     misc: [R('pos', '네, 그럼요.', '그럼요.', '그럼.', '당연하지.'), R('neu', '음… 글쎄요.', '음, 글쎄요.', '음, 글쎄.', '글쎄.'), R('neg', '아니요.', '아뇨.', '아니.', '아니.'), R('flirt', '대위님은 어떻게 생각하는데요?', '대위님 생각은요?', '넌 어떻게 생각해?')],
   };
 
@@ -5126,6 +5196,22 @@ PX.Reply = (() => {
     permit: { neg: ['C:응. 알았어. 안 할게.', 'C:그래. 싫으면 안 하는 거야.'] },
     invite: { neg: ['C:응. 다음에 꼭.', 'C:알았어. 네가 편할 때.'], neu: ['C:네가 정해. 어디든 따라갈게.'] },
     day: { neg: ['C:고생했다. 오늘은 내가 다 들어 줄게.'], neu: ['C:응, 멀쩡해. 걱정해 줘서 고마워.'] },
+    gift: { pos: ['C!:…', 'C~:고맙다. 진짜로. 오래 쓸게.'], neu: ['C^:마음에 안 들 리가 없잖아.'], flirt: ['C~:…그 말 때문에 더 소중해졌다.'], neg: ['C*:남아서라도 나한테 온 거면 좋아.'] },
+    rival: { neu: ['C:…그래. 동료. 알았어.', 'C*:동료라는 말, 믿을게.'], pos: ['C;:…그렇구나. 좋은 사람이면 됐어.'], flirt: ['C^:그 말 한 번 더 해 줘.', 'C~:…이겼다.'], neg: ['C;:…응. 미안. 괜히 물었다.'] },
+    miss: { pos: ['C^:나도. 그래서 먼저 왔어.'], neu: ['C*:우연이 하루에 세 번이면 그건 운명이야.'], neg: ['C*:얼굴은 그렇다는데.'], flirt: ['C~:…귀엽게 들키네.'] },
+    check: { pos: ['C^:다행이다.'], neu: ['C:어디? 여기?'], neg: ['C;:…씻고 온다. 삼 분.'], flirt: ['C~:…그런 말은 하지 마. 거울 계속 보게 되잖아.'] },
+    feel: { pos: ['C^:다행이다. 진짜로.'], neu: ['C:조금이라도 다행이다.'], neg: ['C;:그래. 천천히 해. 기다릴게.'], flirt: ['C~:…나 덕분이라고? 그럼 앞으로도 계속 그래야겠다.'] },
+    going: { neu: ['C:응. 조심히 들어가.'], pos: ['C^:응. 여기 있을게.', 'C^:좋아. 같이 가자.'], flirt: ['C*:아쉽지. 많이.'] },
+    avail: { pos: ['C^:그럼 그 시간 나 줘.'], neu: ['C:아니, 그냥 보고 싶어서.'], neg: ['C:응. 다음에 시간 될 때 말해 줘.'], flirt: ['C~:…그럼 꼭 비워 둬.'] },
+    offer: { pos: ['C^:응.'], neg: ['C:알았어. 안 할게.'], neu: ['C*:조금만. 알았어.'], flirt: ['C!:…', 'C~:재촉하는 거야? 좋다.'] },
+    tag: { pos: ['C^:역시.'], neu: ['C*:글쎄라니. 서운하네.'], neg: ['C;:…아니야? 진짜?'], flirt: ['C~:…알아도 듣고 싶어서.'] },
+    choice: { pos: ['C:역시. 그럴 것 같았어.', 'C^:좋아. 기억해 둘게.', 'C*:나랑 같네.', 'C:의외다. 그것도 기억해 둔다.'], neu: ['C:욕심쟁이.', 'C*:나? 비밀. 다음에 맞혀 봐.'], flirt: ['C~:…그런 대답이 제일 곤란해.'] },
+    capTired: { pos: ['C^:다행이다. 너 보면 피곤이 풀리나 봐.'], neg: ['C;:들켰네. 오늘은 일찍 잘게. 약속.'], neu: ['C*:…어떻게 알았어. 작전 보고서 쓰다가.'], flirt: ['C~:…그 말이면 피곤 다 풀렸다.'] },
+    comfort: { pos: ['C^:다행이다. 나도 그래.', 'C:…그 말 듣고 싶었어.'], neu: ['C*:떨린다고? 그거 좋은 신호다.'], neg: ['C:괜찮아. 천천히 하자. 기다릴게.'], flirt: ['C~:…나도. 진짜로.'] },
+    self: { pos: ['C^:다행이다. 너한테 잘 보이려고 한 거야.', 'C*:역시 보는 눈 있네.'], neg: ['C;:…그래? 다시 자를까.', 'C;:솔직하네. 상처받았다.'], neu: ['C*:자세히 봐. 천천히.'], flirt: ['C~:…방금 그 말, 하루 종일 생각날 것 같아.'] },
+    plan: { pos: ['C^:정답. 그럼 그날 비워 둔다.'], neg: ['C:그래. 쉬는 것도 계획이지.'], neu: ['C:정하면 말해 줘. 거기 맞출게.', 'C:좋네. 나도 끼워 줘.'], flirt: ['C~:그럼 내가 하고 싶은 거… 너랑 있는 거.'] },
+    past: { pos: ['C^:좋겠다. 언젠가 나한테도 들려줘.'], neu: ['C:나? 나도 없어. 같이 해 보자, 언젠가.', 'C:천천히 들려줘. 시간 많아.'], neg: ['C;:…그럴 땐 나한테 와. 쓸쓸할 틈 없게 해 줄게.'], flirt: ['C~:…나 있어서 좋다는 거지? 확인했다.'] },
+    fav: { pos: ['C^:나도 그거 좋아. 다음에 같이 하자.', 'C:기억해 둘게.'], neg: ['C:그럼 내가 하나 만들어 줄게. 좋아하는 거.'], neu: ['C*:하나만 골라. 명령이야. 농담.'], flirt: ['C~:…그 대답 예상 못 했다.'] },
   };
   // NPC: 반말 쓰는 사람 · 존댓말 쓰는 사람
   const NPC_RE = {
@@ -5143,8 +5229,17 @@ PX.Reply = (() => {
     return 'p';
   }
   function fill(t) { const j = St.S.player.job; return t.replace('{work}', WORK[j] || '일했어요').replace('{workc}', WORKc[j] || '일했어'); }
+  // 둘 중 하나 고르기 질문의 대답
+  function choiceOpts(q, tn, love) {
+    const [a, b] = choiceOf(q), E = tn === 'c' ? '' : '요';
+    const yo = (w) => w + (tn === 'c' ? '.' : /[가-힣]$/.test(w) && (w.charCodeAt(w.length - 1) - 0xac00) % 28 ? '이요.' : '요.');
+    const out = [{ t: yo(a), mood: 'pos' }, { t: yo(b), mood: 'pos' }, { t: tn === 'c' ? '둘 다 좋아.' : '둘 다 좋아' + E + '.', mood: 'neu' }];
+    out.push(love ? { t: tn === 'c' ? '너 좋아하는 걸로.' : '대위님 좋아하는 걸로' + E + '.', mood: 'flirt' } : { t: tn === 'c' ? '넌 뭐가 좋은데?' : '대위님은' + E + '?', mood: 'neu' });
+    return out.map(o => Object.assign(o, { cat: 'choice' }));
+  }
   function options(who, q) {
     const S = St.S, cat = catOf(q), tn = tone(who), love = who === 'cap' && S.rel.cap.stage >= 2;
+    if (cat === 'choice') return choiceOpts(q, tn, love);
     let list = REPLIES[cat].filter(r => r.mood !== 'flirt' || love);
     // 서로 다른 분위기 3개 (+ 애정 단계면 하나 더)
     const moods = ['pos', 'neu', 'neg', 'flirt'], out = [];
@@ -5243,7 +5338,204 @@ PX.Reply = (() => {
     return { aff: o.mood === 'flirt' ? 3 : 2 };
   }
 
-  return { ask, tease, isQ, catOf, options, input, readMood, react, tone };
+  return { ask, tease, isQ, catOf, choiceOf, options, input, readMood, react, tone };
+})();
+
+</script>
+  <script>
+/* js/game/proposals.js */
+// 대위가 다가와서 건네는 제안 · 질문 (시간 · 장소 · 날씨 · 기분 · 관계에 맞춰)
+// 질문마다 그 질문에 맞는 대답이 따로 있다. 대답마다 다음 행동(k)이 정해진다.
+//   k: follow 같이 다니기 · meal 같이 밥 · walk 산책 · escort 데려다주기 · talk 이야기 · later 이따 · alone 혼자 · rest 쉬라고 보내기
+// 말투: p 존댓말 · h 반존대 · c 반말 (관계가 깊어질수록 편해진다)
+'use strict';
+PX.Ask = (() => {
+  const U = PX.U, St = PX.St;
+  const G = () => PX.Game;
+  const O = (k, mood, p, h, c, re) => ({ k, mood, p, h: h || p, c: c || h || p, re });
+
+  const ctx = () => {
+    const S = St.S, g = G(), m = S.time.min, md = PX.MAPS[g.mapId] || {};
+    return {
+      S, m, st: S.rel.cap.stage, we: St.isWeekend(), w: St.weather(), en: S.energy,
+      out: md.kind === 'out', dome: !!md.dome, map: g.mapId,
+      meal: (m >= 11 * 60 + 20 && m < 13 * 60 + 20) || (m >= 17 * 60 + 20 && m < 19 * 60 + 30),
+      morning: m >= 6 * 60 && m < 9 * 60, offwork: m >= 17 * 60 && m < 18 * 60 + 30,
+      evening: m >= 19 * 60 && m < 22 * 60, night: m >= 22 * 60 || m < 5 * 60,
+      after: (() => { const o = S.cap.op; return o && o.phase === 'done' && St.absMin() - o.end < 600; })(),
+    };
+  };
+
+  const P = [
+    { id: 'meal', when: c => c.meal, w: 4,
+      q: ['C:밥 먹었어? 안 먹었으면 같이 가자.', 'C^:배고프다. 너도 아직이지? 식당 가자.', 'C:오늘 메뉴 괜찮대. 같이 먹을래?'],
+      opts: [
+        O('meal', 'pos', '네, 같이 가요. 배고팠어요.', '좋아요, 같이 가요. 배고팠어.', '응, 가자. 배고팠어.', ['C^:좋아. 식판은 내가 들게.', 'C:가자. 네가 먹는 거 봐야 안심돼.']),
+        O('follow', 'neu', '먹었어요. 그래도 같이 가 줄게요.', '먹었는데, 옆에 있어 줄게요.', '먹었어. 그래도 옆에 있어 줄게.', ['C*:먹는 사람 옆에서 구경만 하겠다고? 착하네.', 'C^:그럼 커피라도 하나 사 줄게.']),
+        O('meal', 'flirt', '대위님이랑 먹으려고 기다렸어요.', '대위님이랑 먹으려고 참았어요.', '너랑 먹으려고 기다렸지.', ['C!:…기다렸어? 바보같이. 가자, 지금 바로.', 'C~:그런 말 하면 밥이 안 넘어가잖아.']),
+        O('later', 'neg', '아직 할 게 남아서요. 이따 먹을게요.', '할 게 남아서, 이따 먹을게요.', '할 거 남았어. 이따 먹을게.', ['C:응. 대신 거르지는 마. 확인한다.', 'C:알았어. 남겨 둘게.']),
+      ] },
+    { id: 'offwork', when: c => c.offwork && !c.we, w: 4,
+      q: ['C:근무 끝났지? 고생했다. 이제 뭐 할 거야?', 'C^:퇴근이다. 너도 끝났어?', 'C:오늘 근무 어땠어? 힘들었지?'],
+      opts: [
+        O('follow', 'pos', '끝났어요! 대위님이랑 있을래요.', '끝났어요. 대위님이랑 있을래.', '끝났어. 너랑 있을래.', ['C^:그 말 들으려고 일찍 끝냈어.', 'C:좋아. 오늘 남은 시간은 네 거야.']),
+        O('talk', 'neu', '좀 힘들었어요. 얘기 좀 들어 줄래요?', '좀 힘들었어요. 얘기 들어 줘요.', '좀 힘들었어. 얘기 들어 줘.', ['C:응. 다 말해. 들어 줄게.', 'C:이리 와. 무슨 일 있었어?']),
+        O('rest', 'neg', '너무 피곤해서 쉬고 싶어요.', '피곤해서 좀 쉬고 싶어요.', '피곤해. 좀 쉴래.', ['C:그래. 들어가서 푹 쉬어. 저녁은 꼭 먹고.', 'C;:고생 많았다. 내일 보자.']),
+        O('walk', 'pos', '바람 좀 쐬고 싶어요. 같이 걸어요.', '바람 쐬러 가요, 같이.', '바람 쐬러 가자.', ['C^:좋지. 노을 질 때 걷는 거 좋아해.']),
+      ] },
+    { id: 'tired', when: c => c.en < 35, w: 5,
+      q: ['C;:얼굴이 피곤해 보여. 괜찮아?', 'C:너 오늘 좀 지쳐 보인다. 데려다줄까?', 'C;:어디 아픈 거 아니지? 안색이 안 좋아.'],
+      opts: [
+        O('escort', 'pos', '조금요. 데려다줄래요?', '좀 피곤해요. 데려다줘요.', '좀 피곤해. 데려다줘.', ['C:응. 천천히 가자. 넘어지면 내가 잡을게.', 'C:가자. 오늘은 일찍 자.']),
+        O('talk', 'neu', '괜찮아요. 잠깐 얘기만 해요.', '괜찮아요. 얘기나 해요.', '괜찮아. 얘기나 하자.', ['C:그래. 대신 무리하지 마.']),
+        O('rest', 'neg', '혼자 들어가서 쉴게요.', '혼자 들어가 쉴게요.', '혼자 가서 쉴게.', ['C:알았어. 도착하면 단말 하나만 보내.', 'C;:응. 따뜻하게 하고 자.']),
+        O('follow', 'flirt', '대위님 보니까 괜찮아졌어요.', '대위님 보니까 좀 나아요.', '너 보니까 좀 나아졌어.', ['C~:…그런 말로 넘어가려고? 그래도 기분은 좋다.', 'C^:그럼 옆에 붙어 있어야겠네.']),
+      ] },
+    { id: 'morning', when: c => c.morning, w: 3,
+      q: ['C:일어났네. 잘 잤어?', 'C^:좋은 아침. 아침은 먹었어?', 'C:아침 공기 좋다. 근무 전까지 같이 있을래?'],
+      opts: [
+        O('follow', 'pos', '잘 잤어요. 근무 전까지 같이 있어요.', '잘 잤어요. 같이 있어요.', '잘 잤어. 같이 있자.', ['C^:좋아. 아침부터 운 좋네.']),
+        O('meal', 'neu', '아직 안 먹었어요. 같이 먹어요.', '아직이요. 같이 먹어요.', '아직. 같이 먹자.', ['C:가자. 아침 거르면 오후에 쓰러져.']),
+        O('talk', 'neg', '잠을 좀 설쳤어요.', '좀 설쳤어요, 잠.', '잠 좀 설쳤어.', ['C;:왜. 무슨 꿈 꿨어?', 'C:그럼 오늘은 커피 두 잔이다.']),
+        O('later', 'neu', '준비할 게 있어서요. 이따 봐요.', '준비할 게 있어서, 이따 봐요.', '준비할 거 있어. 이따 봐.', ['C:응. 점심때 보자.']),
+      ] },
+    { id: 'evening', when: c => c.evening, w: 3,
+      q: ['C:밤바람 좋다. 조금 걸을래?', 'C^:저녁 먹고 소화시킬 겸, 산책 어때?', 'C:별 보러 갈래? 오늘 하늘 맑다.'],
+      opts: [
+        O('walk', 'pos', '좋아요. 걸어요.', '좋아요, 걸어요.', '좋아. 걷자.', ['C^:가자. 천천히.', 'C:네 걸음에 맞출게.']),
+        O('walk', 'flirt', '대위님이랑이면 어디든 좋아요.', '대위님이랑이면 어디든요.', '너랑이면 어디든.', ['C!:…', 'C~:그 말 반칙이야. 손 줘.']),
+        O('talk', 'neu', '걷기보단 잠깐 앉아서 얘기해요.', '앉아서 얘기해요, 잠깐.', '앉아서 얘기하자.', ['C:그래. 저기 벤치 가자.']),
+        O('alone', 'neg', '오늘은 일찍 들어가 볼게요.', '오늘은 일찍 들어갈게요.', '오늘은 일찍 들어갈게.', ['C:응. 잘 자. 내일 보자.']),
+      ] },
+    { id: 'night', when: c => c.night, w: 3,
+      q: ['C;:이 시간에 왜 나와 있어. 잠이 안 와?', 'C:늦었다. 숙소까지 데려다줄게.', 'C*:야간 순찰 중인데, 수상한 사람 발견.'],
+      opts: [
+        O('escort', 'pos', '네, 데려다줘요.', '데려다줘요.', '데려다줘.', ['C:가자. 밤엔 혼자 다니지 마.']),
+        O('talk', 'neu', '잠이 안 와서요. 얘기 좀 해요.', '잠이 안 와요. 얘기해요.', '잠이 안 와. 얘기하자.', ['C:그래. 조금만이다. 내일 근무 있잖아.']),
+        O('follow', 'flirt', '대위님 보고 싶어서 나왔어요.', '보고 싶어서 나왔어요.', '보고 싶어서 나왔지.', ['C~:…그럼 할 수 없지. 같이 걷자.', 'C*:순찰 동행 허가한다.']),
+        O('alone', 'neg', '바로 들어갈게요. 걱정 마세요.', '바로 들어갈게요.', '바로 들어갈게.', ['C:응. 문 잠그고 자.']),
+      ] },
+    { id: 'weekend', when: c => c.we && c.m >= 9 * 60 && c.m < 18 * 60, w: 4,
+      q: ['C:오늘 비번이지? 뭐 할 거야?', 'C^:주말이다. 계획 있어?', 'C:쉬는 날인데 할 거 없으면 나랑 놀자.'],
+      opts: [
+        O('follow', 'pos', '대위님이랑 놀 거예요.', '대위님이랑 놀 건데요?', '너랑 놀 건데?', ['C^:정답. 그럼 출발하자.', 'C*:계획 아주 좋다.']),
+        O('follow', 'neu', '돔시티 구경 가고 싶어요.', '돔시티 가 보고 싶어요.', '돔시티 가 보고 싶어.', ['C:좋아. 셔틀 타고 가자. 내가 안내할게.']),
+        O('rest', 'neg', '그냥 쉬려고요. 밀린 잠 자야 해요.', '그냥 쉬려고요. 잠 좀 자고.', '그냥 쉴래. 잠 좀 자고.', ['C:그것도 좋지. 푹 자. 깨면 연락해.']),
+        O('talk', 'neu', '아직 몰라요. 대위님은요?', '아직 몰라요. 대위님은?', '아직 몰라. 넌?', ['C:나? 너 계획 듣고 거기 맞추려고 했지.']),
+      ] },
+    { id: 'storm', when: c => ['dust', 'rain'].includes(c.w) && c.out, w: 5,
+      q: ['C;:바람 심하다. 모래 들어가. 안으로 들어가자.', 'C:비 온다. 우산 없지? 같이 쓰자.'],
+      opts: [
+        O('follow', 'pos', '네, 같이 가요.', '같이 가요.', '같이 가자.', ['C:이리 와. 내 쪽으로 붙어.']),
+        O('follow', 'flirt', '대위님 옆에 붙어 있을게요.', '옆에 꼭 붙어 있을게요.', '옆에 꼭 붙어 있을게.', ['C~:…응. 더 붙어도 돼.']),
+        O('alone', 'neu', '금방 들어갈 거라 괜찮아요.', '금방 들어가요, 괜찮아요.', '금방 들어가. 괜찮아.', ['C:그래. 뛰지는 마. 미끄러워.']),
+        O('later', 'neg', '할 일이 있어서 먼저 갈게요.', '할 일 있어서 먼저 갈게요.', '할 일 있어서 먼저 갈게.', ['C:응. 조심해서 가.']),
+      ] },
+    { id: 'afterOp', when: c => c.after, w: 6,
+      q: ['C:며칠 못 봤지. 오늘은 너랑 있고 싶은데. 괜찮아?', 'C^:보고서 다 냈어. 이제 네 차례야. 뭐 하고 싶어?'],
+      opts: [
+        O('follow', 'pos', '당연하죠. 오늘은 안 놔줄 거예요.', '당연하죠. 오늘은 안 놔줘요.', '당연하지. 오늘은 안 놔줘.', ['C^:바라던 바야.']),
+        O('talk', 'neu', '작전 얘기 들려줘요.', '작전 얘기 해 줘요.', '작전 얘기 해 줘.', ['C:응. 재미없는 부분은 빼고.']),
+        O('meal', 'pos', '밥부터 먹어요. 맛있는 걸로.', '밥부터 먹어요, 맛있는 걸로.', '밥부터 먹자. 맛있는 걸로.', ['C^:전투식량 말고 진짜 밥. 좋다.']),
+        O('rest', 'neg', '대위님 피곤하잖아요. 먼저 쉬어요.', '피곤하잖아요. 먼저 쉬어요.', '피곤하잖아. 먼저 쉬어.', ['C;:…들켰네. 한숨 자고 올게. 깨면 바로 갈게.']),
+      ] },
+    { id: 'where', when: () => true, w: 2,
+      q: ['C:어디 가는 길이야? 같이 가 줄까?', 'C:혼자 뭐 해? 심심해 보이는데.', 'C^:마침 잘 만났다. 나 지금 한가해.'],
+      opts: [
+        O('follow', 'pos', '네, 같이 가요.', '같이 가요, 그럼.', '응, 같이 가자.', ['C:좋아. 앞장서. 따라갈게.', 'C^:오케이. 네 속도에 맞출게.']),
+        O('talk', 'neu', '잠깐 얘기나 해요.', '잠깐 얘기해요.', '잠깐 얘기하자.', ['C:그래. 무슨 얘기?']),
+        O('later', 'neu', '볼일 보고 이따 봐요.', '볼일 보고 이따 봐요.', '볼일 보고 이따 봐.', ['C:응. 이따 꼭 보자.']),
+        O('alone', 'neg', '오늘은 혼자 있고 싶어요.', '오늘은 혼자 있고 싶어요.', '오늘은 혼자 있고 싶어.', ['C:응, 알았어. 필요하면 불러. 바로 갈게.']),
+      ] },
+    { id: 'px', when: c => c.m >= 10 * 60 && c.m < 21 * 60 && !c.dome, w: 2,
+      q: ['C:PX 가는데 같이 갈래? 뭐 사 줄게.', 'C*:나 지금 간식 사러 가는데. 따라올 사람?'],
+      opts: [
+        O('follow', 'pos', '좋아요! 따라갈게요.', '좋아요, 따라갈래요.', '좋아. 따라갈래.', ['C^:고르는 거 다 사 준다. 오늘만.']),
+        O('follow', 'flirt', '간식보다 대위님이 좋아서 따라갈게요.', '간식 말고 대위님 때문에 갈래요.', '간식 말고 너 때문에 갈래.', ['C~:…그럼 간식은 두 배로 사야겠다.']),
+        O('later', 'neu', '저는 괜찮아요. 맛있게 먹어요.', '전 괜찮아요. 맛있게 먹어요.', '난 괜찮아. 맛있게 먹어.', ['C:그래도 하나 사다 줄게.']),
+        O('alone', 'neg', '지금은 좀 바빠서요.', '지금은 좀 바빠요.', '지금 좀 바빠.', ['C:응. 바쁜 거 끝나면 연락해.']),
+      ] },
+    { id: 'miss', when: c => c.st >= 3, w: 3,
+      q: ['C*:오늘 하루 종일 너 생각났어. 넌?', 'C~:보고 싶어서 왔어. 딴 이유 없어.', 'C:나랑 좀 더 있어 줄 수 있어?'],
+      opts: [
+        O('follow', 'flirt', '저도 보고 싶었어요.', '나도 보고 싶었어요.', '나도 보고 싶었어.', ['C~:…다행이다. 나만 그런 줄.', 'C^:그럼 오늘은 계속 옆에 있는다.']),
+        O('follow', 'pos', '좋아요. 오늘은 같이 있어요.', '좋아요, 같이 있어요.', '좋아. 같이 있자.', ['C^:응.']),
+        O('talk', 'neu', '무슨 생각 했는데요?', '무슨 생각 했는데요?', '무슨 생각 했는데?', ['C*:비밀. 걸으면서 하나씩 말해 줄게.']),
+        O('later', 'neg', '지금은 좀 그래요. 저녁에 봐요.', '지금은 좀… 저녁에 봐요.', '지금은 좀. 저녁에 보자.', ['C:응. 저녁에. 약속했다.']),
+      ] },
+    { id: 'tour', when: c => c.st <= 1, w: 3,
+      q: ['C:부대 생활 적응은 좀 했어? 모르는 거 있으면 물어봐.', 'C:할 일 없으면 기지 한 바퀴 돌래? 안내해 줄게.'],
+      opts: [
+        O('follow', 'pos', '네, 안내해 주세요.', '네, 안내해 주세요.', '응, 안내해 줘.', ['C:좋아. 길 잃으면 나 찾아. 어디서든.']),
+        O('talk', 'neu', '아직 헷갈려요. 몇 가지 여쭤봐도 돼요?', '아직 헷갈려요. 물어봐도 돼요?', '아직 헷갈려. 물어봐도 돼?', ['C:얼마든지. 뭐든 물어봐.']),
+        O('later', 'neu', '괜찮아요. 혼자 둘러볼게요.', '괜찮아요. 혼자 둘러볼게요.', '괜찮아. 혼자 둘러볼게.', ['C:그래. 외곽 쪽만 혼자 가지 마.']),
+        O('alone', 'neg', '지금은 좀 쉬고 싶어요.', '지금은 좀 쉬고 싶어요.', '지금은 좀 쉬고 싶어.', ['C:응. 쉬어. 나중에 보자.']),
+      ] },
+    { id: 'gym', when: c => c.m >= 6 * 60 && c.m < 20 * 60, w: 1,
+      q: ['C*:체력 단련 같이 할래? 살살 해 줄게.', 'C:운동하러 가는데. 구경 올래?'],
+      opts: [
+        O('follow', 'pos', '좋아요. 살살이요!', '좋아요, 살살 해요.', '좋아. 살살 해.', ['C*:살살은 거짓말이었다.', 'C^:가자. 스트레칭부터.']),
+        O('follow', 'flirt', '운동하는 대위님 보러 갈게요.', '대위님 운동하는 거 구경할래요.', '너 운동하는 거 구경할래.', ['C~:…그럼 오늘 무게 좀 올려야겠다.']),
+        O('later', 'neu', '오늘은 패스할게요.', '오늘은 패스요.', '오늘은 패스.', ['C:다음엔 끌고 간다.']),
+        O('rest', 'neg', '근육통이 아직 안 풀렸어요.', '근육통이 아직이에요.', '근육통 아직 안 풀렸어.', ['C;:어디. 내가 풀어 줄까? 농담이야. 쉬어.']),
+      ] },
+  ];
+
+  const toneOf = () => (PX.Reply ? PX.Reply.tone('cap') : 'p');
+  const FACE = { '*': 'smirk', '^': 'smile', ';': 'sad', '!': 'surprise', '~': 'blush' };
+  async function capSay(ln) {
+    const m = /^C([*^;!~]?):(.*)$/.exec(ln); if (!m) return;
+    await PX.Dlg.say('cap', U.fmt(m[2], PX.Dlg.ctx()), FACE[m[1]] || 'normal');
+  }
+  function pick() {
+    const c = ctx(), S = St.S;
+    S.done.askSeen = S.done.askSeen || [];
+    const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
+    const fresh = ok.filter(p => !S.done.askSeen.slice(0, 4).includes(p.id));
+    const pool = fresh.length ? fresh : ok;
+    let tot = pool.reduce((a, p) => a + p.w, 0), r = Math.random() * tot;
+    for (const p of pool) { r -= p.w; if (r <= 0) return p; }
+    return pool[0];
+  }
+  // 질문 → 대답 선택 → 반응. 반환: { k, mood }
+  async function propose(skipQ) {
+    const S = St.S, p = pick(), tn = toneOf();
+    S.done.askSeen = [p.id, ...S.done.askSeen.filter(x => x !== p.id)].slice(0, 8);
+    if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, p.q));
+    // 애정 표현은 연애 단계(2+)부터
+    const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
+    const items = opts.map(o => ({ t: o[tn] })).concat([{ t: '✍️ 직접 대답하기' }]);
+    const i = await PX.Dlg.choose(items);
+    if (i === items.length - 1) {
+      PX.Dlg.close();
+      const text = await PX.Reply.input();
+      if (!text) { await PX.Dlg.say('narr', '말없이 고개를 끄덕인다.'); return { k: 'follow', mood: 'neu' }; }
+      await PX.Dlg.say('player', text);
+      const mood = PX.Reply.readMood(text);
+      const k = /밥|먹/.test(text) ? 'meal' : /걷|산책/.test(text) ? 'walk' : /데려다/.test(text) ? 'escort' : /얘기|이야기|말/.test(text) ? 'talk' : /이따|나중|다음/.test(text) ? 'later' : /혼자|쉬|피곤|싫/.test(text) ? 'alone' : mood === 'neg' ? 'alone' : 'follow';
+      if (PX.AI && PX.AI.available()) { const ok = await PX.AI.answer('cap', U.fmt(p.q[0].replace(/^C[*^;!~]?:/, ''), PX.Dlg.ctx()), text); if (ok) return { k, mood }; }
+      await PX.Reply.react('cap', 'invite', mood);
+      return { k, mood };
+    }
+    const o = opts[i];
+    await PX.Dlg.say('player', o[tn], o.mood === 'flirt' ? 'blush' : 'normal');
+    if (o.re) await capSay(U.pick(o.re));
+    if (o.mood === 'flirt') G().cap.showEmote('heart', 1.4);
+    return { k: o.k, mood: o.mood };
+  }
+
+  // ---------- 대위가 대화 중에 던지는 질문 (대답은 질문 종류에 맞춰 Reply 가 만든다) ----------
+  const QA = [
+    ['C:요즘 제일 재밌는 거 뭐야?'], ['C:커피야, 차야?'], ['C*:나 오늘 머리 잘랐는데. 티 나?'], ['C:고향 생각 날 때 있어?'],
+    ['C:주말에 뭐 하고 싶어?'], ['C:여기 오기 전엔 뭐 했어?'], ['C;:나 사실 거미 무서워. 웃지 마.', 'C:너는 무서운 거 있어?'],
+    ['C:달달한 거 좋아해, 매운 거 좋아해?'], ['C:요즘 잠은 잘 자?'], ['C^:나랑 있으면 편해?'], ['C:박 중사가 너 칭찬하더라. 뭐 했어?'],
+    ['C:지구에 돌아가면 제일 먼저 뭐 하고 싶어?'], ['C:비 오는 날 좋아해?'], ['C*:내가 제일 멋있을 때가 언제야?'],
+    ['C:일 힘들지 않아? 솔직하게.'], ['C:별 좋아해? 외곽에선 진짜 잘 보여.'], ['C:생일 언제야? 까먹으면 안 되니까.'],
+    ['C:나는 바다를 사진으로만 봤어. 너는 본 적 있어?'], ['C:아침형이야, 저녁형이야?'], ['C;:나 오늘 좀 피곤해 보여?'],
+    ['C:노래 뭐 들어? 나도 알려 줘.'], ['C:여기서 제일 좋아하는 장소 있어?'], ['C*:나 없을 때 누구랑 놀아?'],
+  ].map(l => ({ l }));
+
+  return { propose, pick, P, QA };
 })();
 
 </script>
@@ -5600,13 +5892,15 @@ PX.Cap = (() => {
       }
     }
     if (r.stage >= 2 && PX.Rom && !PX.Rom.nextDate() && !(PX.Mind && PX.Mind.refused('dateAsk')) && St.isWeekend() === false && Math.random() < 0.2) { PX.Dlg.close(); g.modal--; await PX.Rom.capAskDate(); g.modal++; }
-    const opts = [{ t: '같이 다녀요.', k: 'follow' }, { t: '잠깐 얘기해요.', k: 'talk' }, { t: '오늘은 혼자 있고 싶어요.', k: 'alone' }, { t: '이따 봐요.', k: 'later' }];
-    const i = await PX.Dlg.choose(opts);
-    const k = opts[i].k;
-    await PX.Dlg.say('player', opts[i].t);
-    if (k === 'follow') { await PX.Dlg.say('cap', U.pick(['그 말 기다렸어.', '좋아. 어디든.', '오케이. 네 속도에 맞출게.']), 'smile'); startFollow(); St.addAff(2); }
-    else if (k === 'alone') { if (PX.Mind) PX.Mind.noteRefuse('follow', 600); await PX.Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; mode = 'sched'; }
-    else if (k === 'later') { if (PX.Mind) PX.Mind.noteRefuse('follow', 90); await PX.Dlg.say('cap', '응. 이따 꼭 보자.'); r.lastApproach = St.absMin() + 30; mode = 'sched'; r.noFollowUntil = St.absMin() + 60; }
+    // 상황에 맞는 제안 · 질문과 그 질문에 맞는 대답 (말투는 관계에 따라)
+    const { k } = await PX.Ask.propose();
+    if (['follow', 'meal', 'walk', 'escort'].includes(k)) {
+      startFollow(); St.addAff(2);
+      if (k === 'meal') PX.UI.toast('🍚 같이 식당에 가요 · 식당에서 앉으면 같이 먹을 수 있어요', 3200);
+      if (k === 'escort') PX.UI.toast('🏠 대위가 숙소까지 데려다줘요', 2600);
+    }
+    else if (k === 'alone' || k === 'rest') { if (PX.Mind) PX.Mind.noteRefuse('follow', 600); r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; mode = 'sched'; }
+    else if (k === 'later') { if (PX.Mind) PX.Mind.noteRefuse('follow', 90); r.lastApproach = St.absMin() + 30; mode = 'sched'; r.noFollowUntil = St.absMin() + 60; }
     PX.Dlg.close(); g.modal--;
     if (k === 'talk') await PX.Dlg.capTalk();
   }
@@ -9052,7 +9346,11 @@ ${memLine(S)}`;
     Cap.moveTo(Game.mapId); if (t) { Game.cap.x = t[0] + 0.5; Game.cap.y = t[1] + 0.5; }
     Game.cap.setDirTo(p.x, p.y);
     Game.modal++;
-    await Dlg.runLines(['N:문을 나서자 커다란 그림자가 기다리고 있다.', 'C*:어, 나왔네. 좋은 아침.', 'P:…또 기다리셨어요?', 'C:응. 브리핑 전에 얼굴 보려고.', 'C^:오늘도 무사히. 근무 끝나면 찾으러 갈게.']);
+    const mn = S.time.min;
+    const L = mn < 11 * 60 ? ['C*:어, 나왔네. 좋은 아침.', 'P:…또 기다리셨어요?', 'C:응. 브리핑 전에 얼굴 보려고.', 'C^:오늘도 무사히. 근무 끝나면 찾으러 갈게.']
+      : mn < 17 * 60 ? ['C*:어, 이제 나왔네. 하루 종일 안 보이길래.', 'P:…기다리셨어요?', 'C:점심 먹고 잠깐. 얼굴 보려고.', 'C^:무사한 거 봤으니 됐다. 이따 찾으러 갈게.']
+      : ['C*:어, 나왔네. 오늘 처음 본다.', 'P:…이 시간까지 기다리셨어요?', 'C:근무 끝나고 잠깐. 얼굴은 보고 자야지.', 'C^:오늘도 무사했네. 됐다.'];
+    await Dlg.runLines(['N:문을 나서자 커다란 그림자가 기다리고 있다.', ...L]);
     Dlg.close(); Game.modal--;
     St.addAff(3);
     Game.memory('일 년째 아침', `${PX.U.josa(S.capName, '이')} 숙소 앞에서 기다리고 있었다. 오늘도.`, true);
@@ -10204,6 +10502,11 @@ ${memLine(S)}`;
   });
   window.addEventListener('resize', () => { W.resize(); snapCam(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden && Game.running && St.S) St.save(); });
+  // 모바일: 앱이 백그라운드로 가거나 닫힐 때 저장 · 길게 누르기 메뉴 막기 · 두 손가락 확대 막기
+  window.addEventListener('pagehide', () => { if (Game.running && St.S) St.save(); });
+  document.addEventListener('contextmenu', e => { if (!(e.target && e.target.closest && e.target.closest('input,textarea'))) e.preventDefault(); });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
   // ---------- 부팅 ----------
   async function boot() {

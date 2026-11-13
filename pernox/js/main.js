@@ -75,7 +75,11 @@
     Cap.moveTo(Game.mapId); if (t) { Game.cap.x = t[0] + 0.5; Game.cap.y = t[1] + 0.5; }
     Game.cap.setDirTo(p.x, p.y);
     Game.modal++;
-    await Dlg.runLines(['N:문을 나서자 커다란 그림자가 기다리고 있다.', 'C*:어, 나왔네. 좋은 아침.', 'P:…또 기다리셨어요?', 'C:응. 브리핑 전에 얼굴 보려고.', 'C^:오늘도 무사히. 근무 끝나면 찾으러 갈게.']);
+    const mn = S.time.min;
+    const L = mn < 11 * 60 ? ['C*:어, 나왔네. 좋은 아침.', 'P:…또 기다리셨어요?', 'C:응. 브리핑 전에 얼굴 보려고.', 'C^:오늘도 무사히. 근무 끝나면 찾으러 갈게.']
+      : mn < 17 * 60 ? ['C*:어, 이제 나왔네. 하루 종일 안 보이길래.', 'P:…기다리셨어요?', 'C:점심 먹고 잠깐. 얼굴 보려고.', 'C^:무사한 거 봤으니 됐다. 이따 찾으러 갈게.']
+      : ['C*:어, 나왔네. 오늘 처음 본다.', 'P:…이 시간까지 기다리셨어요?', 'C:근무 끝나고 잠깐. 얼굴은 보고 자야지.', 'C^:오늘도 무사했네. 됐다.'];
+    await Dlg.runLines(['N:문을 나서자 커다란 그림자가 기다리고 있다.', ...L]);
     Dlg.close(); Game.modal--;
     St.addAff(3);
     Game.memory('일 년째 아침', `${PX.U.josa(S.capName, '이')} 숙소 앞에서 기다리고 있었다. 오늘도.`, true);
@@ -1227,6 +1231,11 @@
   });
   window.addEventListener('resize', () => { W.resize(); snapCam(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden && Game.running && St.S) St.save(); });
+  // 모바일: 앱이 백그라운드로 가거나 닫힐 때 저장 · 길게 누르기 메뉴 막기 · 두 손가락 확대 막기
+  window.addEventListener('pagehide', () => { if (Game.running && St.S) St.save(); });
+  document.addEventListener('contextmenu', e => { if (!(e.target && e.target.closest && e.target.closest('input,textarea'))) e.preventDefault(); });
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
   // ---------- 부팅 ----------
   async function boot() {
