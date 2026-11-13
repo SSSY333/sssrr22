@@ -322,6 +322,7 @@ PX.Mini = (() => {
     return p.then(s => { PX.Game.inMini = false; PX.Game.modal--; return s; });
   }
   api.run = run;
+  api.abort = () => { cancelAnimationFrame(raf); raf = 0; if (cv) cv.onpointerdown = null; };
   const wrap = f => (o) => { PX.Game.inMini = true; PX.Game.modal++; return f(o).then(r => { PX.Game.inMini = false; PX.Game.modal--; return r; }); };
   api.timing = wrap(timing); api.tapRace = wrap(tapRace); api.targets = wrap(targets); api.quiz = wrap(quiz);
   api.claw = () => { PX.Game.inMini = true; PX.Game.modal++; return clawGame().then(w => { PX.Game.inMini = false; PX.Game.modal--; return w; }); };

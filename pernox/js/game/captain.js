@@ -12,7 +12,9 @@ PX.Cap = (() => {
   function init(actor) { cap = actor; mode = 'sched'; }
   // 휴가 중이면 주말 일정으로 지낸다
   const capDefNow = () => { const S = St.S; return PX.Rom && PX.Rom.onLeave('cap', S.day) ? Object.assign({}, PX.NPC_BY_ID.cap, { sched: PX.NPC_BY_ID.cap.we, sched2: null }) : PX.NPC_BY_ID.cap; };
-  const entry = () => A.schedEntry(capDefNow(), St.S);
+  // 치료 뒤 약속한 저녁 시간 (보고 → 자유 시간으로 플레이어 곁에)
+  const freeNow = () => { const f = St.S.cap.freeWin, t = St.absMin(); return !!(f && t >= f.from && t < f.until); };
+  const entry = () => { const e = A.schedEntry(capDefNow(), St.S); return freeNow() && e.spot !== 'cap.bed' ? Object.assign({}, e, { spot: 'free' }) : e; };
   function spotKind(e = entry()) {
     if (e.spot === 'field') return 'field';
     if (e.spot === 'free') return 'free';
@@ -71,9 +73,12 @@ PX.Cap = (() => {
     const m = PX.W.maps[mapId];
     if (m.kind === 'in' && G().mapId === mapId) bump(m);
   }
+  let lastBump = -1e9;
   function bump(m) {
-    if (Math.random() < (m.def.lowDoor ? 0.6 : 0.25)) {
-      setTimeout(() => { cap.doPose('bump', 1.1, 'surprise'); cap.showEmote('stars', 1.6); G().bubble(cap, U.pick(['아야.', '…또 박았네.', '이 문틀 누가 이렇게 낮게 만들었어.'])); }, 250);
+    const now = St.absMin();
+    if (now - lastBump > 240 && Math.random() < (m.def.lowDoor ? 0.5 : 0.18)) { // 문틀 박치기는 가끔만 (네 시간에 한 번 이하)
+      lastBump = now;
+      setTimeout(() => { cap.doPose('bump', 1.1, 'surprise'); cap.showEmote('stars', 1.6); G().bubble(cap, U.pickFresh('capBump', ['아야.', '…또 박았네.', '이 문틀 누가 이렇게 낮게 만들었어.', '부대 문은 다 내 키 싫어하는 사람이 설계했어.', '괜찮아. 문이 더 아플 거야.', '…못 본 걸로 해.', '이마에 문틀 자국 생기겠다.', '오늘은 안 박으려고 했는데.'])); }, 250);
     }
   }
   function release(line, partMins = 30) { const was = mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'waitOut'; if (mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'seek' || mode === 'wait_door' || mode === 'waitOut') mode = 'sched'; if (PX.Mind) { PX.Mind.mem().contact = 'NONE'; PX.Mind.apply(); if (was) PX.Mind.notePart(partMins); } cap.holding = false; G().player.holding = false; St.S.cap.follow = false; waitOut = null; if (line) G().bubble(cap, line); }
@@ -148,11 +153,12 @@ PX.Cap = (() => {
     if (mode === 'waitOut') { if (k === 'duty' || k === 'field' || St.absMin() > (waitOut ? waitOut.until : 0)) { release(); return; } waitOutTick(); return; }
     // 동행 해제 조건: 근무·작전 시간
     if (mode === 'follow') {
-      if (k === 'duty' || k === 'field') { release(); g.trigger(async () => { await PX.Dlg.say('cap', U.pick(['나 근무 들어가야 돼. 끝나고 찾아갈게.', '브리핑 시간이다. 이따 보자. 도망가지 마.', '작전 나간다. 금방 올게.'])); PX.Dlg.close(); }); return; }
+      if (k === 'duty' || k === 'field') { release(); g.trigger(async () => { await PX.Dlg.say('cap', U.pickFresh('capToWork_' + k, k === 'field' ? ['외곽 수색 나간다. 다섯 시쯤 들어올게.', '수색 시간이다. 금방 올게. 기다리지 말고 쉬고 있어.', '나간다. 돌아오면 제일 먼저 너부터 볼게.'] : S.time.min < 9 * 60 + 30 ? ['브리핑 시간이다. 이따 보자. 도망가지 마.', '아침 브리핑 들어간다. 점심때 보자.'] : ['나 근무 들어가야 돼. 끝나고 찾아갈게.', '일하러 간다. 이따 보자.', '근무 시간이다. 너도 힘내.'])); PX.Dlg.close(); }); return; }
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30) { release('늦었다. 잘 자, ' + U.josa(U.givenName(S.player.name), '아') + '.'); return; }
       if (cap.map !== g.mapId && !g.transition) followIntoMap();
       // 가끔 스킨십 요청
-      if (!(PX.Mind && now - (PX.Mind.mem().joinAt || -1e9) < 25) && !g.player.seat && r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now)) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
+      const calm = !g.transition && !g.queue.length && !g.modal && now - (g.enteredAt || -1e9) >= 5 && !(PX.Mind && now - (PX.Mind.mem().joinAt || -1e9) < 25); // 문 앞 · 다른 대화 직후엔 묻지 않는다
+      if (calm && (!g.player.seat && r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now))) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
       return;
     }
     if (mode === 'wait_door') {
@@ -361,6 +367,20 @@ PX.Cap = (() => {
     PX.Dlg.close(); g.modal--;
     if (k === 'talk') await PX.Dlg.capTalk();
   }
+  // 수색 복귀 후 치료를 받은 뒤: 바로 가 버리지 않고 이후를 정한다
+  async function afterTreat() {
+    const S = St.S, g = G(), r = S.rel.cap, now = St.absMin();
+    if (cap.map !== g.mapId) return;
+    g.modal++;
+    const { k } = await PX.Ask.propose(false, 'afterTreat');
+    PX.Dlg.close(); g.modal--;
+    const end = (S.day * 1440) + 21 * 60;
+    r.noFollowUntil = 0; r.lastApproach = 0;
+    if (k === 'follow') { S.cap.freeWin = { from: now, until: Math.max(end, now + 120) }; startFollow(); St.addAff(2); }
+    else if (k === 'later') { S.cap.freeWin = { from: now + 20, until: Math.max(end, now + 140) }; mode = 'sched'; PX.UI.toast('⏳ 대위가 보고를 마치고 찾아올 거예요', 2600); }
+    else { S.cap.freeWin = null; mode = 'sched'; }
+    if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('afterTreat'); }
+  }
   function startFollow() { mode = 'follow'; St.S.cap.follow = true; waitOut = null; }
   // 동행 잠시 멈추기: 그 자리에서 기다린다 (한 시간 지나거나 근무 시간이면 자기 일정으로)
   let pausedUntil = 0;
@@ -426,7 +446,7 @@ PX.Cap = (() => {
       PX.Dlg.close(); g.modal--;
     } else if (S.time.min >= 22 * 60 + 20) {
       g.modal++;
-      await PX.Dlg.say('cap', U.pick(['늦었다. 나 갈게. 잘 자.', '내일 아침 일찍 브리핑이야. 간다. 문 잠가.']), 'smile');
+      await PX.Dlg.say('cap', U.fmt(U.pickFresh('capGoHome', [St.isWeekend() ? '늦었다. 나 갈게. 푹 자.' : '내일 아침 일찍 브리핑이야. 간다. 문 잠가.', '늦었다. 나 갈게. 잘 자.', '오늘 좋았다. 진짜로. 잘 자.', '더 있으면 안 갈 것 같아서 지금 간다.', '문 잠그는 소리 듣고 갈게.', '{p아}, 잘 자. 꿈에 나 나와도 놀라지 마.']), PX.Dlg.ctx()), 'smile');
       PX.Dlg.close(); g.modal--;
       leaveHome();
     }
@@ -487,5 +507,5 @@ PX.Cap = (() => {
     if (Math.random() < 0.25 && spotKind() === 'field') S.cap.giftPending = Math.random() < 0.5 ? 'capStone' : 'capSnack';
   }
 
-  return { pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
+  return { afterTreat, pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
 })();

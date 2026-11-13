@@ -41,6 +41,7 @@ PX.Dlg = (() => {
     return inLane(() => sayNow(speaker, text, face));
   }
   function sayNow(speaker, text, face) {
+    if (PX.Dlg.onSay) try { PX.Dlg.onSay(speaker, text); } catch (e) {}
     return new Promise(res0 => {
       const res = (v) => { pending = null; res0(v); }; pending = res;
       open = true; box.classList.remove('hidden'); chEl.innerHTML = ''; chEl.classList.add('hidden');
@@ -80,7 +81,7 @@ PX.Dlg = (() => {
       box.classList.remove('hidden');
       opts.forEach((o, i) => {
         const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, o.t);
-        b.addEventListener('click', (e) => { e.stopPropagation(); if (navigator.vibrate) try { navigator.vibrate(8); } catch (_) {} chEl.classList.add('hidden'); res(i); });
+        b.addEventListener('click', (e) => { e.stopPropagation(); chEl.classList.add('hidden'); res(i); });
         chEl.append(b);
       });
       // 선택지는 대화창 바로 위에 (대화창 높이에 맞춰), 넘치면 스크롤
@@ -97,7 +98,8 @@ PX.Dlg = (() => {
     const iv = setInterval(() => { n = (n + 1) % 4; textEl.textContent = '…' + '.'.repeat(n); }, 350);
     return { stop: () => clearInterval(iv) };
   }
-  function close() { open = false; box.classList.add('hidden'); chEl.classList.add('hidden'); }
+  // 다른 흐름이 아직 대답을 기다리는 중이면(탭·선택 대기) 닫지 않는다 — 보이지 않는 질문에 갇혀 멈추는 일 방지
+  function close() { if (pending) return; open = false; box.classList.add('hidden'); chEl.classList.add('hidden'); }
 
   // 대사 줄 실행 → { aff, tags }
   async function runLines(lines, opt = {}) {
@@ -145,6 +147,18 @@ PX.Dlg = (() => {
   }
 
   // 조건에 맞는 묶음 고르기 (최근 사용 제외)
+  // 대사 내용이 지금 상황과 맞는지 (오늘 수색을 다녀왔다는 말은 평일 오후 다섯 시 이후에만 등)
+  function ctxOk(t) {
+    const S = St.S, m = S.time.min, wkd = !St.isWeekend() && !(PX.Rom && PX.Rom.onLeave && PX.Rom.onLeave('cap', S.day)) && !(S.cap.op && S.cap.op.phase === 'away');
+    if (/외곽 [^.]*(갔다 왔|다녀왔|별일 없었|조용했)|수색 (다녀|끝나고)|복귀 보고 끝|흙먼지만 잔뜩|검진은요/.test(t) && !(wkd && m >= 17 * 60)) return false;
+    if (/오후에 [^.]*외곽 나가|외곽 코스 바뀌었|다섯 시쯤 들어오/.test(t) && !(wkd && m < 13 * 60)) return false;
+    if (/좋은 아침|잘 잤어|일어났어\?|모닝/.test(t) && !(m >= 5 * 60 && m < 11 * 60 + 30)) return false;
+    if (/잘 자[.,!]|잘 자$|꿈에서 보자|좋은 꿈/.test(t) && !(m >= 20 * 60 || m < 4 * 60)) return false;
+    if (/점심/.test(t) && !(m >= 10 * 60 && m < 15 * 60)) return false;
+    if (/노을/.test(t) && !(m >= 16 * 60 && m < 20 * 60 + 30)) return false;
+    if (/별이 |별 (많|보러|봐)/.test(t) && !(m >= 19 * 60 || m < 5 * 60)) return false;
+    return true;
+  }
   function pick(cat, list, cond = {}) {
     const S = St.S, st = S.rel.cap.stage, part = Cal.partOfDay(S.time.min), season = St.season();
     const w = PX.MAPS[PX.Game.mapId] && PX.MAPS[PX.Game.mapId].dome ? 'clear' : St.weather(); // 돔 안은 인공 기후
@@ -165,6 +179,7 @@ PX.Dlg = (() => {
       return true;
     });
     if (!ok.length) return null;
+    { const txt0 = (bd) => [].concat(bd.l || bd).filter(x => typeof x === 'string').join(' '); const okc = ok.filter(({ bd }) => ctxOk(txt0(bd))); if (okc.length) ok.splice(0, ok.length, ...okc); }
     // 기억 검사: 실제로 오래 떨어진 게 아니면 '오랜만' 류 금지 · 같은 표현(보고 싶어·귀여워·안아 줄까…)은 한동안 쉬게
     const M = PX.Mind, txt = (bd) => (bd.l || bd).filter ? (bd.l || bd).filter(x => typeof x === 'string').join(' ') : '';
     if (M) { const ok2 = ok.filter(({ bd }) => M.textOk(txt(bd))); if (ok2.length) ok.splice(0, ok.length, ...ok2); else if (ok.some(({ bd }) => /오랜만|어디 갔다 왔|한참 찾았|하루 종일 기다/.test(txt(bd)))) return null; }
@@ -321,7 +336,10 @@ PX.Dlg = (() => {
         PX.UI.toast(`✅ 부탁 완료 · ₢${q.reward} · ${d.name}와(과) 친해졌다`.replace('와(과)', U.hasBatchim(d.name) ? '과' : '와'));
         close(); G.modal--; return;
       }
-    } else if (q && Math.random() < 0.5) {
+    } else if (q && q.asked != null) { // 부탁은 한 번만 하고, 다른 날에 가끔 짧게 상기만
+      if (q.asked !== S.day && q.reminded !== S.day && Math.random() < 0.3) { q.reminded = S.day; const nm = PX.ITEMS[q.item].name; line = d.banmal ? U.pick([`그 ${nm}, 생각나면 부탁해.`, `${nm}은 급한 거 아니야. 천천히.`]) : U.pick([`아, 그 ${nm}… 혹시 보이면요. 급한 건 아니에요.`, `전에 말씀드린 ${nm}, 천천히 하셔도 돼요.`]); }
+    } else if (q) {
+      q.asked = S.day;
       line = d.banmal ? `아, ${PX.ITEMS[q.item].name} 구하면 나 좀 줘. ${q.hint.replace(/에요\.$/, '야.').replace(/있어요\.$/, '있어.').replace(/팔아요\.$/, '팔아.').replace(/거예요\.$/, '거야.').replace(/더라고요\.$/, '더라.')}` : `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
     }
     { const f = r.f || 0, busy = ['workout', 'cook', 'grill', 'work_hangar', 'work_med', 'guard', 'sleep', 'eat'].includes(act);
@@ -331,16 +349,18 @@ PX.Dlg = (() => {
     await say(npc.id, said, 'smile');
     if (PX.Reply && PX.Reply.isQ(said) && act !== 'sleep') { const rr = await PX.Reply.ask(npc.id, said); if (rr.aff) St.addNpcF(npc.id, rr.aff); if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; } r.talks++; close(); G.modal--; return; }
     // 이어서: 궁금한 것 물어보기 · (아티팩트) 자유롭게 이야기하기
-    const fresh = PS && PS.ask.some((q, i) => !(S.done.askSeen || {})[npc.id + i]);
-    if (PS && act !== 'sleep' && (fresh || (PX.AI && PX.AI.available()) || Math.random() < 0.25)) {
-      S.done.askSeen = S.done.askSeen || {};
-      const qs = PS.ask.map((q, i) => ({ q, i })).sort((a, b) => (S.done.askSeen[npc.id + a.i] || 0) - (S.done.askSeen[npc.id + b.i] || 0));
+    // 같은 질문은 한동안 다시 나오지 않는다 (기록: 물어본 날) · 일주일 뒤에 다시 물으면 '전에 말했죠' 하고 답한다
+    S.done.npcAsked = S.done.npcAsked || {};
+    const AK = S.done.npcAsked, askOk = (i) => AK[npc.id + i] == null || S.day - AK[npc.id + i] >= 7;
+    const fresh = PS && PS.ask.some((q, i) => askOk(i));
+    if (PS && act !== 'sleep' && (fresh || (PX.AI && PX.AI.available()))) {
+      const qs = PS.ask.map((q, i) => ({ q, i })).filter(x => askOk(x.i)).sort((a, b) => (AK[npc.id + a.i] == null ? -1 : AK[npc.id + a.i]) - (AK[npc.id + b.i] == null ? -1 : AK[npc.id + b.i]));
       const q = qs[0];
-      const opts = [{ t: '❓ ' + q.q[0] }]; const ai = PX.AI && PX.AI.available();
+      const opts = q ? [{ t: '❓ ' + q.q[0] }] : []; const ai = PX.AI && PX.AI.available();
       if (ai) opts.push({ t: '✨ 자유롭게 이야기하기' });
       opts.push({ t: '다음에 또 봐요.' });
-      const i = await choose(opts);
-      if (i === 0) { S.done.askSeen[npc.id + q.i] = (S.done.askSeen[npc.id + q.i] || 0) + 1; await say('player', q.q[0]); await say(npc.id, U.fmt(q.q[1], ctx()), 'smile'); if (S.done.askSeen[npc.id + q.i] === 1) St.addNpcF(npc.id, 2); }
+      let i = await choose(opts); if (!q) i++;
+      if (i === 0) { const again = AK[npc.id + q.i] != null; AK[npc.id + q.i] = S.day; await say('player', q.q[0]); const d = PX.NPC_BY_ID[npc.id]; await say(npc.id, (again ? (d && d.banmal ? '전에도 말했지만, ' : '전에도 말씀드렸는데, ') : '') + U.fmt(q.q[1], ctx()), 'smile'); if (!again) St.addNpcF(npc.id, 2); }
       else if (ai && i === 1) { if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; } r.talks++; close(); G.modal--; return PX.AI.chat(npc); }
     }
     if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; }
@@ -349,5 +369,5 @@ PX.Dlg = (() => {
     if (!['kang', 'nam', 'ryu', 'moon', 'song'].includes(npc.id)) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
   }
 
-  return { reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  return { ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();

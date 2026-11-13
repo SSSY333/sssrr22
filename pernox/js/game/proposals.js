@@ -21,6 +21,15 @@ PX.Ask = (() => {
   };
 
   const P = [
+    // 치료받은 직후 (직접 부를 때만)
+    { id: 'afterTreat', when: () => false, w: 0,
+      q: ['C:고마워. 덕분에 살았다. …보고만 하고 오면 오늘 일은 끝이야. 저녁 같이 먹을래?', 'C^:치료비는 저녁으로 낼게. 보고 금방 하고 올 테니까 기다려 줄래?', 'C:붕대 감은 김에 오늘은 너랑 있을래. 보고는 짧게 하고 올게. 어때?'],
+      opts: [
+        O('follow', 'pos', '같이 가요. 보고하는 동안 밖에서 기다릴게요.', '같이 가요. 밖에서 기다릴게요.', '같이 가. 밖에서 기다릴게.', ['C^:좋아. 오 분이면 돼.', 'C:가자. 붕대 감은 팔은 네 쪽으로 안 할게.']),
+        O('later', 'pos', '여기서 기다릴게요. 끝나면 와요.', '여기서 기다릴게요. 와요.', '여기서 기다릴게. 와.', ['C^:응. 뛰어올게.', 'C:금방 온다. 어디 가지 마.']),
+        O('rest', 'neu', '오늘은 보고하고 바로 쉬어요. 다쳤잖아요.', '보고하고 바로 쉬어요. 다쳤잖아요.', '보고하고 바로 쉬어. 다쳤잖아.', ['C;:…긁힌 거야. 그래도 네 말 들을게. 대신 내일 저녁은 내 거다.']),
+        O('follow', 'flirt', '치료비는 제가 정할게요. 오늘 저녁 내내요.', '치료비는 오늘 저녁 내내요.', '치료비는 오늘 저녁 내내야.', ['C~:…비싼 의사네. 좋아. 낼게.']),
+      ] },
     { id: 'meal', when: c => c.meal, w: 4,
       q: ['C:밥 먹었어? 안 먹었으면 같이 가자.', 'C^:배고프다. 너도 아직이지? 식당 가자.', 'C:오늘 메뉴 괜찮대. 같이 먹을래?'],
       opts: [
@@ -59,7 +68,7 @@ PX.Ask = (() => {
         O('walk', 'pos', '좋아요. 걸어요.', '좋아요, 걸어요.', '좋아. 걷자.', ['C^:가자. 천천히.', 'C:네 걸음에 맞출게.']),
         O('walk', 'flirt', '대위님이랑이면 어디든 좋아요.', '대위님이랑이면 어디든요.', '너랑이면 어디든.', ['C!:…', 'C~:그 말 반칙이야. 손 줘.']),
         O('talk', 'neu', '걷기보단 잠깐 앉아서 얘기해요.', '앉아서 얘기해요, 잠깐.', '앉아서 얘기하자.', ['C:그래. 저기 벤치 가자.']),
-        O('alone', 'neg', '오늘은 일찍 들어가 볼게요.', '오늘은 일찍 들어갈게요.', '오늘은 일찍 들어갈게.', ['C:응. 잘 자. 내일 보자.']),
+        O('alone', 'neg', '오늘은 일찍 들어가 볼게요.', '오늘은 일찍 들어갈게요.', '오늘은 일찍 들어갈게.', ['C:응. 푹 쉬어. 내일 보자.']),
       ] },
     { id: 'night', when: c => c.night, w: 3,
       q: ['C;:이 시간에 왜 나와 있어. 잠이 안 와?', 'C:늦었다. 숙소까지 데려다줄게.', 'C*:야간 순찰 중인데, 수상한 사람 발견.'],
@@ -141,20 +150,21 @@ PX.Ask = (() => {
     const m = /^C([*^;!~]?):(.*)$/.exec(ln); if (!m) return;
     await PX.Dlg.say('cap', U.fmt(m[2], PX.Dlg.ctx()), FACE[m[1]] || 'normal');
   }
-  function pick() {
+  function pick(id) {
+    if (id) return P.find(p => p.id === id);
     const c = ctx(), S = St.S;
-    S.done.askSeen = S.done.askSeen || [];
+    S.done.capAskSeen = S.done.capAskSeen || [];
     const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
-    const fresh = ok.filter(p => !S.done.askSeen.slice(0, 4).includes(p.id));
+    const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 4).includes(p.id));
     const pool = fresh.length ? fresh : ok;
     let tot = pool.reduce((a, p) => a + p.w, 0), r = Math.random() * tot;
     for (const p of pool) { r -= p.w; if (r <= 0) return p; }
     return pool[0];
   }
   // 질문 → 대답 선택 → 반응. 반환: { k, mood }
-  async function propose(skipQ) {
-    const S = St.S, p = pick(), tn = toneOf();
-    S.done.askSeen = [p.id, ...S.done.askSeen.filter(x => x !== p.id)].slice(0, 8);
+  async function propose(skipQ, id) {
+    const S = St.S, p = pick(id), tn = toneOf();
+    S.done.capAskSeen = [p.id, ...(S.done.capAskSeen || []).filter(x => x !== p.id)].slice(0, 8);
     if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, p.q));
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);

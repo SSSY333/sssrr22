@@ -7,6 +7,8 @@
     player: null, cap: null, npcs: [], actors: [], mapId: null, prevMap: null, modal: 0, sleeping: false, inMini: false, transition: false, running: false,
     queue: [], target: null, bubbles: [], logLines: [],
   };
+  // 모달 카운터는 0 아래로 내려가지 않는다 (복구 뒤 늦게 끝난 흐름이 -1로 만들어 다시 멈추는 일 방지)
+  { let modalN = 0; delete Game.modal; Object.defineProperty(Game, 'modal', { get: () => modalN, set: (v) => { modalN = Math.max(0, v | 0); }, enumerable: true }); }
 
   // ---------- 시작 ----------
   function initWorld() {
@@ -90,7 +92,7 @@
   function enterMap(id, x, y, silent) {
     if (id !== 'mask' && PX.Ruby) PX.Ruby.unmask();
     Game.prevMap = Game.mapId;
-    Game.mapId = id;
+    Game.mapId = id; Game.enteredAt = St.absMin();
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;
     const m = W.maps[id];
@@ -405,7 +407,7 @@
     for (const id of (PX.Mini.lastFound || [])) Game.codex(id);
     if (job.mini === 'circuit' && score > 0.6) Game.codex('mineral');
     // 시간이 흐르기 전에 (대위가 아직 의무실에 있을 때) 말한다
-    if (ctx.patient && ctx.patient.startsWith(S.capName)) { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; }
+    if (ctx.patient && ctx.patient.startsWith(S.capName)) { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; Game.trigger(() => Cap.afterTreat()); }
     const pay = Math.round(job.pay * (0.6 + 0.6 * score));
     S.money += pay; S.energy = Math.max(0, S.energy - 18); S.workLog[key] = 1; S.workLog[S.day] = (S.workLog[S.day] || 0) + 1; S.stats.work++;
     const end = shift === 0 ? 12 * 60 : 17 * 60;
@@ -1026,7 +1028,7 @@
     Game.errors.push(`${where}: ${e && e.message || e}`); if (Game.errors.length > 20) Game.errors.shift();
     try { Dlg.reset(); Dlg.close(); } catch (x) { /* 무시 */ }
     document.querySelectorAll('.sheet-wrap').forEach(w => w.remove());
-    const mini = document.getElementById('mini'); if (mini && !mini.classList.contains('hidden')) { mini.classList.add('hidden'); mini.innerHTML = ''; }
+    const mini = document.getElementById('mini'); if (mini && !mini.classList.contains('hidden')) { try { PX.Mini.abort(); } catch (x) {} mini.classList.add('hidden'); mini.innerHTML = ''; }
     $('chatbar').classList.add('hidden'); $('fade').classList.remove('on', 'long');
     Game.modal = 0; Game.inMini = false; Game.busyEvent = false; Game.transition = false; Game.sleeping = false;
   }

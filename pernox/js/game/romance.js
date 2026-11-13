@@ -256,7 +256,7 @@ PX.Rom = (() => {
     const S = St.S, r = S.rel.cap;
     if (r.loverSince == null) return null;
     const n = S.day - r.loverSince;
-    if ([100, 200, 300, 365, 500, 730, 1000].includes(n)) return { n, kind: 'lover' };
+    if (n > 0 && n % 365 === 0) return { n, kind: 'lover' }; // 100일 같은 날짜 세기는 하지 않는다 · 1주년마다만
     if (S.marriedDay != null && n > 0 && (S.day - S.marriedDay) > 0 && (S.day - S.marriedDay) % 365 === 0) return { n: S.day - S.marriedDay, kind: 'wedding' };
     return null;
   }
@@ -265,7 +265,7 @@ PX.Rom = (() => {
     if (!a || S.done['anniv_' + S.day]) return false;
     if (g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 4) return false;
     S.done['anniv_' + S.day] = 1;
-    g.trigger(async () => { const bd = PX.Dlg.pick('v_anniv', PX.DLG_V2.anniv); await lines(bd ? bd.l : ['C:오늘 우리 기념일이야.']); St.addItem('mineral'); PX.UI.toast('🎁 기념일 선물: 대위가 깎은 광물 조각'); g.memory(a.kind === 'wedding' ? `결혼 ${Math.round(a.n / 365)}주년` : `연인 ${a.n}일`, '대위는 날짜를 하루도 틀리지 않았다.', true); St.addAff(8); });
+    g.trigger(async () => { const bd = a.kind === 'wedding' ? { l: U.pick([['C:오늘 무슨 날인지 알아?', 'C^:결혼기념일. 일 년 더 내 옆에 있어 줘서 고마워.'], ['C*:결혼기념일 선물. 이번에도 직접 깎았어.', 'C^:내년에도, 그다음 해에도.'], ['C:그날 네 손 떨리던 거 아직 기억나.', 'C^:나도 떨렸어. 지금 말하는 거야.']]) } : PX.Dlg.pick('v_anniv', PX.DLG_V2.anniv); await lines(bd ? bd.l : ['C:오늘 우리 기념일이야.']); St.addItem('mineral'); PX.UI.toast('🎁 기념일 선물: 대위가 깎은 광물 조각'); g.memory(a.kind === 'wedding' ? `결혼 ${Math.round(a.n / 365)}주년` : `연인 ${Math.round(a.n / 365)}주년`, '대위는 날짜를 하루도 틀리지 않았다.', true); St.addAff(8); });
     return true;
   }
 
