@@ -97,15 +97,20 @@ PX.U = (() => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 
-  // 최근에 나온 것을 피해서 고르기 (말풍선·혼잣말 반복 방지). key마다 최근 기록을 따로 둔다
+  // 한 번 나온 건 목록을 한 바퀴 다 돌 때까지 다시 고르지 않는다 (저장 파일에 기록 · 새로 불러와도 유지)
+  // 다 돌면 새 바퀴: 순서는 다시 무작위, 방금 나온 것만 바로 다음엔 빼고
   const fresh = new Map();
-  function pickFresh(key, arr, keep) {
+  function pickFresh(key, arr) {
     if (!arr || !arr.length) return undefined;
-    const rec = fresh.get(key) || [], k = keep != null ? keep : Math.max(1, Math.floor(arr.length * 0.6));
-    let cand = arr.filter(x => !rec.includes(x)); if (!cand.length) cand = arr;
-    const v = cand[Math.floor(Math.random() * cand.length)];
-    fresh.set(key, [v, ...rec].slice(0, Math.min(k, arr.length - 1)));
-    return v;
+    const S = PX.St && PX.St.S, store = S ? (S.freshMem = S.freshMem || {}) : null;
+    const ids = arr.map((x, i) => typeof x === 'string' ? hash(x) : 'i' + i);
+    let rec = (store ? store[key] : fresh.get(key)) || [];
+    let cand = ids.map((_, i) => i).filter(i => !rec.includes(ids[i]));
+    if (!cand.length) { const last = rec[0]; rec = []; cand = ids.map((_, i) => i).filter(i => ids[i] !== last); if (!cand.length) cand = [0]; }
+    const i = cand[Math.floor(Math.random() * cand.length)];
+    rec = [ids[i], ...rec].slice(0, arr.length);
+    if (store) store[key] = rec; else fresh.set(key, rec);
+    return arr[i];
   }
   return { pickFresh, hash, rng, rand, pick, clamp, lerp, shade, mix, hexToRgb, rgbToHex, josa, hasBatchim, givenName, fmt, pad2, el, sleep, dist };
 })();

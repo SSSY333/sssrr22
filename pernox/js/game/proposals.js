@@ -155,7 +155,7 @@ PX.Ask = (() => {
     const c = ctx(), S = St.S;
     S.done.capAskSeen = S.done.capAskSeen || [];
     const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
-    const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 4).includes(p.id));
+    const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id));
     const pool = fresh.length ? fresh : ok;
     let tot = pool.reduce((a, p) => a + p.w, 0), r = Math.random() * tot;
     for (const p of pool) { r -= p.w; if (r <= 0) return p; }

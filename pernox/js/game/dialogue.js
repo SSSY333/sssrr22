@@ -183,14 +183,14 @@ PX.Dlg = (() => {
     // 기억 검사: 실제로 오래 떨어진 게 아니면 '오랜만' 류 금지 · 같은 표현(보고 싶어·귀여워·안아 줄까…)은 한동안 쉬게
     const M = PX.Mind, txt = (bd) => (bd.l || bd).filter ? (bd.l || bd).filter(x => typeof x === 'string').join(' ') : '';
     if (M) { const ok2 = ok.filter(({ bd }) => M.textOk(txt(bd))); if (ok2.length) ok.splice(0, ok.length, ...ok2); else if (ok.some(({ bd }) => /오랜만|어디 갔다 왔|한참 찾았|하루 종일 기다/.test(txt(bd)))) return null; }
+    // 한 번도 안 나온 묶음부터. 다 나왔으면 가장 오래전에 나온 것들(하위 1/4) 중에서
     const used = S.recent;
-    const fresh = ok.filter(({ i }) => !(used[cat + i] && S.day - used[cat + i] < 4));
-    // 조건이 붙은 묶음(날씨·행사 등)을 조금 더 자주
-    const pool = fresh.length ? fresh : ok.sort((a, b) => (used[cat + a.i] || 0) - (used[cat + b.i] || 0)).slice(0, 2);
+    const never = ok.filter(({ i }) => used[cat + i] == null);
+    const pool = never.length ? never : ok.slice().sort((a, b) => (used[cat + a.i] || 0) - (used[cat + b.i] || 0)).slice(0, Math.max(1, Math.ceil(ok.length / 4)));
     const weighted = [];
     for (const p of pool) { weighted.push(p); if (p.bd.w || p.bd.event || p.bd.job || p.bd.t) weighted.push(p, p); }
     const chosen = U.pick(weighted);
-    used[cat + chosen.i] = S.day;
+    used[cat + chosen.i] = St.absMin();
     if (M) { M.notePhrases(txt(chosen.bd)); M.noteLine(cat + '#' + chosen.i); }
     return chosen.bd;
   }

@@ -142,7 +142,7 @@ PX.Reply = (() => {
     let list = REPLIES[cat].filter(r => r.mood !== 'flirt' || love);
     // 서로 다른 분위기 3개 (+ 애정 단계면 하나 더)
     const moods = ['pos', 'neu', 'neg', 'flirt'], out = [];
-    for (const m of moods) { const c = list.filter(r => r.mood === m); if (c.length) out.push(U.pick(c)); }
+    for (const m of moods) { const c = list.filter(r => r.mood === m); if (c.length) out.push(U.pickFresh('ro_' + cat + m, c)); } // 같은 대답도 돌아가며
     // 연애 단계면 말투를 하나 섞는다 (반존대 ↔ 존댓말)
     return out.slice(0, love ? 4 : 3).map((r, i) => {
       let t = r[tn];
