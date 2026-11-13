@@ -386,7 +386,9 @@ PX.UI = (() => {
       for (const k of ['slow', 'normal', 'fast']) { const b = el('button', { class: 'chip' + (S.settings.speed === k ? ' on' : '') }, Cal.SPEED_KO[k]); b.onclick = () => { S.settings.speed = k; [...sp.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); }; sp.append(b); }
       const snd = el('button', { class: 'chip' + (S.settings.sound ? ' on' : '') }, S.settings.sound ? '🔊 효과음 켬' : '🔇 효과음 끔');
       snd.onclick = () => { S.settings.sound = !S.settings.sound; snd.textContent = S.settings.sound ? '🔊 효과음 켬' : '🔇 효과음 끔'; snd.classList.toggle('on', S.settings.sound); };
-      p.append(el('h4', null, '시간 흐름'), sp, el('h4', null, '소리'), snd, el('h4', null, '저장'));
+      const qa = el('div', { class: 'chips' });
+      for (const [k, t] of [['auto', '자동'], ['high', '고화질'], ['low', '절전']]) { const b = el('button', { class: 'chip' + ((S.settings.quality || 'auto') === k ? ' on' : '') }, t); b.onclick = () => { S.settings.quality = k; PX.Game.lowPerf = k === 'low'; [...qa.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); }; qa.append(b); }
+      p.append(el('h4', null, '시간 흐름'), sp, el('h4', null, '소리'), snd, el('h4', null, '화질 (폰이 버벅이면 절전)'), qa, el('small', null, PX.Game.lowPerf ? '지금 절전 모드로 돌아가는 중' : ''), el('h4', null, '저장'));
       for (const n of [1, 2]) {
         const pk = St.peek(n);
         const b = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}에 저장${S.slot === n ? ' (사용 중)' : ''}`), el('small', null, pk ? `${pk.name} · ${pk.date}` : '비어 있음'));

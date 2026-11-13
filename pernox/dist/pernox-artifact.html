@@ -3815,6 +3815,25 @@ PX.W = (() => {
   }
 
   // 메인 렌더
+  const lightCache = new Map();
+  function lightHole(r) {
+    r = Math.round(r); const k = 'h' + r; let c = lightCache.get(k); if (c) return c;
+    c = G.canvas(r * 2, Math.ceil(r * 1.2)); const g = c.getContext('2d');
+    g.save(); g.translate(r, r * 0.6); g.scale(1, 0.6);
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, r);
+    gr.addColorStop(0, 'rgba(0,0,0,0.95)'); gr.addColorStop(0.5, 'rgba(0,0,0,0.5)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fill(); g.restore();
+    lightCache.set(k, c); return c;
+  }
+  function lightGlow(r, col) {
+    r = Math.round(r); const k = 'g' + r + col; let c = lightCache.get(k); if (c) return c;
+    c = G.canvas(r * 2, r * 2); const g = c.getContext('2d');
+    const [cr, cg, cb] = U.hexToRgb(col);
+    const gr = g.createRadialGradient(r, r, 0, r, r, r);
+    gr.addColorStop(0, `rgba(${cr},${cg},${cb},0.22)`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, r * 2, r * 2);
+    lightCache.set(k, c); return c;
+  }
   function render(m, actors, env, extra) {
     const g = view.g, W = view.w, H = view.h;
     const season = env.season, night = env.night;
@@ -3903,30 +3922,30 @@ PX.W = (() => {
       dg.fillRect(0, 0, W, H);
       dg.globalCompositeOperation = 'destination-out';
       const lights = m.lights.concat(extra && extra.lights || []);
+      // 조명 모양은 미리 그려 둔 그림을 재사용한다 (매 프레임 그라디언트를 만들지 않는다 — 폰에서 무거움)
       for (const L of lights) {
         if (L.off) continue;
         const [lx, ly] = toScreen(L.x, L.y, L.z * 0.5);
         const r = L.r * 16;
         if (lx < -r || ly < -r || lx > W + r || ly > H + r) continue;
-        const gr2 = dg.createRadialGradient(lx, ly, 0, lx, ly, r);
-        gr2.addColorStop(0, 'rgba(0,0,0,0.95)'); gr2.addColorStop(0.5, 'rgba(0,0,0,0.5)'); gr2.addColorStop(1, 'rgba(0,0,0,0)');
-        dg.fillStyle = gr2;
-        dg.beginPath(); dg.ellipse(lx, ly, r, r * 0.6, 0, 0, Math.PI * 2); dg.fill();
+        const sp = lightHole(r);
+        dg.drawImage(sp, Math.round(lx - r), Math.round(ly - r * 0.6));
       }
       g.drawImage(dk, 0, 0);
-      // 따뜻한 빛 번짐
+      // 따뜻한 빛 번짐 (밝기는 globalAlpha로) — 절전 모드에선 생략
+      if (!env.low) {
       g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = Math.min(1, amb.d);
       for (const L of lights) {
         if (L.off) continue;
         const [lx, ly] = toScreen(L.x, L.y, L.z * 0.5);
         const r = L.r * 9;
         if (lx < -r || ly < -r || lx > W + r || ly > H + r) continue;
-        const gr3 = g.createRadialGradient(lx, ly, 0, lx, ly, r);
-        const [cr, cg, cb] = U.hexToRgb(L.c);
-        gr3.addColorStop(0, `rgba(${cr},${cg},${cb},${(0.22 * amb.d).toFixed(3)})`); gr3.addColorStop(1, 'rgba(0,0,0,0)');
-        g.fillStyle = gr3; g.fillRect(lx - r, ly - r, r * 2, r * 2);
+        g.drawImage(lightGlow(r, L.c), Math.round(lx - r), Math.round(ly - r));
       }
+      g.globalAlpha = 1;
       g.globalCompositeOperation = 'source-over';
+      }
     }
     if (m.kind === 'out' && m.def.dome) domeFx(g, env, W, H);
     if (m.def.fx) specialFx(g, m, env, W, H);
@@ -3940,7 +3959,8 @@ PX.W = (() => {
     let kind = env.weather;
     if (kind === 'clear' || kind === 'cloudy') kind = env.season === 'spring' ? 'petal' : env.season === 'autumn' ? 'leaf' : env.season === 'winter' ? 'snowlight' : 'none';
     if (kind !== partKind) { parts.length = 0; partKind = kind; }
-    const target = { rain: 90, snow: 70, snowlight: 18, dust: 80, glow: 40, petal: 14, leaf: 14, none: 0 }[kind] || 0;
+    const target = Math.round(({ rain: 90, snow: 70, snowlight: 18, dust: 80, glow: 40, petal: 14, leaf: 14, none: 0 }[kind] || 0) * (env.low ? 0.35 : 1));
+    if (parts.length > target) parts.length = target;
     while (parts.length < target) parts.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random(), t: Math.random() * 100 });
     const dt = env.dt;
     if (kind === 'dust') { g.fillStyle = 'rgba(200,90,50,0.16)'; g.fillRect(0, 0, W, H); }
@@ -5562,7 +5582,9 @@ PX.UI = (() => {
       for (const k of ['slow', 'normal', 'fast']) { const b = el('button', { class: 'chip' + (S.settings.speed === k ? ' on' : '') }, Cal.SPEED_KO[k]); b.onclick = () => { S.settings.speed = k; [...sp.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); }; sp.append(b); }
       const snd = el('button', { class: 'chip' + (S.settings.sound ? ' on' : '') }, S.settings.sound ? '🔊 효과음 켬' : '🔇 효과음 끔');
       snd.onclick = () => { S.settings.sound = !S.settings.sound; snd.textContent = S.settings.sound ? '🔊 효과음 켬' : '🔇 효과음 끔'; snd.classList.toggle('on', S.settings.sound); };
-      p.append(el('h4', null, '시간 흐름'), sp, el('h4', null, '소리'), snd, el('h4', null, '저장'));
+      const qa = el('div', { class: 'chips' });
+      for (const [k, t] of [['auto', '자동'], ['high', '고화질'], ['low', '절전']]) { const b = el('button', { class: 'chip' + ((S.settings.quality || 'auto') === k ? ' on' : '') }, t); b.onclick = () => { S.settings.quality = k; PX.Game.lowPerf = k === 'low'; [...qa.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); }; qa.append(b); }
+      p.append(el('h4', null, '시간 흐름'), sp, el('h4', null, '소리'), snd, el('h4', null, '화질 (폰이 버벅이면 절전)'), qa, el('small', null, PX.Game.lowPerf ? '지금 절전 모드로 돌아가는 중' : ''), el('h4', null, '저장'));
       for (const n of [1, 2]) {
         const pk = St.peek(n);
         const b = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}에 저장${S.slot === n ? ' (사용 중)' : ''}`), el('small', null, pk ? `${pk.name} · ${pk.date}` : '비어 있음'));
@@ -6348,15 +6370,6 @@ PX.Act = (() => {
     if (withCap()) await lines(sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
     if (withCap() && once('dance')) G().memory('가면 아래에서', '실버마스크에서 대위와 춤을 췄다.', true);
   };
-  H.drink = async () => {
-    const S = St.S;
-    const it = await PX.UI.menu('바', [{ t: '🍹 향열매 칵테일 (₢12)', k: 1 }, { t: '🧃 무알코올 냉음료 (₢6)', k: 2 }]);
-    if (!it) return;
-    if (!St.spend(it.k === 1 ? 12 : 6)) { PX.UI.toast('돈이 모자라요'); return; }
-    St.advance(30); S.energy = Math.min(100, S.energy + 5);
-    if (withCap()) await lines(U.pick([['C:나 두 잔에서 멈출게. 너 데려다줘야 하니까.'], ['C*:술 마시면 얼굴 빨개지는 거, 그것도 귀엽다.'], ['C:헌병 순찰 돈다. 너무 늦기 전에 들어가자.']]));
-    else PX.UI.toast('🍹 한 잔 마셨다');
-  };
   H.perform = async (o) => {
     const g = G();
     if (g.mapId === 'showroom') { // 블라인드 쇼룸: 실루엣 공연 관람
@@ -6657,7 +6670,8 @@ PX.Ruby = (() => {
       const R = ROLES[c.role]; if (!R) continue;
       if (c.nightOnly && !night()) continue;
       const hr = St.S.time.min / 60, awake = hr >= (c.from || 7) && hr < (c.to || 22);
-      const n = c.fixed ? 1 : c.busy === 'day' ? (awake ? c.n : Math.floor(c.n / 4)) : (night() ? c.n : (c.day != null ? c.day : Math.ceil(c.n / 2)));
+      const n0 = c.fixed ? 1 : c.busy === 'day' ? (awake ? c.n : Math.floor(c.n / 4)) : (night() ? c.n : (c.day != null ? c.day : Math.ceil(c.n / 2)));
+      const n = c.fixed ? n0 : Math.round(n0 * (PX.Game.lowPerf ? 0.5 : 1));
       if (c.fixed && c.busy === 'day' && !awake) continue;
       for (let i = 0; i < n; i++) {
         const id = 'ex' + (seq++);
@@ -8356,6 +8370,20 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     v.cv.style.transform = tr; $('labels').style.transform = tr; $('bubbles').style.transform = tr;
   }
   function snapCam() { const p = Game.player; if (!p) return; const [px, py] = camTarget(); camF.x = px; camF.y = py; applyCam(); }
+  // ---------- 자동 절전: 느린 폰이면 가볍게 ----------
+  let skipFrame = false, renderDt = 0, perfAcc = 0, perfN = 0, perfSlow = 0;
+  function perfTick(dt) {
+    const q = St.S.settings.quality || 'auto';
+    if (q !== 'auto') { Game.lowPerf = q === 'low'; return; }
+    if (Game.modal || Game.sleeping) return;
+    perfAcc += dt; perfN++;
+    if (perfAcc < 3) return;
+    const avg = perfAcc / perfN; perfAcc = 0; perfN = 0;
+    // 3초 평균 프레임이 26ms(약 38fps)보다 길면 두 번 연속일 때 절전, 아주 여유로우면 해제
+    if (!Game.lowPerf) { perfSlow = avg > 0.026 ? perfSlow + 1 : 0; if (perfSlow >= 2) { Game.lowPerf = true; perfSlow = 0; trimCrowd(); } }
+  }
+  function trimCrowd() { if (!Game.critters) return; const ex = Game.critters.filter(c => c.extra && !c.fixed); ex.slice(0, Math.floor(ex.length / 2)).forEach(c => { c.hidden = true; c.map = null; }); Game.critters = Game.critters.filter(c => c.map); }
+  Game.trimCrowd = trimCrowd;
   function frame(t) {
     if (!Game.running) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -8383,8 +8411,11 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     camF.x += (px - camF.x) * k; camF.y += (py - camF.y) * k;
     if (Math.abs(px - camF.x) < 0.02) camF.x = px; if (Math.abs(py - camF.y) < 0.02) camF.y = py;
     applyCam();
-    // 렌더
-    const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt };
+    // 렌더 (절전 모드: 30fps로 그린다. 게임 시간·이동은 그대로)
+    perfTick(dt);
+    if (Game.lowPerf && (skipFrame = !skipFrame)) { renderDt += dt; hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); } requestAnimationFrame(frame); return; }
+    const rdt = dt + renderDt; renderDt = 0;
+    const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt: rdt, low: Game.lowPerf };
     W.render(W.maps[Game.mapId], Game.critters && Game.critters.length ? Game.actors.concat(Game.critters) : Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
     positionBubbles(); positionLabels(); ambient(dt);
     hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); }
@@ -8448,8 +8479,9 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
       const [sx, sy] = W.toScreen(o.x + o.fw / 2, o.y + o.fd / 2, o.b.h + 22);
       const px = sx * sc, py = sy * sc;
       const vis = sx > -60 && sx < W.view.w + 60 && sy > -10 && sy < W.view.h + 10 && py > 108 && !(px > innerWidth - 120 && py < 380);
-      e.style.display = vis ? '' : 'none';
-      if (vis) e.style.transform = `translate(${sx * sc}px, ${sy * sc}px) translate(-50%, -100%)`;
+      if (e._vis !== vis) { e._vis = vis; e.style.display = vis ? '' : 'none'; }
+      const tr = `translate(${Math.round(sx * sc)}px, ${Math.round(sy * sc)}px) translate(-50%, -100%)`;
+      if (vis && e._tr !== tr) { e._tr = tr; e.style.transform = tr; }
     }
   }
   // NPC 혼잣말 말풍선 (지금 하는 일에 맞춰)
@@ -8498,7 +8530,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   function positionBubbles() {
     const now = performance.now(), sc = W.view.cssScale;
     Game.bubbles = Game.bubbles.filter(b => { if (now > b.until || b.actor.map !== Game.mapId) { b.el.remove(); return false; } return true; });
-    for (const b of Game.bubbles) { const s = b.actor.screen; if (!s) continue; b.el.style.transform = `translate(${s.x * sc}px, ${(s.top - 4) * sc}px) translate(-50%, -100%)`; }
+    for (const b of Game.bubbles) { const s = b.actor.screen; if (!s) continue; const tr = `translate(${Math.round(s.x * sc)}px, ${Math.round((s.top - 4) * sc)}px) translate(-50%, -100%)`; if (b._tr !== tr) { b._tr = tr; b.el.style.transform = tr; } }
   }
   function updateAction() {
     const btn = $('actBtn');

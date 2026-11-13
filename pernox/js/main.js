@@ -829,6 +829,20 @@
     v.cv.style.transform = tr; $('labels').style.transform = tr; $('bubbles').style.transform = tr;
   }
   function snapCam() { const p = Game.player; if (!p) return; const [px, py] = camTarget(); camF.x = px; camF.y = py; applyCam(); }
+  // ---------- 자동 절전: 느린 폰이면 가볍게 ----------
+  let skipFrame = false, renderDt = 0, perfAcc = 0, perfN = 0, perfSlow = 0;
+  function perfTick(dt) {
+    const q = St.S.settings.quality || 'auto';
+    if (q !== 'auto') { Game.lowPerf = q === 'low'; return; }
+    if (Game.modal || Game.sleeping) return;
+    perfAcc += dt; perfN++;
+    if (perfAcc < 3) return;
+    const avg = perfAcc / perfN; perfAcc = 0; perfN = 0;
+    // 3초 평균 프레임이 26ms(약 38fps)보다 길면 두 번 연속일 때 절전, 아주 여유로우면 해제
+    if (!Game.lowPerf) { perfSlow = avg > 0.026 ? perfSlow + 1 : 0; if (perfSlow >= 2) { Game.lowPerf = true; perfSlow = 0; trimCrowd(); } }
+  }
+  function trimCrowd() { if (!Game.critters) return; const ex = Game.critters.filter(c => c.extra && !c.fixed); ex.slice(0, Math.floor(ex.length / 2)).forEach(c => { c.hidden = true; c.map = null; }); Game.critters = Game.critters.filter(c => c.map); }
+  Game.trimCrowd = trimCrowd;
   function frame(t) {
     if (!Game.running) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -856,8 +870,11 @@
     camF.x += (px - camF.x) * k; camF.y += (py - camF.y) * k;
     if (Math.abs(px - camF.x) < 0.02) camF.x = px; if (Math.abs(py - camF.y) < 0.02) camF.y = py;
     applyCam();
-    // 렌더
-    const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt };
+    // 렌더 (절전 모드: 30fps로 그린다. 게임 시간·이동은 그대로)
+    perfTick(dt);
+    if (Game.lowPerf && (skipFrame = !skipFrame)) { renderDt += dt; hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); } requestAnimationFrame(frame); return; }
+    const rdt = dt + renderDt; renderDt = 0;
+    const env = { season: PX.MAPS[Game.mapId].dome && St.season() === 'winter' ? 'domeWinter' : St.season(), night: St.isNight(), min: S.time.min, weather: PX.MAPS[Game.mapId].dome ? 'clear' : St.weather(), dt: rdt, low: Game.lowPerf };
     W.render(W.maps[Game.mapId], Game.critters && Game.critters.length ? Game.actors.concat(Game.critters) : Game.actors, env, { overlay: overlay, lights: p.map ? [] : [] });
     positionBubbles(); positionLabels(); ambient(dt);
     hudT -= dt; if (hudT <= 0) { hudT = 0.25; UI.hud(); updateAction(); }
@@ -921,8 +938,9 @@
       const [sx, sy] = W.toScreen(o.x + o.fw / 2, o.y + o.fd / 2, o.b.h + 22);
       const px = sx * sc, py = sy * sc;
       const vis = sx > -60 && sx < W.view.w + 60 && sy > -10 && sy < W.view.h + 10 && py > 108 && !(px > innerWidth - 120 && py < 380);
-      e.style.display = vis ? '' : 'none';
-      if (vis) e.style.transform = `translate(${sx * sc}px, ${sy * sc}px) translate(-50%, -100%)`;
+      if (e._vis !== vis) { e._vis = vis; e.style.display = vis ? '' : 'none'; }
+      const tr = `translate(${Math.round(sx * sc)}px, ${Math.round(sy * sc)}px) translate(-50%, -100%)`;
+      if (vis && e._tr !== tr) { e._tr = tr; e.style.transform = tr; }
     }
   }
   // NPC 혼잣말 말풍선 (지금 하는 일에 맞춰)
@@ -971,7 +989,7 @@
   function positionBubbles() {
     const now = performance.now(), sc = W.view.cssScale;
     Game.bubbles = Game.bubbles.filter(b => { if (now > b.until || b.actor.map !== Game.mapId) { b.el.remove(); return false; } return true; });
-    for (const b of Game.bubbles) { const s = b.actor.screen; if (!s) continue; b.el.style.transform = `translate(${s.x * sc}px, ${(s.top - 4) * sc}px) translate(-50%, -100%)`; }
+    for (const b of Game.bubbles) { const s = b.actor.screen; if (!s) continue; const tr = `translate(${Math.round(s.x * sc)}px, ${Math.round((s.top - 4) * sc)}px) translate(-50%, -100%)`; if (b._tr !== tr) { b._tr = tr; b.el.style.transform = tr; } }
   }
   function updateAction() {
     const btn = $('actBtn');

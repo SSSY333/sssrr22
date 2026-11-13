@@ -269,6 +269,25 @@ PX.W = (() => {
   }
 
   // 메인 렌더
+  const lightCache = new Map();
+  function lightHole(r) {
+    r = Math.round(r); const k = 'h' + r; let c = lightCache.get(k); if (c) return c;
+    c = G.canvas(r * 2, Math.ceil(r * 1.2)); const g = c.getContext('2d');
+    g.save(); g.translate(r, r * 0.6); g.scale(1, 0.6);
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, r);
+    gr.addColorStop(0, 'rgba(0,0,0,0.95)'); gr.addColorStop(0.5, 'rgba(0,0,0,0.5)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fill(); g.restore();
+    lightCache.set(k, c); return c;
+  }
+  function lightGlow(r, col) {
+    r = Math.round(r); const k = 'g' + r + col; let c = lightCache.get(k); if (c) return c;
+    c = G.canvas(r * 2, r * 2); const g = c.getContext('2d');
+    const [cr, cg, cb] = U.hexToRgb(col);
+    const gr = g.createRadialGradient(r, r, 0, r, r, r);
+    gr.addColorStop(0, `rgba(${cr},${cg},${cb},0.22)`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, r * 2, r * 2);
+    lightCache.set(k, c); return c;
+  }
   function render(m, actors, env, extra) {
     const g = view.g, W = view.w, H = view.h;
     const season = env.season, night = env.night;
@@ -357,30 +376,30 @@ PX.W = (() => {
       dg.fillRect(0, 0, W, H);
       dg.globalCompositeOperation = 'destination-out';
       const lights = m.lights.concat(extra && extra.lights || []);
+      // 조명 모양은 미리 그려 둔 그림을 재사용한다 (매 프레임 그라디언트를 만들지 않는다 — 폰에서 무거움)
       for (const L of lights) {
         if (L.off) continue;
         const [lx, ly] = toScreen(L.x, L.y, L.z * 0.5);
         const r = L.r * 16;
         if (lx < -r || ly < -r || lx > W + r || ly > H + r) continue;
-        const gr2 = dg.createRadialGradient(lx, ly, 0, lx, ly, r);
-        gr2.addColorStop(0, 'rgba(0,0,0,0.95)'); gr2.addColorStop(0.5, 'rgba(0,0,0,0.5)'); gr2.addColorStop(1, 'rgba(0,0,0,0)');
-        dg.fillStyle = gr2;
-        dg.beginPath(); dg.ellipse(lx, ly, r, r * 0.6, 0, 0, Math.PI * 2); dg.fill();
+        const sp = lightHole(r);
+        dg.drawImage(sp, Math.round(lx - r), Math.round(ly - r * 0.6));
       }
       g.drawImage(dk, 0, 0);
-      // 따뜻한 빛 번짐
+      // 따뜻한 빛 번짐 (밝기는 globalAlpha로) — 절전 모드에선 생략
+      if (!env.low) {
       g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = Math.min(1, amb.d);
       for (const L of lights) {
         if (L.off) continue;
         const [lx, ly] = toScreen(L.x, L.y, L.z * 0.5);
         const r = L.r * 9;
         if (lx < -r || ly < -r || lx > W + r || ly > H + r) continue;
-        const gr3 = g.createRadialGradient(lx, ly, 0, lx, ly, r);
-        const [cr, cg, cb] = U.hexToRgb(L.c);
-        gr3.addColorStop(0, `rgba(${cr},${cg},${cb},${(0.22 * amb.d).toFixed(3)})`); gr3.addColorStop(1, 'rgba(0,0,0,0)');
-        g.fillStyle = gr3; g.fillRect(lx - r, ly - r, r * 2, r * 2);
+        g.drawImage(lightGlow(r, L.c), Math.round(lx - r), Math.round(ly - r));
       }
+      g.globalAlpha = 1;
       g.globalCompositeOperation = 'source-over';
+      }
     }
     if (m.kind === 'out' && m.def.dome) domeFx(g, env, W, H);
     if (m.def.fx) specialFx(g, m, env, W, H);
@@ -394,7 +413,8 @@ PX.W = (() => {
     let kind = env.weather;
     if (kind === 'clear' || kind === 'cloudy') kind = env.season === 'spring' ? 'petal' : env.season === 'autumn' ? 'leaf' : env.season === 'winter' ? 'snowlight' : 'none';
     if (kind !== partKind) { parts.length = 0; partKind = kind; }
-    const target = { rain: 90, snow: 70, snowlight: 18, dust: 80, glow: 40, petal: 14, leaf: 14, none: 0 }[kind] || 0;
+    const target = Math.round(({ rain: 90, snow: 70, snowlight: 18, dust: 80, glow: 40, petal: 14, leaf: 14, none: 0 }[kind] || 0) * (env.low ? 0.35 : 1));
+    if (parts.length > target) parts.length = target;
     while (parts.length < target) parts.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random(), t: Math.random() * 100 });
     const dt = env.dt;
     if (kind === 'dust') { g.fillStyle = 'rgba(200,90,50,0.16)'; g.fillRect(0, 0, W, H); }

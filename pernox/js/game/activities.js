@@ -230,15 +230,6 @@ PX.Act = (() => {
     if (withCap()) await lines(sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
     if (withCap() && once('dance')) G().memory('가면 아래에서', '실버마스크에서 대위와 춤을 췄다.', true);
   };
-  H.drink = async () => {
-    const S = St.S;
-    const it = await PX.UI.menu('바', [{ t: '🍹 향열매 칵테일 (₢12)', k: 1 }, { t: '🧃 무알코올 냉음료 (₢6)', k: 2 }]);
-    if (!it) return;
-    if (!St.spend(it.k === 1 ? 12 : 6)) { PX.UI.toast('돈이 모자라요'); return; }
-    St.advance(30); S.energy = Math.min(100, S.energy + 5);
-    if (withCap()) await lines(U.pick([['C:나 두 잔에서 멈출게. 너 데려다줘야 하니까.'], ['C*:술 마시면 얼굴 빨개지는 거, 그것도 귀엽다.'], ['C:헌병 순찰 돈다. 너무 늦기 전에 들어가자.']]));
-    else PX.UI.toast('🍹 한 잔 마셨다');
-  };
   H.perform = async (o) => {
     const g = G();
     if (g.mapId === 'showroom') { // 블라인드 쇼룸: 실루엣 공연 관람

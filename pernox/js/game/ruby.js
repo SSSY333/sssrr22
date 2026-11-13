@@ -72,7 +72,8 @@ PX.Ruby = (() => {
       const R = ROLES[c.role]; if (!R) continue;
       if (c.nightOnly && !night()) continue;
       const hr = St.S.time.min / 60, awake = hr >= (c.from || 7) && hr < (c.to || 22);
-      const n = c.fixed ? 1 : c.busy === 'day' ? (awake ? c.n : Math.floor(c.n / 4)) : (night() ? c.n : (c.day != null ? c.day : Math.ceil(c.n / 2)));
+      const n0 = c.fixed ? 1 : c.busy === 'day' ? (awake ? c.n : Math.floor(c.n / 4)) : (night() ? c.n : (c.day != null ? c.day : Math.ceil(c.n / 2)));
+      const n = c.fixed ? n0 : Math.round(n0 * (PX.Game.lowPerf ? 0.5 : 1));
       if (c.fixed && c.busy === 'day' && !awake) continue;
       for (let i = 0; i < n; i++) {
         const id = 'ex' + (seq++);

@@ -30,7 +30,7 @@ pernox/
   js/game/     state.js(시간·관계·저장) actors.js(이동·NPC 일과) captain.js(대위 행동 우선순위) dialogue.js
                ui.js(타이틀·생성·HUD·단말) minigames.js decor.js audio.js
   js/main.js   루프·입력·상호작용
-  tools/       build.js build-apk.sh validate.html(맵·가구 자동 검사) artsheet.html couple.html(도트 확인용)
+  tools/       build.js build-apk.sh validate.html(맵·가구 자동 검사)
   android/     MainActivity.java (WebView 래퍼)
 ```
 
