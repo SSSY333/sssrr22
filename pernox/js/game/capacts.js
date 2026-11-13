@@ -112,7 +112,7 @@ PX.CapAct = (() => {
     if (postField() && Math.random() < 0.4 && k !== 'med') k = 'postField';
     if (U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 7 || g.bubbles.some(b => b.actor === g.cap)) return;
     if (St.S.rel.cap.backoffUntil > St.absMin()) return;
-    g.bubble(g.cap, U.fmt(U.pick(HINT[k] || HINT.postField), PX.Dlg.ctx()), 3.2);
+    g.bubble(g.cap, U.fmt(U.pickFresh('hint_' + k, HINT[k] || HINT.postField), PX.Dlg.ctx()), 3.2);
   }
 
   // ---------- 해 줄 수 있는 일 ----------

@@ -129,6 +129,9 @@ PX.Dlg = (() => {
       if (bd.job && bd.job !== S.player.job) return false;
       if (bd.event && !Cal.openAt(PX.LORE_BY_ID[bd.event], S.time, S.time.min)) return false; // 행사 시간 안에만
       if (bd.notJob && bd.notJob === S.player.job) return false;
+      const mid = PX.Game.mapId, mOut = PX.MAPS[mid] && (PX.MAPS[mid].kind === 'out' ? mid : PX.MAPS[mid].parent);
+      if (bd.notMap && (bd.notMap.includes(mid) || bd.notMap.includes(mOut))) return false;
+      if (bd.map && !(bd.map.includes(mid) || bd.map.includes(mOut))) return false;
       if (bd.wd === 'weekday' && !wkd) return false;
       if (cond.act && bd.act !== cond.act) return false;
       return true;
@@ -274,9 +277,13 @@ PX.Dlg = (() => {
     } else if (q && Math.random() < 0.5) {
       line = d.banmal ? `아, ${PX.ITEMS[q.item].name} 구하면 나 좀 줘. ${q.hint.replace(/에요\.$/, '야.').replace(/있어요\.$/, '있어.').replace(/팔아요\.$/, '팔아.').replace(/거예요\.$/, '거야.').replace(/더라고요\.$/, '더라.')}` : `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
     }
+    { const f = r.f || 0, busy = ['workout', 'cook', 'grill', 'work_hangar', 'work_med', 'guard', 'sleep', 'eat'].includes(act);
+      if (!busy && !npc.seat && (r.lastTalkDay !== S.day)) npc.doPose('wave', 1.2);
+      if (f >= 70 && Math.random() < 0.4) npc.showEmote('heart', 1.6); else if (/[!]$/.test(line) && Math.random() < 0.5) npc.showEmote('note', 1.4); }
     await say(npc.id, U.fmt(line, ctx()), 'smile');
     // 이어서: 궁금한 것 물어보기 · (아티팩트) 자유롭게 이야기하기
-    if (PS && act !== 'sleep') {
+    const fresh = PS && PS.ask.some((q, i) => !(S.done.askSeen || {})[npc.id + i]);
+    if (PS && act !== 'sleep' && (fresh || (PX.AI && PX.AI.available()) || Math.random() < 0.25)) {
       S.done.askSeen = S.done.askSeen || {};
       const qs = PS.ask.map((q, i) => ({ q, i })).sort((a, b) => (S.done.askSeen[npc.id + a.i] || 0) - (S.done.askSeen[npc.id + b.i] || 0));
       const q = qs[0];

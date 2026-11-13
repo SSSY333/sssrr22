@@ -90,10 +90,10 @@ PX.Ruby = (() => {
     }
   }
   function think(a, m, g, now) {
-    if (a.fixed) { if (now > (a.nextMove || 0)) { a.nextMove = now + 6000 + Math.random() * 8000; if (Math.random() < 0.35 && !g.bubbles.some(b => b.actor === a)) g.bubble(a, U.pick(ROLES[a.extra].amb), 2.6); } return; }
+    if (a.fixed) { if (now > (a.nextMove || 0)) { a.nextMove = now + 6000 + Math.random() * 8000; if (Math.random() < 0.35 && !g.bubbles.some(b => b.actor === a)) g.bubble(a, U.pickFresh('xamb_' + a.extra, ROLES[a.extra].amb), 2.6); } return; }
     if (now < a.nextMove || a.path.length) return;
     a.nextMove = now + 3000 + Math.random() * 5000;
-    if (Math.random() < 0.15 && !g.bubbles.some(b => b.actor === a) && U.dist(a.x, a.y, g.player.x, g.player.y) < 8) g.bubble(a, U.pick(ROLES[a.extra].amb), 2.6);
+    if (Math.random() < 0.15 && !g.bubbles.some(b => b.actor === a) && U.dist(a.x, a.y, g.player.x, g.player.y) < 8) g.bubble(a, U.pickFresh('xamb_' + a.extra, ROLES[a.extra].amb), 2.6);
     const R = ROLES[a.extra];
     // 물건·기구 앞에 가서 들여다보기 (PX 진열대, 운동기구, 오락기 …)
     if (R.browse && Math.random() < 0.65) {
@@ -112,7 +112,7 @@ PX.Ruby = (() => {
     let pool = R.talk.slice();
     if (a.extra === 'mp' && !withCap()) pool = pool.filter(t => !t.includes('대위님 일행'));
     if (a.extra === 'pubboss' || a.extra === 'innclerk') pool = pool.filter(t => withCap() || !t.includes('대위'));
-    await lines([`X:${a.id}:` + U.pick(pool)]);
+    await lines([`X:${a.id}:` + U.pickFresh('xtalk_' + a.extra, pool)]);
     // 직원은 하는 일로 이어진다
     const next = { dealer: () => H.cards(), pubboss: () => H.rumor(), host: () => H.reserve(), usher: null, maskhost: () => H.mask(), rosevendor: () => H.rosecart(), cocktailer: () => H.cocktail(), busker: () => H.busk() }[a.extra];
     if (next) await next();
@@ -121,7 +121,7 @@ PX.Ruby = (() => {
 
   // ---------- 활동 ----------
   const H = {};
-  const capLine = async (pool) => { if (withCap()) { G().cap.setDirTo(G().player.x, G().player.y); await lines(U.pick(pool)); } };
+  const capLine = async (pool) => { if (withCap()) { G().cap.setDirTo(G().player.x, G().player.y); await lines(U.pickFresh('rcap_' + pool.length + pool[0][0], pool)); } };
   H.statue = async () => {
     await lines(['N:루비웨이 입구의 붉은 결정 조형물. 바닥 물에 동전을 던지면 소원이 이뤄진다는 말이 있다.']);
     const it = await PX.UI.menu('루비 조형물', [{ t: '🪙 동전 던지고 소원 빌기 (₢1)', k: 1 }, { t: '그냥 보기', k: 0 }]);

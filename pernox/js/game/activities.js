@@ -10,7 +10,7 @@ PX.Act = (() => {
     const pool = (PX.DLG_CAP2.activity[key] || []).concat(extra || []);
     if (!pool.length) return;
     G().cap.setDirTo(G().player.x, G().player.y);
-    await lines(U.pick(pool));
+    await lines(U.pickFresh('capSay_' + key, pool));
   }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   const ARRIVE = { base: [27.5, 58.5], dome: [23.5, 40.5], plaza: [26.5, 45.5] };
@@ -55,7 +55,7 @@ PX.Act = (() => {
     if (!withCap() || g.modal) return;
     const pool = PX.DLG_CAP2.placeAmb[g.mapId] || PX.DLG_CAP2.placeAmb._;
     if (!force && Math.random() < 0.4) return;
-    g.bubble(g.cap, U.fmt(U.pick(pool), PX.Dlg.ctx()), 3.2);
+    g.bubble(g.cap, U.fmt(U.pickFresh('pamb_' + g.mapId, pool), PX.Dlg.ctx()), 3.2);
   }
 
   // ---------- 활동 ----------

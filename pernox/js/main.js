@@ -113,6 +113,8 @@
   function fade() { const f = $('fade'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 260); }
   function enterBuilding(door) {
     const S = St.S;
+    const act = door.bld && door.bld.b.act;
+    if (act) { if (act.shop) return UI.shop(act.shop); if (act.travel) return PX.Act.travelMenu(); }
     if (door.closed) { UI.toast(door.closedMsg || `🚧 ${door.name} — 아직 문을 열지 않았어요`); return; }
     const hrs = door.bld && door.bld.b.hours;
     if (hrs) { const t = S.time.min, a = Cal.toMin(hrs[0]), b = Cal.toMin(hrs[1]); const open = a < b ? t >= a && t < b : t >= a || t < b; if (!open) { UI.toast(`🌙 ${door.name} — 영업시간 ${hrs[0]}~${hrs[1]}`); return; } }
@@ -556,7 +558,7 @@
     const m = W.maps[Game.mapId], list = [];
     for (const o of m.objs) {
       if (o.hidden) continue;
-      if (o.kind === 'bld' && o.door) list.push({ type: 'door', o, x: o.door.x + 0.5, y: o.door.y + 0.5, label: o.door.closed ? `🚧 ${o.b.name}` : `🚪 ${o.b.name} 들어가기`, fn: () => enterBuilding(m.doors.find(d => d.bld === o)) });
+      if (o.kind === 'bld' && o.door) list.push({ type: 'door', o, x: o.door.x + 0.5, y: o.door.y + 0.5, label: o.b.act ? o.b.act.label : o.door.closed ? `🚧 ${o.b.name}` : `🚪 ${o.b.name} 들어가기`, fn: () => enterBuilding(m.doors.find(d => d.bld === o)) });
       else if (o.kind === 'furn' && (o.use || (o.seats && o.seats.length))) {
         const a = W.accessTile(m, o);
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
@@ -716,8 +718,10 @@
     const hit = (x, y) => { for (const a of others) { const d = U.dist(x, y, a.x, a.y); if (d < 0.55 && d < U.dist(p.x, p.y, a.x, a.y) - 0.001) { bumped = a; return true; } } return false; };
     const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return !hit(x, y); };
     const nx = p.x + dx * sp, ny = p.y + dy * sp;
-    if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) p.x = nx; else if (free(p.x, ny)) p.y = ny;
-    else if (bumped && !bumped.fixed && !bumped.critter && !bumped.path.length) { // 길을 막고 선 사람은 옆으로 비켜 준다
+    const ox0 = p.x, oy0 = p.y;
+    if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (nx !== p.x && free(nx, p.y)) p.x = nx; else if (ny !== p.y && free(p.x, ny)) p.y = ny;
+    if (Math.hypot(p.x - ox0, p.y - oy0) < sp * 0.3 && bumped && !bumped.fixed && !bumped.critter && !bumped.path.length && !bumped.seat && (bumped.pushT || 0) < performance.now()) {
+      bumped.pushT = performance.now() + 1500; // 길을 막고 선 사람은 옆으로 비켜 준다
       const bx = Math.floor(bumped.x), by = Math.floor(bumped.y), px0 = Math.floor(p.x), py0 = Math.floor(p.y);
       const sp2 = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([ax, ay]) => [bx + ax, by + ay]).filter(([x, y]) => W.walkable(m, x, y) && !(x === px0 && y === py0)).sort((u, v) => U.dist(v[0], v[1], p.x, p.y) - U.dist(u[0], u[1], p.x, p.y));
       if (sp2.length) { bumped.walkPath([sp2[0]]); if (Math.random() < 0.3 && bumped !== Game.cap) Game.bubble(bumped, U.pick(['앗.', '어이쿠.', '…!']), 1.4); }
@@ -931,7 +935,7 @@
     // 지나가면 먼저 인사 (하루에 한 번씩)
     const S0 = St.S; S0.done.hiDay = S0.done.hiDay === S0.day ? S0.done.hiDay : (S0.done.hiSet = {}, S0.day);
     const hiN = Game.npcs.find(n => n.map === Game.mapId && PX.HI && PX.HI[n.id] && !S0.done.hiSet[n.id] && n.activity() !== 'sleep' && U.dist(n.x, n.y, p.x, p.y) < 2.4 && !Game.bubbles.some(b => b.actor === n));
-    if (hiN) { S0.done.hiSet[hiN.id] = 1; if (!hiN.path.length && !hiN.seat) hiN.setDirTo(p.x, p.y); Game.bubble(hiN, U.pick(PX.HI[hiN.id]), 2.2); ambT = 2.5; return; }
+    if (hiN) { S0.done.hiSet[hiN.id] = 1; if (!hiN.path.length && !hiN.seat) hiN.setDirTo(p.x, p.y); Game.bubble(hiN, U.pickFresh('hi_' + hiN.id, PX.HI[hiN.id]), 2.2); if (!hiN.seat && !['workout', 'cook', 'grill', 'guard'].includes(hiN.activity())) hiN.doPose('wave', 1); ambT = 2.5; return; }
     if (Math.random() < 0.4) return;
     // 가까이 있는 두 사람이 말을 주고받는다
     if (PX.CHATTER && Math.random() < 0.4) {
@@ -962,7 +966,7 @@
     const md = PX.MAPS[n.map], w = St.weather();
     if (md.kind === 'out' && !md.dome && PX.NPC_ACT.weather[w] && Math.random() < 0.3) pool = PX.NPC_ACT.weather[w];
     lastAmb = n;
-    Game.bubble(n, U.pick(pool).replace(/\{c\}/g, St.S.capName).replace(/\{cs\}/g, Cap.status()), 2.6);
+    Game.bubble(n, U.pickFresh('amb_' + n.id + act, pool).replace(/\{c\}/g, St.S.capName).replace(/\{cs\}/g, Cap.status()), 2.6);
   }
   function positionBubbles() {
     const now = performance.now(), sc = W.view.cssScale;

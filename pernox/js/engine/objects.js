@@ -93,6 +93,7 @@ PX.O = (() => {
   function building(b, season, night) {
     const key = 'B|' + b.id + '|' + season + '|' + (night ? 1 : 0);
     if (cache.has(key)) return cache.get(key);
+    if (b.rock) { const r = rockMound(b, night); cache.set(key, r); return r; }
     const body = { x: 0, y: 0, z: 0, w: b.w, d: b.d, h: b.h, c: b.wall };
     const roof = { x: -0.15, y: -0.15, z: b.h, w: b.w + 0.3, d: b.d + 0.3, h: 4, c: b.roof };
     const parapet = { x: 0.2, y: 0.2, z: b.h + 4, w: b.w - 0.4, d: b.d - 0.4, h: 1, c: shade(b.roof, -0.1), edge: false };
@@ -169,6 +170,36 @@ PX.O = (() => {
     });
     cache.set(key, spr);
     return spr;
+  }
+
+  // 바위 언덕 + 동굴 입구 (창문·지붕 없는 자연 지형 건물)
+  function rockMound(b, night) {
+    const rng = PX.U.rng(b.id), c = b.wall;
+    const parts = [];
+    // 아래가 넓고 위로 갈수록 좁아지는 바위 층
+    const layers = 4;
+    for (let i = 0; i < layers; i++) {
+      const ins = i * 0.7 + rng() * 0.3;
+      parts.push({ x: ins, y: ins * 0.8, z: i * (b.h / layers), w: Math.max(1.5, b.w - ins * 2), d: Math.max(1.5, b.d - ins * 1.6), h: b.h / layers + 1, c: shade(c, i * 0.06 - 0.05) });
+    }
+    // 울퉁불퉁한 돌덩이
+    for (let i = 0; i < 6; i++) { const w = 0.8 + rng() * 1.4; parts.push({ x: rng() * (b.w - w), y: rng() * (b.d - w), z: b.h * (0.5 + rng() * 0.45), w, d: w * 0.9, h: 4 + rng() * 6, c: shade(c, rng() * 0.2 - 0.1) }); }
+    const body = { x: 0, y: 0, z: 0, w: b.w, d: b.d, h: b.h, c };
+    return G.makeSprite(parts, (g, ox, oy) => {
+      g.globalAlpha = 0.22; G.topRect(g, ox, oy, -0.3, -0.3, b.w + 0.45, b.d + 0.45, 0, '#000'); g.globalAlpha = 1;
+      for (const p of parts) G.box(g, ox, oy, p);
+      const d = b.door; if (!d) return;
+      // 동굴 입구: 어두운 아치 + 안쪽 결정 빛
+      const dw = 1.8, u0 = d.u - 0.4;
+      G.faceRect(g, ox, oy, body, d.f, u0 - 0.2, u0 + dw + 0.2, 0, 22, shade(c, -0.35));
+      G.faceRect(g, ox, oy, body, d.f, u0, u0 + dw, 0, 18, '#140c18');
+      G.faceRect(g, ox, oy, body, d.f, u0 + 0.3, u0 + dw - 0.3, 18, 21, '#140c18');
+      G.faceRect(g, ox, oy, body, d.f, u0 + 0.4, u0 + 0.6, 2, 7, night ? '#d6a2ff' : '#9b7fd0');
+      G.faceRect(g, ox, oy, body, d.f, u0 + 1.2, u0 + 1.35, 3, 10, night ? '#7fe3ff' : '#5fa8c8');
+      // 경고 표지판
+      G.faceRect(g, ox, oy, body, d.f, u0 + dw + 0.5, u0 + dw + 1.3, 10, 16, '#ffd166');
+      G.faceRect(g, ox, oy, body, d.f, u0 + dw + 0.85, u0 + dw + 0.95, 11, 14, '#2a2433');
+    });
   }
 
   // 외곽 방벽 · 돔 유리벽 (긴 상자 하나로)

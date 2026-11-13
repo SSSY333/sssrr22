@@ -396,7 +396,17 @@ PX.U = (() => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 
-  return { hash, rng, rand, pick, clamp, lerp, shade, mix, hexToRgb, rgbToHex, josa, hasBatchim, givenName, fmt, pad2, el, sleep, dist };
+  // 최근에 나온 것을 피해서 고르기 (말풍선·혼잣말 반복 방지). key마다 최근 기록을 따로 둔다
+  const fresh = new Map();
+  function pickFresh(key, arr, keep) {
+    if (!arr || !arr.length) return undefined;
+    const rec = fresh.get(key) || [], k = keep != null ? keep : Math.max(1, Math.floor(arr.length * 0.6));
+    let cand = arr.filter(x => !rec.includes(x)); if (!cand.length) cand = arr;
+    const v = cand[Math.floor(Math.random() * cand.length)];
+    fresh.set(key, [v, ...rec].slice(0, Math.min(k, arr.length - 1)));
+    return v;
+  }
+  return { pickFresh, hash, rng, rand, pick, clamp, lerp, shade, mix, hexToRgb, rgbToHex, josa, hasBatchim, givenName, fmt, pad2, el, sleep, dist };
 })();
 
 </script>
@@ -1107,6 +1117,7 @@ PX.O = (() => {
   function building(b, season, night) {
     const key = 'B|' + b.id + '|' + season + '|' + (night ? 1 : 0);
     if (cache.has(key)) return cache.get(key);
+    if (b.rock) { const r = rockMound(b, night); cache.set(key, r); return r; }
     const body = { x: 0, y: 0, z: 0, w: b.w, d: b.d, h: b.h, c: b.wall };
     const roof = { x: -0.15, y: -0.15, z: b.h, w: b.w + 0.3, d: b.d + 0.3, h: 4, c: b.roof };
     const parapet = { x: 0.2, y: 0.2, z: b.h + 4, w: b.w - 0.4, d: b.d - 0.4, h: 1, c: shade(b.roof, -0.1), edge: false };
@@ -1183,6 +1194,36 @@ PX.O = (() => {
     });
     cache.set(key, spr);
     return spr;
+  }
+
+  // 바위 언덕 + 동굴 입구 (창문·지붕 없는 자연 지형 건물)
+  function rockMound(b, night) {
+    const rng = PX.U.rng(b.id), c = b.wall;
+    const parts = [];
+    // 아래가 넓고 위로 갈수록 좁아지는 바위 층
+    const layers = 4;
+    for (let i = 0; i < layers; i++) {
+      const ins = i * 0.7 + rng() * 0.3;
+      parts.push({ x: ins, y: ins * 0.8, z: i * (b.h / layers), w: Math.max(1.5, b.w - ins * 2), d: Math.max(1.5, b.d - ins * 1.6), h: b.h / layers + 1, c: shade(c, i * 0.06 - 0.05) });
+    }
+    // 울퉁불퉁한 돌덩이
+    for (let i = 0; i < 6; i++) { const w = 0.8 + rng() * 1.4; parts.push({ x: rng() * (b.w - w), y: rng() * (b.d - w), z: b.h * (0.5 + rng() * 0.45), w, d: w * 0.9, h: 4 + rng() * 6, c: shade(c, rng() * 0.2 - 0.1) }); }
+    const body = { x: 0, y: 0, z: 0, w: b.w, d: b.d, h: b.h, c };
+    return G.makeSprite(parts, (g, ox, oy) => {
+      g.globalAlpha = 0.22; G.topRect(g, ox, oy, -0.3, -0.3, b.w + 0.45, b.d + 0.45, 0, '#000'); g.globalAlpha = 1;
+      for (const p of parts) G.box(g, ox, oy, p);
+      const d = b.door; if (!d) return;
+      // 동굴 입구: 어두운 아치 + 안쪽 결정 빛
+      const dw = 1.8, u0 = d.u - 0.4;
+      G.faceRect(g, ox, oy, body, d.f, u0 - 0.2, u0 + dw + 0.2, 0, 22, shade(c, -0.35));
+      G.faceRect(g, ox, oy, body, d.f, u0, u0 + dw, 0, 18, '#140c18');
+      G.faceRect(g, ox, oy, body, d.f, u0 + 0.3, u0 + dw - 0.3, 18, 21, '#140c18');
+      G.faceRect(g, ox, oy, body, d.f, u0 + 0.4, u0 + 0.6, 2, 7, night ? '#d6a2ff' : '#9b7fd0');
+      G.faceRect(g, ox, oy, body, d.f, u0 + 1.2, u0 + 1.35, 3, 10, night ? '#7fe3ff' : '#5fa8c8');
+      // 경고 표지판
+      G.faceRect(g, ox, oy, body, d.f, u0 + dw + 0.5, u0 + dw + 1.3, 10, 16, '#ffd166');
+      G.faceRect(g, ox, oy, body, d.f, u0 + dw + 0.85, u0 + dw + 0.95, 11, 14, '#2a2433');
+    });
   }
 
   // 외곽 방벽 · 돔 유리벽 (긴 상자 하나로)
@@ -2175,8 +2216,8 @@ PX.S = (() => {
   const p3 = out('planet3', { name: '제3행성 · 해양돔거리', w: 44, h: 34, fill: 'deepwater', arrive: [22, 29], lore: 'LB33', travel: [PORT(360)] });
   p3.zones = [{ t: 'plaza', x0: 16, y0: 24, x1: 28, y1: 31 }, { t: 'plaza', x0: 4, y0: 6, x1: 15, y1: 15 }, { t: 'plaza', x0: 28, y0: 6, x1: 39, y1: 15 }, { t: 'plaza', x0: 18, y0: 3, x1: 26, y1: 10 },
     { t: 'boardwalk', x0: 21, y0: 11, x1: 22, y1: 23 }, { t: 'boardwalk', x0: 10, y0: 16, x1: 11, y1: 25 }, { t: 'boardwalk', x0: 12, y0: 24, x1: 15, y1: 25 }, { t: 'boardwalk', x0: 33, y0: 16, x1: 34, y1: 25 }, { t: 'boardwalk', x0: 29, y0: 24, x1: 32, y1: 25 }];
-  p3.buildings = [{ id: 'p3_food', name: '해산물 요리점', x: 6, y: 7, w: 6, d: 5, h: 36, wall: '#e8f4f0', roof: '#3b8fbf', stripe: '#ff8b5e', icon: 'fork', awning: '#ff8b5e', closed: true, closedMsg: '🐟 해산물 요리점 — 매대에서 주문할 수 있어요' },
-    { id: 'p3_shop', name: '부유식 상점', x: 31, y: 7, w: 6, d: 5, h: 34, wall: '#f4e4c8', roof: '#5fa8ff', stripe: '#5fc8e8', icon: 'box', awning: '#5fc8e8', closed: true, closedMsg: '🛍️ 부유식 상점 — 매대에서 기념품을 살 수 있어요' }];
+  p3.buildings = [{ id: 'p3_food', name: '해산물 요리점', x: 6, y: 7, w: 6, d: 5, h: 36, wall: '#e8f4f0', roof: '#3b8fbf', stripe: '#ff8b5e', icon: 'fork', awning: '#ff8b5e', door: { f: 'L', u: 2 }, act: { shop: 'seafood', label: '🐟 해산물 요리점 주문하기' } },
+    { id: 'p3_shop', name: '부유식 상점', x: 31, y: 7, w: 6, d: 5, h: 34, wall: '#f4e4c8', roof: '#5fa8ff', stripe: '#5fc8e8', icon: 'box', awning: '#5fc8e8', door: { f: 'L', u: 2 }, act: { shop: 'seafood', label: '🛍️ 부유식 상점 둘러보기' } }];
   p3.decor.push(['stall', 8, 13, 0], ['stall', 33, 13, 0], ['parasol', 19, 26, 0], ['parasol', 25, 26, 0], ['benchout', 18, 8, 0], ['fountain', 21, 4, 0], ['streetlamp', 17, 24, 0], ['streetlamp', 28, 24, 0], ['fishspot', 16, 28, 0]);
   p3.shops = { stall: 'seafood' };
 
@@ -2205,7 +2246,7 @@ PX.S = (() => {
   os.zones = [{ t: 'redrock', x0: 2, y0: 2, x1: 20, y1: 18 }, { t: 'dirt', x0: 22, y0: 4, x1: 34, y1: 14 }, { t: 'redrock', x0: 38, y0: 28, x1: 53, y1: 46 }, { t: 'silversand', x0: 36, y0: 2, x1: 53, y1: 16 }, { t: 'dirt', x0: 26, y0: 15, x1: 29, y1: 47 }];
   os.buildings = [
     { id: 'o_lab', name: '폐쇄 연구기지', to: 'ruinlab', x: 5, y: 5, w: 10, d: 8, h: 40, wall: '#6a6560', roof: '#4a4540', stripe: '#d0563b', icon: 'flask', door: { f: 'R', u: 3 } },
-    { id: 'o_cave', name: '미확인 동굴', to: 'cave', x: 42, y: 32, w: 8, d: 7, h: 34, wall: '#7a3f30', roof: '#5a2f25', stripe: '#b9a0ff', icon: 'star', door: { f: 'L', u: 3 } },
+    { id: 'o_cave', name: '미확인 동굴', to: 'cave', x: 42, y: 32, w: 8, d: 7, h: 34, wall: '#8a4a36', roof: '#5a2f25', stripe: '#b9a0ff', icon: 'star', door: { f: 'L', u: 3 }, rock: true },
   ];
   os.decor.push(['tower', 26, 6, 0], ['ruinwall', 40, 6, 0], ['ruinwall', 44, 9, 1], ['ruinwall', 48, 5, 0], ['crates', 45, 12, 0], ['sandbags', 41, 12, 0], ['crate', 49, 12, 0]);
   for (const [x, y] of [[8, 24], [14, 30], [20, 26], [11, 36], [18, 40], [6, 44]]) os.decor.push(['debris', x, y, 0]);
@@ -2282,7 +2323,7 @@ PX.S = (() => {
   M.plaza.travel = [{ to: 'port', label: '🚀 우주항구 (20분)', mins: 20 }, { to: 'corridor', label: '🌅 인공노을 회랑', mins: 10 }, { to: 'bridge', label: '🌉 빛먼지 산책교', mins: 10 }, { to: 'rubyway', label: '🌹 루비웨이 (성인 · 직접 선택)', mins: 10, need: 'adult' }, { to: 'dome', label: '🚶 연구·주거구역', mins: 5 }];
   M.plaza.decor.push(['travelkiosk', 28, 46, 0]);
   M.plaza.buildings = M.plaza.buildings.filter(b => b.id !== 'p_pub' && b.id !== 'p_port');
-  M.plaza.buildings.push({ id: 'p_port', name: '우주항구 · 루비웨이 방면', x: 38, y: 4, w: 8, d: 5, h: 40, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 광장 남쪽 이동 안내 단말에서 우주항구 · 루비웨이로 갈 수 있어요' });
+  M.plaza.buildings.push({ id: 'p_port', name: '우주항구 · 루비웨이 방면', x: 38, y: 4, w: 8, d: 5, h: 40, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', door: { f: 'L', u: 3 }, act: { travel: true, label: '🚌 우주항구 · 루비웨이 방면 셔틀' } });
 
   // 실내 ↔ 바깥 연결 자동 등록
   for (const id in M) { const m = M[id]; if (m.kind !== 'out') continue; for (const b of m.buildings) if (b.to && M[b.to] && !M[b.to].parent) { M[b.to].parent = id; M[b.to].building = b.id; } }
@@ -2324,6 +2365,43 @@ PX.S = (() => {
   set('skylounge', [D('tourist', 3, { from: 12, to: 24 })]);
   set('museum', [D('tourist', 3, { from: 9, to: 19 })]);
   set('aurora', [D('tourist', 3, { from: 12, to: 24 })]);
+})();
+
+</script>
+  <script>
+/* js/data/wallfix.js */
+// 벽 장식 자리 정리: 키 큰 가구(냉장고·거치대·자판기 …) 뒤에 가려지는 창문·포스터·화면을 빈 벽으로 옮긴다
+'use strict';
+(() => {
+  const F = PX.FURN;
+  for (const id in PX.MAPS) {
+    const m = PX.MAPS[id];
+    if (m.kind !== 'in' || !m.walls) continue;
+    const cover = { B: [], L: [] };
+    for (const f of m.furn || []) {
+      const d = F[f[0]]; if (!d) continue;
+      const tall = Math.max(0, ...(d.parts || []).map(p => p[2] + p[5]));
+      if (tall < 26 || f[0] === 'sink') continue; // 세면대 위 거울은 원래 자리
+      const rot = f[3] || 0, fw = rot % 2 ? d.d : d.w, fd = rot % 2 ? d.w : d.d;
+      if (f[2] === 0) cover.B.push([f[1], f[1] + fw]);
+      if (f[1] === 0) cover.L.push([f[2], f[2] + fd]);
+    }
+    const hit = (list, a, b, pad = 0.15) => list.some(([x0, x1]) => a < x1 - pad && b > x0 + pad);
+    const out = [];
+    for (const w of m.walls) {
+      const [side, pos, type, width = 1] = w, lim = side === 'B' ? m.w : m.h;
+      const taken = out.filter(o => o[0] === side).map(o => [o[1], o[1] + (o[3] || 1)]);
+      if (!hit(cover[side], pos, pos + width) && !hit(taken, pos, pos + width, 0)) { out.push(w); continue; }
+      let best = null;
+      for (let p = 0.4; p + width <= lim - 0.4; p += 0.2) {
+        if (hit(cover[side], p, p + width) || hit(taken, p - 0.2, p + width + 0.2, 0)) continue;
+        if (best == null || Math.abs(p - pos) < Math.abs(best - pos)) best = p;
+      }
+      if (best != null) out.push([side, Math.round(best * 10) / 10, type, width]);
+      // 자리가 없으면 그 장식은 뺀다 (가구 뒤에 반만 보이는 것보다 낫다)
+    }
+    m.walls = out;
+  }
 })();
 
 </script>
@@ -2552,7 +2630,7 @@ PX.S = (() => {
     personality: '연구에 몰두해 끼니를 잊는다.', work: '민간 생태연구소', home: '민간 주거구역',
     sched: '07:30 lab.boss|12:30 lab.boss|19:00 lab.c|22:00 -', we: '09:00 lab.boss|15:00 -',
     likesFood: '샌드위치 (먹는 걸 자주 잊음)', likesGift: '연구 노트', rel: '상사',
-    lines: { g: ['아, 왔나. 그 표본 결과… 아니 그건 내일이었나.', '외계 생태계는 적이 아니야. 이해하지 못한 이웃이지.', '점심? 먹었… 안 먹었군.', '데이터는 쌓이면 이야기가 된다네.'] } });
+    lines: { g: ['아, 오셨군요. 그 표본 결과가… 아니, 그건 내일이었나요.', '외계 생태계는 적이 아닙니다. 아직 이해하지 못한 이웃이지요.', '점심이요? 먹었… 안 먹었군요.', '데이터는 쌓이면 이야기가 됩니다.'] } });
   add({ id: 'shin', name: '신나래', age: 32, job: '향열매 카페 사장', team: '돔시티', look: look(1, 'pony', '붉은색', '호박색', { top: '#ff8b5e', bottom: '#5a3f2a' }),
     personality: '밝고 사교적이다.', work: '향열매 카페', home: '민간 주거구역',
     sched: '09:30 cafe.barista|21:30 -', we: '09:30 cafe.barista|21:30 -',
@@ -2563,7 +2641,7 @@ PX.S = (() => {
     personality: '대위의 단골집 사장. 화끈하다.', work: '냉삼집 (중앙광장 상업구역)', home: '-',
     sched: '10:30 sg.boss|23:30 -', we: '10:30 sg.boss|23:30 -',
     likesFood: '냉삼', likesGift: '광물염', rel: '단골집 사장',
-    lines: { g: ['어서 와요! 불판 달궈 놨어요.', '{c} 대위 오면 고기 두 배로 썰어 놔야 돼요. 그 양반 혼자 세 판 먹어요.', '냉삼은 불 세기가 생명이야.', '{c} 대위? 우리 집 기둥 단골이지.'] } });
+    lines: { g: ['어서 와요! 불판 달궈 놨어요.', '{c} 대위 오면 고기 두 배로 썰어 놔야 돼요. 그 양반 혼자 세 판 먹어요.', '냉삼은 불 세기가 생명이에요.', '{c} 대위요? 우리 집 기둥 단골이죠.'] } });
   add({ id: 'go', name: '고유림', age: 27, job: '꽃시장 상인', team: '돔시티', look: look(0, 'long', '금발', '파랑', { top: '#ff9ed2', bottom: '#f4efe4' }),
     personality: '유리꽃과 장식품을 판다. 수다스럽다.', work: '유리돔 꽃시장', home: '민간 주거구역',
     sched: '09:30 fl.clerk|18:30 -', we: '09:30 fl.clerk|18:30 -',
@@ -2736,7 +2814,7 @@ PX.S = (() => {
     b(ANY, ['C:오늘 하루 제일 좋은 순간이 지금이다.'], { t: ['evening'] }),
     b(ANY, ['C:피곤하지? 데려다줄게.', 'P:괜찮아요.', 'C:괜찮은 거 알아. 그냥 내가 같이 걷고 싶어서.']),
     b(LOVE, ['C:보고 싶었어.', 'P:몇 시간 전에 봤잖아요.', 'C*:그러니까. 몇 시간이나 못 봤잖아.']),
-    b(LOVE, ['C:오늘 진짜 열심히 일했어. 나 칭찬해 줘.', { q: [['잘했어요.', 2, ['C:그거 말고. 좀 더 다정하게.', 'P:…수고했어요, {cg} 씨.', 'C^:그래, 그거.']], ['머리 쓰다듬기', 5, ['N:{c이} 순순히 고개를 숙인다. 네 손이 닿기 좋게.', 'C:…이거 매일 해 줘.']]] }]),
+    b(LOVE, ['C:퇴근했다. 오늘 제일 힘든 건 네 얼굴 못 본 여덟 시간이었어.', { q: [['고생했어요.', 2, ['C^:그 말 들으려고 뛰어왔어.']], ['엄살은.', 1, ['C*:엄살 맞아. 그래도 받아 줘.']]] }]),
   ];
   D.night = [
     b(ANY, ['C:늦었는데 안 자?', 'P:대위님은요?', 'C*:너 안 자서 나도 못 자.']),
@@ -2823,7 +2901,7 @@ PX.S = (() => {
     b(LOVE, ['C:보고 싶었어. 진짜. 하루 종일.', 'C:지금 이렇게 보고 있는데도 보고 싶어. 이상하지.']),
     b(LOVE, ['C:오늘 네 숙소 가도 돼?', 'P:왜요?', 'C*:너랑 있고 싶어서. 그리고… 같이 자고 싶어서. 진짜로 자기만 할게. 아마도.']),
     b(LOVE, ['C:너 오늘 입술 예쁘다.', 'P!:그런 걸 왜 봐요.', 'C:보이니까. 아주 잘 보여.']),
-    b(LOVE, ['C:맨날 보고 싶고, 맨날 안고 싶은데 어떡해.', 'P:어떡하긴요.', 'C*:그러니까 책임지라고.']),
+    b(LOVE, ['C:너 없는 데서는 네 얘기만 해. 팀원들이 귀 막아.', 'P:적당히 하세요.', 'C*:적당히가 안 돼. 그게 문제야.']),
     b(LOVE, ['C:너 나 유혹하는 거지.', 'P:아무것도 안 했는데요.', 'C:그러니까. 아무것도 안 했는데 이러면 반칙이지.']),
     b(LOVE, ['C:너랑 결혼하면 매일 아침 이 얼굴 보는 거잖아.', 'C*:그 생각하면 일이 손에 안 잡혀.']),
     b(LOVE, ['C:이리 와. 무릎에 앉아.', 'P!:여기 사람 있어요!', 'C:그럼 사람 없는 데로 가자. 지금.']),
@@ -3201,6 +3279,191 @@ PX.NPC_ACT = {
 };
 
 </script>
+  <script>
+/* js/data/dialogue_more.js */
+// 대사 보강 (Alpha 0.5): 얇았던 구간을 채운다
+// 장소 대화 · 잡담 · 날씨/시간 · 선물별 반응 · 방문/숙박 · 메시지 · 부대원끼리의 대화 · 인사말
+'use strict';
+(() => {
+  const D = PX.DLG_CAP, X = PX.DLG_CAP2;
+  const ANY = [0, 7], LOVE = [4, 7], MID = [2, 7], PRE = [0, 3];
+  const b = (s, l, o = {}) => Object.assign({ s, l }, o);
+  const addPlace = (k, list) => { X.place[k] = (X.place[k] || []).concat(list); };
+  const addAmb = (k, list) => { X.placeAmb[k] = (X.placeAmb[k] || []).concat(list); };
+
+  // ---------- 장소 대화 ----------
+  addPlace('base', [b(ANY, ['C:연병장 저 끝이 내가 제일 많이 뛴 데야. 신병 때 벌로.', 'C*:지금은 벌 주는 쪽이지. 잘 안 주지만.']), b(ANY, ['C:깃발 내릴 시간에 여기 서 있으면 다들 조용해져.', 'C:그 조용한 게 좋아. 하루가 끝난 소리야.']), b(MID, ['C:여기서 너랑 걷는 거, 병사들이 다 봐.', 'C^:봐도 돼. 숨길 생각 없어.'])]);
+  addPlace('px', [b(ANY, ['C:뭐 살 거야? 바구니 내가 들게.', 'C*:아이스 팩은 내 거야. 손대지 마. …하나 줄게.']), b(ANY, ['C:송 중사는 뭐든 하나씩 숨겨 둬. 물어보면 나와.', 'C:나한텐 안 나와. 너무 많이 사 가서.']), b(ANY, ['C:과자 코너 앞에서 오래 고민하는 거, 귀엽다.', 'C:둘 다 사. 내가 낼게.'])]);
+  addPlace('med', [b(ANY, ['C:여기 오면 괜히 아픈 것 같아.', 'C*:네가 있으면 괜히 낫는 것 같고.']), b(ANY, ['C:간호장교한테 혼났어. 물 안 마신다고.', 'C:너도 마셔. 같이 혼나기 싫으면.'])]);
+  addPlace('ops', [b(ANY, ['C:여기가 내 자리야. 서류 높이가 내 성적표고.', 'C;:낮을수록 좋은 건데, 보다시피.']), b(ANY, ['C:작전 지도에 핀 꽂는 건 내가 해. 손으로 꽂아야 기억에 남아.'])]);
+  addPlace('lounge', [b(ANY, ['C:오락기 최고 점수 봤어? LJH. 이준혁이야.', 'C*:내 기록은 2등. 한 번만 더 하면 돼. 한 번만.']), b(ANY, ['C:소파에 앉으면 다들 일어나. 계급 때문에.', 'C:그래서 잘 안 와. 너랑이면 괜찮지만.'])]);
+  addPlace('hangar', [b(ANY, ['C:오 상사 앞에서 드론 함부로 만지면 큰일 나.', 'C*:난 괜찮아. 고쳐 놓고 가니까.']), b(ANY, ['C:엔진 소리 들으면 마음이 편해. 살아 있는 소리잖아.'])]);
+  addPlace('dome', [b(ANY, ['C:돔 안은 하늘이 가짜라던데, 난 잘 모르겠어.', 'C:네 옆에서 보면 다 진짜 같아서.']), b(ANY, ['C:연구소 근처는 조용해서 좋아. 군화 소리가 미안할 만큼.']), b(MID, ['C:여기 살면 어떨까 생각해 봤어. 전역하고.', 'C*:집은 작아도 돼. 문틀만 높으면.'])]);
+  addPlace('plaza', [b(ANY, ['C:분수대에 동전 던지는 사람들, 뭘 비는 걸까.', 'C:난 빌 게 줄었어. 요즘은.']), b(ANY, ['C:항로등 켜지는 시간이 제일 좋아. 한 개씩 차례로 켜져.', 'C*:그때 네 얼굴도 같이 밝아져.']), b(ANY, ['C:사람 많다. 내 팔 잡아.', 'C:놓치면 찾긴 쉬워. 내가 머리 하나 더 크니까.'])]);
+  addPlace('cafe', [b(ANY, ['C:차가운 거. 제일 큰 거. 얼음 많이.', 'C*:주문은 그게 다야. 넌 천천히 골라.']), b(ANY, ['C:카페 의자는 왜 다 작을까.', 'C;:앉으면 삐걱거려. 못 들은 척해 줘.']), b(MID, ['C:사장님이 컵에 그림 그려 줬어. 곰이래.', 'C^:네 건 뭐야? 보여 줘.'])]);
+  addPlace('samgyup', [b(ANY, ['C:집게 이리 줘. 고기는 내가 구워.', 'C:넌 먹기만 해. 그게 네 임무야.']), b(ANY, ['C:세 번만 뒤집는 거야. 사장님한테 배웠어.', 'C^:네 건 좀 더 바싹. 맞지?']), b(ANY, ['C:쌈 싸 줄까? 크게 싸면 한입에 안 들어가려나.', 'C*:입 벌려 봐. 농담 아니야.'])]);
+  addPlace('flower', [b(ANY, ['C:꽃 이름은 하나도 몰라.', 'C:근데 네가 오래 보는 건 알아. 저거지?']), b(ANY, ['C:유리꽃은 만지면 안 된대. 내 손이면 더 안 되겠지.', 'C*:그래서 주머니에 손 넣고 있는 거야.'])]);
+  addPlace('arcade', [b(ANY, ['C:인형 뽑기는 각도야. 그리고 인내.', 'C;:…그리고 돈.']), b(ANY, ['C:사격 게임 하지 말래. 내가 하면 기계가 운대.', 'C^:넌 해 봐. 뒤에서 봐 줄게.'])]);
+  addPlace('starroom', [b(ANY, ['C:진짜 별은 매일 보는데, 여기 별이 더 편해.', 'C:쏘는 놈이 없으니까.']), b(MID, ['C:어두우니까 좋다.', 'C*:손잡아도 아무도 안 보이잖아.'])]);
+  addPlace('lake', [b(ANY, ['C:물가에 오면 고향 생각나. 계곡.', 'C^:여긴 인공인데도 네가 있어서 더 좋아.']), b(ANY, ['C:낚시는 지휘관님 취미야. 한 마리도 못 잡으셔.', 'C*:비밀이야. 계급장 떼일라.'])]);
+  addPlace('hill', [b(ANY, ['C:여기서 보면 돔이 유리구슬 같아.', 'C:저 안에 네가 산다고 생각하면 지킬 맛이 나.']), b(MID, ['C:노을 시간 맞춰 왔어. 일정표 봤거든.', 'C*:이런 거 챙기는 사람 아니었는데. 너 때문이야.'], { t: ['evening'] }), b(ANY, ['C:여기 벤치 세 번째가 명당이래. 안내원이 그러더라.', 'C^:앉자. 명당은 둘이 앉아야 명당이지.'])]);
+  addPlace('beach', [b(ANY, ['C:모래는 지겹게 밟는데, 흰 모래는 처음이야.', 'C^:신발 벗자. 발 데면 업어 줄게.']), b(ANY, ['C:모래성 쌓을래? 난 참호는 잘 파.'])]);
+  addPlace('camp', [b(ANY, ['C:텐트는 내가 칠게. 삼 분이면 돼.', 'C*:군대에서 배운 것 중에 제일 쓸모 있다.']), b(ANY, ['C:불 피우면 다들 말이 없어져. 그게 좋아.', 'C:넌 말해도 돼. 네 목소리는 불 소리랑 잘 어울려.'])]);
+  addPlace('farm', [b(ANY, ['C:뿌리채소가 이렇게 자라는 거였어?', 'C:식판에선 다 같은 색이라 몰랐지.']), b(ANY, ['C:흙 만지는 거 좋다. 모래랑 달라. 살아 있어.'])]);
+  addPlace('glasshouse', [b(ANY, ['C:숨도 조심히 쉬는 중이야. 깨질까 봐.', 'C;:내가 제일 위험한 관람객이지.'])]);
+  addPlace('bridge', [b(ANY, ['C:난간 꼭 잡아. 아니다, 나 잡아.', 'C*:내가 난간보다 튼튼해.']), b(MID, ['C:빛먼지가 네 머리에 앉았어.', 'N:대위가 손을 들었다가, 털지 않고 그냥 본다.', 'C:…예뻐서 그냥 둘게.'])]);
+  addPlace('corridor', [b(ANY, ['C:노을이 가짜라도 얼굴은 진짜로 빨개지네.', 'C^:네 얘기야.'])]);
+  addPlace('port', [b(ANY, ['C:귀환선 문 열릴 때 뛰어나오는 애들 보면 좋아.', 'C:나도 언젠간 뛰어나갈 거야. 네가 마중 나와 있으면.']), b(ANY, ['C:출발 전광판은 안 봐. 가고 싶어질까 봐.', 'C*:너랑은 봐도 되겠다. 어디 갈래?'])]);
+  addPlace('station', [b(ANY, ['C:창밖 봐. 저게 페르녹스야. 저 붉은 데가 우리 구역.', 'C:위에서 보면 작지. 그 안에서 그렇게 뛰어다녔는데.'])]);
+  addPlace('planet3', [b(ANY, ['C:바다다. 진짜 물이 이렇게 많은 건 오랜만이야.', 'C^:수영은 못 가르쳐 줘. 나 맥주병이야.'])]);
+  addPlace('planet4', [b(ANY, ['C:광물은 좀 알아. 저건 캐기 까다로운 거야.', 'C*:작은 조각 하나만 얻을 수 있으면 좋겠다. 만들 게 있어서.'])]);
+  addPlace('planet6', [b(ANY, ['C;:…살 것 같다. 여기 이사 오면 안 돼?', 'C:넌 춥지. 이리 와. 내 외투 써.']), b(ANY, ['C:오로라는 사진으로 안 담겨. 그래서 계속 보는 거야.', 'C*:너도 그래. 사진보다 실물.'])]);
+  addPlace('outskirts', [b(ANY, ['C:내 뒤로. 두 걸음. 그 거리 유지해.', 'C:여기선 농담 줄일게. 대신 끝나고 두 배로.']), b(ANY, ['C:바람 방향 바뀌었어. 냄새로 알아.', 'C:괜찮아. 돌아가는 길은 내가 알아.'])]);
+  for (const [k, l] of [['glowpath', ['발 조심. 빛 밟으면 꺼진대.', '어두운데 네 얼굴은 잘 보이네.']], ['bluegarden', ['공기가 차다. 좋다.', '여기 오래 있자. 난 여기 체질이야.']], ['silverdesert', ['해 질 때 봐. 모래가 다 은색이 돼.', '여긴 내가 제일 좋아하는 데야. 데려오고 싶었어.']], ['glasshouse', ['만지지 말라는 팻말이 나만 보는 것 같아.', '숨 참는 중이야.']], ['hill', ['바람 좋다. 머리 날린다, 너.', '벤치 세 번째. 저기가 명당이래.']], ['bridge', ['아래 보지 마. 나 봐.', '빛먼지가 네 어깨에 앉았어.']], ['corridor', ['노을색이 너한테 잘 어울려.', '천천히 걷자. 끝이 금방 와.']], ['port', ['저 배는 제3행성 가는 거야.', '짐 든 사람들 표정이 다 달라. 재밌지.']], ['station', ['중력이 살짝 가벼워. 너 안아 올리기 쉽겠다.', '창가 자리 맡자.']], ['planet3', ['짠 냄새 난다. 바다 맞네.', '해산물 좋아해? 내가 까 줄게.']], ['planet4', ['먼지 조심. 눈 비비지 마.', '저 결정 봐. 빛이 안에서 돌아.']], ['dome', ['분수 소리 들리지. 저 소리 좋아.', '벤치에 좀 앉았다 가자.']], ['base', ['경례 받아 주느라 팔 아프다.', '저쪽 그늘로 가자. 덥다.']], ['plaza', ['뭐 먹을래? 냄새가 다 맛있다.', '항로등 켜진다. 봐.']], ['lake', ['물소리 좋다.', '벤치 비었다. 앉자.']], ['farm', ['이거 캐도 되는 거야? 물어보고 올게.', '흙 냄새 오랜만이다.']], ['beach', ['발 뜨겁지? 업혀.', '파도 소리가 스피커래. 그래도 좋네.']], ['camp', ['밤엔 별이 쏟아진대. 누워서 보자.', '벌레 없어서 좋다. 인공 캠핑 만세.']]]) addAmb(k, l);
+
+  // ---------- 잡담 (어디서든) ----------
+  X.small.push(
+    b(ANY, ['C:어제 정시우가 처음으로 혼자 정찰 보고서 썼어.', 'C^:틀린 데 없더라. 티는 안 냈는데 좀 뿌듯했어.']),
+    b(ANY, ['C:난 글씨가 커. 보고서 칸이 늘 모자라.', 'C*:네 이름은 작게 써 봤어. 연습했어.']),
+    b(ANY, ['C:단 건 별로였는데, 네가 준 뒤로 가끔 생각나.']),
+    b(ANY, ['C:잠은 잘 자? 난 눕자마자 자. 군인의 유일한 재능이야.']),
+    b(ANY, ['C:어머니가 편지에 "밥은 잘 먹냐"만 세 번 쓰셨어.', 'C:답장에 네 얘기 썼어. 밥 잘 먹는 사람 만났다고.'], { s: MID }),
+    b(ANY, ['C:발 크기 재 봤어? 내 군화에 네 발 두 개 들어가.', 'C*:해 볼래? 농담이야. …아니, 해 보자.']),
+    b(ANY, ['C:이 행성에서 제일 좋은 소리는 귀환 무전이야. "전원 이상 없음."', 'C:두 번째는… 네가 내 이름 부를 때.']),
+    b(ANY, ['C:어릴 땐 키가 작았어. 믿기지 않지.', 'C^:중학교 때 문틀에 처음 박았어. 그게 시작이야.']),
+    b(ANY, ['C:쉬는 날 뭐 하고 싶어? 네가 정해. 난 따라가는 거 잘해.']),
+    b(ANY, ['C:너 집중할 때 미간 찌푸리는 거 알아?', 'C*:그거 보는 게 취미야.']),
+    b(ANY, ['C:팀원들이 내 표정 보고 네 근무표를 맞혀.', 'C;:내가 그렇게 티 나?']),
+    b(MID, ['C:네 냉장고에 내 음료수 넣어 둬도 돼? 한 칸만.', 'C*:한 칸이 두 칸 되고 그러는 거지만.']),
+    b(MID, ['C:작전 나갈 때 네가 한 말을 하나씩 가져가.', 'C:오늘은 "조심히 다녀와요"야. 그게 제일 세.']),
+    b(LOVE, ['C:가끔 자다 깨면 네가 있나 확인해. 없으면 좀 서운하고.', 'C^:있으면… 다시 자기 아까워.']),
+    b(ANY, ['C:좋아하는 계절? 겨울. 이유는 알지.', 'C*:너는? 맞혀 볼까. …봄. 얼굴에 써 있어.']),
+    b(ANY, ['C:난 노래 못해. 근데 샤워할 땐 해.', 'C;:생활관까지 들린대. 민원 들어왔어.']),
+  );
+  // 날씨 · 시간
+  X.small.push(
+    b(ANY, ['C:비 온다. 이 행성 비는 깨끗한 거래. 그래도 맞지 마.', 'C:이리 와. 내가 가릴게. 우산보다 넓어.'], { w: ['rain'] }),
+    b(ANY, ['C:모래바람 분다. 눈 감고 내 팔 잡아.', 'C:입도 다물고. …예쁜 말은 이따 해.'], { w: ['dust'] }),
+    b(ANY, ['C^:눈이다. 은색 눈.', 'C:나 이 날씨 제일 좋아. 넌 춥지? 이리 와.'], { w: ['snow'] }),
+    b(ANY, ['C:포자 바람이야. 반짝이는 거 다 그거.', 'C*:네 머리에 앉은 건 내가 떼 줄게. 천천히.'], { w: ['glow'] }),
+    b(ANY, ['C:별 많다. 저 중에 하나가 지구야. 어느 건지는 나도 몰라.', 'C:모르는 채로 보는 것도 괜찮더라.'], { t: ['night'] }),
+    b(ANY, ['C:아침 공기 좋다. 하루 중에 제일 덜 더운 시간.', 'C*:그리고 네 얼굴 제일 먼저 보는 시간.'], { t: ['morning'] }),
+  );
+
+  // ---------- 선물: 물건마다 다른 반응 ----------
+  PX.DLG_GIFT = {
+    mineral: [['C!:이거… 3구역 능선에서만 나오는 건데.', 'C^:갈아서 뭐 만들지 벌써 정했어. 비밀이야.']],
+    toolkit: [['C!:정밀 세트네. 손잡이 봐. 진짜 좋은 거야.', 'C*:이걸로 네 거 뭐든 고쳐 줄게. 평생 무상 수리.']],
+    handfan: [['C!:…살았다.', 'C^:이건 진짜 나를 아는 사람만 주는 거야.', 'N:대위가 그 자리에서 선풍기를 켜고 눈을 감는다.']],
+    chitin: [['C!:갑각 잔해. 이거 구하기 어려웠을 텐데.', 'C:깎으면 단단한 고리가 나와. …손가락 좀 내 봐. 그냥 재 보는 거야.']],
+    hotpack: [['C;:…핫팩.', 'C*:고마워. 마음은 뜨겁게 받을게. 이건 겨울에 네 주머니에 넣어 줄게.']],
+    glassflower: [['C:유리꽃이네. 내 손에 있으니까 더 작아 보인다.', 'C^:책상에 둘게. 서류 사이에 예쁜 게 하나는 있어야지.']],
+    patch: [['C!:직접 만든 거야?', 'C^:전투복 안쪽에 달게. 심장 쪽에.']],
+    book: [['C:생태도감. 정시우가 좋아하겠다.', 'C*:아니야, 내가 읽을게. 네가 준 거니까. 그림 위주로.']],
+    rubyrose: [['C!:장미를… 내가 받는 거야?', 'C^:처음 받아 봐. 어디 꽂지. 군모에 꽂을까.']],
+    rosebunch: [['C!:이걸 다 나한테?', 'C;:…들고 부대 들어가면 한 달은 놀림받겠다.', 'C^:괜찮아. 받을게. 놀리라고 해.']],
+    perfume: [['C:향수? 나한테서 화약 냄새 말고 다른 게 나겠네.', 'C*:뿌리면 네가 알아봐 줄 거지?']],
+    bouquet: [['C:꽃다발 받는 군인. 좋은데.', 'C^:막사에 꽃병이 없어. 탄피통에 꽂아도 되나.']],
+    mineralSalt: [['C:광물염. 고기 구울 때 최고야.', 'C*:이거 들고 냉삼집 가자. 같이.']],
+    souvenir: [['C:스노볼이네. 흔들면… 눈 온다.', 'C^:더울 때마다 볼게. 눈으로라도 시원하게.']],
+    festivalBadge: [['C:축제 배지. 너랑 갔던 날 거지.', 'C:가방에 달게. 다들 물어보면 자랑할 거야.']],
+  };
+  D.giftReact[2].push(['C!:…어떻게 구했어, 이걸.', 'C^:오늘 일 다 했다. 기분으로는.'], ['C^:잠깐만. 좋아서 말이 안 나와.', 'C*:나왔다. 고마워.']);
+  D.giftReact[1].push(['C:이런 건 받을 줄만 알았지 고를 줄은 몰라.', 'C^:넌 잘 고르네. 나도 배울게.'], ['C^:오늘 운 좋은 날이네.']);
+  D.giftReact[0].push(['C:고마워. 뭔지 잘은 몰라도 네가 준 거면 좋아.'], ['C:받을게. 다음엔 내가 줄 차례야.']);
+
+  // ---------- 방문 · 숙박 · 화해 ----------
+  D.knock.push(['N:똑, 똑. 조심스러운 두 번.', 'C:자? 자면 그냥 갈게. …안 자면 문 열어 줘.'], ['N:문밖에서 헛기침 소리가 난다.', 'C:나야. 손에 뭐 들고 왔어. 차가운 거.'], ['N:똑똑.', 'C:오늘 얼굴 못 봐서. 삼십 초만.']);
+  D.morningAfter.push(['C:일어났어? 물 떠 놨어. 머리맡에.', 'C*:자는 동안 이불 세 번 덮어 줬다. 넌 세 번 찼고.'], ['C^:좋은 아침. 네 방 아침 햇빛 좋다.', 'C:가기 싫다. 근무만 아니면.'], ['C:깼어? 나 먼저 일어나서 운동하고 왔어.', 'C:조용히 한다고 했는데 문틀에 박았어. 그 소리에 안 깼지?'], ['C:아침은 간단히 해 놨어. 계란이랑 밥.', 'C^:맛은 보장 못 해. 양은 보장해.']);
+  D.stayYes.push(['C!:…진짜지?', 'C^:소파면 충분해. 반만 들어가도 충분해.'], ['C^:고마워. 코 골면 발로 차.', 'C*:안 골아. 아마.'], ['C:응. 조용히 있을게. 네가 자는 거 방해 안 해.', 'C^:있어도 된다는 말이 이렇게 좋을 줄 몰랐네.']);
+  D.stayNo.push(['C:응. 물어본 거야, 조른 거 아니고.', 'C^:문 잘 잠가. 내일 아침에 올게.']);
+  D.reconcile.push(b(ANY, ['C:어제 내가 한 말, 다시 생각해 봤어.', 'C:네 입장에선 싫을 만했어. 미안해.']), b(ANY, ['C:화난 얼굴도 봐야 하는 얼굴이야. 피하지 않을게.', { q: [['이제 괜찮아요.', 3, ['C^:고마워. 더 잘할게.']], ['시간이 좀 필요해요.', 0, ['C:응. 재촉 안 해.']]] }]), b(ANY, ['C:변명 안 할게. 내가 잘못했어.', 'C:다음에 또 그러면 바로 말해 줘. 한 번이면 알아들어.']));
+
+  // ---------- 메시지 ----------
+  D.msg.push(
+    { s: ANY, t: '오늘 저녁 메뉴 김치찌개래.', r: [['같이 먹어요!', 3, '여섯 시. 식당 앞. 자리 맡아 놓을게.'], ['맛있게 드세요.', 1, '너 없이 먹으면 반만 맛있는데.']] },
+    { s: ANY, t: '지금 하늘 봐. 별 많아.', r: [['보고 있어요.', 2, '같은 거 보는 중이네. 좋다.'], ['대위님도 보고 있어요?', 3, '응. 근데 네 창문 쪽을 더 봐.']] },
+    { s: ANY, t: '물 마셨어? 오늘 건조해.', r: [['방금 마셨어요.', 2, '잘했어. 한 잔 더.'], ['대위님은요?', 2, '네가 물어봐서 지금 마신다.']] },
+    { s: ANY, t: '외곽에서 예쁜 돌 주웠어.', r: [['보여 주세요!', 3, '이따 가져갈게. 닦아서.'], ['또요?', 2, '서랍 하나 비워 놔. 계속 주울 거야.']] },
+    { s: ANY, t: '회의 중. 지루해.', r: [['힘내요.', 2, '그 두 글자로 한 시간 버틴다.'], ['집중하세요.', 1, '했어. 방금 삼 초.']] },
+    { s: MID, t: '보고 싶다. 이유는 없어.', r: [['저도요.', 4, '…지금 근무만 아니면 뛰어갔어.'], ['이유 없어도 돼요.', 3, '그럼 계속 보고 싶어 할게.']] },
+    { s: MID, t: '퇴근하고 잠깐 볼까.', r: [['좋아요.', 3, '숙소 앞으로 갈게. 뛰어서.'], ['오늘은 피곤해요.', 0, '알았어. 푹 쉬어. 내일 보자.']] },
+    { s: LOVE, t: '오늘 네 꿈 꿨어.', r: [['무슨 꿈이요?', 3, '비밀. 만나서 말해 줄게. 귀에 대고.'], ['저도 꿨어요.', 4, '거기서도 만났네. 부지런하다, 우리.']] },
+  );
+
+  // ---------- 부대원 · 시민: 마주치면 건네는 인사 ----------
+  PX.HI = {
+    kang: ['왔나.', '수고한다.'], park: ['…응.', '왔어.'], lee: ['어! 오셨어요!', '오늘도 반갑습니다!'], choi: ['안녕하세요. 밥은 드셨어요?', '어, 오셨네요.'], jung: ['아, 안녕하세요…!', '저… 안녕하세요.'],
+    han: ['오셨습니까.', '안녕하십니까.'], yoon: ['안색 좋으시네요.', '물은 드셨어요?'], baek: ['어, 오셨어요? 소식 있어요.', '안녕하세요!'], oh: ['어, 왔냐.', '손 조심해라.'], kimh: ['안녕하세요.', '오셨네요.'],
+    song: ['어서 와. 뭐 필요해?', '왔어? 하나 빼 놨다.'], nam: ['밥 먹었냐?', '왔냐! 앉아!'], seo: ['수신 양호.', '안녕하세요.'], lim: ['수고하십니다.', '이상 없습니다.'], bae: ['안녕하세요! 일정 확인하러 오셨어요?', '어서 오세요.'],
+    jo: ['안녕하세요! 오늘 습도 좋아요!', '어, 오셨어요?'], ryu: ['아, 오셨군요.', '음… 누구… 아, 안녕하세요.'], shin: ['어서 오세요!', '오늘은 차가운 거죠?'], moon: ['앉아요, 앉아!', '어서 와요!'], go: ['어서 오세요! 아 맞다!', '안녕하세요~'],
+    cha: ['안녕하세요. 정시 운항 중입니다.', '어서 오세요.'], hong: ['안녕하세요! 어디 찾으세요?', '좋은 하루예요.'], yu: ['별일 없었습니다.', '안녕하세요.'],
+  };
+
+  // ---------- 부대원끼리의 대화 (가까이 있으면 말풍선으로 주고받는다) ----------
+  // 짝이 정해진 대화 + 하는 일이 같을 때의 대화
+  PX.CHATTER = {
+    pair: {
+      'lee+choi': [['점심 뭐래요?', '저는 아침부터 알고 있었어요.'], ['제 푸딩 드셨어요?', '이름 안 써 있던데요.'], ['한 판 하실래요?', '밥 먹고요.']],
+      'han+seo': [['다음 수는 정했습니까.', '정했죠. 커피 준비하세요.'], ['지난 판은 제 실수였습니다.', '그걸 실력이라고 해요.']],
+      'oh+kimh': [['3번 로터 소리 들었어?', '네. 베어링 같아요.'], ['점심은 드셨어요?', '…라면 있냐.'], ['공구 제자리에 놨냐.', '상사님 건 제가 놨어요.']],
+      'yoon+baek': [['소독약 재고 확인했어요?', '세 병 남았어요. 비밀인데 하나는 숨겼어요.'], ['어제 몇 시간 잤어요?', '간호장교님보단 많이요.']],
+      'nam+choi': [['너 또 왔냐.', '국 냄새가 불렀어요.'], ['한 그릇 더 줄까?', '두 그릇이요.']],
+      'jo+ryu': [['소장님, 안경 이마에 있어요.', '아… 그렇군요.'], ['발광초가 폈어요!', '음… 몇 시에요? 적어 둡시다.'], ['점심 드셨어요?', '먹었던가…']],
+      'park+jung': [['장비 확인했어?', '두 번 했습니다!'], ['어제 그림 잘 그렸더라.', '감, 감사합니다…!'], ['무서우면 말해.', '…조금 무섭습니다.']],
+      'park+lee': [['조용히 좀 해.', '지금 조용한 건데요.'], ['장비 닦았어?', '농담으로 닦았습니다.']],
+      'kang+han': [['이번 달 사고는?', '0건입니다.'], ['보고서 짧게.', '세 줄로 줄였습니다.']],
+      'bae+lim': [['근무표 나왔어요.', '확인했습니다. 누락 없습니다.'], ['패치 새로 구하셨어요?', '서른세 장째입니다.']],
+      'song+oh': [['공구 또 구경만 하냐.', '보는 건 공짜잖아.'], ['라면 들어왔다.', '두 박스 빼 놔.']],
+      'shin+go': [['리본 새로 들어왔대요.', '아 맞다! 가야 하는데!'], ['오늘 파이 남으면 줄게요.', '꽃이랑 바꿔요!']],
+      'moon+yu': [['순찰 끝나면 들러요.', '고기 냄새가 근무 방해예요.'], ['오늘 손님 많네요.', '외출일이라 그래요.']],
+      'lee+jung': [['도마뱀 또 봤어?', '오늘은… 두 마리요.'], ['별명 지어 줄까?', '괜, 괜찮습니다.']],
+      'seo+bae': [['지구 소식 왔어요.', '좋은 소식이에요?'], ['이번 행사 음악은요?', '통신실에서 틀어 드릴게요.']],
+      'hong+cha': [['오늘 지연 없어요?', '정시 운항 중입니다.'], ['관광객 많이 왔어요?', '모자 분실물이 벌써 셋이에요.']],
+      'yoon+kimh': [['손 좀 봐요. 베였네요.', '아, 몰랐어요.'], ['차 한 잔 할래요?', '좋아요.']],
+    },
+    act: {
+      eat: [['오늘 국 맛있다.', '조리장님 기분 좋으신가 봐.'], ['그거 안 먹어?', '가져가.'], ['한 그릇 더?', '당연하지.']],
+      workout: [['몇 개 했어?', '세다 까먹었어.'], ['보조 좀.', '응, 올려.'], ['내일 근육통 오겠다.', '이미 왔어.']],
+      rest: [['아 쉬고 싶다.', '지금 쉬는 중이잖아.'], ['휴가 며칠 남았어?', '세지 마. 더 길어져.'], ['편지 썼어?', '세 줄 쓰고 막혔어.']],
+      game: [['한 판만 더.', '아까도 그랬잖아.'], ['최고 점수 깼어?', '거의.']],
+      stroll: [['날씨 좋네.', '그러게.'], ['어디 가?', '그냥 걷는 중.']],
+      cafe: [['여기 빙수 좋지.', '얼음이 달라.']],
+    },
+  };
+
+  // ---------- 혼잣말 보강 (활동마다 3~5개 → 10개 안팎) ----------
+  const AMB = {
+    workout: ['마지막 세트다.', '자세 무너졌다, 다시.', '내일 근육통 확정.', '숨 고르고…', '수건 어디 갔지.', '체력 측정 다음 주인데.'],
+    eat: ['김치 한 조각만 더.', '밥이 보약이다.', '국 식기 전에.', '오늘 반찬 괜찮네.', '아, 체하겠다. 천천히.', '디저트는 없나.'],
+    cook: ['간 딱 맞네.', '파 썰어 놔!', '솥 뚜껑 조심해라.', '오늘은 넉넉하게.', '줄 벌써 섰네.', '불 세게!'],
+    work_med: ['혈압 정상.', '손 씻고 다음.', '물 좀 마셔야지.', '소독약 냄새…', '차트 하나 남았다.', '오늘은 조용하네.'],
+    work_ops: ['3구역 바람 바뀜.', '좌표 다시 찍자.', '커피 식었다.', '로그 정리 끝.', '드론 배터리 확인.', '지도 또 그려야 하나.'],
+    work_hangar: ['로터 소리 좋네.', '기름 냄새 좋다.', '배선 깔끔하게.', '이 부품 단종인데.', '나사 하나 남았다…', '테스트 가동!'],
+    work_lab: ['배양조 온도 정상.', '표본 번호 확인.', '현미경 초점…', '오, 반응 있다.', '기록, 기록.', '이건 처음 보는데.'],
+    work_comms: ['수신 양호.', '잡음 줄이자.', '지구 소식 왔다.', '주파수 고정.', '암호 갱신 시간.', '중계기 하나 조용하네.'],
+    work_admin: ['도장, 도장.', '근무표 다시.', '프린터야, 제발.', '서류 한 장 빠졌다.', '이번 행사 예산…', '스티커 붙이자.'],
+    work_cmd: ['보고 받자.', '이상 없음. 좋아.', '커피 식혀 둘까.', '다들 무사하군.'],
+    shop: ['어서 오세요~', '진열 다시 하자.', '이거 인기 많네.', '재고 확인.', '오늘 손님 많다.', '거스름돈 준비.'],
+    grill: ['불판 달궈졌다!', '세 번만 뒤집어요!', '서비스 나갑니다!', '양념장 리필!', '고기 좋다, 오늘.'],
+    guard: ['출입 확인.', '이상 없음.', '바람 차다.', '근무 교대 몇 시였지.', '저기 누구지?', '경계 철저.'],
+    rest: ['아 좋다.', '눈 좀 붙일까.', '편지 써야 하는데.', '오늘 뭐 했더라.', '조용해서 좋다.', '하암.'],
+    game: ['한 판만 더!', '아 아깝다!', '최고 점수 가자.', '버튼 밀린다…', '이번엔 된다.', '동전 다 썼다.'],
+    sleep: ['쿨…', '음냐…', 'Zz…'],
+    stroll: ['날씨 좋다.', '어디 가지.', '바람 시원하다.', '저기 새로 생겼네.', '천천히 걷자.', '배고프다.'],
+    cafe: ['향 좋다.', '한 모금만.', '여기 조용해서 좋아.', '빙수 시킬까.', '책 한 장만 더.'],
+  };
+  for (const k in AMB) if (PX.NPC_ACT[k]) PX.NPC_ACT[k].amb = (PX.NPC_ACT[k].amb || []).concat(AMB[k]);
+
+  // ---------- 문맥 조건 보정 ----------
+  const fix = (cat, re, o) => { for (const bd of D[cat] || []) if ((bd.l || []).some(x => typeof x === 'string' && re.test(x))) Object.assign(bd, o); };
+  fix('dateAsk', /^C:저녁에 시간 있어\?$/, { t: ['morning', 'noon'] });
+  fix('dateAsk', /돔시티 나갈 때/, { notMap: ['dome', 'plaza'] });
+  fix('dateAsk', /주말에 (뭐 해|인공호수)/, { wd: 'weekday' });
+  fix('dateAsk', /내 막사 놀러 올래/, { notMap: ['q_captain'] });
+})();
+
+</script>
   <!-- 엔진 (월드) -->
   <script>
 /* js/engine/path.js */
@@ -3235,7 +3498,7 @@ PX.Path = (() => {
         if (dx && dy && (!ok(cx + dx, cy) || !ok(cx, cy + dy))) continue;
         const ni = ny * W + nx;
         if (closed[ni]) continue;
-        const ng = g[cur] + (dx && dy ? 1.414 : 1);
+        const ng = g[cur] + (dx && dy ? 1.414 : 1) + (opt.cost ? opt.cost(nx, ny) : 0);
         if (ng < g[ni]) { g[ni] = ng; f[ni] = ng + hfn(nx, ny); from[ni] = cur; push(ni); }
       }
     }
@@ -3929,7 +4192,10 @@ PX.A = (() => {
     goTo(m, tx, ty, onArrive, opt) {
       const tgt = PX.Path.nearestWalkable(m, tx, ty, 4);
       if (!tgt) return false;
-      const p = PX.Path.find(m, Math.floor(this.x), Math.floor(this.y), tgt[0], tgt[1], opt);
+      // 서 있는 사람이 있는 칸은 돌아서 간다 (사람을 뚫고 지나가지 않게)
+      const occ = PX.Game && PX.Game.occ, me = this;
+      const o2 = occ ? Object.assign({ cost: (x, y) => { const a = occ.get(y * m.w + x); return a && a !== me ? 6 : 0; } }, opt || {}) : opt;
+      const p = PX.Path.find(m, Math.floor(this.x), Math.floor(this.y), tgt[0], tgt[1], o2);
       if (!p) return false;
       return this.walkPath(p, onArrive);
     }
@@ -4280,6 +4546,9 @@ PX.Dlg = (() => {
       if (bd.job && bd.job !== S.player.job) return false;
       if (bd.event && !Cal.openAt(PX.LORE_BY_ID[bd.event], S.time, S.time.min)) return false; // 행사 시간 안에만
       if (bd.notJob && bd.notJob === S.player.job) return false;
+      const mid = PX.Game.mapId, mOut = PX.MAPS[mid] && (PX.MAPS[mid].kind === 'out' ? mid : PX.MAPS[mid].parent);
+      if (bd.notMap && (bd.notMap.includes(mid) || bd.notMap.includes(mOut))) return false;
+      if (bd.map && !(bd.map.includes(mid) || bd.map.includes(mOut))) return false;
       if (bd.wd === 'weekday' && !wkd) return false;
       if (cond.act && bd.act !== cond.act) return false;
       return true;
@@ -4425,9 +4694,13 @@ PX.Dlg = (() => {
     } else if (q && Math.random() < 0.5) {
       line = d.banmal ? `아, ${PX.ITEMS[q.item].name} 구하면 나 좀 줘. ${q.hint.replace(/에요\.$/, '야.').replace(/있어요\.$/, '있어.').replace(/팔아요\.$/, '팔아.').replace(/거예요\.$/, '거야.').replace(/더라고요\.$/, '더라.')}` : `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
     }
+    { const f = r.f || 0, busy = ['workout', 'cook', 'grill', 'work_hangar', 'work_med', 'guard', 'sleep', 'eat'].includes(act);
+      if (!busy && !npc.seat && (r.lastTalkDay !== S.day)) npc.doPose('wave', 1.2);
+      if (f >= 70 && Math.random() < 0.4) npc.showEmote('heart', 1.6); else if (/[!]$/.test(line) && Math.random() < 0.5) npc.showEmote('note', 1.4); }
     await say(npc.id, U.fmt(line, ctx()), 'smile');
     // 이어서: 궁금한 것 물어보기 · (아티팩트) 자유롭게 이야기하기
-    if (PS && act !== 'sleep') {
+    const fresh = PS && PS.ask.some((q, i) => !(S.done.askSeen || {})[npc.id + i]);
+    if (PS && act !== 'sleep' && (fresh || (PX.AI && PX.AI.available()) || Math.random() < 0.25)) {
       S.done.askSeen = S.done.askSeen || {};
       const qs = PS.ask.map((q, i) => ({ q, i })).sort((a, b) => (S.done.askSeen[npc.id + a.i] || 0) - (S.done.askSeen[npc.id + b.i] || 0));
       const q = qs[0];
@@ -5855,7 +6128,7 @@ PX.Act = (() => {
     const pool = (PX.DLG_CAP2.activity[key] || []).concat(extra || []);
     if (!pool.length) return;
     G().cap.setDirTo(G().player.x, G().player.y);
-    await lines(U.pick(pool));
+    await lines(U.pickFresh('capSay_' + key, pool));
   }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   const ARRIVE = { base: [27.5, 58.5], dome: [23.5, 40.5], plaza: [26.5, 45.5] };
@@ -5900,7 +6173,7 @@ PX.Act = (() => {
     if (!withCap() || g.modal) return;
     const pool = PX.DLG_CAP2.placeAmb[g.mapId] || PX.DLG_CAP2.placeAmb._;
     if (!force && Math.random() < 0.4) return;
-    g.bubble(g.cap, U.fmt(U.pick(pool), PX.Dlg.ctx()), 3.2);
+    g.bubble(g.cap, U.fmt(U.pickFresh('pamb_' + g.mapId, pool), PX.Dlg.ctx()), 3.2);
   }
 
   // ---------- 활동 ----------
@@ -6402,10 +6675,10 @@ PX.Ruby = (() => {
     }
   }
   function think(a, m, g, now) {
-    if (a.fixed) { if (now > (a.nextMove || 0)) { a.nextMove = now + 6000 + Math.random() * 8000; if (Math.random() < 0.35 && !g.bubbles.some(b => b.actor === a)) g.bubble(a, U.pick(ROLES[a.extra].amb), 2.6); } return; }
+    if (a.fixed) { if (now > (a.nextMove || 0)) { a.nextMove = now + 6000 + Math.random() * 8000; if (Math.random() < 0.35 && !g.bubbles.some(b => b.actor === a)) g.bubble(a, U.pickFresh('xamb_' + a.extra, ROLES[a.extra].amb), 2.6); } return; }
     if (now < a.nextMove || a.path.length) return;
     a.nextMove = now + 3000 + Math.random() * 5000;
-    if (Math.random() < 0.15 && !g.bubbles.some(b => b.actor === a) && U.dist(a.x, a.y, g.player.x, g.player.y) < 8) g.bubble(a, U.pick(ROLES[a.extra].amb), 2.6);
+    if (Math.random() < 0.15 && !g.bubbles.some(b => b.actor === a) && U.dist(a.x, a.y, g.player.x, g.player.y) < 8) g.bubble(a, U.pickFresh('xamb_' + a.extra, ROLES[a.extra].amb), 2.6);
     const R = ROLES[a.extra];
     // 물건·기구 앞에 가서 들여다보기 (PX 진열대, 운동기구, 오락기 …)
     if (R.browse && Math.random() < 0.65) {
@@ -6424,7 +6697,7 @@ PX.Ruby = (() => {
     let pool = R.talk.slice();
     if (a.extra === 'mp' && !withCap()) pool = pool.filter(t => !t.includes('대위님 일행'));
     if (a.extra === 'pubboss' || a.extra === 'innclerk') pool = pool.filter(t => withCap() || !t.includes('대위'));
-    await lines([`X:${a.id}:` + U.pick(pool)]);
+    await lines([`X:${a.id}:` + U.pickFresh('xtalk_' + a.extra, pool)]);
     // 직원은 하는 일로 이어진다
     const next = { dealer: () => H.cards(), pubboss: () => H.rumor(), host: () => H.reserve(), usher: null, maskhost: () => H.mask(), rosevendor: () => H.rosecart(), cocktailer: () => H.cocktail(), busker: () => H.busk() }[a.extra];
     if (next) await next();
@@ -6433,7 +6706,7 @@ PX.Ruby = (() => {
 
   // ---------- 활동 ----------
   const H = {};
-  const capLine = async (pool) => { if (withCap()) { G().cap.setDirTo(G().player.x, G().player.y); await lines(U.pick(pool)); } };
+  const capLine = async (pool) => { if (withCap()) { G().cap.setDirTo(G().player.x, G().player.y); await lines(U.pickFresh('rcap_' + pool.length + pool[0][0], pool)); } };
   H.statue = async () => {
     await lines(['N:루비웨이 입구의 붉은 결정 조형물. 바닥 물에 동전을 던지면 소원이 이뤄진다는 말이 있다.']);
     const it = await PX.UI.menu('루비 조형물', [{ t: '🪙 동전 던지고 소원 빌기 (₢1)', k: 1 }, { t: '그냥 보기', k: 0 }]);
@@ -6836,7 +7109,7 @@ PX.CapAct = (() => {
     if (postField() && Math.random() < 0.4 && k !== 'med') k = 'postField';
     if (U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 7 || g.bubbles.some(b => b.actor === g.cap)) return;
     if (St.S.rel.cap.backoffUntil > St.absMin()) return;
-    g.bubble(g.cap, U.fmt(U.pick(HINT[k] || HINT.postField), PX.Dlg.ctx()), 3.2);
+    g.bubble(g.cap, U.fmt(U.pickFresh('hint_' + k, HINT[k] || HINT.postField), PX.Dlg.ctx()), 3.2);
   }
 
   // ---------- 해 줄 수 있는 일 ----------
@@ -7367,6 +7640,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   function fade() { const f = $('fade'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 260); }
   function enterBuilding(door) {
     const S = St.S;
+    const act = door.bld && door.bld.b.act;
+    if (act) { if (act.shop) return UI.shop(act.shop); if (act.travel) return PX.Act.travelMenu(); }
     if (door.closed) { UI.toast(door.closedMsg || `🚧 ${door.name} — 아직 문을 열지 않았어요`); return; }
     const hrs = door.bld && door.bld.b.hours;
     if (hrs) { const t = S.time.min, a = Cal.toMin(hrs[0]), b = Cal.toMin(hrs[1]); const open = a < b ? t >= a && t < b : t >= a || t < b; if (!open) { UI.toast(`🌙 ${door.name} — 영업시간 ${hrs[0]}~${hrs[1]}`); return; } }
@@ -7773,7 +8048,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     Game.modal++;
     Game.player.doPose('carry', 1.2);
     await Dlg.say('player', `${it.icon} 이거 드릴게요.`);
-    await Dlg.runLines(U.pick(PX.DLG_CAP.giftReact[like]));
+    const own = PX.DLG_GIFT && PX.DLG_GIFT[id];
+    await Dlg.runLines(own && (r['gifted_' + id] = (r['gifted_' + id] || 0) + 1) <= 2 ? U.pick(own) : U.pick(PX.DLG_CAP.giftReact[like]));
     Dlg.close(); Game.modal--;
     const giftsToday = r.giftDay === S.day ? (r.giftsToday || 0) : 0;
     r.giftDay = S.day; r.giftsToday = giftsToday + 1; r.gifts++;
@@ -7809,7 +8085,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     const m = W.maps[Game.mapId], list = [];
     for (const o of m.objs) {
       if (o.hidden) continue;
-      if (o.kind === 'bld' && o.door) list.push({ type: 'door', o, x: o.door.x + 0.5, y: o.door.y + 0.5, label: o.door.closed ? `🚧 ${o.b.name}` : `🚪 ${o.b.name} 들어가기`, fn: () => enterBuilding(m.doors.find(d => d.bld === o)) });
+      if (o.kind === 'bld' && o.door) list.push({ type: 'door', o, x: o.door.x + 0.5, y: o.door.y + 0.5, label: o.b.act ? o.b.act.label : o.door.closed ? `🚧 ${o.b.name}` : `🚪 ${o.b.name} 들어가기`, fn: () => enterBuilding(m.doors.find(d => d.bld === o)) });
       else if (o.kind === 'furn' && (o.use || (o.seats && o.seats.length))) {
         const a = W.accessTile(m, o);
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
@@ -7922,6 +8198,25 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     if (e.key === 't' || e.key === 'T' || e.key === 'Tab') { e.preventDefault(); UI.terminal(); }
   });
   window.addEventListener('keyup', e => { keys[e.key] = false; });
+  const everyone = () => Game.critters && Game.critters.length ? Game.actors.concat(Game.critters) : Game.actors;
+  // 서 있는 사람들이 차지한 칸 (길찾기가 돌아가도록) + 한 칸에 겹쳐 선 사람 떼어 놓기
+  let occT = 0;
+  function crowdTick(dt) {
+    occT -= dt; if (occT > 0) return; occT = 0.4;
+    const m = W.maps[Game.mapId], occ = new Map(), here = everyone().filter(a => a.map === Game.mapId && !a.hidden);
+    for (const a of here) {
+      if (a.moving || a.path.length || a.seat) continue;
+      const k = Math.floor(a.y) * m.w + Math.floor(a.x), b = occ.get(k);
+      if (!b) { occ.set(k, a); continue; }
+      // 같은 칸에 둘: 플레이어·대위·제자리 직원이 아닌 쪽이 옆 칸으로 비켜 선다
+      const mover = [a, b].find(x => x !== Game.player && x !== Game.cap && !x.fixed && !x.critter) || (a !== Game.player && a !== Game.cap ? a : b !== Game.player && b !== Game.cap ? b : null);
+      if (!mover || mover === Game.player || Game.modal) continue;
+      const cx = Math.floor(mover.x), cy = Math.floor(mover.y);
+      const spots = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => [cx + dx, cy + dy]).filter(([x, y]) => W.walkable(m, x, y) && !occ.has(y * m.w + x));
+      if (spots.length) { const s = U.pick(spots.slice(0, 4)); mover.walkPath([[s[0], s[1]]]); occ.set(s[1] * m.w + s[0], mover); }
+    }
+    Game.occ = occ;
+  }
   function keyMove(dt) {
     const p = Game.player;
     let dx = 0, dy = 0; // 화면 기준 → 타일 기준 변환
@@ -7944,9 +8239,20 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     const sp = (run ? 5.4 : 3.6 * mag) * (St.S.energy < 15 ? 0.7 : 1) * dt;
     p.speedNow = sp / dt;
     const m = W.maps[Game.mapId];
-    const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return true; };
+    // 벽·가구 + 서 있는 사람(뚫고 지나가지 않게. 이미 겹쳐 있으면 빠져나올 수는 있다)
+    const others = everyone().filter(a => a !== p && a.map === Game.mapId && !a.hidden && !a.seat && !a.moving);
+    let bumped = null;
+    const hit = (x, y) => { for (const a of others) { const d = U.dist(x, y, a.x, a.y); if (d < 0.55 && d < U.dist(p.x, p.y, a.x, a.y) - 0.001) { bumped = a; return true; } } return false; };
+    const free = (x, y) => { const r = 0.25; for (const [ox, oy] of [[-r, -r], [r, -r], [-r, r], [r, r]]) if (!W.walkable(m, Math.floor(x + ox), Math.floor(y + oy))) return false; return !hit(x, y); };
     const nx = p.x + dx * sp, ny = p.y + dy * sp;
-    if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (free(nx, p.y)) p.x = nx; else if (free(p.x, ny)) p.y = ny;
+    const ox0 = p.x, oy0 = p.y;
+    if (free(nx, ny)) { p.x = nx; p.y = ny; } else if (nx !== p.x && free(nx, p.y)) p.x = nx; else if (ny !== p.y && free(p.x, ny)) p.y = ny;
+    if (Math.hypot(p.x - ox0, p.y - oy0) < sp * 0.3 && bumped && !bumped.fixed && !bumped.critter && !bumped.path.length && !bumped.seat && (bumped.pushT || 0) < performance.now()) {
+      bumped.pushT = performance.now() + 1500; // 길을 막고 선 사람은 옆으로 비켜 준다
+      const bx = Math.floor(bumped.x), by = Math.floor(bumped.y), px0 = Math.floor(p.x), py0 = Math.floor(p.y);
+      const sp2 = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([ax, ay]) => [bx + ax, by + ay]).filter(([x, y]) => W.walkable(m, x, y) && !(x === px0 && y === py0)).sort((u, v) => U.dist(v[0], v[1], p.x, p.y) - U.dist(u[0], u[1], p.x, p.y));
+      if (sp2.length) { bumped.walkPath([sp2[0]]); if (Math.random() < 0.3 && bumped !== Game.cap) Game.bubble(bumped, U.pick(['앗.', '어이쿠.', '…!']), 1.4); }
+    }
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
     if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
     for (const l of m.links || []) if (Math.floor(p.y) === l.y0 && Math.floor(p.x) >= l.x0 && Math.floor(p.x) <= l.x1) { goLink(l); break; }
@@ -8061,6 +8367,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     }
     // 이동 · AI
     if (!Game.modal) keyMove(dt);
+    crowdTick(dt);
     for (const a of Game.actors) a.update(dt);
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
     if (PX.CapAct) PX.CapAct.tick(dt);
@@ -8150,8 +8457,34 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   function ambient(dt) {
     ambT -= dt; if (ambT > 0) return;
     ambT = 4 + Math.random() * 4;
-    if (Game.modal || Math.random() < 0.45) return;
+    if (Game.modal) return;
     const p = Game.player;
+    // 지나가면 먼저 인사 (하루에 한 번씩)
+    const S0 = St.S; S0.done.hiDay = S0.done.hiDay === S0.day ? S0.done.hiDay : (S0.done.hiSet = {}, S0.day);
+    const hiN = Game.npcs.find(n => n.map === Game.mapId && PX.HI && PX.HI[n.id] && !S0.done.hiSet[n.id] && n.activity() !== 'sleep' && U.dist(n.x, n.y, p.x, p.y) < 2.4 && !Game.bubbles.some(b => b.actor === n));
+    if (hiN) { S0.done.hiSet[hiN.id] = 1; if (!hiN.path.length && !hiN.seat) hiN.setDirTo(p.x, p.y); Game.bubble(hiN, U.pickFresh('hi_' + hiN.id, PX.HI[hiN.id]), 2.2); if (!hiN.seat && !['workout', 'cook', 'grill', 'guard'].includes(hiN.activity())) hiN.doPose('wave', 1); ambT = 2.5; return; }
+    if (Math.random() < 0.4) return;
+    // 가까이 있는 두 사람이 말을 주고받는다
+    if (PX.CHATTER && Math.random() < 0.4) {
+      const here = Game.npcs.filter(n => n.map === Game.mapId && n.activity() !== 'sleep' && U.dist(n.x, n.y, p.x, p.y) < 9 && !Game.bubbles.some(b => b.actor === n));
+      for (const a of here) for (const b2 of here) {
+        if (a === b2 || U.dist(a.x, a.y, b2.x, b2.y) > 3.2) continue;
+        const pl = PX.CHATTER.pair[a.id + '+' + b2.id];
+        if (!pl) continue;
+        const ex = U.pick(pl);
+        Game.bubble(a, ex[0], 2.6); setTimeout(() => { if (b2.map === Game.mapId && !Game.modal) Game.bubble(b2, ex[1], 2.6); }, 1900);
+        ambT = 6; return;
+      }
+      const exs = (Game.critters || []).filter(c => c.extra && !c.fixed && U.dist(c.x, c.y, p.x, p.y) < 8 && !Game.bubbles.some(b => b.actor === c));
+      for (const a of exs) for (const b2 of exs) {
+        if (a === b2 || a.extra !== b2.extra || U.dist(a.x, a.y, b2.x, b2.y) > 3) continue;
+        const k = { messgoer: 'eat', gymgoer: 'workout', offduty: 'rest', arcader: 'game', soldier: 'stroll', citizen: 'stroll', cafeguest: 'cafe', patron: 'rest' }[a.extra];
+        if (!k) continue;
+        const ex = U.pick(PX.CHATTER.act[k]);
+        Game.bubble(a, ex[0], 2.4); setTimeout(() => { if (b2.map === Game.mapId && !Game.modal) Game.bubble(b2, ex[1], 2.4); }, 1700);
+        ambT = 6; return;
+      }
+    }
     const near = Game.npcs.filter(n => n.map === Game.mapId && n !== lastAmb && U.dist(n.x, n.y, p.x, p.y) < 9 && !Game.bubbles.some(b => b.actor === n));
     if (!near.length) return;
     const n = U.pick(near), act = n.activity(), A = PX.NPC_ACT[act];
@@ -8160,7 +8493,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     const md = PX.MAPS[n.map], w = St.weather();
     if (md.kind === 'out' && !md.dome && PX.NPC_ACT.weather[w] && Math.random() < 0.3) pool = PX.NPC_ACT.weather[w];
     lastAmb = n;
-    Game.bubble(n, U.pick(pool).replace(/\{c\}/g, St.S.capName).replace(/\{cs\}/g, Cap.status()), 2.6);
+    Game.bubble(n, U.pickFresh('amb_' + n.id + act, pool).replace(/\{c\}/g, St.S.capName).replace(/\{cs\}/g, Cap.status()), 2.6);
   }
   function positionBubbles() {
     const now = performance.now(), sc = W.view.cssScale;

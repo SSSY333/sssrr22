@@ -96,5 +96,15 @@ PX.U = (() => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 
-  return { hash, rng, rand, pick, clamp, lerp, shade, mix, hexToRgb, rgbToHex, josa, hasBatchim, givenName, fmt, pad2, el, sleep, dist };
+  // 최근에 나온 것을 피해서 고르기 (말풍선·혼잣말 반복 방지). key마다 최근 기록을 따로 둔다
+  const fresh = new Map();
+  function pickFresh(key, arr, keep) {
+    if (!arr || !arr.length) return undefined;
+    const rec = fresh.get(key) || [], k = keep != null ? keep : Math.max(1, Math.floor(arr.length * 0.6));
+    let cand = arr.filter(x => !rec.includes(x)); if (!cand.length) cand = arr;
+    const v = cand[Math.floor(Math.random() * cand.length)];
+    fresh.set(key, [v, ...rec].slice(0, Math.min(k, arr.length - 1)));
+    return v;
+  }
+  return { pickFresh, hash, rng, rand, pick, clamp, lerp, shade, mix, hexToRgb, rgbToHex, josa, hasBatchim, givenName, fmt, pad2, el, sleep, dist };
 })();

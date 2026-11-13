@@ -122,8 +122,8 @@
   const p3 = out('planet3', { name: '제3행성 · 해양돔거리', w: 44, h: 34, fill: 'deepwater', arrive: [22, 29], lore: 'LB33', travel: [PORT(360)] });
   p3.zones = [{ t: 'plaza', x0: 16, y0: 24, x1: 28, y1: 31 }, { t: 'plaza', x0: 4, y0: 6, x1: 15, y1: 15 }, { t: 'plaza', x0: 28, y0: 6, x1: 39, y1: 15 }, { t: 'plaza', x0: 18, y0: 3, x1: 26, y1: 10 },
     { t: 'boardwalk', x0: 21, y0: 11, x1: 22, y1: 23 }, { t: 'boardwalk', x0: 10, y0: 16, x1: 11, y1: 25 }, { t: 'boardwalk', x0: 12, y0: 24, x1: 15, y1: 25 }, { t: 'boardwalk', x0: 33, y0: 16, x1: 34, y1: 25 }, { t: 'boardwalk', x0: 29, y0: 24, x1: 32, y1: 25 }];
-  p3.buildings = [{ id: 'p3_food', name: '해산물 요리점', x: 6, y: 7, w: 6, d: 5, h: 36, wall: '#e8f4f0', roof: '#3b8fbf', stripe: '#ff8b5e', icon: 'fork', awning: '#ff8b5e', closed: true, closedMsg: '🐟 해산물 요리점 — 매대에서 주문할 수 있어요' },
-    { id: 'p3_shop', name: '부유식 상점', x: 31, y: 7, w: 6, d: 5, h: 34, wall: '#f4e4c8', roof: '#5fa8ff', stripe: '#5fc8e8', icon: 'box', awning: '#5fc8e8', closed: true, closedMsg: '🛍️ 부유식 상점 — 매대에서 기념품을 살 수 있어요' }];
+  p3.buildings = [{ id: 'p3_food', name: '해산물 요리점', x: 6, y: 7, w: 6, d: 5, h: 36, wall: '#e8f4f0', roof: '#3b8fbf', stripe: '#ff8b5e', icon: 'fork', awning: '#ff8b5e', door: { f: 'L', u: 2 }, act: { shop: 'seafood', label: '🐟 해산물 요리점 주문하기' } },
+    { id: 'p3_shop', name: '부유식 상점', x: 31, y: 7, w: 6, d: 5, h: 34, wall: '#f4e4c8', roof: '#5fa8ff', stripe: '#5fc8e8', icon: 'box', awning: '#5fc8e8', door: { f: 'L', u: 2 }, act: { shop: 'seafood', label: '🛍️ 부유식 상점 둘러보기' } }];
   p3.decor.push(['stall', 8, 13, 0], ['stall', 33, 13, 0], ['parasol', 19, 26, 0], ['parasol', 25, 26, 0], ['benchout', 18, 8, 0], ['fountain', 21, 4, 0], ['streetlamp', 17, 24, 0], ['streetlamp', 28, 24, 0], ['fishspot', 16, 28, 0]);
   p3.shops = { stall: 'seafood' };
 
@@ -152,7 +152,7 @@
   os.zones = [{ t: 'redrock', x0: 2, y0: 2, x1: 20, y1: 18 }, { t: 'dirt', x0: 22, y0: 4, x1: 34, y1: 14 }, { t: 'redrock', x0: 38, y0: 28, x1: 53, y1: 46 }, { t: 'silversand', x0: 36, y0: 2, x1: 53, y1: 16 }, { t: 'dirt', x0: 26, y0: 15, x1: 29, y1: 47 }];
   os.buildings = [
     { id: 'o_lab', name: '폐쇄 연구기지', to: 'ruinlab', x: 5, y: 5, w: 10, d: 8, h: 40, wall: '#6a6560', roof: '#4a4540', stripe: '#d0563b', icon: 'flask', door: { f: 'R', u: 3 } },
-    { id: 'o_cave', name: '미확인 동굴', to: 'cave', x: 42, y: 32, w: 8, d: 7, h: 34, wall: '#7a3f30', roof: '#5a2f25', stripe: '#b9a0ff', icon: 'star', door: { f: 'L', u: 3 } },
+    { id: 'o_cave', name: '미확인 동굴', to: 'cave', x: 42, y: 32, w: 8, d: 7, h: 34, wall: '#8a4a36', roof: '#5a2f25', stripe: '#b9a0ff', icon: 'star', door: { f: 'L', u: 3 }, rock: true },
   ];
   os.decor.push(['tower', 26, 6, 0], ['ruinwall', 40, 6, 0], ['ruinwall', 44, 9, 1], ['ruinwall', 48, 5, 0], ['crates', 45, 12, 0], ['sandbags', 41, 12, 0], ['crate', 49, 12, 0]);
   for (const [x, y] of [[8, 24], [14, 30], [20, 26], [11, 36], [18, 40], [6, 44]]) os.decor.push(['debris', x, y, 0]);
@@ -229,7 +229,7 @@
   M.plaza.travel = [{ to: 'port', label: '🚀 우주항구 (20분)', mins: 20 }, { to: 'corridor', label: '🌅 인공노을 회랑', mins: 10 }, { to: 'bridge', label: '🌉 빛먼지 산책교', mins: 10 }, { to: 'rubyway', label: '🌹 루비웨이 (성인 · 직접 선택)', mins: 10, need: 'adult' }, { to: 'dome', label: '🚶 연구·주거구역', mins: 5 }];
   M.plaza.decor.push(['travelkiosk', 28, 46, 0]);
   M.plaza.buildings = M.plaza.buildings.filter(b => b.id !== 'p_pub' && b.id !== 'p_port');
-  M.plaza.buildings.push({ id: 'p_port', name: '우주항구 · 루비웨이 방면', x: 38, y: 4, w: 8, d: 5, h: 40, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 광장 남쪽 이동 안내 단말에서 우주항구 · 루비웨이로 갈 수 있어요' });
+  M.plaza.buildings.push({ id: 'p_port', name: '우주항구 · 루비웨이 방면', x: 38, y: 4, w: 8, d: 5, h: 40, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', door: { f: 'L', u: 3 }, act: { travel: true, label: '🚌 우주항구 · 루비웨이 방면 셔틀' } });
 
   // 실내 ↔ 바깥 연결 자동 등록
   for (const id in M) { const m = M[id]; if (m.kind !== 'out') continue; for (const b of m.buildings) if (b.to && M[b.to] && !M[b.to].parent) { M[b.to].parent = id; M[b.to].building = b.id; } }

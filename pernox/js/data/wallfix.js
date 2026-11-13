@@ -9,7 +9,7 @@
     for (const f of m.furn || []) {
       const d = F[f[0]]; if (!d) continue;
       const tall = Math.max(0, ...(d.parts || []).map(p => p[2] + p[5]));
-      if (tall < 28 || f[0] === 'sink') continue;
+      if (tall < 26 || f[0] === 'sink') continue; // 세면대 위 거울은 원래 자리
       const rot = f[3] || 0, fw = rot % 2 ? d.d : d.w, fd = rot % 2 ? d.w : d.d;
       if (f[2] === 0) cover.B.push([f[1], f[1] + fw]);
       if (f[1] === 0) cover.L.push([f[2], f[2] + fd]);
