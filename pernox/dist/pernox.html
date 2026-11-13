@@ -5135,8 +5135,8 @@ PX.Cap = (() => {
         if (PX.W.walkable(m, Math.floor(ox), Math.floor(oy))) { cap.path = []; const k = Math.min(1, dt * 10); cap.x += (ox - cap.x) * k; cap.y += (oy - cap.y) * k; cap.dir = p.dir; cap.moving = p.moving; }
         else if (repathT <= 0) { repathT = 0.4; cap.goTo(m, Math.floor(p.x), Math.floor(p.y)); }
         cap.holdSide = -1; p.holdSide = 1;
-      } else if (cap.seat) {
-        // 앉아 있는 동안은 따라가지 않음
+      } else if (cap.seat || (cap.toSeat && cap.path.length)) {
+        // 앉아 있거나 자리로 가는 중엔 따라가기를 멈춘다
       } else if (d > 1.9 && repathT <= 0) {
         repathT = 0.35;
         const m = PX.W.maps[cap.map];
@@ -5193,7 +5193,7 @@ PX.Cap = (() => {
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30) { release('늦었다. 잘 자, ' + U.josa(U.givenName(S.player.name), '아') + '.'); return; }
       if (cap.map !== g.mapId && !g.transition) followIntoMap();
       // 가끔 스킨십 요청
-      if (r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now)) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
+      if (!(PX.Mind && now - (PX.Mind.mem().joinAt || -1e9) < 25) && !g.player.seat && r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now)) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
       return;
     }
     if (mode === 'wait_door') {
@@ -5282,7 +5282,8 @@ PX.Cap = (() => {
     if (!best) return false;
     const a = PX.W.accessTile(m, best.obj);
     if (!a) return false;
-    cap.goTo(m, a.x, a.y, () => { if (!best.by) cap.sitOn(best); });
+    cap.toSeat = true;
+    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) cap.sitOn(best); })) cap.toSeat = false;
     return true;
   }
   function exitTo(outMap) { // 현재 실내 → 바깥, 바깥 → 다른 바깥은 travel
@@ -7641,7 +7642,66 @@ PX.CapAct = (() => {
     S.recent[key] = [i, ...recent].slice(0, Math.max(1, pool.length - 1));
     return { l: pool[i] };
   }
-  return { ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT };
+  // ---------- 같이 하기: 내가 뭔가를 하면 근처의 대위가 와서 함께 한다 ----------
+  // own: 그 활동에 대위 대사가 이미 있으면 위치만 맞추고 대사는 활동 쪽에 맡긴다
+  const JOIN = {
+    meal: { sit: 'eat', lines: [['C:같이 먹자. 내 자리 여기.', 'C*:식판 부딪히면서 먹는 거, 이게 부대 데이트야.'], ['C^:오늘 메뉴 괜찮지? 너 그거 좋아하잖아.', 'N:대위가 자기 식판에서 제일 큰 고기를 내 쪽으로 옮긴다.'], ['C:천천히 먹어. 나 먼저 다 먹어도 기다릴게.'], ['C*:너 먹는 거 보면 나도 배불러. 거짓말이야. 나도 먹을 거야.'], ['C:국 식기 전에 먹어. 나 다 먹으면 네 거 넘볼 거야.'], ['N:대위가 말없이 내 쪽으로 물컵을 밀어 준다.', 'C^:목 막힐까 봐.']] },
+    sit: { sit: true, lines: [['C:옆자리 비었지?', 'C*:비었다고 해 줘.'], ['C:잠깐 앉아 있자. 다리 쉬게.'], ['N:대위가 옆에 앉는다. 자리가 한쪽으로 살짝 기운다.', 'C^:덩치 탓이야.']] },
+    workout: { pose: 'workout', lines: [['C:같이 하자. 자세는 내가 봐 줄게.'], ['C*:나랑 같이 하면 두 배로 힘들어. 각오해.'], ['C:숨 쉬는 거 잊지 마. 들 때 내쉬고.']] },
+    hang: { pose: 'workout', own: true }, fish: { stand: true, own: true }, harvest: { stand: true, own: true }, campfire: { sit: true, own: true }, view: { stand: true, own: true }, onsen: { own: true }, tent: { own: true }, sandcastle: { stand: true, own: true }, shoot: { stand: true, own: true },
+    shop: { stand: true, lines: [['C:나도 하나. 차가운 걸로.'], ['C*:뭐 사? 계산은 내가 할게. …진짜로.'], ['C:그거 맛있어? 한 입만.'], ['C^:고르는 데 오래 걸리네. 귀엽다. 천천히 골라.']] },
+    vending: { stand: true, lines: [['C:나도. 제일 차가운 거.'], ['C*:동전 있어? 내가 넣을게.']] },
+    tv: { sit: true, lines: [['C:뭐 봐? 나도 볼래.'], ['C*:영화 무서운 거면 내 팔 잡아. 내가 무서운 거 아니고.'], ['N:대위가 옆에 앉아 팔을 소파 등받이에 걸친다. 자연스럽게, 아주 자연스럽게.']] },
+    show: { sit: true, own: true }, claw: { stand: true, lines: [['C:왼쪽. 아니 오른쪽. …아, 그냥 내가 뽑아 줄게.'], ['C*:인형 하나에 이렇게 진지할 일이야? 응. 진지하게 가자.']] },
+    arcade: { stand: true, lines: [['C:나랑 한 판 해. 진 사람이 음료수.'], ['C^:오락기 앞에선 계급 없다. 봐주지 마.']] },
+    game: { sit: true, lines: [['C:한 판 끼워 줘. 돈은 안 걸고.']] },
+    grill: { own: true },
+    kitchen: { stand: true, lines: [['C:뭐 만들어? 칼질은 내가 할게. 칼은 잘 다뤄.'], ['C*:요리하는 뒷모습 좋다. 아, 도와줄게. 구경만 하면 혼나니까.']] },
+    perform: { stand: true, own: true }, dance: { stand: true, own: true }, cocktail: { stand: true, own: true }, fortune: { stand: true, own: true }, photobooth: { own: true }, busk: { stand: true, own: true },
+  };
+  function canJoin() {
+    const g = G(), cap = g.cap, S = St.S;
+    if (!cap || cap.map !== g.mapId || cap.hidden) return false;
+    const mode = PX.Cap.mode;
+    if (mode === 'follow' || mode === 'visit' || mode === 'stay') return 'with';
+    if (['op', 'travel', 'waitOut', 'date', 'paused'].includes(mode)) return false;
+    if (PX.Cap.onDuty() && !PX.Cap.isMeal()) return false; // 근무 중엔 안 온다
+    const M = PX.Mind;
+    if (M && (M.refused('follow') || M.justParted(30))) return false; // 혼자 있고 싶다고 했거나 방금 헤어졌으면 존중
+    if (S.rel.cap.stage < 1) return false;
+    if (U.dist(cap.x, cap.y, g.player.x, g.player.y) > 12) return false;
+    return 'near';
+  }
+  // useObj 직전에 부른다: 함께할 수 있으면 (활동 대사가 대위를 '함께'로 보도록) 바로 동행으로 바꾸고 다가온다
+  function join(kind, o) {
+    const J = JOIN[kind]; if (!J) return;
+    const how = canJoin(); if (!how) return;
+    const g = G(), cap = g.cap, S = St.S;
+    if (how === 'near') { PX.Cap.startFollow(); if (PX.Mind) PX.Mind.noteMeet(); }
+    const k = 'join_' + kind, here = g.mapId;
+    if (PX.Mind) PX.Mind.mem().joinAt = St.absMin(); // 함께하는 동안엔 다른 요청으로 끼어들지 않는다
+    setTimeout(async () => {
+      if (cap.map !== g.mapId || g.mapId !== here) return;
+      if (J.sit) { // 내가 앉을 때까지 기다렸다가 옆자리에 (동행 로직이 옆자리를 찾는다)
+        for (let i = 0; i < 20 && !g.player.seat; i++) await U.sleep(300);
+        if (g.player.seat && !cap.seat) PX.Cap.sitNear(g);
+        for (let i = 0; i < 12 && !cap.seat; i++) await U.sleep(300);
+        if (J.sit === 'eat' && cap.seat) cap.doPose('eat', 8);
+      }
+      else if (J.stand || J.pose) { const m = PX.W.maps[cap.map], p = g.player; const t = PX.Path.nearestWalkable(m, p.x + 1, p.y, 2); if (t) cap.goTo(m, t[0], t[1], () => { cap.setDirTo(p.x, p.y); if (J.pose) cap.doPose(J.pose, 6); }); }
+      if (J.own || !J.lines) return;
+      await U.sleep(how === 'near' && !J.sit ? 1600 : 400);
+      for (let i = 0; i < 20 && g.modal; i++) await U.sleep(250); // 다른 장면이 끝나길 잠깐 기다린다
+      if (g.modal || g.mapId !== here || cap.map !== here) return; // 장소가 바뀌었으면 그 대사는 하지 않는다
+      const ls = U.pickFresh('join_' + kind, J.lines);
+      g.modal++; await PX.Dlg.runLines(how === 'near' && !S.done[k + S.day] ? [U.pickFresh('joinHi', ['C:어, 여기 있었네.', 'C^:마침 잘 만났다.', 'C:나도 끼워 줘.', 'C*:혼자 하게 둘 리가 없지.']), ...ls] : ls); PX.Dlg.close(); g.modal--;
+      if (!S.done[k + S.day]) { S.done[k + S.day] = 1; St.addAff(3); }
+      if (kind === 'meal' && !S.done.firstMealTogether) { S.done.firstMealTogether = 1; g.memory('같이 먹은 밥', '식판을 나란히 놓고 먹었다. 대위가 고기를 옮겨 줬다.', true); }
+      if (PX.Mind) PX.Mind.noteTalk('join_' + kind);
+    }, 500);
+  }
+
+  return { ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
 })();
 
 </script>
@@ -8188,7 +8248,7 @@ PX.Rom = (() => {
     if (d.state === 'planned') {
       if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
       if (t >= at - 15 && t < at + 60 && !d.capThere) { // 대위가 먼저 가서 기다린다 (보이지 않는 이동)
-        if (PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay' && PX.Cap.mode !== 'op') { d.capThere = true; PX.Cap.mode = 'date'; if (g.cap.map !== d.map) { PX.Cap.moveTo(d.map); const m = W.maps[d.map]; const a = m.def.arrive ? [m.def.arrive[0] + 1.5, m.def.arrive[1] - 1.5] : [m.exit.x + 0.5, m.exit.y - 2.5]; const tt = PX.Path.nearestWalkable(m, a[0], a[1], 4); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; } } }
+        if (PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay' && PX.Cap.mode !== 'op') { d.capThere = true; PX.Cap.mode = 'date'; if (g.cap.map !== d.map) { PX.Cap.moveTo(d.map); const m = W.maps[d.map]; const a = m.def.arrive ? [m.def.arrive[0] + 1.5, m.def.arrive[1] - 1.5] : m.exit ? [m.exit.x + 0.5, m.exit.y - 2.5] : null; const tt = a && PX.Path.nearestWalkable(m, a[0], a[1], 4); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; } } }
       }
       if (d.capThere && g.mapId === d.map && g.cap.map === d.map && U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < 6 && !g.modal) { d.state = 'on'; d.started = t; g.trigger(() => startDate(d)); }
       if (t >= at + 60) { // 바람맞음: 탓하지 않는다
@@ -8816,7 +8876,7 @@ ${memLine(S)}`;
     if (Game.busyEvent || Game.modal || !Game.queue.length) return;
     Game.busyEvent = true;
     const fn = Game.queue.shift();
-    try { await fn(); } catch (e) { console.error(e); Game.modal = Math.max(0, Game.modal); }
+    try { await fn(); } catch (e) { console.error(e); recover('event', e); }
     Game.busyEvent = false;
   }
 
@@ -8857,6 +8917,7 @@ ${memLine(S)}`;
   const MENU = ['김치찌개', '된장국과 즉석밥', '통조림 햄 볶음밥', '냉동 만두 국', '라면 (보급 지연)', '뿌리채소 카레', '냉동 삼겹살 구이'];
   function useObj(o) {
     const S = St.S, f = o.f, home = PX.MAPS[Game.mapId].home, job = PX.JOBS[S.player.job];
+    try { PX.CapAct.join(o.use, o); } catch (e) { console.error(e); }
     if (PX.Act.LABEL[o.use] || (o.use === 'shop' && Game.mapId === 'inn')) { PX.Act.use(o); return; }
     switch (o.use) {
       case 'bed':
@@ -9559,9 +9620,35 @@ ${memLine(S)}`;
       PX.Mind.mem().look = St.absMin();
     }
   }
+  // ---------- 멈춤 방지 ----------
+  // 1) 한 프레임에서 오류가 나도 다음 프레임은 반드시 돈다  2) 장면·메뉴가 오류로 끊기면 '대화 중' 상태를 풀어 준다
+  // 3) 화면에 대화창·메뉴·미니게임이 하나도 없는데 '대화 중'이 3초 넘게 남아 있으면 풀어 준다
+  Game.errors = [];
+  function recover(where, e) {
+    Game.errors.push(`${where}: ${e && e.message || e}`); if (Game.errors.length > 20) Game.errors.shift();
+    try { Dlg.close(); } catch (x) { /* 무시 */ }
+    document.querySelectorAll('.sheet-wrap').forEach(w => w.remove());
+    const mini = document.getElementById('mini'); if (mini && !mini.classList.contains('hidden')) { mini.classList.add('hidden'); mini.innerHTML = ''; }
+    $('chatbar').classList.add('hidden'); $('fade').classList.remove('on', 'long');
+    Game.modal = 0; Game.inMini = false; Game.busyEvent = false; Game.transition = false; Game.sleeping = false;
+  }
+  Game.recover = recover;
+  window.addEventListener('unhandledrejection', ev => { console.error(ev.reason); recover('async', ev.reason); });
+  window.addEventListener('error', ev => { if (Game.running) recover('script', ev.error || ev.message); });
+  let stuckT = 0;
+  function watchdog(dt) {
+    if (!Game.modal || Game.sleeping) { stuckT = 0; return; }
+    const shown = !$('dlg').classList.contains('hidden') || document.querySelector('.sheet-wrap') || !$('mini').classList.contains('hidden') || !$('chatbar').classList.contains('hidden') || $('fade').classList.contains('on') || PX.Decor.active;
+    stuckT = shown ? 0 : stuckT + dt;
+    if (stuckT > 3) { stuckT = 0; recover('stuck', `modal ${Game.modal}`); }
+  }
   function frame(t) {
     if (!Game.running) return;
+    try { frameBody(t); } catch (e) { console.error(e); recover('frame', e); last = t; requestAnimationFrame(frame); }
+  }
+  function frameBody(t) {
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
+    watchdog(dt);
     const S = St.S;
     // 시간
     if (!Game.modal && !Game.sleeping && !Game.transition) {

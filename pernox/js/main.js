@@ -163,7 +163,7 @@
     if (Game.busyEvent || Game.modal || !Game.queue.length) return;
     Game.busyEvent = true;
     const fn = Game.queue.shift();
-    try { await fn(); } catch (e) { console.error(e); Game.modal = Math.max(0, Game.modal); }
+    try { await fn(); } catch (e) { console.error(e); recover('event', e); }
     Game.busyEvent = false;
   }
 
@@ -204,6 +204,7 @@
   const MENU = ['김치찌개', '된장국과 즉석밥', '통조림 햄 볶음밥', '냉동 만두 국', '라면 (보급 지연)', '뿌리채소 카레', '냉동 삼겹살 구이'];
   function useObj(o) {
     const S = St.S, f = o.f, home = PX.MAPS[Game.mapId].home, job = PX.JOBS[S.player.job];
+    try { PX.CapAct.join(o.use, o); } catch (e) { console.error(e); }
     if (PX.Act.LABEL[o.use] || (o.use === 'shop' && Game.mapId === 'inn')) { PX.Act.use(o); return; }
     switch (o.use) {
       case 'bed':
@@ -906,9 +907,35 @@
       PX.Mind.mem().look = St.absMin();
     }
   }
+  // ---------- 멈춤 방지 ----------
+  // 1) 한 프레임에서 오류가 나도 다음 프레임은 반드시 돈다  2) 장면·메뉴가 오류로 끊기면 '대화 중' 상태를 풀어 준다
+  // 3) 화면에 대화창·메뉴·미니게임이 하나도 없는데 '대화 중'이 3초 넘게 남아 있으면 풀어 준다
+  Game.errors = [];
+  function recover(where, e) {
+    Game.errors.push(`${where}: ${e && e.message || e}`); if (Game.errors.length > 20) Game.errors.shift();
+    try { Dlg.close(); } catch (x) { /* 무시 */ }
+    document.querySelectorAll('.sheet-wrap').forEach(w => w.remove());
+    const mini = document.getElementById('mini'); if (mini && !mini.classList.contains('hidden')) { mini.classList.add('hidden'); mini.innerHTML = ''; }
+    $('chatbar').classList.add('hidden'); $('fade').classList.remove('on', 'long');
+    Game.modal = 0; Game.inMini = false; Game.busyEvent = false; Game.transition = false; Game.sleeping = false;
+  }
+  Game.recover = recover;
+  window.addEventListener('unhandledrejection', ev => { console.error(ev.reason); recover('async', ev.reason); });
+  window.addEventListener('error', ev => { if (Game.running) recover('script', ev.error || ev.message); });
+  let stuckT = 0;
+  function watchdog(dt) {
+    if (!Game.modal || Game.sleeping) { stuckT = 0; return; }
+    const shown = !$('dlg').classList.contains('hidden') || document.querySelector('.sheet-wrap') || !$('mini').classList.contains('hidden') || !$('chatbar').classList.contains('hidden') || $('fade').classList.contains('on') || PX.Decor.active;
+    stuckT = shown ? 0 : stuckT + dt;
+    if (stuckT > 3) { stuckT = 0; recover('stuck', `modal ${Game.modal}`); }
+  }
   function frame(t) {
     if (!Game.running) return;
+    try { frameBody(t); } catch (e) { console.error(e); recover('frame', e); last = t; requestAnimationFrame(frame); }
+  }
+  function frameBody(t) {
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
+    watchdog(dt);
     const S = St.S;
     // 시간
     if (!Game.modal && !Game.sleeping && !Game.transition) {

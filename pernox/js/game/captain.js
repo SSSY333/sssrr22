@@ -88,8 +88,8 @@ PX.Cap = (() => {
         if (PX.W.walkable(m, Math.floor(ox), Math.floor(oy))) { cap.path = []; const k = Math.min(1, dt * 10); cap.x += (ox - cap.x) * k; cap.y += (oy - cap.y) * k; cap.dir = p.dir; cap.moving = p.moving; }
         else if (repathT <= 0) { repathT = 0.4; cap.goTo(m, Math.floor(p.x), Math.floor(p.y)); }
         cap.holdSide = -1; p.holdSide = 1;
-      } else if (cap.seat) {
-        // 앉아 있는 동안은 따라가지 않음
+      } else if (cap.seat || (cap.toSeat && cap.path.length)) {
+        // 앉아 있거나 자리로 가는 중엔 따라가기를 멈춘다
       } else if (d > 1.9 && repathT <= 0) {
         repathT = 0.35;
         const m = PX.W.maps[cap.map];
@@ -146,7 +146,7 @@ PX.Cap = (() => {
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30) { release('늦었다. 잘 자, ' + U.josa(U.givenName(S.player.name), '아') + '.'); return; }
       if (cap.map !== g.mapId && !g.transition) followIntoMap();
       // 가끔 스킨십 요청
-      if (r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now)) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
+      if (!(PX.Mind && now - (PX.Mind.mem().joinAt || -1e9) < 25) && !g.player.seat && r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now)) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
       return;
     }
     if (mode === 'wait_door') {
@@ -235,7 +235,8 @@ PX.Cap = (() => {
     if (!best) return false;
     const a = PX.W.accessTile(m, best.obj);
     if (!a) return false;
-    cap.goTo(m, a.x, a.y, () => { if (!best.by) cap.sitOn(best); });
+    cap.toSeat = true;
+    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) cap.sitOn(best); })) cap.toSeat = false;
     return true;
   }
   function exitTo(outMap) { // 현재 실내 → 바깥, 바깥 → 다른 바깥은 travel
