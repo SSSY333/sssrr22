@@ -356,7 +356,7 @@ const INTERIORS = {
   police: { name: '파출소', W: 8, H: 7, floor: T.TILEF, wall: '#dfe7f2', wall2: '#2e3d66', exit: [3, 6],
     furn: [['locker', 6, 0], ['plant', 7, 0], ['desk', 2, 0, 0, 'desk'], ['desk', 4, 0], ['chair', 2, 1], ['chair', 4, 1], ['board', 0, 2, 1, 'board'], ['crate', 0, 4, 0, 'lost']], visit: [[5.5, 3.5], [2.5, 3.5]] },
   cafe: { name: '카페 쉼터', W: 8, H: 7, floor: T.FLOOR, wall: '#f7e3c4', wall2: '#c96b4a', exit: [3, 6],
-    furn: [['counter', 1, 0, 0, 'order'], ['counter', 2, 0], ['shelf', 4, 0], ['lamp', 6, 0], ['plant', 7, 0], ['table', 2, 3], ['chair', 1, 3], ['table', 5, 3], ['chair', 6, 3], ['plant', 0, 5]], visit: [[1.5, 4.5], [6.5, 4.5], [4.5, 4.5]] },
+    furn: [['counter', 1, 0, 0, 'order'], ['counter', 2, 0], ['shelf', 4, 0], ['lamp', 6, 0], ['plant', 7, 0], ['table', 2, 3], ['chair', 1, 3, 1], ['table', 5, 3], ['chair', 6, 3, 3], ['plant', 0, 5]], visit: [[1.5, 4.5], [6.5, 4.5], [4.5, 4.5]] },
   sashimi: { name: '해월 횟집', W: 8, H: 7, floor: T.TILEF, wall: '#eef4f7', wall2: '#2f6fa8', exit: [3, 6],
     furn: [['tank', 1, 0, 0, 'tank'], ['tank', 2, 0], ['counter', 5, 0], ['plant', 7, 0], ['dining', 2, 3, 0, 'eat'], ['cushion', 2, 4], ['dining', 5, 3, 0, 'eat'], ['cushion', 5, 4]], visit: [[1.5, 3.5], [6.5, 3.5], [4.5, 4.5]] },
   hall: { name: '마을회관', W: 9, H: 8, floor: T.MAT, wall: '#f1e7d0', wall2: '#3f7f6a', exit: [4, 7],

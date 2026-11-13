@@ -15,7 +15,7 @@ const WORKS = {
   haenyeo: { map: 'in_storage', open: ['🌊', '작업 시작하기'], close: ['🌙', '작업 마치기'], openMsg: '🌊 작업 시작 — 장비 앞에서 「물질 나가기」, 손질대에서 「넘기기」', closeMsg: '오늘 작업 끝!', station: [5.5, 1.6], max: 1, every: [45, 80], seats: [], queue: [[4.5, 2.5]] },
 };
 /* 카페: 의자 두 개 더 */
-if (INTERIORS.cafe && !INTERIORS.cafe.furn.some(f => f[0] === 'chair' && f[1] === 2 && f[2] === 4)) INTERIORS.cafe.furn.push(['chair', 2, 4], ['chair', 5, 4]);
+if (INTERIORS.cafe && !INTERIORS.cafe.furn.some(f => f[0] === 'chair' && f[1] === 2 && f[2] === 4)) INTERIORS.cafe.furn.push(['chair', 2, 4, 2], ['chair', 5, 4, 2]);
 const myWork = () => S && WORKS[S.job] || null;
 const inMyWork = () => { const W = myWork(); return !!(W && G.player.map === W.map); };
 const W_PRICE = (lo, hi) => Math.round(rand(lo, hi) * (1 + (S.jobLv - 1) * 0.1) / 100) * 100;
