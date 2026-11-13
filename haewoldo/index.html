@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#53a6dc" />
+  <title>해월도 다이어리</title>
+  <meta name="description" content="해월도에 어서오세요 — 귀여운 섬마을 쿼터뷰 생활 · 연애 시뮬레이션" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="game">
+  <canvas id="view"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hbar">
+      <div class="hclock"><span id="hWeather">☀️</span><b id="hTime">08:00</b><small id="hDay">1일째</small></div>
+      <div class="hmoney">💰 <b id="hMoney">0원</b></div>
+      <button id="hSpeed" class="hbtn">⏩1x</button>
+      <button id="menuBtn" class="hbtn">☰</button>
+    </div>
+    <div class="hrow2">
+      <button id="compIcon" class="hidden"><canvas width="32" height="32" id="compFace"></canvas><span><b id="compName">파출소 형사님</b><small id="compState">동행 중</small></span></button>
+      <div id="hPlace" class="hplace">해월도</div>
+      <button id="relBtn"><span class="heart">♥</span><span><b id="relStage">처음 만난 사이</b><i class="mini"><i id="relBar"></i></i></span></button>
+    </div>
+    <button id="mapBtn">🗺 지도</button>
+    <i id="saveDot" title="저장 중"></i>
+  </div>
+  <button id="questBtn" class="hidden">📋 퀘스트 <b>(0)</b></button>
+  <aside id="questPanel" class="hidden"><div class="qhead"><b>📋 퀘스트 가이드</b><button id="questClose">✕</button></div><div id="questList"></div></aside>
+  <button id="decorBtn" class="hidden">🛋 꾸미기</button>
+  <div id="decorBar" class="hidden">
+    <div id="decorInfo">가구를 누르면 선택돼요</div>
+    <div class="dbtns"><button id="dBag">📦 보관함</button><button id="dMove">↔ 옮기기</button><button id="dRotate">↻ 돌리기</button><button id="dStore">⬇ 넣기</button><button id="dCancel">↩ 취소</button><button id="dDone" class="ok">완료</button></div>
+  </div>
+  <div id="boatScene" class="hidden"><div class="sea"><div class="boat">🚤</div><p>통통통… 바다를 건너는 중</p></div></div>
+  <div id="placeTag"></div>
+  <div id="toasts"></div>
+  <button id="actBtn" class="hidden"></button>
+
+  <!-- 대화창 -->
+  <div id="dlg" class="hidden">
+    <div id="dlgChoices"></div>
+    <div class="dlg-box">
+      <canvas id="dlgFace" width="32" height="32"></canvas>
+      <div class="dlg-body"><div id="dlgName"></div><div id="dlgText"></div></div>
+      <div class="dlg-next">▼</div>
+    </div>
+  </div>
+
+  <!-- 아래에서 올라오는 메뉴 -->
+  <div id="sheet" class="hidden">
+    <div class="sheet-card">
+      <div class="sheet-head"><b id="sheetTitle"></b><button id="sheetClose">✕</button></div>
+      <div id="sheetSub"></div>
+      <div id="sheetBody"></div>
+    </div>
+  </div>
+
+  <!-- 형사님 관계 화면 -->
+  <div id="rel" class="screen hidden">
+    <div class="rel-head">
+      <canvas id="relFace" width="32" height="32"></canvas>
+      <div><small>해월도 파출소</small><h2 id="relName">파출소 형사님</h2><b id="relTitle"></b></div>
+      <button id="relClose">✕</button>
+    </div>
+    <div class="tabs"><button data-tab="profile" class="on">관계</button><button data-tab="acts">상호작용</button><button data-tab="album">추억 앨범</button></div>
+    <div class="rel-body">
+      <div id="tab-profile" class="tabpane"></div>
+      <div id="tab-acts" class="tabpane hidden"></div>
+      <div id="tab-album" class="tabpane hidden"></div>
+    </div>
+  </div>
+  <div id="zoom" class="hidden"><img id="zoomImg" alt="" /><p id="zoomCap"></p></div>
+
+  <div id="stageUp" class="screen-pop hidden">
+    <div class="pop">
+      <div class="pop-hearts">♥ ♥ ♥</div>
+      <small>관계가 발전했어요!</small>
+      <h2 id="suName"></h2>
+      <p id="suUnlock"></p>
+      <button id="suOk" class="big">좋아요!</button>
+    </div>
+  </div>
+
+  <div id="help" class="screen-pop hidden">
+    <div class="pop left">
+      <h2>해월도 생활 안내</h2>
+      <ul>
+        <li><b>이동</b> — 땅을 누르면 걸어가요. 건물·벤치·사람을 누르면 그 앞까지 가요. (PC: 방향키/WASD, 행동 E·Space)</li>
+        <li><b>일하기</b> — 내 일터(카페 · 보건지소 · 학교 · 해녀창고) 안으로 들어가서 「오픈 · 시작」을 누르면 일이 시작돼요. 카페는 손님 주문을 받아 음료를 전달하고, 보건지소는 환자를 진료(미니게임), 학교는 칠판 앞에서 수업(퀴즈), 해녀창고는 물질(잠수 미니게임) 뒤 손질해서 넘겨요. 시간은 07~22시 사이 마음대로, 일터를 나가면 자동 마감. 가끔 형사님도 들러요. 여행객은 섬 곳곳에서 「여행 기록하기」.</li>
+        <li><b>행동 버튼</b> — 오른쪽 아래 버튼이 상황에 맞게 바뀌어요: 일하기, 앉기, 낚시, 가게, 말 걸기.</li>
+        <li><b>형사님</b> — 형사님을 눌러 인사·대화·함께 다니기. 관계가 깊어질수록 할 수 있는 일이 늘어요.</li>
+        <li><b>동행</b> — 함께 다니는 동안 형사님이 뒤를 따라오고, 멈추면 옆에 서요. 왼쪽 위 형사님 아이콘으로 동행 메뉴를 열어요.</li>
+        <li><b>확대 · 축소</b> — 게임 화면과 지도 모두 두 손가락으로 벌리거나 오므리면 확대·축소돼요. (PC: 마우스 휠)</li>
+        <li><b>지도</b> — 위의 🗺 지도 버튼을 누르면 섬 전체 지도가 펼쳐져요. 가고 싶은 곳을 누르면 걸어가요. 먼 곳은 🚌 마을버스 정류장을 이용해요.</li>
+        <li><b>형사님 일과</b> — 07시 출근 · 오전 순찰 · 12시 카페 점심 · 오후 부두·갯바위 순찰 · 17시 퇴근 · 저녁 낚시 · 22시 귀가.</li>
+        <li><b>관계</b> — 8단계(처음 만난 사이 → 부부). 하루에 쌓을 수 있는 호감도에 한도가 있고, 특별 이벤트로 더 가까워져요. 고백·프로포즈는 수락·보류·거절 모두 고를 수 있어요.</li>
+        <li><b>계절</b> — 7월 1일 여름에 시작. 실제 달력처럼 1년은 365일, 달마다 28~31일이에요. 계절마다 섬 풍경, 옷차림, 대사, 축제가 바뀌어요.</li>
+        <li><b>퀘스트</b> — 오른쪽 📋 퀘스트 버튼을 누르면 할 일이 펼쳐져요. 「추적」을 누르면 화면과 지도에 목표가 표시돼요.</li>
+        <li><b>말투</b> — 친한 사이가 되면 형사님과 자연스럽게 말을 놓는 순간이 와요. 그 뒤로는 서로 반말을 써요.</li>
+        <li><b>약속</b> — 형사님 메뉴의 「약속 잡기」로 날짜·시간·장소를 정해요. 약속 시간엔 형사님이 먼저 가서 기다려요.</li>
+        <li><b>마을</b> — 여객선이 09:00·14:00에 들어오고 17:00에 나가요. 배에서 내린 손님들이 마을을 돌아다녀요. 축제 공고가 붙으면 마을회관에서 준비위원이 될 수 있어요.</li>
+        <li><b>수첩</b> — 마을의 작은 사건을 형사님과 수사하고(단서 · 탐문 · 추리), 숨겨진 장소와 보물지도 조각을 찾아요.</li>
+        <li><b>꾸미기</b> — 메뉴 → 🎨 꾸미기 하나에 다 있어요. 🛋 집 꾸미기(가게에서 산 가구 · 벽지 · 바닥), 🛠 섬 편집(섬과 내 일터를 무료 장식 · 나무 · 길로 꾸미고 건물도 옮겨요), 🛒 가구점(집 가구).</li>
+        <li><b>네컷사진</b> — 카페 옆 부스에서 형사님과 네 컷을 찍어 앨범과 액자로 남겨요.</li>
+        <li><b>저장 칸</b> — 저장 1 · 저장 2 두 칸에 따로 진행할 수 있어요. 처음 화면 「이어하기」 · 「새로 시작」에서 칸을 골라요. 게임 중엔 설정 → 「저장 ○ 사용 중」에서 처음 화면으로 나갈 수 있어요.</li>
+        <li><b>미니게임</b> — 🎤 노래방 무대에서 「노래하기」(박자 맞추기), 🍊 귤나무 · 귤밭에서 귤 받기, ☕ 카페 안 「여기서 할 일 → 라떼 아트」, 🪨 해변 · 산책로 「여기서 할 일 → 물수제비」, 🎣 낚시는 입질이 오면 꾹 눌러 줄 버티기. 형사님이 곁에 있으면 같이 하거나 내기를 해요.</li>
+        <li><b>섬 생활</b> — 낚시(부두·갯바위·무인도), 썰물 때 조개 줍기, 겨울 귤 따기, 별 보기, 노래방, 횟집, 분실물 찾기, 집 꾸미기.</li>
+        <li><b>무인도</b> — 부두 끝 배 앞에서 「무인도 가기」.</li>
+        <li><b>마을 슈퍼</b> — 간식 · 음료, 생활 · 선물, 씨앗, 가구로 나뉘어 있어요. 섬에서 구하기 힘든 물건은 「육지 주문」으로 주문하면 2일 뒤 배로 들어와요(결항이면 하루 늦어요). 도착하면 슈퍼 할아버지가 건네줘요.</li>
+        <li><b>꾸미기</b> — 메뉴 → 🎨 꾸미기. 「장식 고르기」에서 장식을 고르고 땅을 눌러 놓아요. 섬 · 일터 장식은 모두 무료예요(집 가구만 가구점에서 사요). 개발자 모드 섬 편집 「＋ 추가」에도 같은 장식이 다 있어요. 학교 운동장 · 카페 앞 · 놀이터 등 섬 어디든 꾸밀 수 있고, 내 일터(카페 · 학교 · 보건지소 · 해녀창고) 안에는 실내 장식을 놓을 수 있어요.</li>
+        <li><b>벽지 · 바닥</b> — 집 「꾸미기」의 🎨 버튼이나 메뉴 → 집에서 벽지 12가지 · 바닥 10가지로 바꿀 수 있어요. 가구점에는 벽 장식 · 조명 · 식물 · 소품 · 러그 · 계절 장식이 있어요.</li>
+        <li><b>종료</b> — 휴대폰 뒤로 가기를 두 번 누르면 저장하고 게임을 완전히 끝내요. 앱을 내리면 음악이 멈춰요.</li>
+        <li><b>텃밭</b> — 집 뒤 텃밭(6칸)에 슈퍼 「씨앗 · 모종」에서 산 씨앗을 심어요. 매일 물을 주면(비 오는 날은 저절로) 하루씩 자라고, 사흘 내리 마르면 시들어요. 수확한 작물은 팔거나 형사님께 선물해요.</li>
+        <li><b>요리</b> — 집 조리대에서 텃밭 작물로 요리해요. 작물마다 어울리는 요리가 하나씩, 재료 두 가지로 만드는 특별 요리도 있어요. 요리 요령을 맞히면 2인분! 형사님이 곁에 있으면 같이 만들어 나눠 먹어요. 만든 요리는 소지품에서 눌러 먹거나 선물 · 판매할 수 있어요.</li>
+        <li><b>캠핑 · 바비큐</b> — 캠핑존 텐트 앞에서 「텐트 들어가기」. 저녁 5~10시엔 슈퍼에서 고기 세트를 사서 그릴에서 구워요. 형사님과 함께라면 형사님이 구워 줘요.</li>
+        <li><b>여기서 할 일</b> — 해변 · 부두 · 등대 · 숲 · 놀이터 등에서 행동 버튼에 「여기서 할 일」이 나오면 장소마다 다른 활동을 할 수 있어요. 버튼이 여러 개 겹치면 골라서 실행해요.</li>
+        <li><b>카메라</b> — 메뉴 → 카메라. 일반 · 풍경(글자 없이) · 커플 촬영 후 PNG로 저장하거나 앨범에 넣어요.</li>
+        <li><b>섬 편집</b> — 메뉴 → 🎨 꾸미기 → 섬 편집. 물건 · 바닥 · 울타리 · 조명 · 장식을 놓고, 「👆 선택」에서 물건이나 건물을 누른 채 끌면 바로 옮겨져요(놓을 수 없는 곳은 빨갛게 보여요). 💾 저장해야 확정되고, 백업 · JSON 내보내기/가져오기도 돼요.</li>
+        <li><b>앉기</b> — 벤치 · 의자뿐 아니라 해변 파라솔 돗자리, 섬 꾸미기 벤치 · 의자 · 해먹 · 그네, 집 안 러그 · 방석에도 앉을 수 있어요. 「돗자리 펴기」로 편 돗자리는 자리를 떠나면 알아서 개어 가요.</li>
+        <li><b>생일</b> — 새 게임 화면(또는 메뉴 → 관계 → 생일)에서 내 생일과 형사님 생일을 정해요. 내 생일엔 주민들이 뜻밖의 선물을 주고, 형사님은 사이에 따라 전혀 다르게 챙겨 줘요. 형사님 생일엔 형사님 메뉴에 「생일 축하해요」가 생겨요.</li>
+        <li><b>일기장</b> — 잠들 때마다 그날 한 일로 내 일기가 써져요. 형사님도 매일 밤 일기를 쓰는데, 가끔 아침에 한 장을 몰래 보게 돼요. 연인이 되면 일기장을 통째로 보여 줘요. (메뉴 → 추억 → 일기장)</li>
+        <li><b>몰래 보기</b> — 형사님이 근무 · 순찰 · 낚시 · 점심 중일 때 조금 떨어져 있으면 「👀 몰래 보기」가 떠요. 하루 한 번, 들킬 수도 있어요.</li>
+        <li><b>반려동물</b> — 메뉴 → 집 → 반려동물에서 고양이 · 강아지를 데려와 이름을 지어요. 평소엔 집에 있고, 「같이 산책」을 켜면 따라와요. 간식은 슈퍼 「생활 · 선물」에 있어요.</li>
+        <li><b>특별한 날</b> — 쌍무지개 · 첫눈 · 유성우 · 반딧불이 · 보름달 같은 특별한 날이 아주 가끔 찾아와요. 아침 알림에 나온 시간 · 장소에 가 보세요.</li>
+        <li><b>심부름</b> — 주민에게 말을 걸면 가끔 심부름을 부탁해요(하루 하나). 퀘스트 창에 갈 곳이 체크 표시로 나오고, 다 하면 수고비와 선물을 받아요.</li>
+        <li><b>이웃집</b> — 마을 집마다 주인이 있어요. 저녁이 되면 주민들이 집에 들어가니, 집 문 앞에서 「○○ 댁 방문」으로 놀러 가 보세요. 동백숲엔 오솔길 벤치와 숲속 쉼터가 있어요.</li>
+        <li><b>하루</b> — 저녁 6시부터 집 침대에서 잘 수 있어요. 자정이 되면 다음 날이 와요. 진행은 자동 저장돼요.</li>
+      </ul>
+      <button id="helpOk" class="big">알겠어요</button>
+    </div>
+  </div>
+
+  <div id="mapView" class="screen hidden">
+    <div class="map-head"><b>🗺 해월도 지도</b><button id="mapClose">✕</button></div>
+    <div class="map-wrap"><canvas id="bigMap"></canvas></div>
+    <button id="mapZoom">＋ 확대해서 보기</button>
+    <p id="mapHint"></p>
+  </div>
+  <div id="panel" class="screen hidden"><div class="panel-card"><div class="panel-head"><button id="panelBack" class="hidden">‹</button><b id="panelTitle"></b><button id="panelClose">✕</button></div><div id="panelBody"></div></div></div>
+  <div id="flash"></div>
+  <div id="fade"></div>
+
+  <!-- 타이틀 -->
+  <section id="title" class="screen-pop">
+    <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+    <div class="logo">
+      <h1>해월도<br><span>다이어리</span></h1>
+      <p class="welcome">해월도에 어서오세요</p>
+    </div>
+    <div class="title-btns">
+      <button id="btnCont" class="big hidden">이어하기<small id="contInfo"></small></button>
+      <button id="btnNew" class="big alt">새로 시작</button>
+    </div>
+  </section>
+
+  <section id="newgame" class="screen-pop hidden">
+    <div class="pop wide">
+      <h2>해월도에 온 걸 환영해요</h2>
+      <div class="pv">
+        <div class="pv-art"><canvas id="pvFace" width="32" height="32"></canvas><canvas id="pvChibi" width="24" height="34"></canvas></div>
+        <p id="jobDesc"></p>
+      </div>
+      <label class="lbl">내 이름<input id="nameIn" maxlength="8" placeholder="해월" autocomplete="off" /></label>
+      <label class="lbl">형사님 이름 <small>(비워 두면 "형사님" · 나중에 바꿀 수 있어요)</small><input id="detIn" maxlength="6" placeholder="예: 도윤" autocomplete="off" /></label>
+      <div class="lbl">직업</div>
+      <div id="jobList"></div>
+      <div class="lbl">머리 모양</div>
+      <div id="hairList"></div>
+      <div class="ng-btns"><button id="btnBack" class="big alt">뒤로</button><button id="startBtn" class="big">섬으로 출발!</button></div>
+    </div>
+  </section>
+</div>
+
+<script src="js/sprites.js"></script>
+<script src="js/sprites2.js"></script>
+<script src="js/world.js"></script>
+<script src="js/content.js"></script>
+<script src="js/data_fm.js"></script>
+<script src="js/content3.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/story.js"></script>
+<script src="js/story2.js"></script>
+<script src="js/systems.js"></script>
+<script src="js/systems2.js"></script>
+<script src="js/systems3.js"></script>
+<script src="js/story3.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/leisure.js"></script>
+<script src="js/playground.js"></script>
+<script src="js/lines_comp.js"></script>
+<script src="js/life.js"></script>
+<script src="js/farm.js"></script>
+<script src="js/cook.js"></script>
+<script src="js/talk1.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/decor.js"></script>
+<script src="js/voices.js"></script>
+<script src="js/yard.js"></script>
+<script src="js/seats.js"></script>
+<script src="js/devmode.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/emoji.js"></script>
+<script src="js/titlefx.js"></script>
+<script src="js/lifecycle.js"></script>
+<script src="js/birthday.js"></script>
+<script src="js/diary.js"></script>
+<script src="js/peek.js"></script>
+<script src="js/pets.js"></script>
+<script src="js/sevents.js"></script>
+<script src="js/bmove.js"></script>
+<script src="js/forest.js"></script>
+<script src="js/neighbors.js"></script>
+<script src="js/cal365.js"></script>
+<script src="js/more.js"></script>
+<script src="js/yard2.js"></script>
+<script src="js/jobfix.js"></script>
+<script src="js/deco3.js"></script>
+<script src="js/edit.js"></script>
+<script src="js/furn2.js"></script>
+<script src="js/rot.js"></script>
+<script src="js/mini.js"></script>
+<script src="js/slots.js"></script>
+<script src="js/stagehelp.js"></script>
+<script src="js/talkfix.js"></script>
+<script src="js/polish.js"></script>
+<script src="js/questfix.js"></script>
+<script src="js/work.js"></script>
+<script src="js/physfix.js"></script>
+</body>
+</html>
