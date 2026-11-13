@@ -69,7 +69,7 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .ebar i { display: block; height: 100%; background: var(--mint); transition: width .3s; }
 .ebar.low i { background: var(--red); }
 .loc { position: absolute; top: calc(66px + var(--safe-t)); left: 8px; padding: 3px 10px; font-size: 13px; color: var(--ink); }
-.chip-cap { position: absolute; top: calc(66px + var(--safe-t)); right: 8px; max-width: 58%; padding: 3px 10px; font-size: 12px; pointer-events: auto; text-align: right; color: var(--ink); }
+.chip-cap { position: absolute; top: calc(66px + var(--safe-t)); right: 8px; max-width: 66%; padding: 3px 10px; font-size: 12px; pointer-events: auto; text-align: right; color: var(--ink); }
 .chip-cap b { font-weight: 400; color: var(--pink); }
 .chip-cap .heart { color: var(--pink); margin-left: 4px; white-space: nowrap; }
 #hud .side { position: absolute; right: 8px; top: calc(100px + var(--safe-t)); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }

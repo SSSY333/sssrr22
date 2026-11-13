@@ -73,7 +73,7 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .ebar i { display: block; height: 100%; background: var(--mint); transition: width .3s; }
 .ebar.low i { background: var(--red); }
 .loc { position: absolute; top: calc(66px + var(--safe-t)); left: 8px; padding: 3px 10px; font-size: 13px; color: var(--ink); }
-.chip-cap { position: absolute; top: calc(66px + var(--safe-t)); right: 8px; max-width: 58%; padding: 3px 10px; font-size: 12px; pointer-events: auto; text-align: right; color: var(--ink); }
+.chip-cap { position: absolute; top: calc(66px + var(--safe-t)); right: 8px; max-width: 66%; padding: 3px 10px; font-size: 12px; pointer-events: auto; text-align: right; color: var(--ink); }
 .chip-cap b { font-weight: 400; color: var(--pink); }
 .chip-cap .heart { color: var(--pink); margin-left: 4px; white-space: nowrap; }
 #hud .side { position: absolute; right: 8px; top: calc(100px + var(--safe-t)); display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
@@ -4753,7 +4753,11 @@ PX.Dlg = (() => {
   // 오류 복구용: 기다리던 줄을 풀어 주고 대기열을 비운다 (대화가 영영 안 나오는 일 없게)
   function reset() { const p = pending; pending = null; lane = Promise.resolve(); clearInterval(typing); typing = null; if (p) try { p(-1); } catch (e) { /* 무시 */ } }
   const inLane = (fn) => { const p = lane.then(fn, fn); lane = p.catch(() => {}); return p; };
-  function say(speaker, text, face) { return inLane(() => sayNow(speaker, text, face)); }
+  function say(speaker, text, face) {
+    const G = PX.Game; // 대위가 이 장소에 없으면 대위의 말은 하지 않는다
+    if (speaker === 'cap' && G && G.cap && !G.cap.atDoor && (G.cap.map !== G.mapId || G.cap.hidden)) { console.warn('대위 부재로 생략:', text); return Promise.resolve(); }
+    return inLane(() => sayNow(speaker, text, face));
+  }
   function sayNow(speaker, text, face) {
     return new Promise(res0 => {
       const res = (v) => { pending = null; res0(v); }; pending = res;
@@ -4816,9 +4820,16 @@ PX.Dlg = (() => {
   async function runLines(lines, opt = {}) {
     const res = { aff: 0, tags: [] };
     const c = ctx();
-    let replied = false;
+    let replied = false, skipQ = false;
+    const capHere = () => { const G = PX.Game; return !!(G.cap && (G.cap.atDoor || (G.cap.map === G.mapId && !G.cap.hidden))); };
     for (let li = 0; li < lines.length; li++) {
       const ln = lines[li], last = li === lines.length - 1;
+      if (typeof ln === 'object' && ln.q && skipQ) continue; // 대위가 없어서 못 한 말에 딸린 선택지
+      if (typeof ln === 'string') {
+        const capLine = /^C[*^;!~]?:/.test(ln) && !opt.speaker, capNarr = /^N:.*(대위(가|는|도|의|를|에게|와|랑| 귀| 옆| 입)|\{c[가-힣]*\}|\{cg\})/.test(ln) || (St.S.capName && ln.startsWith('N:') && ln.includes(St.S.capName));
+        if ((capLine || capNarr) && !capHere()) { skipQ = true; console.warn('대위 부재로 생략:', ln); continue; }
+        if (/^[CSX]/.test(ln)) skipQ = false;
+      }
       if (typeof ln === 'object' && ln.q) {
         let q = ln.q.slice();
         if (opt.refuse) q.push(['그런 말은 좀 싫어요.', 0, null, 'hurt']);
@@ -4890,6 +4901,7 @@ PX.Dlg = (() => {
   async function capTalk(forceCat) {
     const S = St.S, r = S.rel.cap, G = PX.Game, D = PX.DLG_CAP;
     const cap = G.cap;
+    if (!cap || cap.map !== G.mapId || cap.hidden) return; // 없는 사람과는 대화하지 않는다
     const min = S.time.min, part = Cal.partOfDay(min);
     const firstToday = r.lastTalkDay !== S.day;
     const backoff = r.backoffUntil > St.absMin();
@@ -5268,6 +5280,12 @@ PX.Cap = (() => {
     return cap.map === j.work && G().mapId === j.work;
   }
   function status() {
+    const O = PX.Op && PX.Op.op();
+    if (O && O.phase === 'away') return O.joint ? '합동작전 중 (함께)' : '장기작전 중';
+    if (O && O.phase === 'return') return { '부대 도착': '부대 도착', '복귀 보고': '작전 복귀 보고 중', '장비 반납': '장비 반납 중', '의료 확인': '복귀 검진 중', '샤워·환복': '씻는 중', '찾아가기': '나를 찾는 중' }[O.retStep] || '작전 복귀 중';
+    if (mode === 'date') return '약속 장소에서 기다리는 중';
+    if (mode === 'waitOut') return '밖에서 기다리는 중';
+    if (mode === 'paused') return '그 자리에서 기다리는 중';
     if (mode === 'follow') return cap.holding ? '손잡고 동행 중' : '동행 중';
     if (mode === 'visit') return '내 숙소 방문 중';
     if (mode === 'stay') return '내 숙소에서 쉬는 중';
@@ -5504,18 +5522,20 @@ PX.Cap = (() => {
       mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 90 };
       if (M) { M.mem().contact = 'NONE'; M.apply(); }
       const said = V.shower ? PX.Dlg.pick('v_shower', V.shower) : null;
-      if (said) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(said.l); PX.Dlg.close(); g.modal--; });
+      if (said) g.trigger(async () => { g.modal++; cap.atDoor = true; try { await PX.Dlg.runLines(said.l); } finally { cap.atDoor = false; } PX.Dlg.close(); g.modal--; });
       return;
     }
     if (to === homeId() && mode === 'follow') { // 숙소엔 물어보고 들어간다 (거절하면 한동안 다시 안 묻는다)
       if (M && M.refused('home')) { release(U.pick(['오늘은 문 앞까지. 잘 자.', '들어가. 내일 보자.'])); return; }
       g.trigger(async () => {
-        g.modal++;
+        g.modal++; cap.atDoor = true; // 문 앞에 서서 묻는다 (방 밖이지만 실제로 거기 있다)
+        try {
         const bd = V.homeAsk ? PX.Dlg.pick('v_homeAsk', V.homeAsk) : null;
         await PX.Dlg.runLines(bd ? bd.l : ['C*:나도 들어가도 돼?']);
         const i = await PX.Dlg.choose([{ t: '들어와요.' }, { t: '차 한 잔만이에요.' }, { t: '오늘은 여기까지요.' }]);
         if (i < 2) { await PX.Dlg.say('player', i === 0 ? '들어와요.' : '차 한 잔만이에요.'); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
         else { await PX.Dlg.say('player', '오늘은 여기까지요.'); await PX.Dlg.runLines(U.pick(V.homeNo || [['C:응, 알았어.']])); PX.Dlg.close(); g.modal--; if (M) M.noteRefuse('home', 240); release(null, 60); }
+        } finally { cap.atDoor = false; }
       });
       mode = 'sched'; // 대답 전까지는 밖에서 대기
       return;
@@ -5794,7 +5814,7 @@ PX.UI = (() => {
     const near = G.cap.map === G.mapId;
     const M = PX.Mind, op = S.cap.op && S.cap.op.phase === 'away' && !S.cap.op.joint;
     const comp = PX.Cap.mode === 'follow' && near ? `<span class="ct">${M.ICON[M.contact()]} ${M.contact() === 'NONE' ? '동행 중' : M.NAME[M.contact()]}</span>` : '';
-    const html = `<b>${S.capName}</b>${op ? ' · 🛰️ 장기작전 중' : comp ? '' : near ? ' · 가까이 있음' : ''}${comp} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    const html = `<b>${S.capName}</b>${comp ? '' : ' · ' + (op ? '🛰️ ' : '') + PX.Cap.status()}${comp} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
     if ($('capChip')._h !== html) { $('capChip')._h = html; $('capChip').innerHTML = html; }
   }
   function badge() { const n = St.S.messages.filter(m => m.reply == null).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
@@ -6000,7 +6020,7 @@ PX.UI = (() => {
       const lv = el('button', { class: 'menu-btn' }, el('span', null, '🏖️ 휴가 신청'), el('small', null, S.leave && S.leave.to >= S.day ? `${R.dayKo(S.leave.from)}~${R.dayKo(S.leave.to)} 휴가` : '하루~사흘 · 30일에 6일까지'));
       lv.onclick = () => { R.applyLeave(); };
       p.append(el('h4', null, '휴가'), lv);
-      p.append(el('p', { class: 'muted' }, '대위의 일정은 단말에 나오지 않아요. 부대원들에게 물어보면 알려 줄지도 몰라요.'));
+      p.append(el('p', { class: 'muted' }, `${S.capName} 대위 지금: ${PX.Cap.status()}`));
     },
     rel(p) {
       const S = St.S, r = S.rel.cap;
@@ -7076,8 +7096,8 @@ PX.Act = (() => {
       LB49: [['🔫 물총 표적', () => PX.Mini.targets({ title: '💦 여름 물총전', help: '상대 팀 표적을 맞히세요!', time: 20, goal: 18, color: '#5fc8e8', bg: '#2f5a7a' })], ['🚩 깃발 지키기', () => PX.Mini.tapRace({ title: '🚩 깃발 지키기', help: '연타로 깃발 사수!', foe: 6 })]],
       LB47: [['❓ 단체 퀴즈', () => PX.Mini.quiz({ title: '❓ 생활관 리그 퀴즈', help: '페르녹스 행사 상식!', qs: quizQs(5) })], ['🛏️ 침상 정리 속도전', () => PX.Mini.tapRace({ title: '🛏️ 침상 정리', help: '연타로 각 잡기!', left: '나', right: '옆 생활관', foe: 6 })], ['👾 게임 점수전', () => PX.Mini.targets({ title: '👾 점수전', help: '최대한 많이!', time: 15, goal: 14, color: '#ff6bd5', bg: '#2a1f4f' })]],
       LB44: [['🎖️ 기념 패치 만들기', async () => { const d = await PX.UI.menu('패치 디자인', [{ t: '🦂 갑각충 마크', k: 1 }, { t: '🌸 유리꽃 마크', k: 2 }, { t: '⭐ 606 별 마크', k: 3 }]); if (d) { St.addItem('patch'); PX.UI.toast('🎖️ 수제 패치 완성!'); if (withCap()) await lines(['C*:나한테도 하나 줘. …근데 이니셜은 네 거 넣어 줘.']); } return 1; }], ['📸 사진 부스', async () => { G().memory('부대문화제 사진', '사진 부스에서 찰칵.', true); return 1; }], ['👾 게임 코너', () => PX.Mini.targets({ title: '🎯 게임 코너', help: '표적 맞히기!', time: 15, goal: 14 })]],
-      LB48: [['🎤 장기자랑 참가', () => H.perform({})], ['💪 팔씨름 시범 구경', async () => { await lines(['N:대위가 팔씨름 시범에 나섰다. 도전자 다섯 명이 차례로 쓰러진다.', 'C*:다음 도전자? …너는 봐줄게.']); return 1; }]],
-      LB42: [['🎖️ 기념식 참석', async () => { await lines(['N:부대기가 오른다. 강태욱 중령이 단상 앞에 선다.', 'S:kang:오늘도 다들 무사하라.']); return 1; }], ['📸 단체사진', async () => { await lines(['N:단체사진. 대위가 슬쩍 내 옆에 선다.']); G().memory('창설기념제 단체사진', '대위는 꼭 내 옆에 섰다.', true); return 1; }], ['🎯 장비 체험', () => H.shoot()]],
+      LB48: [['🎤 장기자랑 참가', () => H.perform({})], ['💪 팔씨름 시범 구경', async () => { await lines(withCap() ? ['N:대위가 팔씨름 시범에 나섰다. 도전자 다섯 명이 차례로 쓰러진다.', 'C*:다음 도전자? …너는 봐줄게.'] : ['N:박도현 중사가 팔씨름 시범에 나섰다. 도전자들이 차례로 쓰러진다.', 'S:park:…다음.']); return 1; }]],
+      LB42: [['🎖️ 기념식 참석', async () => { await lines(['N:부대기가 오른다. 강태욱 중령이 단상 앞에 선다.', 'S:kang:오늘도 다들 무사하라.']); return 1; }], ['📸 단체사진', async () => { if (withCap()) { await lines(['N:단체사진. 대위가 슬쩍 내 옆에 선다.']); G().memory('창설기념제 단체사진', '대위는 꼭 내 옆에 섰다.', true); } else { await lines(['N:단체사진. 부대원들 사이에 끼어 선다. 이준혁이 뒤에서 브이를 한다.']); G().memory('창설기념제 단체사진', '606부대 단체사진. 이준혁이 뒤에서 브이를 했다.', true); } return 1; }], ['🎯 장비 체험', () => H.shoot()]],
       LB45: [['🧰 장비함 정돈', () => PX.Mini.timing({ title: '🧰 장비함 정돈', help: '칸에 맞춰 넣기!', rounds: 5 })], ['🏷️ 장비 이름 붙이기', async () => { const n = await PX.UI.menu('내 장비 이름', [{ t: '든든이', k: 1 }, { t: '번개', k: 2 }, { t: '대위님 2호', k: 3 }]); if (n && withCap()) await lines(n.k === 3 ? ['C!:…대위님 2호?', 'C^:1호는 나라는 거지? 좋다.'] : ['C:좋은 이름이다.']); return 1; }]],
       LB43: [['🪖 사열 행진', () => PX.Mini.timing({ title: '🪖 합동사열제', help: '구령에 맞춰 발을 맞추세요!', rounds: 6, speed: 60 })]],
       LB40: [['🩺 신체검사 받기', async () => { await lines(['N:체성분, 혈압, 시력, 중력 적응도 검사. 모두 정상이다.', ...(withCap() ? ['C:체중계 숫자는 근육이야. 근육.'] : [])]); return 1; }]],
@@ -8313,6 +8333,7 @@ PX.Op = (() => {
   // ---------- 합동작전 (플레이어도 투입) ----------
   async function jointDepart() {
     const S = St.S, o = op(), g = G(), V = PX.DLG_V2;
+    PX.Cap.moveTo(g.mapId); const tt = PX.Path.nearestWalkable(PX.W.maps[g.mapId], g.player.x + 1, g.player.y, 3); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; }
     g.modal++;
     await PX.Dlg.runLines([`N:새벽 6시. 수송선 격납고. 엔진 소리가 바닥을 울린다. 작전 기간 ${o.days}일, ${o.area}.`, ...(PX.Dlg.pick('v_opJoint', V.opJoint) || { l: ['C:내 뒤로 두 걸음.'] }).l]);
     PX.Dlg.close(); g.modal--;
@@ -9350,17 +9371,20 @@ ${memLine(S)}`;
     if (S.workLog[key]) { UI.toast('이번 근무는 이미 마쳤어요'); return; }
     if (S.energy < 12) { UI.toast('😵 너무 피곤해서 일할 수 없어요. 뭘 좀 먹거나 쉬어요.'); return; }
     const ctx = {};
-    if (job.mini === 'treat') ctx.patient = Cap.spotKind() === 'duty' && Math.random() < 0.3 ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병']);
+    // 대위는 수색에서 돌아와 실제로 의무실에 와 있을 때만 환자로 온다
+    const capHere = Game.cap.map === Game.mapId && !Game.cap.hidden && PX.CapAct.ctx() === 'med';
+    if (job.mini === 'treat') ctx.patient = capHere ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병', '정비병', '통신병']);
     const score = await PX.Mini.run(job.mini, ctx);
     for (const id of (PX.Mini.lastFound || [])) Game.codex(id);
     if (job.mini === 'circuit' && score > 0.6) Game.codex('mineral');
+    // 시간이 흐르기 전에 (대위가 아직 의무실에 있을 때) 말한다
+    if (ctx.patient && ctx.patient.startsWith(S.capName)) { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; }
     const pay = Math.round(job.pay * (0.6 + 0.6 * score));
     S.money += pay; S.energy = Math.max(0, S.energy - 18); S.workLog[key] = 1; S.workLog[S.day] = (S.workLog[S.day] || 0) + 1; S.stats.work++;
     const end = shift === 0 ? 12 * 60 : 17 * 60;
     if (S.time.min < end) St.advance(end - S.time.min);
     UI.toast(`💰 급여 ₢${pay} · 기력 -18`);
     PX.Audio.coin();
-    if (ctx.patient && ctx.patient.startsWith(S.capName)) Game.trigger(async () => { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; });
     if (!S.done.firstWork) { S.done.firstWork = 1; Game.memory('첫 근무', `${U.josa(job.ko, '으로')}서의 하루. 급여 ₢${pay}.`, true); }
     for (const n of Game.npcs) n.place(S);
   }
@@ -10148,7 +10172,7 @@ ${memLine(S)}`;
     document.getElementById('joy').style.visibility = Game.modal || PX.Decor.active ? 'hidden' : '';
     if (Game.modal && Game.joy && Game.joy.active) Game.joyEnd();
     if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); $('capBtns').classList.add('hidden'); $('moreBtn').classList.add('hidden'); return; }
-    if (Game.player.seat) { const bed = Game.player.seat.obj && Game.player.seat.obj.use === 'bed'; btn.textContent = bed ? '🛏️ 침대에서 할 일' : '🪑 앉아서 할 일'; btn.classList.remove('hidden'); $('capBtns').classList.toggle('hidden', !capNear()); $('moreBtn').classList.add('hidden'); return; }
+    if (Game.player.seat) { const so = Game.player.seat.obj, bed = !!so && (so.use || (so.f && so.f.use)) === 'bed'; btn.textContent = bed ? '🛏️ 침대에서 할 일' : '🪑 앉아서 할 일'; btn.classList.remove('hidden'); $('capBtns').classList.toggle('hidden', !capNear()); $('moreBtn').classList.add('hidden'); return; }
     const l = nearby(), it = nearest();
     if (it) { if (btn.textContent !== it.label) btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
     $('capBtns').classList.toggle('hidden', !capNear() || PX.Cap.onDuty() && Cap.mode !== 'follow' && !capNear());

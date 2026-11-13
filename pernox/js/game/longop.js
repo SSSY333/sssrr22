@@ -158,6 +158,7 @@ PX.Op = (() => {
   // ---------- 합동작전 (플레이어도 투입) ----------
   async function jointDepart() {
     const S = St.S, o = op(), g = G(), V = PX.DLG_V2;
+    PX.Cap.moveTo(g.mapId); const tt = PX.Path.nearestWalkable(PX.W.maps[g.mapId], g.player.x + 1, g.player.y, 3); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; }
     g.modal++;
     await PX.Dlg.runLines([`N:새벽 6시. 수송선 격납고. 엔진 소리가 바닥을 울린다. 작전 기간 ${o.days}일, ${o.area}.`, ...(PX.Dlg.pick('v_opJoint', V.opJoint) || { l: ['C:내 뒤로 두 걸음.'] }).l]);
     PX.Dlg.close(); g.modal--;

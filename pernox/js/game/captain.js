@@ -29,6 +29,12 @@ PX.Cap = (() => {
     return cap.map === j.work && G().mapId === j.work;
   }
   function status() {
+    const O = PX.Op && PX.Op.op();
+    if (O && O.phase === 'away') return O.joint ? '합동작전 중 (함께)' : '장기작전 중';
+    if (O && O.phase === 'return') return { '부대 도착': '부대 도착', '복귀 보고': '작전 복귀 보고 중', '장비 반납': '장비 반납 중', '의료 확인': '복귀 검진 중', '샤워·환복': '씻는 중', '찾아가기': '나를 찾는 중' }[O.retStep] || '작전 복귀 중';
+    if (mode === 'date') return '약속 장소에서 기다리는 중';
+    if (mode === 'waitOut') return '밖에서 기다리는 중';
+    if (mode === 'paused') return '그 자리에서 기다리는 중';
     if (mode === 'follow') return cap.holding ? '손잡고 동행 중' : '동행 중';
     if (mode === 'visit') return '내 숙소 방문 중';
     if (mode === 'stay') return '내 숙소에서 쉬는 중';
@@ -265,18 +271,20 @@ PX.Cap = (() => {
       mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 90 };
       if (M) { M.mem().contact = 'NONE'; M.apply(); }
       const said = V.shower ? PX.Dlg.pick('v_shower', V.shower) : null;
-      if (said) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(said.l); PX.Dlg.close(); g.modal--; });
+      if (said) g.trigger(async () => { g.modal++; cap.atDoor = true; try { await PX.Dlg.runLines(said.l); } finally { cap.atDoor = false; } PX.Dlg.close(); g.modal--; });
       return;
     }
     if (to === homeId() && mode === 'follow') { // 숙소엔 물어보고 들어간다 (거절하면 한동안 다시 안 묻는다)
       if (M && M.refused('home')) { release(U.pick(['오늘은 문 앞까지. 잘 자.', '들어가. 내일 보자.'])); return; }
       g.trigger(async () => {
-        g.modal++;
+        g.modal++; cap.atDoor = true; // 문 앞에 서서 묻는다 (방 밖이지만 실제로 거기 있다)
+        try {
         const bd = V.homeAsk ? PX.Dlg.pick('v_homeAsk', V.homeAsk) : null;
         await PX.Dlg.runLines(bd ? bd.l : ['C*:나도 들어가도 돼?']);
         const i = await PX.Dlg.choose([{ t: '들어와요.' }, { t: '차 한 잔만이에요.' }, { t: '오늘은 여기까지요.' }]);
         if (i < 2) { await PX.Dlg.say('player', i === 0 ? '들어와요.' : '차 한 잔만이에요.'); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
         else { await PX.Dlg.say('player', '오늘은 여기까지요.'); await PX.Dlg.runLines(U.pick(V.homeNo || [['C:응, 알았어.']])); PX.Dlg.close(); g.modal--; if (M) M.noteRefuse('home', 240); release(null, 60); }
+        } finally { cap.atDoor = false; }
       });
       mode = 'sched'; // 대답 전까지는 밖에서 대기
       return;

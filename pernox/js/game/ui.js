@@ -70,7 +70,7 @@ PX.UI = (() => {
     const near = G.cap.map === G.mapId;
     const M = PX.Mind, op = S.cap.op && S.cap.op.phase === 'away' && !S.cap.op.joint;
     const comp = PX.Cap.mode === 'follow' && near ? `<span class="ct">${M.ICON[M.contact()]} ${M.contact() === 'NONE' ? '동행 중' : M.NAME[M.contact()]}</span>` : '';
-    const html = `<b>${S.capName}</b>${op ? ' · 🛰️ 장기작전 중' : comp ? '' : near ? ' · 가까이 있음' : ''}${comp} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    const html = `<b>${S.capName}</b>${comp ? '' : ' · ' + (op ? '🛰️ ' : '') + PX.Cap.status()}${comp} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
     if ($('capChip')._h !== html) { $('capChip')._h = html; $('capChip').innerHTML = html; }
   }
   function badge() { const n = St.S.messages.filter(m => m.reply == null).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
@@ -276,7 +276,7 @@ PX.UI = (() => {
       const lv = el('button', { class: 'menu-btn' }, el('span', null, '🏖️ 휴가 신청'), el('small', null, S.leave && S.leave.to >= S.day ? `${R.dayKo(S.leave.from)}~${R.dayKo(S.leave.to)} 휴가` : '하루~사흘 · 30일에 6일까지'));
       lv.onclick = () => { R.applyLeave(); };
       p.append(el('h4', null, '휴가'), lv);
-      p.append(el('p', { class: 'muted' }, '대위의 일정은 단말에 나오지 않아요. 부대원들에게 물어보면 알려 줄지도 몰라요.'));
+      p.append(el('p', { class: 'muted' }, `${S.capName} 대위 지금: ${PX.Cap.status()}`));
     },
     rel(p) {
       const S = St.S, r = S.rel.cap;

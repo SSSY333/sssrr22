@@ -394,17 +394,20 @@
     if (S.workLog[key]) { UI.toast('이번 근무는 이미 마쳤어요'); return; }
     if (S.energy < 12) { UI.toast('😵 너무 피곤해서 일할 수 없어요. 뭘 좀 먹거나 쉬어요.'); return; }
     const ctx = {};
-    if (job.mini === 'treat') ctx.patient = Cap.spotKind() === 'duty' && Math.random() < 0.3 ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병']);
+    // 대위는 수색에서 돌아와 실제로 의무실에 와 있을 때만 환자로 온다
+    const capHere = Game.cap.map === Game.mapId && !Game.cap.hidden && PX.CapAct.ctx() === 'med';
+    if (job.mini === 'treat') ctx.patient = capHere ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병', '정비병', '통신병']);
     const score = await PX.Mini.run(job.mini, ctx);
     for (const id of (PX.Mini.lastFound || [])) Game.codex(id);
     if (job.mini === 'circuit' && score > 0.6) Game.codex('mineral');
+    // 시간이 흐르기 전에 (대위가 아직 의무실에 있을 때) 말한다
+    if (ctx.patient && ctx.patient.startsWith(S.capName)) { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; }
     const pay = Math.round(job.pay * (0.6 + 0.6 * score));
     S.money += pay; S.energy = Math.max(0, S.energy - 18); S.workLog[key] = 1; S.workLog[S.day] = (S.workLog[S.day] || 0) + 1; S.stats.work++;
     const end = shift === 0 ? 12 * 60 : 17 * 60;
     if (S.time.min < end) St.advance(end - S.time.min);
     UI.toast(`💰 급여 ₢${pay} · 기력 -18`);
     PX.Audio.coin();
-    if (ctx.patient && ctx.patient.startsWith(S.capName)) Game.trigger(async () => { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; });
     if (!S.done.firstWork) { S.done.firstWork = 1; Game.memory('첫 근무', `${U.josa(job.ko, '으로')}서의 하루. 급여 ₢${pay}.`, true); }
     for (const n of Game.npcs) n.place(S);
   }
@@ -1192,7 +1195,7 @@
     document.getElementById('joy').style.visibility = Game.modal || PX.Decor.active ? 'hidden' : '';
     if (Game.modal && Game.joy && Game.joy.active) Game.joyEnd();
     if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); $('capBtns').classList.add('hidden'); $('moreBtn').classList.add('hidden'); return; }
-    if (Game.player.seat) { const bed = Game.player.seat.obj && Game.player.seat.obj.use === 'bed'; btn.textContent = bed ? '🛏️ 침대에서 할 일' : '🪑 앉아서 할 일'; btn.classList.remove('hidden'); $('capBtns').classList.toggle('hidden', !capNear()); $('moreBtn').classList.add('hidden'); return; }
+    if (Game.player.seat) { const so = Game.player.seat.obj, bed = !!so && (so.use || (so.f && so.f.use)) === 'bed'; btn.textContent = bed ? '🛏️ 침대에서 할 일' : '🪑 앉아서 할 일'; btn.classList.remove('hidden'); $('capBtns').classList.toggle('hidden', !capNear()); $('moreBtn').classList.add('hidden'); return; }
     const l = nearby(), it = nearest();
     if (it) { if (btn.textContent !== it.label) btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
     $('capBtns').classList.toggle('hidden', !capNear() || PX.Cap.onDuty() && Cap.mode !== 'follow' && !capNear());

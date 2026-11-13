@@ -35,7 +35,11 @@ PX.Dlg = (() => {
   // 오류 복구용: 기다리던 줄을 풀어 주고 대기열을 비운다 (대화가 영영 안 나오는 일 없게)
   function reset() { const p = pending; pending = null; lane = Promise.resolve(); clearInterval(typing); typing = null; if (p) try { p(-1); } catch (e) { /* 무시 */ } }
   const inLane = (fn) => { const p = lane.then(fn, fn); lane = p.catch(() => {}); return p; };
-  function say(speaker, text, face) { return inLane(() => sayNow(speaker, text, face)); }
+  function say(speaker, text, face) {
+    const G = PX.Game; // 대위가 이 장소에 없으면 대위의 말은 하지 않는다
+    if (speaker === 'cap' && G && G.cap && !G.cap.atDoor && (G.cap.map !== G.mapId || G.cap.hidden)) { console.warn('대위 부재로 생략:', text); return Promise.resolve(); }
+    return inLane(() => sayNow(speaker, text, face));
+  }
   function sayNow(speaker, text, face) {
     return new Promise(res0 => {
       const res = (v) => { pending = null; res0(v); }; pending = res;
@@ -98,9 +102,16 @@ PX.Dlg = (() => {
   async function runLines(lines, opt = {}) {
     const res = { aff: 0, tags: [] };
     const c = ctx();
-    let replied = false;
+    let replied = false, skipQ = false;
+    const capHere = () => { const G = PX.Game; return !!(G.cap && (G.cap.atDoor || (G.cap.map === G.mapId && !G.cap.hidden))); };
     for (let li = 0; li < lines.length; li++) {
       const ln = lines[li], last = li === lines.length - 1;
+      if (typeof ln === 'object' && ln.q && skipQ) continue; // 대위가 없어서 못 한 말에 딸린 선택지
+      if (typeof ln === 'string') {
+        const capLine = /^C[*^;!~]?:/.test(ln) && !opt.speaker, capNarr = /^N:.*(대위(가|는|도|의|를|에게|와|랑| 귀| 옆| 입)|\{c[가-힣]*\}|\{cg\})/.test(ln) || (St.S.capName && ln.startsWith('N:') && ln.includes(St.S.capName));
+        if ((capLine || capNarr) && !capHere()) { skipQ = true; console.warn('대위 부재로 생략:', ln); continue; }
+        if (/^[CSX]/.test(ln)) skipQ = false;
+      }
       if (typeof ln === 'object' && ln.q) {
         let q = ln.q.slice();
         if (opt.refuse) q.push(['그런 말은 좀 싫어요.', 0, null, 'hurt']);
@@ -172,6 +183,7 @@ PX.Dlg = (() => {
   async function capTalk(forceCat) {
     const S = St.S, r = S.rel.cap, G = PX.Game, D = PX.DLG_CAP;
     const cap = G.cap;
+    if (!cap || cap.map !== G.mapId || cap.hidden) return; // 없는 사람과는 대화하지 않는다
     const min = S.time.min, part = Cal.partOfDay(min);
     const firstToday = r.lastTalkDay !== S.day;
     const backoff = r.backoffUntil > St.absMin();
