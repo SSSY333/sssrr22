@@ -341,5 +341,5 @@ PX.CapAct = (() => {
     }, 500);
   }
 
-  return { ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
+  return { A, ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
 })();

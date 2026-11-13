@@ -151,7 +151,7 @@ PX.Mind = (() => {
   // 지금 이 행동을 할 수 있는가 → { ok, why }
   function where() {
     const g = G(), cap = g.cap, p = g.player;
-    if (!cap || cap.map !== g.mapId || U.dist(cap.x, cap.y, p.x, p.y) > 3.2) return null;
+    if (!cap || cap.map !== g.mapId || (U.dist(cap.x, cap.y, p.x, p.y) > 3.2 && !((PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay') && PX.MAPS[g.mapId].kind === 'in'))) return null;
     const md = PX.MAPS[g.mapId];
     const privateRoom = md.home || md.innRoom || g.mapId === 'q_captain';
     const onBed = p.seat && p.seat.obj && p.seat.obj.use === 'bed';

@@ -7895,7 +7895,7 @@ PX.CapAct = (() => {
     }, 500);
   }
 
-  return { ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
+  return { A, ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
 })();
 
 </script>
@@ -8054,7 +8054,7 @@ PX.Mind = (() => {
   // 지금 이 행동을 할 수 있는가 → { ok, why }
   function where() {
     const g = G(), cap = g.cap, p = g.player;
-    if (!cap || cap.map !== g.mapId || U.dist(cap.x, cap.y, p.x, p.y) > 3.2) return null;
+    if (!cap || cap.map !== g.mapId || (U.dist(cap.x, cap.y, p.x, p.y) > 3.2 && !((PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay') && PX.MAPS[g.mapId].kind === 'in'))) return null;
     const md = PX.MAPS[g.mapId];
     const privateRoom = md.home || md.innRoom || g.mapId === 'q_captain';
     const onBed = p.seat && p.seat.obj && p.seat.obj.use === 'bed';
@@ -9206,6 +9206,88 @@ ${memLine(S)}`;
     Game.player.leaveSeat();
     if (Game.cap.seat && (Cap.mode === 'follow' || Cap.mode === 'visit')) { if (Cap.mode === 'follow') Game.cap.leaveSeat(); }
   }
+  // 앉아서(누워서) 할 수 있는 일: 자리·장소·대위가 옆에 있는지에 따라
+  const FOODPLACE = { cafe: 'cafe', samgyup: 'samgyup', mess: 'meal', pub: 'drink', skylounge: 'cafe', arcade: 'vending', terminal: 'vending', lounge: 'vending', plaza: 'stall' };
+  async function seatMenu() {
+    const S = St.S, p = Game.player, cap = Game.cap, seat = p.seat, o = seat && seat.obj;
+    if (!o) return;
+    const m = W.maps[Game.mapId], bed = o.use === 'bed', md = PX.MAPS[Game.mapId];
+    const near = capNear(), withCap = near && (Cap.mode === 'follow' || Cap.mode === 'visit' || Cap.mode === 'stay' || cap.seat);
+    const table = m.objs.some(x => x.kind === 'furn' && /table|grill|bar/.test(x.fid) && U.dist(x.x + x.fw / 2, x.y + x.fd / 2, p.x, p.y) < 2);
+    const foods = Object.entries(S.inv || {}).filter(([id, n]) => n > 0 && PX.ITEMS[id] && PX.ITEMS[id].cat === 'food');
+    const place = FOODPLACE[Game.mapId], items = [];
+    const add = (t, fn, sub) => items.push({ t, fn, sub });
+    if (withCap) {
+      add(bed ? '💬 누워서 이야기하기' : '💬 앉은 채로 대화하기', () => Dlg.capTalk(bed && St.S.time.min >= 21 * 60 ? 'night' : undefined));
+      add('🤝 스킨십', skinMenu, bed ? '팔베개 · 껴안기 · 머리 쓰다듬기 …' : '어깨에 기대기 · 무릎베개 · 손가락 만지작 …');
+      add('😊 표정·행동으로 반응하기', reactMenu);
+    }
+    if (place && (table || Game.mapId !== 'plaza')) add(Game.mapId === 'mess' ? '🍱 배식 받기' : '🧾 주문하기', () => place === 'meal' ? meal() : place === 'drink' ? PX.Ruby.H.drink() : UI.shop(place), Game.mapId === 'mess' ? '식사 시간에만' : null);
+    if (foods.length) add(withCap ? '🍴 같이 먹기' : '🍴 가진 음식 먹기', () => eatSeated(foods, withCap), foods.slice(0, 3).map(([id]) => PX.ITEMS[id].icon + ' ' + PX.ITEMS[id].name).join(' · '));
+    if (withCap && foods.length) add('🥄 대위에게 한 입 주기', () => feedCap(foods));
+    if (withCap && (Game.mapId === 'cafe' || Game.mapId === 'skylounge')) add('🥤 대위 몫도 시켜 주기 (₢12)', treatCap);
+    if (withCap && ['pub', 'samgyup', 'skylounge', 'mess', 'cafe'].includes(Game.mapId)) add('🥂 건배하기', cheers);
+    if (!bed && md.kind === 'out' && !md.dome) add(St.isNight() ? '🌌 같이 별 보기' : '☁️ 하늘 보기', () => sky(withCap));
+    else if (!bed && md.kind === 'out') add('👀 주변 구경하기', () => look(withCap));
+    if (!bed && m.objs.some(x => x.f && x.f.use === 'tv')) add('📺 TV 보기', tv);
+    if (!bed && /sofa/.test(o.fid)) add('😪 소파에서 낮잠 (30분)', () => nap(30, withCap));
+    if (bed) {
+      if (md.home) add('😴 잠자기', sleepMenu); else add('😪 잠깐 눕기 (1시간)', () => nap(60, withCap));
+    }
+    add('📱 단말 보기', () => UI.terminal());
+    add(bed ? '⬆️ 일어나기' : '⬆️ 일어나기', standUp);
+    const it = await UI.menu(bed ? '🛏️ 침대에서' : `🪑 ${o.f ? o.f.name : '자리'}에 앉아서`, items.map(x => ({ t: x.t, sub: x.sub, k: x })));
+    if (it) return it.k.fn();
+  }
+  async function lines(ls) { Game.modal++; await Dlg.runLines(ls, { reply: true }); Dlg.close(); Game.modal--; }
+  async function pickFood(foods, title) {
+    if (foods.length === 1) return foods[0][0];
+    const it = await UI.menu(title, foods.map(([id, n]) => ({ t: `${PX.ITEMS[id].icon} ${PX.ITEMS[id].name} ×${n}`, k: id })));
+    return it ? it.k : null;
+  }
+  async function eatSeated(foods, withCap) {
+    const id = await pickFood(foods, '무엇을 먹을까요?'); if (!id) return;
+    const it = PX.ITEMS[id], S = St.S;
+    St.addItem(id, -1); S.energy = Math.min(100, S.energy + (it.energy || 5)); St.advance(15);
+    Game.player.doPose('eat', 4);
+    const drink = /커피|차$|티|소다|코코아|하이볼|음료|라테/.test(it.name);
+    if (withCap) { Game.cap.doPose(Game.cap.seat ? 'eat' : null, 4); await lines([`N:${it.icon} ${U.josa(it.name, '을')} 나눠 ${drink ? '마신다' : '먹는다'}.`, U.pickFresh('eatCap', ['C^:맛있다. 너랑 먹어서 그런가.', 'C*:한 입 더 줘. 아니, 네가 먹어. 아니, 한 입만.', 'C:천천히 먹어. 안 뺏어 먹어. …조금만.', 'C:이거 다음에 또 사 줄게. 네가 맛있게 먹으니까.', 'C*:입가에 묻었다. 가만있어.'])]); St.addAff(2); }
+    else UI.toast(`${it.icon} ${it.name} ${drink ? '마셨다' : '먹었다'} (기력 +${it.energy || 5})`);
+  }
+  async function feedCap(foods) {
+    const id = await pickFood(foods, '무엇을 한 입 줄까요?'); if (!id) return;
+    const it = PX.ITEMS[id];
+    St.addItem(id, -1);
+    Game.cap.doPose('bend', 1.6, 'smile');
+    const drink = /커피|차$|티|소다|코코아|하이볼|음료|라테/.test(it.name);
+    await lines([drink ? `N:${it.icon} ${U.josa(it.name, '을')} 대위 입가에 대 준다.` : `N:${it.icon} ${U.josa(it.name, '을')} 한 입 떠서 대위 입가에 내민다.`, ...U.pickFresh('feedCap', [['C!:…', 'N:대위가 순순히 받아먹는다.', 'C^:세상에서 제일 맛있는 한 입이었다.'], ['C*:아 해 주는 거야? 그럼 받아야지.', 'N:한입에 먹는다. 숟가락까지 먹을 기세다.'], ['C;:…사람들 보는데.', 'N:그래도 먹는다.', 'C^:맛있네. 한 번 더.']])]);
+    St.addAff(it.capLike >= 1 ? 4 : 2);
+    if (!St.S.done.feedCap) { St.S.done.feedCap = 1; Game.memory('한 입', '대위 입에 한 입 넣어 줬다. 순순히 받아먹었다.', true); }
+  }
+  async function treatCap() {
+    if (!St.spend(12)) { UI.toast('돈이 모자라요'); return; }
+    await lines([U.pickFresh('treatCap', [['N:대위 몫으로 차가운 음료를 하나 더 시킨다.', 'C!:…내 거야?', 'C^:얼음 많이 넣은 거 어떻게 알았어.'], ['N:음료를 대위 앞에 밀어 놓는다.', 'C*:사 주는 거야? 오늘 무슨 날이야?', 'C:고마워. 다음은 내가 산다. 두 번.']])].flat());
+    St.addAff(3);
+  }
+  async function cheers() {
+    St.advance(10);
+    await lines([U.pickFresh('cheers', [['N:잔을 부딪친다. 쨍.', 'C^:오늘도 무사히. 건배.'], ['C:뭐에 건배할까.', 'C*:…너한테. 됐다, 마셔.'], ['N:대위가 잔을 일부러 내 잔보다 낮게 댄다.', 'C:예의야. 너한텐 늘 낮게.']])].flat());
+    St.addAff(2);
+  }
+  async function sky(withCap) {
+    St.advance(20); St.S.energy = Math.min(100, St.S.energy + 4);
+    const night = St.isNight();
+    await lines([night ? 'N:벤치에 기대 하늘을 올려다본다. 별이 촘촘하다.' : 'N:벤치에 기대 하늘을 올려다본다. 구름이 천천히 흘러간다.', ...(withCap ? U.pickFresh('skyCap', night ? [['C:저기 밝은 거, 보급선 항로 표시등이야. 별 아니야.', 'C*:…낭만 깼지. 미안. 그래도 예쁘다.'], ['C:별 보러 외곽 나가면 이것보다 열 배는 많아.', 'C^:언젠가 데려갈게. 안전해지면.']] : [['C:구름 모양 봐. 저거 드론 같지 않아?', 'C*:…너는 뭐로 보여? 아, 고래. 그것도 맞네.'], ['C:이렇게 가만히 앉아 있는 거, 오랜만이다.']]) : [])]);
+  }
+  async function look(withCap) {
+    St.advance(15);
+    await lines(['N:오가는 사람들을 구경한다. 저마다 바쁘다.', ...(withCap ? [U.pickFresh('lookCap', ['C:사람 구경 재밌지. 다들 어디 가는 걸까.', 'C*:나는 너 구경하는 게 더 재밌는데.', 'C:저 커플 손잡고 걷는다. …우리도 저렇게 보이겠지.'])] : [])]);
+  }
+  async function nap(mins, withCap) {
+    fade(); St.advance(mins); St.S.energy = Math.min(100, St.S.energy + (mins >= 60 ? 15 : 8));
+    if (withCap) await lines([U.pickFresh('napCap', [['N:눈을 뜨니 대위가 그대로 앉아 있다.', 'C:깼어? 잘 자더라. 안 깨우고 싶었어.'], ['N:깨어 보니 대위의 겉옷이 덮여 있다.', 'C*:추워 보여서. 돌려줄 필요 없어.']])].flat());
+    else UI.toast(`💤 ${mins}분 쉬었다`);
+  }
   async function sleepMenu() {
     const S = St.S;
     const it = await UI.menu('침대', [
@@ -9501,7 +9583,9 @@ ${memLine(S)}`;
     const groups = [['walk', '걸을 때'], ['light', '가벼운 애정 표현'], ['hug', '포옹'], ['kiss', '입맞춤']];
     const items = [];
     for (const x of list) items.push({ t: `${x.a.icon} ${x.a.name}`, k: x.a.id, off: !x.ok, offMsg: x.why, sub: !x.ok ? x.why : x.a.where === 'sit' ? '앉아 있을 때' : x.a.where === 'bed' ? '침대·숙소에서' : x.a.where === 'hug' ? '포옹 중' : null, g: x.a.cat });
-    items.sort((a, b) => groups.findIndex(g => g[0] === a.g) - groups.findIndex(g => g[0] === b.g));
+    // 앉았거나 누웠으면 그 자리에서만 할 수 있는 것부터
+    const here = (x) => { const a = PX.Mind.BY[x.k]; return a && (a.where === 'bed' || a.where === 'sit') ? 0 : 1; };
+    items.sort((a, b) => here(a) - here(b) || groups.findIndex(g => g[0] === a.g) - groups.findIndex(g => g[0] === b.g));
     const it = await UI.menu(`🤝 스킨십 · 지금: ${M.NAME[M.contact()]}`, items);
     if (it) await M.perform(it.k);
   }
@@ -9636,8 +9720,27 @@ ${memLine(S)}`;
     for (const it of interactables()) { const d = U.dist(p.x, p.y, it.a ? it.a.x : it.x, it.a ? it.a.y : it.y); const lim = it.a ? 1.9 : 1.3; if (d < lim) out.push({ it, d: d - (it.a ? 0.2 : 0) }); }
     return out.sort((a, b) => a.d - b.d).map(x => x.it);
   }
-  function nearest() { const l = nearby(); return l.find(i => i.type !== 'cap') || l[0] || null; }
-  const capNear = () => Game.cap && Game.cap.map === Game.mapId && !Game.cap.hidden && U.dist(Game.cap.x, Game.cap.y, Game.player.x, Game.player.y) < 3.2;
+  // 기본 버튼 대상: 대위(전용 버튼이 있음)·걷고 있는 사람은 빼고, 바라보는 쪽을 우선, 한번 잡힌 대상은 범위를 벗어날 때까지 유지
+  const itKey = (i) => i.o ? 'o' + i.o.id + (i.type === 'door' ? 'd' : '') : i.a ? 'a' + i.a.id : i.type + i.x + ',' + i.y;
+  let actCur = null;
+  function nearest() {
+    const p = Game.player, list = [];
+    const fx = [0, 1, 0, -1][p.dir], fy = [1, 0, -1, 0][p.dir]; // 바라보는 방향 (S E N W → 타일)
+    for (const it of interactables()) {
+      if (it.type === 'cap' && capNear()) continue;
+      if (it.a && it.a.moving && it.type !== 'cap') continue;
+      const tx = it.a ? it.a.x : it.x, ty = it.a ? it.a.y : it.y, d = U.dist(p.x, p.y, tx, ty), lim = it.a ? 1.9 : 1.3;
+      if (d > lim + 0.35) continue;
+      const dot = d > 0.01 ? ((tx - p.x) * fx + (ty - p.y) * fy) / d : 1;
+      list.push({ it, d, lim, score: d + (dot > 0.3 ? 0 : 0.5) });
+    }
+    const cur = actCur && list.find(x => itKey(x.it) === actCur);
+    if (cur) return cur.it; // 아직 범위 안이면 바꾸지 않는다
+    const best = list.filter(x => x.d <= x.lim).sort((a, b) => a.score - b.score)[0];
+    actCur = best ? itKey(best.it) : null;
+    return best ? best.it : null;
+  }
+  const capNear = () => Game.cap && Game.cap.map === Game.mapId && !Game.cap.hidden && (U.dist(Game.cap.x, Game.cap.y, Game.player.x, Game.player.y) < 3.2 || ((Cap.mode === 'visit' || Cap.mode === 'stay') && W.maps[Game.mapId].kind === 'in'));
   async function pickNearby() {
     const l = nearby(); if (!l.length) return;
     const it = await UI.menu('주변 대상', l.map(i => ({ t: i.type === 'cap' ? `💗 ${St.S.capName}와(과) 대화`.replace('와(과)', U.hasBatchim(St.S.capName) ? '과' : '와') : i.label, k: i })));
@@ -9734,7 +9837,7 @@ ${memLine(S)}`;
   }
   function actionBtn() {
     if (Game.modal) return; // 대화 중엔 새 상호작용을 열지 않는다
-    if (Game.player.seat) { standUp(); return; }
+    if (Game.player.seat) { seatMenu(); return; }
     const it = nearest();
     if (it) { Game.player.stop(); if (it.cx != null) Game.player.setDirTo(it.cx, it.cy); it.fn(); }
   }
@@ -10045,9 +10148,9 @@ ${memLine(S)}`;
     document.getElementById('joy').style.visibility = Game.modal || PX.Decor.active ? 'hidden' : '';
     if (Game.modal && Game.joy && Game.joy.active) Game.joyEnd();
     if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); $('capBtns').classList.add('hidden'); $('moreBtn').classList.add('hidden'); return; }
-    if (Game.player.seat) { btn.textContent = '⬆️ 일어나기'; btn.classList.remove('hidden'); return; }
-    const l = nearby(), it = l.find(i => i.type !== 'cap') || l[0];
-    if (it) { btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
+    if (Game.player.seat) { const bed = Game.player.seat.obj && Game.player.seat.obj.use === 'bed'; btn.textContent = bed ? '🛏️ 침대에서 할 일' : '🪑 앉아서 할 일'; btn.classList.remove('hidden'); $('capBtns').classList.toggle('hidden', !capNear()); $('moreBtn').classList.add('hidden'); return; }
+    const l = nearby(), it = nearest();
+    if (it) { if (btn.textContent !== it.label) btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
     $('capBtns').classList.toggle('hidden', !capNear() || PX.Cap.onDuty() && Cap.mode !== 'follow' && !capNear());
     $('moreBtn').classList.toggle('hidden', l.length < 2);
   }
