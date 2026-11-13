@@ -65,6 +65,7 @@ PX.Ruby = (() => {
     spectator: { names: ['투영 보러 온 관람객', '데이트 중인 관람객'], talk: ['별비 투영은 뒷자리가 명당이에요.', '오늘 프로그램은 지구의 밤하늘이래요.'], amb: ['곧 시작한대.', '자리 여기 괜찮다.', '와…'] },
   });
   PX.EXTRA = PX.EXTRA || {};
+  PX.EXTRA.mbartender = { name: '가면 쓴 바텐더', look: null };
   let seq = 1;
   function spawn(m, g) {
     const def = m.def;
@@ -239,7 +240,7 @@ PX.Ruby = (() => {
     if (withCap()) {
       const cm = await PX.UI.menu('대위 가면도 골라 주기', MASKS.filter(x => x.c !== m.k.c).sort(() => Math.random() - 0.5).slice(0, 4).map(x => ({ t: x.t, k: x })));
       setMask(g.cap, cm ? cm.k.c : 'lace');
-      await lines([`N:대위가 ${PX.S.MASKS[g.cap.app.mask].name}을 쓴다. 가면이 얼굴에 비해 작아 보인다.`, 'C*:어때. 못 알아보겠지?', 'N:지나가던 바텐더가 꾸벅 인사한다. "대위님, 오셨어요."', 'C;:…가면 썼는데.']);
+      await lines([`N:대위가 ${PX.S.MASKS[g.cap.app.mask].name}을 쓴다. 가면이 얼굴에 비해 작아 보인다.`, 'C*:어때. 못 알아보겠지?', 'N:지나가던 가면 쓴 바텐더가 대위를 알아보고 꾸벅 인사한다.', 'X:mbartender:대위님, 오셨어요.', 'C;:…가면 썼는데.']);
       if (once('maskSpotted')) G().memory('가면 쓴 대위', '가면을 썼는데도 덩치 때문에 바로 들켰다.', true);
     }
   };
@@ -264,7 +265,7 @@ PX.Ruby = (() => {
   const CHANNELS = [
     { t: '🎷 옛 지구 재즈', cap: ['C:재즈 좋네. 느려서 좋아.', 'C*:이런 거 틀어 놓으면 너 말도 느려지더라. 그게 좋아.'] },
     { t: '🌧️ 빗소리', cap: ['C:돔 안엔 비가 안 오니까. 이거라도.', 'C^:지구에선 비 오는 날 창가에서 라면 먹었어. 언젠가 같이.'] },
-    { t: '📻 페르녹스 심야 라디오', cap: ['N:“…외곽 2구역 통신 복구 완료. 오늘 밤도 무사히.”', 'C:저거 우리 팀 소식이야. 들려줘서 다행이다. 무사하대.'] },
+    { t: '📻 페르녹스 심야 라디오', cap: ['N:심야 라디오에서 외곽 2구역 통신이 복구됐다는 소식이 흘러나온다.', 'C:저거 우리 팀 소식이야. 들려줘서 다행이다. 무사하대.'] },
     { t: '🎧 대위의 플레이리스트', cap: ['C;:…그거 누르지 마.', 'N:첫 곡이 흘러나온다. 내가 예전에 좋다고 했던 노래다. 두 번째 곡도, 세 번째도.', 'C*:…네가 좋다고 한 것만 모은 거야. 들켰네.'] },
   ];
   H.channel = async () => {
@@ -357,7 +358,8 @@ PX.Ruby = (() => {
   ];
   H.rumor = async () => {
     const S = St.S, r = U.pick(RUMORS);
-    await lines(['N:옆자리에서 낮은 목소리가 들린다.', `N:“${r[0]}”`]);
+    PX.EXTRA.rumorer = { name: '옆자리 손님', look: null };
+    await lines(['N:옆자리에서 낮은 목소리가 들린다.', `X:rumorer:${r[0]}`]);
     if (!withCap()) return;
     if (r[1]) await lines([r[1]]);
     else await lines(S.rel.cap.stage >= 4 ? ['C^:…그건 사실.', 'C*:누군지도 알려 줄까? 지금 내 앞에 있는데.'] : ['C;:…누가 그래?', 'C:헛소문이야. 아직은.']);

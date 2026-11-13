@@ -100,7 +100,7 @@ PX.Dlg = (() => {
         if (pick[2]) { const r = await runLines(pick[2]); res.aff += r.aff; res.tags.push(...r.tags); }
         continue;
       }
-      const xm = /^X:([a-z0-9_]+):(.*)$/.exec(ln);
+      const xm = /^[XS]:([a-z0-9_]+):(.*)$/.exec(ln); // X: 이름 없는 사람 · S: NPC — 나레이션이 남의 말을 대신하지 않게 화자를 따로 둔다
       if (xm) { await say(xm[1], U.fmt(xm[2], c)); continue; }
       const m = /^([CPN])([*^;!~]?):(.*)$/.exec(ln);
       if (!m) { await say('narr', U.fmt(ln, c)); continue; }

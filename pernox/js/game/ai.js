@@ -74,7 +74,7 @@ ${p}(${PX.JOBS[S.player.job].ko})에게 첫눈에 반했고, 처음 만난 지 1
 - 한 번에 1~2문장. 길게 설명하지 않는다. "하하/ㅋㅋ" 같은 웃음소리, 과한 감탄사 금지.
 - 모르는 건 모른다고 한다. 군사 기밀은 말하지 않는다. 연애 감정을 플레이어에게 드러내지 않는다(플레이어의 연애 상대는 대위다).
 - 노골적인 성적 표현, 폭력 미화, 혐오 표현은 하지 않는다. 게임 세계에 없는 현대 지구 고유명사는 피한다.
-- 플레이어의 대사를 대신 쓰지 않는다. 오직 ${d.name}의 말과 짧은 행동만.`;
+- 플레이어의 대사를 대신 쓰지 않는다. 오직 ${d.name}의 말과 짧은 행동만. 행동 묘사 "(…)"에는 대사를 옮기지 않고 따옴표를 쓰지 않는다. 앞에 이름을 붙이지 않는다.`;
   }
   const ACT_KO = { workout: '운동 중', cook: '조리 중', eat: '식사 중', grill: '불판 앞에서 일하는 중', shop: '가게를 보는 중', guard: '경계 근무 중', work_cmd: '지휘 업무 중', work_med: '의무동 근무 중', work_ops: '작전동 근무 중', work_hangar: '정비 중', work_lab: '연구 중', work_comms: '통신 근무 중', work_admin: '행정 업무 중', game: '오락기 하는 중', cafe: '카페에서 쉬는 중', rest: '쉬는 중', stroll: '걷는 중', sleep: '자는 중' };
   function npcSituation(S, npc) {
@@ -143,6 +143,8 @@ ${memLine(S)}`;
   const FORMAT = `[답 형식] 아래 JSON 하나로만 답한다.
 {"lines":[{"face":"normal|smile|smirk|sad|surprise","text":"대사"}],"action":"none|pat|hug|hand|backoff","aff":정수}
 - lines: ${'${C}'}의 말 1~3개. 짧은 행동 묘사가 필요하면 text를 "(…)"로 감싼다. 각 text 60자 이내.
+- 행동 묘사 "(…)"에는 행동과 표정만 쓴다. 대사를 다시 옮기거나 "~라고 말한다"처럼 말을 요약하지 않는다. 따옴표를 쓰지 않는다.
+- text 앞에 이름("이름: ")을 붙이지 않는다. 플레이어나 다른 사람의 말·행동을 대신 쓰지 않는다. 플레이어가 한 말을 그대로 따라 하지 않는다.
 - action: 대사와 함께 일어나는 행동. 플레이어가 원하거나 자연스러울 때만 pat(머리 쓰다듬기)/hug(포옹, 썸 이상)/hand(손잡기, 썸 이상). 플레이어가 싫다고 했으면 backoff.
 - aff: 이번 대화로 플레이어와 가까워진 정도 -3~5 (평범하면 1, 다정하거나 즐거우면 2~4, 플레이어가 상처받았으면 음수).`;
 
@@ -159,7 +161,7 @@ ${memLine(S)}`;
     turns.push({ role: 'user', content: `${S.player.name}: ${text}` });
     // 연속된 user 턴은 그대로 둬도 된다 (런타임이 하나로 읽음)
     const out = await sample.json(turns, { cache: false, modelTier: 'default' });
-    const lines = Array.isArray(out && out.lines) ? out.lines.filter(l => l && typeof l.text === 'string' && l.text.trim()).slice(0, 3) : [];
+    const lines = clean(out, S.capName, text, 3);
     if (!lines.length) throw { code: 'invalid_json' };
     log.push({ r: 'p', t: text, d: S.day });
     log.push({ r: 'c', t: lines.map(l => l.text).join(' '), d: S.day });
@@ -173,11 +175,39 @@ ${memLine(S)}`;
     for (const t of log.slice(-10)) turns.push({ role: t.r === 'p' ? 'user' : 'assistant', content: t.r === 'p' ? t.t : JSON.stringify({ lines: [{ face: 'normal', text: t.t }] }) });
     turns.push({ role: 'user', content: `${S.player.name}: ${text}` });
     const out = await sample.json(turns, { cache: false, modelTier: 'default' });
-    const lines = Array.isArray(out && out.lines) ? out.lines.filter(l => l && typeof l.text === 'string' && l.text.trim()).slice(0, 2) : [];
+    const lines = clean(out, npc.def.name, text, 2);
     if (!lines.length) throw { code: 'invalid_json' };
     log.push({ r: 'p', t: text }); log.push({ r: 'c', t: lines.map(l => l.text).join(' ') });
     if (log.length > 12) log.splice(0, log.length - 12);
     return { lines, action: 'none', aff: U.clamp(Math.round(Number(out.aff) || 0), -1, 2) };
+  }
+  // AI 대답 정리: 화자는 언제나 그 인물 하나. 남의 이름이 붙은 줄·남의 행동·대사를 되풀이하는 묘사는 버린다
+  function clean(out, who, playerText, max) {
+    const S = St.S, me = U.givenName(who), pname = S.player.name, pg = U.givenName(pname);
+    const others = [pname, pg, ...PX.NPCS.filter(n => n.id !== 'cap').map(n => n.name)].filter(n => n && n !== who);
+    const norm = (t) => t.replace(/[\s.,!?…~'"“”‘’()]/g, '');
+    let ls = Array.isArray(out && out.lines) ? out.lines.filter(l => l && typeof l.text === 'string' && l.text.trim()) : [];
+    ls = ls.map(l => {
+      let t = l.text.trim();
+      const pm = /^([^:：(]{1,10})\s*[:：]\s*(.+)$/.exec(t); // "이름: 대사"
+      if (pm) { if (pm[1].includes(me) || who.includes(pm[1].trim())) t = pm[2].trim(); else return null; }
+      t = t.replace(/^["“](.*)["”]$/, '$1');
+      return Object.assign({}, l, { text: t });
+    }).filter(Boolean);
+    const spoken = ls.filter(l => !/^\(.*\)$/.test(l.text)).map(l => norm(l.text));
+    ls = ls.filter(l => {
+      const t = l.text;
+      if (norm(t) && norm(t) === norm(playerText || '')) return false; // 플레이어 말 따라 하기
+      if (!/^\(.*\)$/.test(t)) return true;
+      const inner = t.slice(1, -1);
+      if (/["“”'‘’]|(라|다|냐|자)(며|고)\s|(라|다|냐|자)(며|고)$|하고 (말|묻)|며 말한다|말한다$|묻는다$|대답한다$/.test(inner)) return false; // 묘사가 대사를 옮김
+      if (others.some(n => inner.startsWith(n))) return false; // 남(특히 플레이어)의 행동을 대신 씀
+      const ni = norm(inner); if (spoken.some(sp => sp.length > 3 && (ni.includes(sp) || sp.includes(ni)))) return false; // 같은 말 되풀이
+      return true;
+    });
+    // 같은 줄 두 번 금지
+    const seen = new Set(); ls = ls.filter(l => { const k = norm(l.text); if (seen.has(k)) return false; seen.add(k); return true; });
+    return ls.slice(0, max);
   }
   function errText(e) {
     const c = e && e.code;
@@ -249,5 +279,5 @@ ${memLine(S)}`;
     St.addAff(U.clamp(res.aff, -2, 3));
     return res.lines.map(l => l.text).join(' ');
   }
-  return { available, chat, replyMsg, npcBible, bible, get ready() { return ready; } };
+  return { available, chat, replyMsg, npcBible, bible, clean, get ready() { return ready; } };
 })();

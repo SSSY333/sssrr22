@@ -220,10 +220,10 @@ PX.Rom = (() => {
     PX.Cap.moveTo('base'); g.cap.x = p.x + 1; g.cap.y = p.y; PX.Cap.mode = 'follow';
     fireworks(8);
     g.modal++;
-    await PX.Dlg.runLines(['N:연병장에 부대원들이 모였다. 다들 처음 보는 단정한 차림이다.', 'N:강태욱 중령이 앞에 선다. 오늘은 지휘관이 아니라 주례다.', `N:"${S.capName} 대위. 이 사람을 평생 지키겠나." "예. 목숨 걸고." "목숨은 걸지 말고. 오래 살아서 지켜라."`, 'N:웃음이 터진다. 이준혁이 휘파람을 분다.', 'C:…네 차례야.']);
+    await PX.Dlg.runLines(['N:연병장에 부대원들이 모였다. 다들 처음 보는 단정한 차림이다.', 'N:강태욱 중령이 앞에 선다. 오늘은 지휘관이 아니라 주례다.', `S:kang:${S.capName} 대위. 이 사람을 평생 지키겠나.`, 'C:예. 목숨 걸고.', 'S:kang:목숨은 걸지 말고. 오래 살아서 지켜라.', 'N:웃음이 터진다. 이준혁이 휘파람을 분다.', 'C:…네 차례야.']);
     const i = await PX.Dlg.choose([{ t: '평생 옆에 있을게요.' }, { t: '오래 살아서 같이 늙어요.' }]);
     await PX.Dlg.say('player', i === 0 ? '평생 옆에 있을게요.' : '오래 살아서 같이 늙어요.', 'blush');
-    await PX.Dlg.runLines(['C^:…그 말 평생 기억할게.', 'N:대위가 허리를 숙인다. 부대원들의 환호 속에서 짧고 긴 입맞춤.', 'N:최민재가 "이제 밥 먹어요?"라고 묻는다. 남기철 조리장이 특식을 준비해 뒀다.']);
+    await PX.Dlg.runLines(['C^:…그 말 평생 기억할게.', 'N:대위가 허리를 숙인다. 부대원들의 환호 속에서 짧고 긴 입맞춤.', 'S:choi:이제 밥 먹어요?', 'N:남기철 조리장이 특식을 준비해 뒀다.']);
     PX.Dlg.close(); g.modal--;
     r.stage = 7; S.marriedDay = S.day; S.wedding.state = 'done'; St.addAff(30);
     guests.forEach(id => { const n = g.npcs.find(n => n.id === id); if (n) n.busy = false; });
@@ -248,7 +248,7 @@ PX.Rom = (() => {
     if (t >= 22 * 60 + 30 && g.mapId === home && !['visit', 'stay', 'follow'].includes(PX.Cap.mode) && S.done.cohabDay !== S.day) {
       S.done.cohabDay = S.day;
       PX.Cap.moveTo(home, PX.MAPS[home].parent); PX.Cap.mode = 'visit';
-      g.trigger(() => lines([U.pick(['N:문이 열린다. "다녀왔어."', 'N:익숙한 발소리. 문틀에 머리 박는 소리. "…다녀왔어."']), U.pick(['C:오늘 하루 어땠어?', 'C^:집에 오니까 네가 있네. 이게 제일 좋아.', 'C*:씻고 올게. 기다려. 아니, 먼저 자도 돼. 깨울 거지만.'])]));
+      g.trigger(() => lines([...U.pick([['N:문이 열린다.', 'C:다녀왔어.'], ['N:익숙한 발소리. 문틀에 머리 박는 소리.', 'C;:…다녀왔어.']]), U.pick(['C:오늘 하루 어땠어?', 'C^:집에 오니까 네가 있네. 이게 제일 좋아.', 'C*:씻고 올게. 기다려. 아니, 먼저 자도 돼. 깨울 거지만.'])]));
     }
   }
   // 기념일: 연인 100·200·300·365·500·1000일, 결혼 1주년마다 (그날 첫 대화)
