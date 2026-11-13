@@ -93,6 +93,22 @@ ${q ? `부탁해 둔 것: ${PX.ITEMS[q.item].name}을 구해 달라고 했다.\n
 - lines: 1~2개. 짧은 행동 묘사가 필요하면 text를 "(…)"로 감싼다. 각 text 60자 이내.
 - aff: 이번 대화로 친해진 정도 -1~2 (평범하면 0 또는 1).`;
 
+  // 단기 기억 · 접촉 · 장기작전 · 약속 → 대위가 방금 일을 기억하고 맞게 말하도록
+  function memLine(S) {
+    const M = PX.Mind; if (!M) return '';
+    const m = M.mem(), g = M.gap(), ct = M.contact(), o = S.cap.op, R = PX.Rom;
+    const gapKo = g < 2 ? '방금 전까지 이야기하던 중(인사하지 말고 이어서 말할 것)' : g < 15 ? '몇 분 전에 이야기함(오랜만이라고 하지 말 것)' : g < 60 ? '한 시간 안에 봄' : g < 360 ? '몇 시간 만' : g < 1440 ? '하루 가까이 못 봄' : '며칠 못 봄';
+    const out = [`마지막 대화·만남: ${gapKo}`, `지금 접촉 상태: ${M.NAME[ct]}${ct !== 'NONE' ? ' (이미 하고 있으니 같은 걸 다시 제안하지 말 것)' : ''}`];
+    if (m.skin && St.absMin() - m.skinMin < 30) out.push(`방금 한 스킨십: ${(M.BY[m.skin] || {}).name || m.skin}`);
+    const ref = Object.entries(m.refused || {}).filter(([, t]) => t > St.absMin()).map(([k]) => k);
+    if (ref.length) out.push(`플레이어가 최근 거절한 것: ${ref.join(', ')} (다시 조르지 말 것)`);
+    if (o && o.phase === 'planned') out.push(`장기작전 예정: ${o.days}일${o.joint ? ' (플레이어도 함께 투입)' : ''}`);
+    if (o && o.phase === 'away' && o.joint) out.push(`지금 합동 장기작전 중 (${o.area}). 작전 중엔 상관과 부하로서 짧게, 그래도 다정하게`);
+    if (m.reunion) out.push('장기작전에서 막 돌아와 처음 만나는 중');
+    const d = R && R.nextDate(); if (d) out.push(`데이트 약속: ${R.dayKo(d.day)} ${Cal.fmtTime(d.min)} ${d.name}${d.state === 'on' ? ' (지금 데이트 중)' : ''}`);
+    if (S.rel.cap.stage === 6) out.push('플레이어와 약혼한 사이'); if (S.rel.cap.stage === 7) out.push(`플레이어와 결혼한 부부${S.cap.cohab ? ', 플레이어 숙소에서 같이 산다' : ''}`);
+    return out.join('\n');
+  }
   function situation(S, mode) {
     const G = PX.Game, m = PX.MAPS[G.mapId], r = S.rel.cap;
     const ev = Cal.eventsOn(S.time).map(e => `${e.originalTitle}(${e.location}${e.startTime ? ' ' + e.startTime + '~' + e.endTime : ''})`);
@@ -110,7 +126,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
 근처 사람: ${who.join(', ') || '없음'}
 오늘 행사: ${ev.join(', ') || '없음'}
 오늘 행사 자세히: ${evFull.join(' / ') || '-'}
-최근 추억: ${mem.join(' / ') || '-'}`;
+최근 추억: ${mem.join(' / ') || '-'}
+${memLine(S)}`;
   }
   // 로어북 색인 (성인 항목 제외) — 대위가 장소·행사를 자연스럽게 언급할 수 있게
   let loreIdx = null;

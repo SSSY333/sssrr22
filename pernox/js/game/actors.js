@@ -60,8 +60,12 @@ PX.A = (() => {
     frameInfo() {
       let pose = this.tempPose || this.pose;
       let fr = 0;
-      if (this.moving && !this.tempPose) { pose = this.holding ? (this.holdSide < 0 ? 'walkholdL' : 'walkhold') : 'walk'; fr = Math.floor(this.t * 8) % 4; }
-      else if (pose === 'idle' || pose === 'stand') { pose = this.holding ? (this.holdSide < 0 ? 'holdL' : 'hold') : 'idle'; fr = Math.floor(this.t * 1.6) % 2; }
+      // 접촉 중인 상대가 화면에서 어느 쪽에 있는지로 팔 방향을 정한다 (좌우 반전된 그림이면 반대로)
+      const gr = this.holding ? (this.grip || 'hand') : null;
+      let side = this.holdSide < 0 ? 'L' : 'R';
+      if (gr && this.holdWith) { const dxs = (this.holdWith.x - this.holdWith.y) - (this.x - this.y); side = dxs >= 0 ? 'R' : 'L'; if (DIR_FLIP[this.dir]) side = side === 'R' ? 'L' : 'R'; }
+      if (this.moving && !this.tempPose) { pose = gr ? `gw_${gr}_${side}` : 'walk'; fr = Math.floor(this.t * 8) % 4; }
+      else if (pose === 'idle' || pose === 'stand') { pose = gr ? `gi_${gr}_${side}` : 'idle'; fr = Math.floor(this.t * 1.6) % 2; }
       else if (['work', 'workout', 'eat', 'wave', 'hug', 'carry', 'pat'].includes(pose)) fr = Math.floor(this.t * 3) % 2;
       let face = this.tempFace || this.face;
       if (face === 'normal' && this.blinkT < 0) face = 'sleep';
@@ -200,6 +204,7 @@ PX.A = (() => {
     unstick() { const m = PX.W.maps[this.map]; const t = PX.Path.nearestWalkable(m, this.x, this.y); if (t) { this.x = t[0] + 0.5; this.y = t[1] + 0.5; } }
     think(S, playerMap) {
       if (this.busy) return;
+      if (PX.Op && PX.Op.isAway(this.id) && !PX.Op.inField()) { this.map = null; return; } // 장기작전 나간 수색팀
       const d = this.desired(S);
       const visible = this.map === playerMap;
       if (!visible) { // 보이지 않으면 순간이동

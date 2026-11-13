@@ -18,6 +18,7 @@ PX.Act = (() => {
   // ---------- 이동 ----------
   async function travelMenu() {
     const g = G(), S = St.S, md = PX.MAPS[g.mapId];
+    if (PX.Op && PX.Op.inField()) return PX.Op.board(); // 합동작전 중: 작전 일과
     const list = (md.travel || []).filter(t => PX.MAPS[t.to]);
     if (!list.length) { PX.UI.toast('이곳에서는 다른 곳으로 갈 수 없어요'); return; }
     const it = await PX.UI.menu(`${md.name} · 이동`, list.map(t => ({ t: t.label, sub: `${t.mins >= 60 ? Math.round(t.mins / 60) + '시간' : t.mins + '분'}${t.need === 'scout' ? ' · 수색팀 소속이거나 대위와 동행할 때' : t.need === 'adult' ? ' · 성인만' : ''}`, k: t })));

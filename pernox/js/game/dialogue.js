@@ -9,7 +9,7 @@ PX.Dlg = (() => {
     nameEl = box.querySelector('.dname'); textEl = box.querySelector('.dtext'); chEl = document.getElementById('choices');
     portEl = box.querySelector('canvas'); nextEl = box.querySelector('.dnext');
   }
-  const ctx = () => ({ p: St.S.player.name, c: St.S.capName, rival: St.S.lastRival || '' });
+  const ctx = () => { const S = St.S, r = S.rel.cap, op = S.cap.op; return { p: S.player.name, c: S.capName, rival: S.lastRival || '', days: op ? op.days : 3, n: r.loverSince != null ? S.day - r.loverSince : 100 }; };
 
   function portrait(speaker, face) {
     const g = portEl.getContext('2d');
@@ -137,6 +137,9 @@ PX.Dlg = (() => {
       return true;
     });
     if (!ok.length) return null;
+    // 기억 검사: 실제로 오래 떨어진 게 아니면 '오랜만' 류 금지 · 같은 표현(보고 싶어·귀여워·안아 줄까…)은 한동안 쉬게
+    const M = PX.Mind, txt = (bd) => (bd.l || bd).filter ? (bd.l || bd).filter(x => typeof x === 'string').join(' ') : '';
+    if (M) { const ok2 = ok.filter(({ bd }) => M.textOk(txt(bd))); if (ok2.length) ok.splice(0, ok.length, ...ok2); else if (ok.some(({ bd }) => /오랜만|어디 갔다 왔|한참 찾았|하루 종일 기다/.test(txt(bd)))) return null; }
     const used = S.recent;
     const fresh = ok.filter(({ i }) => !(used[cat + i] && S.day - used[cat + i] < 4));
     // 조건이 붙은 묶음(날씨·행사 등)을 조금 더 자주
@@ -145,6 +148,7 @@ PX.Dlg = (() => {
     for (const p of pool) { weighted.push(p); if (p.bd.w || p.bd.event || p.bd.job || p.bd.t) weighted.push(p, p); }
     const chosen = U.pick(weighted);
     used[cat + chosen.i] = S.day;
+    if (M) { M.notePhrases(txt(chosen.bd)); M.noteLine(cat + '#' + chosen.i); }
     return chosen.bd;
   }
 
@@ -157,14 +161,25 @@ PX.Dlg = (() => {
     const backoff = r.backoffUntil > St.absMin();
     let cat = forceCat;
     const duty = PX.Cap.onDuty();
+    // 마지막 대화·만남 이후 흐른 시간과 지금 접촉 상태를 먼저 본다 (방금 얘기한 사람한테 '오랜만'이라고 하지 않게)
+    const M = PX.Mind, V = PX.DLG_V2 || {}, gc = M ? M.gapCat() : 'again', ct = M ? M.contact() : 'NONE';
     if (!cat) {
       if (duty && PX.Cap.atPlayerWork()) cat = 'jobVisit';
       else if (duty && !PX.Cap.isMeal()) cat = 'working';
-      else if (firstToday) cat = part === 'morning' ? 'morning' : part === 'noon' ? 'lunch' : (min >= 17 * 60 && min < 21 * 60) ? 'offwork' : part === 'night' ? 'night' : 'greet';
+      else if (gc === 'reunion') cat = 'v:reunion';
+      else if (S.cap.op && S.cap.op.phase === 'planned' && !S.cap.op.inPerson) { S.cap.op.inPerson = true; S.cap.op.told = true; cat = S.cap.op.joint ? 'v:opJoint' : 'v:opBefore'; }
+      else if ((gc === 'cont' || gc === 'brief') && Math.random() < 0.55) cat = 'v:' + gc;
+      else if (gc === 'recontact' && Math.random() < 0.4) cat = 'v:recontact';
+      else if (gc === 'long' || gc === 'miss') cat = 'v:' + gc;
+      else if (gc === 'again' && Math.random() < 0.45) cat = 'v:again';
+      else if (ct !== 'NONE' && Math.random() < 0.45) cat = M.isHug() ? 'v:c_hug' : ct === 'HAND_HOLD' ? 'v:c_hand' : ct === 'WAIST_HOLD' ? 'v:c_waist' : 'v:c_walk';
+      else if (PX.Cap.mode === 'follow' && Math.random() < 0.2) cat = 'v:c_walk';
+      else if (firstToday && gc === 'again') cat = part === 'morning' ? 'morning' : part === 'noon' ? 'lunch' : (min >= 17 * 60 && min < 21 * 60) ? 'offwork' : part === 'night' ? 'night' : 'greet';
       else if (S.lastRival && St.absMin() - S.lastRivalMin < 90 && !backoff && Math.random() < 0.6) cat = 'jealousy';
       else if ((S.energy < 30 || ['dust', 'rain'].includes(St.weather())) && Math.random() < 0.4) cat = 'worry';
       else {
-        const opts = backoff ? ['greet', 'praise', 'worry', 'dateAsk'] : ['tease', 'tease', 'praise', 'aegyo', 'flirt', 'greet', 'dateAsk', 'aegyo'];
+        const opts = backoff ? ['praise', 'worry', 'dateAsk'] : ['tease', 'tease', 'praise', 'aegyo', 'flirt', 'dateAsk', 'aegyo'];
+        if (gc === 'again') opts.push('greet');
         if (!backoff && r.stage >= 2) opts.push('explicit', 'flirt');
         if (part === 'night') opts.push('night');
         cat = U.pick(opts);
@@ -173,9 +188,10 @@ PX.Dlg = (() => {
         else if (X && Math.random() < 0.22) cat = 'small';
       }
     }
-    let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
-    if (!forceCat && !firstToday && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
-    if (!bd) bd = pick('greet', D.greet);
+    let bd = cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
+    if (cat === 'v:reunion' && M) M.mem().reunion = null;
+    if (!forceCat && !cat.startsWith('v:') && cat !== 'jobVisit' && cat !== 'working' && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
+    if (!bd) bd = pick('small', PX.DLG_CAP2.small) || pick('praise', D.praise);
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
@@ -185,6 +201,7 @@ PX.Dlg = (() => {
     if (firstToday) { gain += 4; r.talksToday = 0; }
     else if (r.talksToday < 5) gain += 1;
     r.talksToday++; r.lastTalkDay = S.day; S.stats.talks++;
+    if (M) M.noteTalk(cat);
     if (res.tags.includes('hurt')) { await apology(); }
     else if (res.tags.includes('alone')) { r.noFollowUntil = nextMorning(); PX.Cap.release(); }
     St.addAff(gain);

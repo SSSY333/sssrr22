@@ -227,6 +227,16 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .sheet-wrap.kbtop { align-items: flex-start; padding-top: calc(var(--safe-t) + 12px); }
 .sheet-wrap.kbtop .sheet { border-radius: 18px; border-bottom: 3px solid var(--line); max-height: 46vh; }
 
+/* 오른쪽 아래: 기본 상호작용 위에 대위 전용 버튼 · 주변 대상 고르기 */
+#capBtns { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(104px + var(--safe-b)); display: flex; gap: 8px; pointer-events: auto; }
+#capBtns button, #moreBtn { width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--line); background: var(--panel2); font-size: 22px; box-shadow: 0 3px 0 var(--line); }
+#capBtns button#talkBtn { background: #ffd1e6; }
+#moreBtn { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(104px + var(--safe-b)); pointer-events: auto; font-size: 24px; line-height: 1; }
+#capBtns:not(.hidden) ~ #moreBtn { bottom: calc(166px + var(--safe-b)); }
+.chip-cap .ct { margin-left: 6px; }
+
+.msgph { display: block; width: 180px; max-width: 70%; margin: 6px 0 0; border-radius: 8px; border: 2px solid var(--line); image-rendering: pixelated; }
+
 </style>
 <canvas id="game"></canvas>
   <div id="labels"></div>
@@ -274,6 +284,8 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
       <button id="decorBtn" aria-label="꾸미기 · 맵 편집">🛋️</button>
     </div>
     <button id="actBtn" class="hidden"></button>
+    <div id="capBtns" class="hidden"><button id="talkBtn" aria-label="대위와 대화">💬</button><button id="skinBtn" aria-label="스킨십">🤝</button></div>
+    <button id="moreBtn" class="hidden" aria-label="주변 대상 고르기">⋯</button>
     <div id="joy" class="hidden" aria-label="이동 조이스틱 (끝까지 밀면 달리기)"><div id="knob"></div></div>
     <div class="zoom"><button id="zoomIn" aria-label="확대">＋</button><button id="zoomOut" aria-label="축소">－</button></div>
   </div>
@@ -377,6 +389,7 @@ PX.U = (() => {
       const w = who === 'p' ? givenName(ctx.p) : who === 'pf' ? ctx.p : who === 'cg' ? givenName(ctx.c) : who === 'c' ? ctx.c : (ctx.rival || '그 사람');
       return j ? josa(w, j) : w;
     });
+    t = t.replace(/\{(days|n)\}/g, (_, k) => ctx[k] != null ? ctx[k] : '');
     return t;
   }
 
@@ -1337,7 +1350,9 @@ PX.S = (() => {
     const cx = B.ax;
     let footY = B.ay;
     const sit = pose === 'sit' || pose === 'eat';
-    const walk = pose === 'walk' || pose === 'walkhold' || pose === 'walkholdL';
+    // gw_<grip>_<L|R> = 걸으며 접촉, gi_… = 서서 접촉 (grip: hand 손 · arm 팔짱 · waist 허리 · shoulder 어깨 · free 접촉 없이 나란히)
+    const gp = /^g([wi])_(\w+)_([LR])$/.exec(pose);
+    const walk = pose === 'walk' || pose === 'walkhold' || pose === 'walkholdL' || (gp && gp[1] === 'w');
     const phase = walk ? [0, 1, 0, -1][fr % 4] : 0;
     const bob = walk ? (fr % 2) : (pose === 'idle' ? (fr % 2) : 0);
     // 다리
@@ -1402,7 +1417,7 @@ PX.S = (() => {
       };
       const L = tx - aw, Rr = tx + B.tw, alen = B.th - 1;
       const swing = walk ? phase : 0;
-      const armPose = pose === 'walkhold' ? 'hold' : pose === 'walkholdL' ? 'holdL' : pose;
+      const armPose = pose === 'walkhold' ? 'hold' : pose === 'walkholdL' ? 'holdL' : gp ? 'grip' : pose;
       switch (armPose) {
         case 'wave': arm(L, ay0 + swing, alen, 0); arm(Rr, ay0, alen, 2); R(Rr - 1, ay0 - alen - 2 - (fr % 2), aw + 2, 2, skin); break;
         case 'hug': case 'carry': case 'work': {
@@ -1410,6 +1425,18 @@ PX.S = (() => {
           R(L + 1, ay0 + 2 - o, aw + 2, aw + 1, sleeveLen ? slv : skin); R(Rr - 3, ay0 + 2 + o, aw + 2, aw + 1, sleeveLen ? slv : skin);
           R(tx + 1, ay0 + 4 - o, 3, 2, skin); R(tx + B.tw - 4, ay0 + 4 + o, 3, 2, skin);
           if (pose === 'carry') R(tx - 1, ay0 + 1, B.tw + 2, 5, '#c9a86a');
+          break;
+        }
+        case 'grip': { // 접촉 자세: 상대 쪽 팔만 바뀐다
+          const right = gp[3] === 'R', near = right ? Rr : L, far = right ? L : Rr, g2 = gp[2];
+          arm(far, ay0 + Math.max(0, right ? -swing : swing), alen, 0);
+          // 큰 체격(대위)은 상대가 작으니 팔을 내려서 상대의 손·허리·어깨 높이에 맞춘다
+          const big = !!app.big, sl = sleeveLen ? slv : skin, hx2 = (w) => right ? near + aw : near - w;
+          if (g2 === 'hand') { if (big) { arm(near, ay0, alen - 2, 0); R(hx2(4), ay0 + alen - 3, 4, aw - 1, skin); } else arm(near, ay0 + 3, 4, 3); }
+          else if (g2 === 'arm') { arm(near, ay0 + 1, 3, 3); R(right ? near + 3 : near - 3 - aw + 1, ay0 - 1, aw, 4, skin); }
+          else if (g2 === 'waist') { if (big) { R(near, ay0, aw, 11, sl); R(hx2(9), ay0 + 10, 9, aw, sl); R(hx2(9) + (right ? 7 : 0), ay0 + 10, 2, aw, skin); } else arm(near, ay0 + 5, 8, 3); }
+          else if (g2 === 'shoulder') { if (big) { R(near, ay0, aw, 6, sl); R(hx2(10), ay0 + 5, 10, aw, sl); R(hx2(10) + (right ? 8 : 0), ay0 + 5, 2, aw, skin); } else { R(right ? near : near - aw, ay0 - 3, aw, 4, sl); arm(near, ay0 - 3, 8, 3); } }
+          else arm(near, ay0 + Math.max(0, right ? swing : -swing), alen, 0);
           break;
         }
         case 'hold': arm(L, ay0, alen, 0); arm(Rr, ay0 + 3, 4, 3); break;
@@ -2445,6 +2472,7 @@ PX.S = (() => {
   it('book', { name: '페르녹스 생태도감 (보급판)', price: 30, capLike: 0, icon: '📗', desc: '외계 생물 그림이 가득하다.' });
   it('rubyrose', { name: '루비 장미', price: 8, capLike: 1, icon: '🌹', desc: '루비웨이 노점의 붉은 장미 한 송이.' });
   it('rosebunch', { name: '루비 장미 다발', price: 30, capLike: 1, icon: '💐', desc: '네온 아래서 더 붉게 보이는 장미 다발.' });
+  it('ring', { name: '은하 결정 반지', price: 320, capLike: 2, icon: '💍', desc: '제4행성 광물을 깎아 만든 반지. 마음을 전할 때.' });
   it('perfume', { name: '향열매 향수', price: 55, capLike: 1, icon: '🧴', desc: '은은하고 시원한 향.' });
   it('pass', { name: '606부대 출입 허가증', cat: 'key', price: 0, icon: '🪪', desc: '민간인이 부대 시설에 들어갈 때 필요하다.' });
   it('capStone', { name: '대위가 주운 이상한 돌', cat: 'gift', price: 0, capLike: 0, icon: '🪨', desc: '"네가 좋아할 것 같아서." 반짝이는 줄무늬가 있다.', noGift: true });
@@ -2493,14 +2521,14 @@ PX.S = (() => {
     px: { name: '보급창고 PX', clerk: 'song', items: ['coffee', 'hotchoco', 'protein', 'ramen', 'samgyup', 'earthSnack', 'iceDessert', 'handfan', 'hotpack', 'toolkit', 'patch', 'mineral', 'f_plant', 'f_bigplant', 'f_lamp', 'f_rug', 'f_rug_blue', 'f_sidetable', 'f_cabinet', 'f_chair', 'f_stool', 'f_sofa', 'f_sofa_green', 'f_table', 'f_desk', 'f_shelf', 'f_mirror', 'f_cooler', 'f_tv', 'f_aquarium', 'f_bigbed', 'f_wardrobe'] },
     cafe: { name: '향열매 카페', clerk: 'shin', items: ['coffee', 'fruitTea', 'iceDessert', 'hotchoco', 'earthSnack', 'glassflower', 'perfume', 'book', 'f_cafetable', 'f_plant'] },
     samgyup: { name: '냉삼집 포장 코너', clerk: 'moon', items: ['samgyupMeal', 'ramen', 'coffee'] },
-    flower: { name: '유리돔 꽃시장', clerk: 'go', items: ['bouquet', 'glassflower', 'perfume', 'f_glassvase', 'f_plant', 'f_bigplant'] },
+    flower: { name: '유리돔 꽃시장', clerk: 'go', items: ['bouquet', 'glassflower', 'perfume', 'ring', 'f_glassvase', 'f_plant', 'f_bigplant'] },
     arcade: { name: '오락실 카운터', items: ['earthSnack', 'iceDessert', 'coffee'] },
     festival: { name: '축제 · 야시장 매대', items: ['skewer', 'fruitIce', 'earthSnack', 'iceDessert', 'festivalBadge', 'glassflower'] },
     farm: { name: '농업돔 매대', items: ['fruitTea', 'rawfruit', 'fruitIce', 'f_plant'] },
     souvenir: { name: '관람언덕 기념품 매대', items: ['souvenir', 'glassflower', 'coffee', 'iceDessert'] },
     beach: { name: '해변 매점', items: ['fruitIce', 'iceDessert', 'coffee', 'skewer'] },
     seafood: { name: '해양도시 매대', items: ['seafood', 'iceDessert', 'souvenir'] },
-    mineral: { name: '광물도시 매대', items: ['mineral', 'mineralSalt', 'protein', 'souvenir'] },
+    mineral: { name: '광물도시 매대', items: ['mineral', 'mineralSalt', 'ring', 'protein', 'souvenir'] },
     smoked: { name: '냉훈제거리', items: ['smoked', 'hotchoco', 'iceDessert', 'souvenir'] },
     vending: { name: '자판기', items: ['coffee', 'hotchoco', 'protein', 'earthSnack'] },
   };
@@ -2954,18 +2982,7 @@ PX.S = (() => {
     b(ANY, ['C:오늘은 내가 요리해 줄게. 김치찌개 잘해.', 'C:재료는 조리장님한테 빌려 왔어. 허락은… 받았어. 대충.']),
     b(ANY, ['C:같이 사진 찍을래? 단말로.', 'C^:배경은 상관없어. 너만 나오면 돼.']),
   ];
-  D.skinship = [ // 대위가 먼저 요청
-    { s: [2, 7], act: 'hand', l: ['C:손 잡아도 돼?', 'P:갑자기요?', 'C:응. 걸을 때 허전해서.'] },
-    { s: [2, 7], act: 'hand', l: ['C:손 줘.', 'C*:놓치면 안 되니까.'] },
-    { s: [2, 7], act: 'pat', l: ['C:머리 쓰다듬어도 돼?', 'C:너 머리 만지면 기분이 좋아져. 내가.'] },
-    { s: [3, 7], act: 'hug', l: ['C:안아도 돼?', 'P:갑자기요?', 'C:응. 지금 좀 안고 싶어.', 'P:맨날 안고 싶대.', 'C*:맨날 보고 싶고, 맨날 안고 싶은데 어떡해.'] },
-    { s: [3, 7], act: 'hug', l: ['C:잠깐만 안고 있자. 오늘 좀 힘들었어.'] },
-    { s: [4, 7], act: 'hug', l: ['C:이리 와, 한 번만.', 'C^:한 번이 열 번 될 수도 있어.'] },
-    { s: [4, 7], act: 'kiss', l: ['C:뽀뽀해도 돼?', 'C*:볼에. 아니면 다른 데.'] },
-    { s: [4, 7], act: 'hand', l: ['C:팔짱 껴. 사람들 다 보게.'] },
-    { s: [4, 7], act: 'carry', l: ['C:업혀. 너 다리 아프잖아.', 'P:안 아픈데요.', 'C*:그럼 내가 업고 싶어서.'] },
-    { s: [5, 7], act: 'hug', l: ['C:뒤에서 안아도 돼?', 'C:이렇게 있으면 너 정수리에 턱 올리기 딱 좋아.'] },
-  ];
+
   D.apology = [
     b(ANY, ['C;:미안해. 내가 장난을 너무 오래 쳤어.', 'P:알긴 알아요?', 'C;:응. 네가 싫다고 했는데 내가 못 알아들었잖아. 다음엔 바로 멈출게.']),
     b(ANY, ['C;:…미안. 그건 내가 잘못했어.', 'C:오늘은 그만할게. 진짜로.']),
@@ -3461,6 +3478,262 @@ PX.NPC_ACT = {
   fix('dateAsk', /돔시티 나갈 때/, { notMap: ['dome', 'plaza'] });
   fix('dateAsk', /주말에 (뭐 해|인공호수)/, { wd: 'weekday' });
   fix('dateAsk', /내 막사 놀러 올래/, { notMap: ['q_captain'] });
+})();
+
+</script>
+  <script>
+/* js/data/dialogue_v2a.js */
+// 대위 대사 v2 (1): 경과 시간별 인사 · 접촉 중 · 표정·행동 반응
+// 묶음 형식은 기존과 같다: { s:[최소,최대 관계 단계], l:[줄…], t:[시간대], w:[날씨] }
+'use strict';
+(() => {
+  const ANY = [0, 7], MID = [2, 7], LOVE = [4, 7], PRE = [0, 3], LOW = [0, 1];
+  const b = (s, l, o = {}) => Object.assign({ s, l }, o);
+  const V = PX.DLG_V2 = {};
+
+  // ---------- 경과 시간 ----------
+  // 0~2분: 직전 대화의 연장
+  V.cont = [
+    b(ANY, ['C:아, 아까 하던 얘기 마저 할까?']), b(ANY, ['C:왜. 또 할 말 있어?']), b(ANY, ['C:나 아직 여기 있는데.']),
+    b(MID, ['C*:뭐야, 벌써 다시 보고 싶어진 거야?']), b(ANY, ['C:응? 뭐 빠뜨렸어?']), b(ANY, ['C:방금 그 얘기 계속하는 거지?', 'C^:좋아. 나 아직 할 말 남았어.']),
+    b(MID, ['C*:또 왔네. 이 정도면 나한테 볼일 있는 게 아니라 내가 볼일인 거지.']), b(ANY, ['C:어. 말해. 듣고 있어.']), b(ANY, ['C:한 번 더 불러 줘. 네가 부르는 거 좋아.']),
+    b(LOVE, ['C*:삼십 초 만에 다시 왔다. 기록이다.']), b(ANY, ['C:응. 여기.']), b(ANY, ['C:아까 대답 못 한 거 있지. 지금 해.']),
+    b(MID, ['C^:계속 말 걸어 줘. 나 안 바빠. 바빠도 안 바빠.']), b(ANY, ['C:뭐 물어보려고? 표정이 그래.']), b(LOVE, ['C*:방금 헤어진 거 아니었어? …안 헤어졌구나. 좋다.']),
+  ];
+  // 2~15분: 가벼운 추가 대화
+  V.brief = [
+    b(ANY, ['C:어, 또 봤네.', 'C*:우연이야? 아니면 나 따라온 거야?']), b(ANY, ['C:금방 왔네. 할 일은 끝났어?']), b(ANY, ['C:잠깐 사이에 뭐 했어?']),
+    b(MID, ['C^:십 분 만인데 얼굴 보니까 좋다. 이상하지.']), b(ANY, ['C:물 마셨어? 아까 목소리가 좀 갈라졌던데.']), b(ANY, ['C:아까 그 얘기 생각해 봤는데, 네 말이 맞는 것 같아.']),
+    b(MID, ['C*:또 만났네. 운명 같은 거 믿어?', 'P:같은 건물이잖아요.', 'C^:그래도.']), b(ANY, ['C:어디 가는 길이야? 같은 방향이면 같이 가.']), b(ANY, ['C:뭐 필요한 거 있어? 표정이 뭔가 찾는 얼굴인데.']),
+    b(LOVE, ['C*:벌써 왔어? 나 아직 너 생각 다 못 했는데.']), b(ANY, ['C:잠깐 쉬는 중이야. 너도 쉬어.']), b(ANY, ['C:응, 왔어? 앉아. 다리 아프지.']),
+    b(MID, ['C^:금방 다시 오니까 좋네. 이런 건 자주 해도 돼.']), b(ANY, ['C:방금 박 중사가 너 봤냐고 물었어. 봤다고 했지. 지금 또 봤고.']), b(ANY, ['C:어, 그 사이에 머리 묶었네. 잘 어울려.']),
+  ];
+  // 15~60분: 자연스러운 재접촉
+  V.recontact = [
+    b(ANY, ['C:어, 왔어? 그 사이 별일 없었어?']), b(ANY, ['C:아까 헤어지고 나서 뭐 했어?']), b(ANY, ['C:좀 쉬었어? 얼굴 좀 나아졌다.']),
+    b(MID, ['C*:한 시간도 안 됐는데 또 보고 싶더라. 정상이야?']), b(ANY, ['C:마침 잘 왔다. 이거 같이 먹을래?']), b(ANY, ['C:나 방금 보고서 하나 끝냈어. 칭찬해 줘.']),
+    b(ANY, ['C:아까 하던 얘기 있잖아. 그거 생각났어.']), b(MID, ['C^:어, 왔다. 기다린 건 아닌데 기다렸어.']), b(ANY, ['C:식당 메뉴 봤어? 오늘 괜찮더라.']),
+    b(LOVE, ['C*:아까 헤어질 때 뒤돌아봤는데 너도 돌아보더라. 봤어.']), b(ANY, ['C:그새 뭐 샀어? 손에 든 거 뭐야.']), b(ANY, ['C:좀 걷다 왔어? 볼이 빨갛다.']),
+    b(ANY, ['C:시간 괜찮으면 잠깐 얘기하자.']), b(MID, ['C:너 가고 나서 정시우가 나한테 웃는다고 했어. 내가 웃고 있었대.']), b(ANY, ['C:응, 반가워. 짧게라도.']),
+  ];
+  // 1~6시간: 다시 만난 반가움
+  V.again = [
+    b(ANY, ['C:어, 왔다. 오늘 어땠어?']), b(ANY, ['C:반나절 만이네. 밥은 먹었어?']), b(MID, ['C^:드디어 봤다. 오늘 할 일 중에 제일 하고 싶던 거.']),
+    b(ANY, ['C:오늘 하루 어땠는지 말해 봐. 처음부터.']), b(ANY, ['C:어, 너다. 반갑다. 진짜로.']), b(MID, ['C*:몇 시간 못 봤다고 얼굴 까먹을 뻔했어. 거짓말이야.']),
+    b(ANY, ['C:나 오늘 외곽 3구역까지 갔다 왔어. 너는?']), b(LOVE, ['C:보고 싶었어. 이 말은 몇 시간 안 봤을 때 써도 되는 거지?']), b(ANY, ['C:오늘 근무 힘들었어? 어깨가 올라가 있다.']),
+    b(ANY, ['C:좋은 타이밍. 나 지금 막 쉬는 시간이야.']), b(MID, ['C^:아침에 보고 지금 보니까 또 새롭네.']), b(ANY, ['C:왔어? 오늘 식당 김치 맛있었어. 먹었어?']),
+    b(LOVE, ['C*:오늘 내내 네 얼굴 떠올리면서 일했어. 능률이 올랐는지는 모르겠다.']), b(ANY, ['C:그새 뭐 재밌는 일 있었어?']), b(ANY, ['C:어, 반가워. 잠깐 시간 돼?']),
+  ];
+  // 6~24시간: 보고 싶었다는 표현 가능
+  V.miss = [
+    b(ANY, ['C:하루 만이네. 잘 잤어?']), b(MID, ['C:보고 싶었어. 진짜로.', 'C*:어제 헤어지고 몇 번이나 단말 열었는지 알아?']), b(ANY, ['C:어제 일찍 들어갔지? 피곤해 보였어.']),
+    b(LOVE, ['C^:밤새 꿈에 나왔어. 그래서 아침에 덜 반가워야 정상인데, 더 반갑네.']), b(ANY, ['C:오늘은 좀 괜찮아? 어제보다 얼굴 좋다.']), b(MID, ['C*:너 없는 저녁은 길더라. 처음 알았어.']),
+    b(ANY, ['C:어제 그 얘기, 자기 전에 또 생각했어.']), b(LOVE, ['C:보고 싶었어. 이 말 하려고 아껴 뒀어.']), b(ANY, ['C:하루 안 보니까 할 얘기가 쌓였어. 들어 줄래?']),
+    b(MID, ['C^:어제보다 오늘이 더 예쁜 건 기분 탓인가.']), b(ANY, ['C:아침 먹었어? 나는 너 생각하면서 먹었어. 맛은 똑같았지만.']), b(LOVE, ['C:하루 못 봤다고 이러는 거 웃기지. 나도 웃겨.']),
+    b(ANY, ['C:어제 저녁에 숙소 앞 지나갔는데 불 꺼져 있더라. 일찍 잤구나.']), b(MID, ['C*:오늘은 내가 먼저 찾아왔다. 이긴 거지?']), b(ANY, ['C:하루 만에 보는 얼굴이 제일 반가운 얼굴이래. 맞네.']),
+  ];
+  // 1일 이상: 오랜만
+  V.long = [
+    b(ANY, ['C:오랜만이다. 며칠 동안 바빴어?']), b(MID, ['C:며칠 못 봤더니 이상하더라. 일이 손에 안 잡혀.']), b(LOVE, ['C:보고 싶었어. 많이.', 'C*:이번엔 진짜 많이. 부풀린 거 아니야.']),
+    b(ANY, ['C:어디 아팠던 건 아니지? 얼굴 좀 보자.']), b(MID, ['C^:드디어 왔네. 오랜만이라 인사를 어떻게 하는지 까먹었다.']), b(ANY, ['C:며칠 만에 보니까 머리 좀 길었네.']),
+    b(LOVE, ['C:며칠 동안 네 숙소 앞을 세 번 지나갔어. 노크는 안 했어. 참았어.']), b(ANY, ['C:바빴구나. 잘했어. 근데 이제 좀 쉬어.']), b(MID, ['C*:오랜만이니까 오늘은 좀 오래 붙어 있어도 되지?']),
+    b(ANY, ['C:오랜만이야. 그동안 무슨 일 있었는지 다 말해.']), b(LOVE, ['C^:이리 와. 며칠 치 한 번에 안을 거야.']), b(ANY, ['C:며칠 안 보이니까 박 중사가 나한테 무슨 일 있냐고 묻더라.']),
+    b(MID, ['C:보고 싶었다는 말, 며칠 동안 아껴 둔 거야.']), b(ANY, ['C:오랜만에 보니까 반갑다. 진짜.']), b(LOVE, ['C*:며칠 떨어져 있으니까 확실히 알겠더라. 나 너 없으면 안 돼.']),
+  ];
+
+  // ---------- 접촉 중 대화 ----------
+  V.c_walk = [
+    b(ANY, ['C:천천히 걸어. 네 보폭에 맞추는 중이야.']), b(ANY, ['C:바깥쪽은 내가 걸을게. 넌 안쪽.']), b(MID, ['C*:같이 걸으면 길이 짧아. 아쉽게.']),
+    b(ANY, ['C:저 앞에 계단 있다. 조심.']), b(ANY, ['C:어디 가고 싶어? 오늘은 네가 대장이야.']), b(MID, ['C^:지나가는 사람들이 쳐다본다. 부러운가 봐.']),
+    b(ANY, ['C:발 아프면 말해. 업어 줄 수도 있어.']), b(ANY, ['C:바람 분다. 내 쪽으로 붙어.']), b(LOVE, ['C*:이렇게 걷는 게 데이트지 뭐.']),
+    b(ANY, ['C:좁은 길이다. 먼저 가. 뒤에서 따라갈게.']), b(ANY, ['C:걸음 빨랐지? 미안. 다시 맞출게.']), b(MID, ['C:이 길 끝까지 가면 뭐가 있을까.', 'C^:모르는 채로 가 보자. 너랑이면.']),
+    b(ANY, ['C:저기 그늘로 가자. 덥다.']), b(ANY, ['C:뒤처졌어? 기다릴게. 천천히 와.']), b(LOVE, ['C*:같이 걷는 거 질릴 때 말해 줘. 난 안 질릴 거라서.']),
+  ];
+  V.c_hand = [
+    b(MID, ['C:손 작다. 다 들어온다.']), b(MID, ['C*:손에 땀 나지? 내 거야. 미안.']), b(MID, ['C^:손잡고 걷는 거, 생각보다 좋다.']),
+    b(LOVE, ['C:놓을 생각 없어. 문 열 때만 잠깐.']), b(MID, ['C*:누가 보면 놓을까? …아니, 안 놓을래.']), b(MID, ['C:손 차가워. 주머니에 같이 넣을까.']),
+    b(LOVE, ['N:잡은 손을 대위가 가끔 꾹꾹 쥔다.', 'C:신호야. 좋다는 신호.']), b(MID, ['C^:손금 봐 줄까. …못 봐. 그냥 만지고 싶었어.']), b(LOVE, ['C*:이 손 내 거다. 등록해 놨어.']),
+    b(MID, ['C:손잡으면 걸음이 느려지네. 일부러 그런 거 아니야. 아마.']), b(LOVE, ['C:이렇게 잡고 있으면 아무 데도 못 가겠지.']), b(MID, ['C*:팔 흔들면서 걸을까? 애들처럼.']),
+    b(LOVE, ['C^:사람들이 다 쳐다본다. 손잡고 다니는 덩치 큰 군인이 신기한가 봐.']), b(MID, ['C:손 바꿔 잡을래? 그쪽 손이 더 따뜻해.']), b(LOVE, ['C:손 잡으니까 하루가 끝난 느낌이 나.']),
+  ];
+  V.c_waist = [
+    b(LOVE, ['C*:허리 감싸니까 네가 더 작아 보여.']), b(LOVE, ['C:이렇게 붙어 다니면 다들 알겠지. 우리 사이.', 'C^:알라고 하는 거야.']), b(LOVE, ['C:걸을 때 부딪히면 말해. 내 팔이 길어서.']),
+    b(LOVE, ['C*:허리에 손 올리는 거, 허락받은 사람만 하는 거지?', 'C^:그럼 나 허락받은 사람이네.']), b(LOVE, ['C:이 정도로 붙어 있으면 바람이 못 들어와.']), b(LOVE, ['C^:허리 가늘다. 밥 더 먹어.']),
+    b(LOVE, ['C:헌병이 쳐다본다. 근무 중 아니니까 괜찮아.']), b(LOVE, ['C*:놓아줄까? …싫다고 해 줘.']), b(LOVE, ['C:이러고 걸으면 내가 길을 다 차지하네.', 'C^:괜찮아. 다들 비켜 준다.']),
+    b(LOVE, ['C:너 걸음이 나한테 맞춰지는 거 느껴져. 좋다.']), b(LOVE, ['C*:허리 잡고 다니니까 꼭 춤추는 것 같다.']), b(LOVE, ['C:이 손 놓으면 네가 날아갈 것 같아.']),
+    b(LOVE, ['C^:이렇게 가면 집까지 금방이다.']), b(LOVE, ['C:팔 무겁지? 내려놓을까?', 'C*:…무겁다고 해도 안 내려놓을 거지만.']), b(LOVE, ['C:허리 감싸고 걷는 건 처음이야. 너랑이 처음.']),
+  ];
+  V.c_hug = [
+    b(MID, ['C:…좀 더 이러고 있자.']), b(MID, ['C*:심장 소리 들려? 너 때문에 빨라.']), b(LOVE, ['C^:안고 있으면 시간이 빨리 가. 그게 문제야.']),
+    b(MID, ['C:춥지 않아? 더 꽉 안을게.']), b(LOVE, ['C:오늘 하루 이거 하나로 충전 완료.']), b(MID, ['C*:놓아 달라고 하면 놓아줄게. …아직 말 안 했지?']),
+    b(LOVE, ['C:네 머리 냄새 좋다. 샴푸 뭐 써?']), b(LOVE, ['C^:이대로 잠들 수 있을 것 같아. 서서.']), b(MID, ['C:안기니까 네가 진짜 작네.']),
+    b(LOVE, ['C*:누가 보면? 보라고 해.']), b(LOVE, ['C:이러고 있으면 작전도 보고서도 다 잊어버려.']), b(MID, ['C:숨 쉬어. 내가 너무 꽉 안았나.']),
+    b(LOVE, ['C^:안을 때마다 처음 같아. 이상하지.']), b(LOVE, ['C:놓기 전에 한 번만 더.']), b(MID, ['C*:너도 꽉 안아 줘. 나만 안는 거 불공평해.']),
+  ];
+
+  // ---------- 플레이어의 표정·행동 반응 (능글맞은 대사) ----------
+  // 웃으며 바라볼 때
+  V.r_smile = [
+    b(ANY, ['C:왜 그렇게 봐?', 'P:그냥요.', 'C:그냥? 그 얼굴로?', 'P:무슨 얼굴인데요?', 'C*:나한테 뽀뽀해 달라는 얼굴.'], { s: LOVE }),
+    b(ANY, ['C*:그렇게 웃으면 내가 뭘 해야 될 것 같은데.']), b(MID, ['C:뭐야. 오늘은 네가 먼저 꼬시는 거야?']), b(ANY, ['C^:계속 그렇게 봐. 나 지금 기분 좋으니까.']),
+    b(MID, ['C*:왜. 안아 줄까?']), b(MID, ['C:그렇게 예쁘게 웃고 아무 일도 없길 바라면 곤란하지.']), b(ANY, ['C:웃었다. 봤다. 오늘 일과 끝.']),
+    b(PRE, ['C:뭐 좋은 일 있어? 나도 좀 나눠 줘.']), b(LOW, ['C^:웃으니까 좋네. 자주 웃어.']), b(MID, ['C*:그 웃음 나한테만 하는 거지? 그렇다고 해.']),
+    b(LOVE, ['C:그렇게 웃으면 내가 녹는 거 알지. 알고 하는 거지.']), b(MID, ['C^:웃는 거 보니까 나도 웃음 나. 따라 하지 마. …아, 내가 따라 하는 건가.']), b(LOVE, ['C*:웃지 마. 아니, 웃어. 아니, 나 보면서만 웃어.']),
+    b(ANY, ['C:방금 웃은 거 몇 번째인지 세고 있었어. 오늘 다섯 번째.']), b(MID, ['C*:웃는 얼굴 보니까 손이 근질거리네. 볼 꼬집고 싶어서.']), b(LOVE, ['C^:그 표정으로 보면 내가 할 말이 없어져. 그래서 그냥 볼게.']),
+    b(PRE, ['C:…뭐야, 갑자기. 나 뭐 묻었어?', 'C*:안 묻었구나. 그럼 내 얼굴이 좋은 거네.']), b(LOVE, ['C:웃는 거 사진 찍어 둬야겠다. 작전 나갈 때 꺼내 보게.']),
+  ];
+  // 빤히 바라볼 때
+  V.r_stare = [
+    b(ANY, ['C:뭐 묻었어?', 'P:아니요.', 'C:그럼 왜 계속 봐?', 'P:잘생겨서요.', 'C*:아, 그럼 더 봐. 가까이서 봐도 돼.'], { s: MID }),
+    b(MID, ['C*:내 얼굴 마음에 들어?']), b(ANY, ['C^:계속 봐도 돼. 돈 안 받아.']), b(MID, ['C:그렇게 쳐다보면 나도 기대하게 되는데.']),
+    b(LOVE, ['C*:내가 먼저 뽀뽀해도 되는 상황인가?']), b(PRE, ['C:…왜. 흉터 봐? 괜찮아. 봐도 돼.']), b(ANY, ['C:눈싸움 하는 거야? 나 군인이야. 이거 훈련받았어.', 'C;:…졌다. 네가 너무 예뻐서.']),
+    b(MID, ['C^:그렇게 보면 나 부끄러운 척해야 돼? 안 부끄러운데.']), b(LOVE, ['C:보는 건 공짜인데, 가까이 오면 요금 있어.', 'C*:뽀뽀 한 번.']), b(ANY, ['C:뭘 그렇게 봐. 나 오늘 면도 잘 됐어?']),
+    b(MID, ['C*:계속 보면 나도 볼 거야. 누가 먼저 웃나 보자.']), b(LOVE, ['C:그렇게 보다가 반하면 책임 못 져. 아, 이미 반했지.']), b(PRE, ['C:내 얼굴에 지도라도 그려져 있어?']),
+    b(MID, ['C^:보고 싶으면 더 가까이 와서 봐. 거리 좁히는 거 환영이야.']), b(LOVE, ['C*:나 잘생긴 거 오늘 처음 알았어? 늦었네.']), b(ANY, ['C:눈 마주쳤다. 피하지 마.', 'C^:…피했네. 귀엽다.']),
+  ];
+  // 부끄러워할 때
+  V.r_shy = [
+    b(MID, ['C*:얼굴 빨개졌다. 어디까지 빨개지나 보자.']), b(MID, ['C^:부끄러워? 나는 하나도 안 부끄러운데.']), b(LOVE, ['C:그렇게 숨으면 더 보고 싶어지잖아.']),
+    b(ANY, ['C:고개 숙이지 마. 얼굴 보고 싶어.']), b(MID, ['C*:귀까지 빨개. 귀도 예쁘네.']), b(LOVE, ['C^:부끄러워하는 거 보려고 일부러 그런 거 맞아.']),
+    b(MID, ['C:그 반응 너무 좋아서 계속하고 싶어지네.', 'C*:…싫으면 말해. 멈출게.']), b(LOVE, ['C*:손으로 얼굴 가리면 손등에 뽀뽀할 거야.']), b(MID, ['C:왜 그래. 내가 뭘 했다고.', 'C^:아, 내가 뭘 하긴 했지.']),
+    b(LOVE, ['C:부끄러운 건 너, 좋은 건 나. 공평하지?']), b(MID, ['C^:빨개진 볼 만져 봐도 돼? 뜨거운지 궁금해서.']), b(ANY, ['C:괜찮아. 여기 우리밖에 없어. …아, 저 사람 있네. 없는 걸로 치자.']),
+    b(LOVE, ['C*:그 얼굴로 나 보지 마. 참기 힘드니까.']), b(MID, ['C:숨지 마. 숨어도 내가 커서 다 보여.']), b(LOVE, ['C^:이렇게 귀여운 반응이면 매일 놀려야지.']),
+  ];
+  // 삐진 척·화났을 때
+  V.r_angry = [
+    b(ANY, ['C:…화났어?', 'C;:내가 뭐 잘못했는지 말해 줄래? 고칠게.']), b(MID, ['C;:삐졌어? 볼 부푼 거 보니까 삐졌네.', 'C:뭐 해 주면 풀려? 다 할게.']), b(ANY, ['C:화난 얼굴도 봐야 하는 얼굴이야. 피하지 않을게.']),
+    b(MID, ['C;:미안. 이유는 몰라도 일단 미안.', 'C:…아니다, 이유 알고 사과할게. 말해 줘.']), b(LOVE, ['C:화 풀릴 때까지 옆에 있을게. 말 안 해도 돼.']), b(MID, ['C;:그렇게 째려보면 나 쪼그라든다. 이미 반은 쪼그라들었어.']),
+    b(ANY, ['C:내가 장난 심했지. 멈출게.']), b(LOVE, ['C;:화났을 때 안아 주는 거 싫어? 싫으면 안 할게. 좋으면 할게.']), b(MID, ['C:시원한 거 사 올게. 그거 마시고 다시 얘기하자.']),
+    b(ANY, ['C;:…알았어. 오늘은 조용히 있을게.']), b(LOVE, ['C:미안해. 변명 안 할게.', 'C;:근데 화난 얼굴도 예쁜 건 어떡해. …이 말 하면 더 화나지. 미안.']), b(MID, ['C:한 대 때려. 그럼 풀려? 팔뚝 내줄게.']),
+    b(ANY, ['C;:내가 뭘 놓쳤는지 알려 줘. 다음엔 안 놓칠게.']), b(LOVE, ['C:화 풀리면 신호 줘. 손가락 하나만 내밀어.']), b(MID, ['C;:…무릎 꿇을까? 진지하게 물어본 거야.']),
+  ];
+  // 피곤해할 때
+  V.r_tired = [
+    b(ANY, ['C:피곤하지? 얼굴에 다 써 있어.', 'C:오늘은 일찍 들어가. 데려다줄게.']), b(MID, ['C:어깨 이리 와. 기대.']), b(ANY, ['C:밥은 먹었어? 안 먹었으면 그것부터.']),
+    b(LOVE, ['C^:업혀. 오늘은 걷지 마.']), b(ANY, ['C:물 마셔. 그리고 십 분만 눈 붙여. 지켜 줄게.']), b(MID, ['C:오늘 진짜 고생했다. 잘했어. 그 말 듣고 싶었지.']),
+    b(LOVE, ['C*:피곤할 때 보는 내 얼굴이 피로회복제래. 누가 그랬냐고? 내가.']), b(ANY, ['C:하품 세 번 했어. 세고 있었어. 들어가자.']), b(MID, ['C:내일 근무 몇 시야? 늦게면 오늘은 푹 자.']),
+    b(LOVE, ['C:무릎베개 해 줄까? 허벅지 단단하지만 참을 만할 거야.']), b(ANY, ['C;:무리하지 마. 네가 아프면 나 일 못 해.']), b(MID, ['C:차가운 거 사 줄게. 아니다, 따뜻한 거.']),
+    b(ANY, ['C:졸리면 졸려도 돼. 내가 깨어 있을게.']), b(LOVE, ['C^:오늘은 내가 다 할게. 넌 숨만 쉬어.']), b(MID, ['C:그렇게 피곤하면서 나 보러 온 거야?', 'C*:…고마워. 근데 이제 가서 자.']),
+  ];
+})();
+
+</script>
+  <script>
+/* js/data/dialogue_v2b.js */
+// 대위 대사 v2 (2): 장소 · 작별 · 잠들기 전 · 장기작전 · 재회 · 기념일
+'use strict';
+(() => {
+  const ANY = [0, 7], MID = [2, 7], LOVE = [4, 7], PRE = [0, 3], WED = [6, 7];
+  const b = (s, l, o = {}) => Object.assign({ s, l }, o);
+  const V = PX.DLG_V2;
+
+  // ---------- 장소: 함께 걷다가 플레이어 숙소에 들어갈 때 (선택지가 뒤에 붙는다) ----------
+  V.homeAsk = [
+    b(ANY, ['C:어, 집에 가?', 'P:네.', 'C:나도 들어가도 돼?', 'P:왜요?', 'C*:너랑 좀 더 있고 싶어서. 다른 이유도 필요해?'], { s: MID }),
+    b(MID, ['C*:여기까지 데려다줬는데 차 한 잔은 줘야 되는 거 아니야?']), b(MID, ['C:나 들어가면 안 돼? 얌전히 있을게.']),
+    b(MID, ['C^:집 앞까지 왔는데 벌써 보내려고?']), b(LOVE, ['C*:나 오늘 소파에서 자도 되냐고 물어보면 혼나겠지?']), b(MID, ['C:너 들어가는 거 보고 갈게.', 'C*:…아니, 사실 나도 들어가고 싶어.']),
+    b(PRE, ['C:숙소 도착. 잘 들어가.', 'C:…혹시 들어가도 되냐고 물으면 실례인가.']), b(MID, ['C:문 앞이다. 여기서 헤어지기 아쉽네.', 'C^:십 분만 들어가도 돼?']),
+    b(LOVE, ['C*:들어가서 뭐 할 거야? 나도 그거 할래.']), b(MID, ['C:냉각기 고장 났을지도 몰라. 내가 봐 줄게.', 'C^:핑계인 거 알지? 알면서 들여보내 줘.']),
+    b(LOVE, ['C:오늘 하루 네 방에서 마무리하고 싶다. 안 되면 문 앞에서 마무리하고.']), b(MID, ['C*:차 한 잔. 딱 한 잔. 맹세해.']),
+    b(LOVE, ['C^:집 앞에서 이렇게 서 있으면 누가 보면 쫓겨난 줄 알겠다.', 'C:들여보내 줄 거지?']), b(MID, ['C:너 방 구경 한 번만. 꾸민 거 보고 싶어.']), b(LOVE, ['C*:문 열어 줘. 열쇠 구멍에 대고 사정하기 전에.']),
+  ];
+  V.homeYes = [['C^:역시. 들어간다. 문틀 조심하고.'], ['C*:허락 떨어졌다. 신발 벗고 들어갈게. 군화라 오래 걸려.'], ['C:고마워. 얌전히 있을게. …최대한.']];
+  V.homeNo = [['C:응. 여기까지가 오늘 내 임무. 잘 들어가.'], ['C:그래. 문 잘 잠그고.', 'C^:잠그는 소리 들리면 갈게.'], ['C;:아쉽다. 근데 네가 편한 게 먼저야.', 'C:잘 자.']];
+  // 대위 막사에 같이 갈 때
+  V.capHome = [
+    b(MID, ['C*:내 방이야. 좁지. 덩치에 비해서.']), b(MID, ['C:냉각기 최저야. 춥지? 이리 와.', 'C^:담요는 없어. 내가 담요야.']), b(ANY, ['C:여기 앉아. 소파는 네 거야. 난 바닥도 괜찮아.']),
+    b(LOVE, ['C:네가 내 방에 있으니까 방이 달라 보인다.']), b(MID, ['C*:구경해도 돼. 서랍은 열지 마. …열어도 돼. 네 사진밖에 없어.']), b(ANY, ['C:장비 거치대 건드리지 마. 다쳐. 나 말고 장비가.']),
+    b(LOVE, ['C^:너 오니까 방이 좀 따뜻해졌다. 냉각기 더 세게 틀어야겠다.']), b(MID, ['C:광물 깎는 거 보여 줄까? 네 거 만드는 중이야.']), b(ANY, ['C:물 마실래? 차가운 것밖에 없어. 나는 차가운 것밖에 안 마셔서.']),
+    b(LOVE, ['C*:여기서 자고 가도 돼. 아니, 그냥 해 본 말. …반만.']), b(MID, ['C:내 방 처음이지? 실망했어? 군인 방은 다 이래.']), b(LOVE, ['C:문 닫을까? 열어 둘까? 네가 정해.']),
+  ];
+  // 샤워실 앞 (대위는 밖에서 기다린다)
+  V.shower = [
+    b(ANY, ['C:샤워하러 가?', 'P:네.', 'C:그럼 기다릴게. 나오면 같이 밥 먹자.']), b(ANY, ['C:수건 챙겼어?']), b(MID, ['C*:나보고 기다리라는 거지? 알았어.']),
+    b(MID, ['C:나도 씻어야 되는데. 물론 따로.']), b(MID, ['C*:왜 그렇게 봐. 나 아직 아무 말도 안 했는데.']), b(MID, ['C^:내가 따라가면 혼나겠지? 알아. 여기 있을게.']),
+    b(ANY, ['C:천천히 씻어. 나 여기 벤치에 있을게.']), b(LOVE, ['C*:나오면 머리 말려 줄까? 그건 따라가도 되는 거지?']), b(ANY, ['C:뜨거운 물 오래 맞지 마. 어지러워.']),
+    b(MID, ['C:기다리는 건 잘해. 매복 훈련 받았거든.']), b(LOVE, ['C^:샴푸 냄새 나면 나 바로 알아챌 거야. 그거 좋아해.']), b(ANY, ['C:여기서 지키고 있을게. 누가 오면 내가 막아.']),
+    b(LOVE, ['C*:…같이 가자고는 안 했다. 생각만 했다.']), b(MID, ['C:십오 분? 이십 분? 시간 재고 있을게.']), b(ANY, ['C:나오면 시원한 거 하나 사 둘게.']),
+  ];
+  V.showerOut = [['C:개운하지? 머리 아직 젖었다.', 'C^:감기 걸려. 이리 와. 털어 줄게.'], ['C*:샴푸 냄새 좋다. …말 안 하려고 했는데 나왔다.'], ['C:생각보다 빨리 나왔네. 이제 밥 먹으러 가자.'], ['C^:기다리는 동안 개미 세 마리 세었어. 지루했다는 뜻이야.']];
+  // 루비웨이 들어설 때
+  V.ruby = [
+    b(MID, ['C:어? 여기 가려고?', 'P:왜요?', 'C*:아니. 네가 먼저 오자고 할 줄은 몰랐는데.']), b(MID, ['C^:오늘은 네가 나 놀라게 하네.']), b(MID, ['C:나랑 같이 들어갈 거야?']),
+    b(MID, ['C:어디부터 구경할까? 네가 골라.']), b(LOVE, ['C*:나 지금 좀 기대해도 되는 거야?']), b(MID, ['C:이런 데 오면서 그렇게 아무렇지도 않은 얼굴을 하면 내가 더 신경 쓰이는데.']),
+    b(MID, ['C;:…헌병 순찰조가 나 알아보면 어떡하지.', 'C*:뭐, 알아보라고 하지.']), b(LOVE, ['C^:네온 때문에 네 얼굴이 분홍색이야. 아니면 네온 탓이 아닌가.']), b(MID, ['C:불편하면 바로 나가자. 진짜로. 눈짓만 해.']),
+    b(LOVE, ['C*:여기 처음 와 보는 척하는 거 힘들다. …진짜 처음이야. 믿어 줘.']), b(MID, ['C:손 잡아. 사람 많다. 핑계 아니고 진짜로.']), b(LOVE, ['C^:오늘 밤은 네가 하자는 대로 할게.']),
+    b(MID, ['C:구경만 하자. 구경만. …네가 원하면 구경 이상도.']), b(LOVE, ['C*:여기 오자고 한 거 너다. 기억해. 나중에 딴소리하기 없기.']), b(MID, ['C;:심장이 좀 빨리 뛰네. 사람이 많아서 그래. 아마.']),
+  ];
+  // 카페 · 냉삼집 · 관광지 · 여행 (장소 대화 보강: X.place 에 붙인다)
+  const P = (k, list) => { PX.DLG_CAP2.place[k] = (PX.DLG_CAP2.place[k] || []).concat(list); };
+  P('cafe', [b(MID, ['C*:빨대 두 개 꽂을까? 하나로 같이 마시는 거 해 보고 싶었어.']), b(ANY, ['C:네 거 한 입만. 나 단 거 안 좋아하는데 네 건 맛있어 보여.']), b(LOVE, ['C^:카페에서 마주 앉으면 데이트 같네. 아, 데이트 맞구나.']), b(ANY, ['C:얼음 씹는 소리 시끄럽지. 버릇이야.', 'C*:더우면 다 씹어 먹어.']), b(MID, ['C:여기 창가 자리 좋다. 너 얼굴에 빛 들어와.'])]);
+  P('samgyup', [b(ANY, ['C:불판 달궈질 때까지 기다리는 게 제일 힘들어.', 'C*:너 기다리는 것보다는 쉬운데.']), b(MID, ['C^:제일 잘 익은 거 네 접시로. 규칙이야.']), b(LOVE, ['C*:쌈 싸 줄게. 아 해.']), b(ANY, ['C:사장님이 서비스 줬다. 너 데려오면 주더라. 앞으로 자주 와야겠다.']), b(ANY, ['C:고기 연기 냄새 옷에 밴다. 오늘은 같은 냄새 나겠네, 우리.'])]);
+  for (const k of ['lake', 'hill', 'beach', 'camp', 'farm', 'glasshouse', 'bluegarden', 'corridor', 'bridge', 'silverdesert']) P(k, [b(MID, ['C^:관광지 오니까 신혼여행 온 것 같다. …앞서 나갔다.']), b(ANY, ['C:사진 찍어 줄까? 나 사진 잘 찍어. 사격이랑 비슷해.'])]);
+  for (const k of ['port', 'station', 'planet3', 'planet4', 'planet6']) P(k, [b(MID, ['C:여행 오니까 시간이 천천히 가.', 'C*:너랑 있어서 그런가.']), b(LOVE, ['C^:다음 여행은 어디 갈까. 나 휴가 아껴 두는 중이야.']), b(ANY, ['C:짐 내가 들게. 군장보다 가볍다.'])]);
+
+  // ---------- 작별 · 데이트 종료 · 잠들기 전 ----------
+  V.farewell = [
+    b(ANY, ['C:응. 이따 보자.']), b(ANY, ['C:조심히 가. 뒤돌아보지 마. …돌아봐도 돼.']), b(MID, ['C^:가. 아쉬운 건 내가 할게.']),
+    b(LOVE, ['C*:가기 전에 하나만.', 'N:이마에 짧게 입맞춤.', 'C:이제 가.']), b(ANY, ['C:들어가면 단말로 알려 줘.']), b(MID, ['C:내일 보자. 아니, 이따 저녁에.']),
+    b(ANY, ['C:응. 오늘 고마웠어.']), b(LOVE, ['C^:헤어지는 거 아니다. 잠깐 떨어지는 거야.']), b(MID, ['C*:손 흔들어 줘. 그거 보고 갈게.']),
+    b(ANY, ['C:무슨 일 있으면 바로 불러. 몇 시든.']), b(LOVE, ['C;:…가지 마. 농담이야. 가.']), b(MID, ['C:다음엔 내가 먼저 찾아갈게.']),
+    b(ANY, ['C:잘 가. 밥 거르지 말고.']), b(LOVE, ['C*:보내 주는 대신 내일 아침은 내 거야.']), b(MID, ['C^:가는 뒷모습도 예쁘네. 빨리 가. 계속 보게 되니까.']),
+  ];
+  V.dateEnd = [
+    b(MID, ['C:오늘 좋았어. 진짜로.', 'C^:다음 데이트 장소는 네가 정해. 난 이미 기대 중이야.']), b(LOVE, ['C*:오늘 몇 번 웃었는지 세었는데 열두 번. 기록이야.']), b(MID, ['C:시간 빨리 갔다. 너랑 있으면 늘 그래.']),
+    b(LOVE, ['C:데려다줄게. 집 앞까지. 아니, 문 앞까지.']), b(MID, ['C^:오늘 찍은 사진 나도 보내 줘.']), b(LOVE, ['C*:데이트 끝났다고 하기 싫다. 그냥 잠깐 쉬는 시간이라고 하자.']),
+    b(MID, ['C:다음엔 내가 계획 짤게. 작전 계획처럼 꼼꼼하게.']), b(LOVE, ['C:오늘 하루 다 너였어. 좋았어.']), b(MID, ['C^:재밌었지? 대답 안 해도 얼굴에 써 있다.']),
+    b(LOVE, ['C*:헤어지기 전에 한 번 안자.', 'N:짧고 단단한 포옹.']), b(MID, ['C:오늘 돈 많이 썼지. 다음엔 내가 다 낼게.']), b(LOVE, ['C:내일 아침에 일어나면 오늘 생각부터 날 거야.']),
+    b(MID, ['C:들어가서 푹 자. 나도 오늘은 잘 잘 것 같아.']), b(LOVE, ['C^:다음 데이트까지 며칠 남았는지 세기 시작했어.']), b(MID, ['C*:오늘 데이트 점수? 만점. 너 때문에.']),
+  ];
+  V.beforeSleep = [
+    b(LOVE, ['C:불 끌게. 무서우면 손 잡아.']), b(LOVE, ['C*:자기 전에 하나만 물어볼게. 오늘 행복했어?']), b(LOVE, ['C:잘 자. 내일 아침엔 내가 먼저 깰게.']),
+    b(LOVE, ['N:이마에 짧은 입맞춤.', 'C:이건 잘 자라는 거야.']), b(LOVE, ['C^:네 숨소리 들으면서 자는 거, 이게 제일 좋은 자장가야.']), b(LOVE, ['C:춥지 않아? 이리 와. 난방 대신.']),
+    b(LOVE, ['C*:코 골면 깨워. …안 골아. 아마.']), b(LOVE, ['C:내일 근무 일찍이야. 깨워도 모른 척하고 자.']), b(LOVE, ['C:잠들 때까지 머리 쓰다듬어 줄게.']),
+    b(LOVE, ['C^:오늘 하루 고생했어. 수고했다는 말 제일 하고 싶었어.']), b(LOVE, ['C:무서운 꿈 꾸면 깨워. 내가 다 쫓아낼게.']), b(LOVE, ['C*:불 끄니까 네 얼굴이 안 보여서 아쉽다. 대신 목소리 들려줘.']),
+    b(LOVE, ['C:잘 자. 사랑해. …자는 척하지 마. 들은 거 알아.']), b(LOVE, ['C:이 방 따뜻하다. 너 때문에.']), b(LOVE, ['C^:내일도 이렇게 자자. 모레도.']),
+  ];
+  V.morning = [
+    b(LOVE, ['C:잘 잤어? 네가 이불 다 가져가서 나는 반만 덮었어.', 'C^:그래도 따뜻했어.']), b(LOVE, ['C:일어났어? 물 떠 놨어. 머리맡에.']), b(LOVE, ['C*:먼저 깨서 기다렸어. 네 자는 얼굴 보면서.']),
+    b(LOVE, ['C:일어나려고? 조금만 더 같이 있자.', 'C;:오 분만. 아니, 십 분.']), b(LOVE, ['C^:좋은 아침. 네 방 아침 햇빛 좋다.']), b(LOVE, ['C:아침은 내가 할게. 계란밖에 못 하지만.']),
+    b(LOVE, ['C*:이불 세 번 덮어 줬다. 넌 세 번 찼고.']), b(LOVE, ['C:머리 엄청 뻗쳤다. 귀엽다. 사진 찍을래.']), b(LOVE, ['C:가기 싫다. 근무만 아니면.']),
+    b(LOVE, ['C^:일어나자마자 네 얼굴 보는 거, 매일 하고 싶다.']), b(LOVE, ['C:잘 잤으면 됐어. 나는 반쯤 깨어 있었어. 지키느라.']), b(LOVE, ['C*:오늘 출근 같이 할까? 다들 놀라겠지.']),
+    b(LOVE, ['C:베개 반 이상 내가 썼지. 미안.']), b(LOVE, ['C^:아침 먹고 갈래, 먹이고 갈래? 둘 다 할래.']), b(LOVE, ['C:눈 뜨자마자 웃었다. 너 보고.']),
+  ];
+
+  // ---------- 장기작전 ----------
+  V.opBefore = [
+    b(ANY, ['C:나 내일 장기작전 나가. {days}일.', 'C:걱정하지 마. 늘 하던 거야.']), b(MID, ['C:며칠 못 봐. 단말 꼭 켜 둬.', 'C*:통신 되는 날엔 귀찮을 만큼 연락할 거야.']),
+    b(LOVE, ['C:나 없는 동안 밥 거르지 마. 확인할 거야.', 'C^:어떻게 확인하냐고? 돌아와서 볼 살 만져 보면 알아.']), b(MID, ['C;:가기 싫다. 이런 말 처음 해 봐.']),
+    b(LOVE, ['C:돌아오면 제일 먼저 너한테 올게. 보고는 그다음이야.', 'C*:…아니, 보고가 먼저야. 규정이라. 그다음 바로.']), b(ANY, ['C:외곽 깊은 데야. 위치는 말 못 해. 미안.']),
+    b(MID, ['C:선물 사 올게. 광물 같은 거. 예쁜 걸로.']), b(LOVE, ['C^:가기 전에 충전 좀 하자. 이리 와.', 'N:오래, 단단하게 안는다.']), b(ANY, ['C:박 중사랑 같이 가. 걱정 마. 그 사람 두 번 확인하는 사람이야.']),
+    b(MID, ['C:{days}일이면 금방이야. …나한텐 아니겠지만.']), b(LOVE, ['C:무사히 돌아올게. 약속.', 'C*:어긴 적 없는 약속이야.']), b(ANY, ['C:통신 안 되는 날도 있어. 그럼 걱정 말고 기다려.']),
+    b(LOVE, ['C;:네 목소리 녹음해 가도 돼? 진지하게 묻는 거야.']), b(MID, ['C:내 막사 냉각기 좀 가끔 켜 줘. …핑계야. 내 방 와 줬으면 해서.']), b(LOVE, ['C^:가기 전에 한 번만 웃어 줘. 그거 들고 갈게.']),
+  ];
+  V.opJoint = [
+    b(ANY, ['C:이번엔 같이 간다. 내 뒤로 두 걸음. 그 거리 유지해.']), b(MID, ['C*:작전 중엔 대위님이야. 알지? 끝나면 다시 나고.']), b(ANY, ['C:장비 두 번 확인해. 습관 들여.']),
+    b(MID, ['C:야영지에선 내 옆 텐트야. 무서우면 말해. 무서운 거 아니어도 말해.']), b(ANY, ['C:처음 장기수색이지? 긴장하는 거 정상이야. 내가 있어.']),
+  ];
+  V.opJointEnd = [
+    b(ANY, ['C:드디어 끝났다. 오늘은 아무것도 안 할 거야.', 'P:보고서는요?', 'C^:그건 해야지. 끝나면 너랑 쉴 거야.']), b(MID, ['C:같이 돌아오니까 좋네. 기다리게 한 사람이 없어서.']),
+    b(ANY, ['C:고생했다. 처음치고 잘했어. 진짜로.']), b(LOVE, ['C*:같이 씻고… 아니, 따로 씻고 같이 밥 먹자.']), b(MID, ['C:며칠 동안 옆에 있었는데도 오늘 또 보고 싶네. 이상하다.']),
+  ];
+  // 혼자 다녀온 장기작전 복귀 (보고·장비 반납·검진·샤워 뒤)
+  V.reunion = [
+    b(ANY, ['C:나 왔어.', 'P:고생했어요.', 'C:응. 그러니까 좀 안아 줘.'], { s: MID }), b(MID, ['P:많이 힘들었어요?', 'C:힘든 건 괜찮았는데, 네가 너무 보고 싶었어.']),
+    b(ANY, ['C:다녀왔어. 다친 데 없어. 검진도 받았어. 그러니까 그 얼굴 풀어.']), b(LOVE, ['C*:{days}일 만이다. 하루씩 안아 줘야 셈이 맞아.']), b(MID, ['C:씻고 오느라 늦었어. 모래 냄새 풍기면서 오기 싫어서.']),
+    b(LOVE, ['N:대위가 말없이 다가와 오래 안는다.', 'C:…됐다. 이제 진짜 돌아왔다.']), b(ANY, ['C:선물. 외곽에서 찾았어. 네 생각나서 챙겼어.']), b(MID, ['C^:돌아오는 수송선에서 무슨 말 할지 연습했는데 다 까먹었어.']),
+    b(LOVE, ['C:오늘은 하루 종일 네 옆에 붙어 있을 거야.', 'C*:싫다고 하면 두 시간만.']), b(ANY, ['C:밥 먹었어? 나는 전투식량 열흘 먹었어. 같이 진짜 밥 먹자.']), b(MID, ['C;:보고 싶어서 혼났어. 통신 안 되는 날엔 특히.']),
+    b(LOVE, ['C*:오늘 네 숙소 소파에서 자면 안 될까. 핑계는… 피곤해서. 진짜 피곤해.']), b(ANY, ['C:무사히 돌아왔다. 약속 지켰지.']), b(MID, ['C^:네 얼굴 보니까 피곤이 반으로 줄었어.']), b(LOVE, ['C:돌아오면 제일 먼저 하고 싶던 거.', 'N:이마에 오래 입을 맞춘다.']),
+  ];
+
+  // ---------- 기념일 ----------
+  V.anniv = [
+    b(LOVE, ['C:오늘 무슨 날인지 알아?', 'C^:우리 {n}일. 세고 있었어.']), b(LOVE, ['C*:기념일 선물. 직접 깎았어. 모양 이상해도 웃지 마.']), b(LOVE, ['C:{n}일 동안 하루도 안 질렸어. 신기하지.']),
+    b(LOVE, ['C:오늘은 근무 바꿔 놨어. 하루 종일 네 거야.']), b(LOVE, ['C^:기념일엔 냉삼이지. 내가 쏜다.']), b(LOVE, ['C:처음 만난 날 기억나? 난 다 기억해. 네가 입었던 것까지.']),
+    b(LOVE, ['C*:{n}일 기념으로 하고 싶은 거 하나만 말해. 뭐든.']), b(LOVE, ['C:앞으로도 계속 세자. 천 일, 만 일.']), b(LOVE, ['C;:기념일 같은 거 챙기는 사람 아니었는데. 너 때문에 바뀌었어.']),
+    b(LOVE, ['C^:오늘 사진 꼭 찍자. 해마다 같은 자리에서.']), b(LOVE, ['C:고마워. {n}일 동안 옆에 있어 줘서.']), b(LOVE, ['C*:기념일엔 뽀뽀 두 배야. 규칙이야. 방금 만들었어.']),
+    b(LOVE, ['C:{n}일이면 짧은 거야. 앞으로가 훨씬 길어.']), b(LOVE, ['C^:기념일이라고 특별한 거 안 해도 돼. 같이 있으면 그게 특별한 거야.']), b(LOVE, ['C:선물은 저녁에. 기대해. 아니, 기대하지 마. 실망할까 봐.']),
+  ];
 })();
 
 </script>
@@ -4257,8 +4530,12 @@ PX.A = (() => {
     frameInfo() {
       let pose = this.tempPose || this.pose;
       let fr = 0;
-      if (this.moving && !this.tempPose) { pose = this.holding ? (this.holdSide < 0 ? 'walkholdL' : 'walkhold') : 'walk'; fr = Math.floor(this.t * 8) % 4; }
-      else if (pose === 'idle' || pose === 'stand') { pose = this.holding ? (this.holdSide < 0 ? 'holdL' : 'hold') : 'idle'; fr = Math.floor(this.t * 1.6) % 2; }
+      // 접촉 중인 상대가 화면에서 어느 쪽에 있는지로 팔 방향을 정한다 (좌우 반전된 그림이면 반대로)
+      const gr = this.holding ? (this.grip || 'hand') : null;
+      let side = this.holdSide < 0 ? 'L' : 'R';
+      if (gr && this.holdWith) { const dxs = (this.holdWith.x - this.holdWith.y) - (this.x - this.y); side = dxs >= 0 ? 'R' : 'L'; if (DIR_FLIP[this.dir]) side = side === 'R' ? 'L' : 'R'; }
+      if (this.moving && !this.tempPose) { pose = gr ? `gw_${gr}_${side}` : 'walk'; fr = Math.floor(this.t * 8) % 4; }
+      else if (pose === 'idle' || pose === 'stand') { pose = gr ? `gi_${gr}_${side}` : 'idle'; fr = Math.floor(this.t * 1.6) % 2; }
       else if (['work', 'workout', 'eat', 'wave', 'hug', 'carry', 'pat'].includes(pose)) fr = Math.floor(this.t * 3) % 2;
       let face = this.tempFace || this.face;
       if (face === 'normal' && this.blinkT < 0) face = 'sleep';
@@ -4397,6 +4674,7 @@ PX.A = (() => {
     unstick() { const m = PX.W.maps[this.map]; const t = PX.Path.nearestWalkable(m, this.x, this.y); if (t) { this.x = t[0] + 0.5; this.y = t[1] + 0.5; } }
     think(S, playerMap) {
       if (this.busy) return;
+      if (PX.Op && PX.Op.isAway(this.id) && !PX.Op.inField()) { this.map = null; return; } // 장기작전 나간 수색팀
       const d = this.desired(S);
       const visible = this.map === playerMap;
       if (!visible) { // 보이지 않으면 순간이동
@@ -4446,7 +4724,7 @@ PX.Dlg = (() => {
     nameEl = box.querySelector('.dname'); textEl = box.querySelector('.dtext'); chEl = document.getElementById('choices');
     portEl = box.querySelector('canvas'); nextEl = box.querySelector('.dnext');
   }
-  const ctx = () => ({ p: St.S.player.name, c: St.S.capName, rival: St.S.lastRival || '' });
+  const ctx = () => { const S = St.S, r = S.rel.cap, op = S.cap.op; return { p: S.player.name, c: S.capName, rival: S.lastRival || '', days: op ? op.days : 3, n: r.loverSince != null ? S.day - r.loverSince : 100 }; };
 
   function portrait(speaker, face) {
     const g = portEl.getContext('2d');
@@ -4574,6 +4852,9 @@ PX.Dlg = (() => {
       return true;
     });
     if (!ok.length) return null;
+    // 기억 검사: 실제로 오래 떨어진 게 아니면 '오랜만' 류 금지 · 같은 표현(보고 싶어·귀여워·안아 줄까…)은 한동안 쉬게
+    const M = PX.Mind, txt = (bd) => (bd.l || bd).filter ? (bd.l || bd).filter(x => typeof x === 'string').join(' ') : '';
+    if (M) { const ok2 = ok.filter(({ bd }) => M.textOk(txt(bd))); if (ok2.length) ok.splice(0, ok.length, ...ok2); else if (ok.some(({ bd }) => /오랜만|어디 갔다 왔|한참 찾았|하루 종일 기다/.test(txt(bd)))) return null; }
     const used = S.recent;
     const fresh = ok.filter(({ i }) => !(used[cat + i] && S.day - used[cat + i] < 4));
     // 조건이 붙은 묶음(날씨·행사 등)을 조금 더 자주
@@ -4582,6 +4863,7 @@ PX.Dlg = (() => {
     for (const p of pool) { weighted.push(p); if (p.bd.w || p.bd.event || p.bd.job || p.bd.t) weighted.push(p, p); }
     const chosen = U.pick(weighted);
     used[cat + chosen.i] = S.day;
+    if (M) { M.notePhrases(txt(chosen.bd)); M.noteLine(cat + '#' + chosen.i); }
     return chosen.bd;
   }
 
@@ -4594,14 +4876,25 @@ PX.Dlg = (() => {
     const backoff = r.backoffUntil > St.absMin();
     let cat = forceCat;
     const duty = PX.Cap.onDuty();
+    // 마지막 대화·만남 이후 흐른 시간과 지금 접촉 상태를 먼저 본다 (방금 얘기한 사람한테 '오랜만'이라고 하지 않게)
+    const M = PX.Mind, V = PX.DLG_V2 || {}, gc = M ? M.gapCat() : 'again', ct = M ? M.contact() : 'NONE';
     if (!cat) {
       if (duty && PX.Cap.atPlayerWork()) cat = 'jobVisit';
       else if (duty && !PX.Cap.isMeal()) cat = 'working';
-      else if (firstToday) cat = part === 'morning' ? 'morning' : part === 'noon' ? 'lunch' : (min >= 17 * 60 && min < 21 * 60) ? 'offwork' : part === 'night' ? 'night' : 'greet';
+      else if (gc === 'reunion') cat = 'v:reunion';
+      else if (S.cap.op && S.cap.op.phase === 'planned' && !S.cap.op.inPerson) { S.cap.op.inPerson = true; S.cap.op.told = true; cat = S.cap.op.joint ? 'v:opJoint' : 'v:opBefore'; }
+      else if ((gc === 'cont' || gc === 'brief') && Math.random() < 0.55) cat = 'v:' + gc;
+      else if (gc === 'recontact' && Math.random() < 0.4) cat = 'v:recontact';
+      else if (gc === 'long' || gc === 'miss') cat = 'v:' + gc;
+      else if (gc === 'again' && Math.random() < 0.45) cat = 'v:again';
+      else if (ct !== 'NONE' && Math.random() < 0.45) cat = M.isHug() ? 'v:c_hug' : ct === 'HAND_HOLD' ? 'v:c_hand' : ct === 'WAIST_HOLD' ? 'v:c_waist' : 'v:c_walk';
+      else if (PX.Cap.mode === 'follow' && Math.random() < 0.2) cat = 'v:c_walk';
+      else if (firstToday && gc === 'again') cat = part === 'morning' ? 'morning' : part === 'noon' ? 'lunch' : (min >= 17 * 60 && min < 21 * 60) ? 'offwork' : part === 'night' ? 'night' : 'greet';
       else if (S.lastRival && St.absMin() - S.lastRivalMin < 90 && !backoff && Math.random() < 0.6) cat = 'jealousy';
       else if ((S.energy < 30 || ['dust', 'rain'].includes(St.weather())) && Math.random() < 0.4) cat = 'worry';
       else {
-        const opts = backoff ? ['greet', 'praise', 'worry', 'dateAsk'] : ['tease', 'tease', 'praise', 'aegyo', 'flirt', 'greet', 'dateAsk', 'aegyo'];
+        const opts = backoff ? ['praise', 'worry', 'dateAsk'] : ['tease', 'tease', 'praise', 'aegyo', 'flirt', 'dateAsk', 'aegyo'];
+        if (gc === 'again') opts.push('greet');
         if (!backoff && r.stage >= 2) opts.push('explicit', 'flirt');
         if (part === 'night') opts.push('night');
         cat = U.pick(opts);
@@ -4610,9 +4903,10 @@ PX.Dlg = (() => {
         else if (X && Math.random() < 0.22) cat = 'small';
       }
     }
-    let bd = cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
-    if (!forceCat && !firstToday && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
-    if (!bd) bd = pick('greet', D.greet);
+    let bd = cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
+    if (cat === 'v:reunion' && M) M.mem().reunion = null;
+    if (!forceCat && !cat.startsWith('v:') && cat !== 'jobVisit' && cat !== 'working' && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
+    if (!bd) bd = pick('small', PX.DLG_CAP2.small) || pick('praise', D.praise);
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
@@ -4622,6 +4916,7 @@ PX.Dlg = (() => {
     if (firstToday) { gain += 4; r.talksToday = 0; }
     else if (r.talksToday < 5) gain += 1;
     r.talksToday++; r.lastTalkDay = S.day; S.stats.talks++;
+    if (M) M.noteTalk(cat);
     if (res.tags.includes('hurt')) { await apology(); }
     else if (res.tags.includes('alone')) { r.noFollowUntil = nextMorning(); PX.Cap.release(); }
     St.addAff(gain);
@@ -4750,11 +5045,14 @@ PX.Cap = (() => {
   const U = PX.U, St = PX.St, A = PX.A;
   let cap = null;
   let mode = 'sched'; // sched | seek | follow | wait_door | visit | stay | travel
+  let waitOut = null; // 샤워실처럼 대위가 못 들어가는 곳: 밖에서 기다리는 자리
   let sitT = 0, thinkT = 0, repathT = 0, travelUntil = 0, travelTo = null, lastSkinReq = 0, knockedToday = -1, lastMsgCheck = 0;
   const G = () => PX.Game;
 
   function init(actor) { cap = actor; mode = 'sched'; }
-  const entry = () => A.schedEntry(PX.NPC_BY_ID.cap, St.S);
+  // 휴가 중이면 주말 일정으로 지낸다
+  const capDefNow = () => { const S = St.S; return PX.Rom && PX.Rom.onLeave('cap', S.day) ? Object.assign({}, PX.NPC_BY_ID.cap, { sched: PX.NPC_BY_ID.cap.we, sched2: null }) : PX.NPC_BY_ID.cap; };
+  const entry = () => A.schedEntry(capDefNow(), St.S);
   function spotKind(e = entry()) {
     if (e.spot === 'field') return 'field';
     if (e.spot === 'free') return 'free';
@@ -4812,7 +5110,7 @@ PX.Cap = (() => {
       setTimeout(() => { cap.doPose('bump', 1.1, 'surprise'); cap.showEmote('stars', 1.6); G().bubble(cap, U.pick(['아야.', '…또 박았네.', '이 문틀 누가 이렇게 낮게 만들었어.'])); }, 250);
     }
   }
-  function release(line) { if (mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'seek' || mode === 'wait_door') mode = 'sched'; cap.holding = false; G().player.holding = false; St.S.cap.follow = false; if (line) G().bubble(cap, line); }
+  function release(line, partMins = 30) { const was = mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'waitOut'; if (mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'seek' || mode === 'wait_door' || mode === 'waitOut') mode = 'sched'; if (PX.Mind) { PX.Mind.mem().contact = 'NONE'; PX.Mind.apply(); if (was) PX.Mind.notePart(partMins); } cap.holding = false; G().player.holding = false; St.S.cap.follow = false; waitOut = null; if (line) G().bubble(cap, line); }
 
   // ---------- 매 프레임 ----------
   function update(dt) {
@@ -4855,6 +5153,13 @@ PX.Cap = (() => {
 
   function think(S, g) {
     const now = St.absMin();
+    // 장기작전: 떠나 있는 동안은 나타나지 않는다 (함께 투입된 경우만 동행) · 복귀 절차 중엔 절차부터
+    const O = PX.Op && PX.Op.op();
+    if (O && O.phase === 'away' && !O.joint) { if (mode !== 'op') { cap.map = null; mode = 'op'; } return; }
+    if (O && O.phase === 'away' && O.joint) { if (mode !== 'follow' && cap.map === g.mapId) mode = 'follow'; if (mode === 'follow' && cap.map !== g.mapId && !g.transition) followIntoMap(); return; }
+    if (mode === 'op') mode = 'sched';
+    if (mode === 'date') { const d = PX.Rom && PX.Rom.nextDate(); if (!d || d.state !== 'planned') mode = 'sched'; else { cap.stop(); return; } }
+    if (O && O.phase === 'return') { mode = 'sched'; schedule(S, g); return; }
     const k = spotKind();
     const r = S.rel.cap;
     // 이동 중 (보이지 않음)
@@ -4868,16 +5173,20 @@ PX.Cap = (() => {
     }
     if (mode === 'visit') {
       if (g.mapId !== homeId() || k === 'duty' || k === 'field') { release(); return; }
+      if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(U.pick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: '조심히 가요.' }, { t: '조금만 더 있다 가요.' }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
+      if (S.cap.cohab && S.time.min >= 22 * 60 && !g.modal) { S.cap.stay = 'bed'; mode = 'stay'; return; } // 같이 사는 사이: 묻지 않고 함께 잔다
       if (S.time.min >= 22 * 60 && !g.modal) g.trigger(nightCheck);
       return;
     }
+    if (mode === 'paused') { if (k === 'duty' || k === 'field' || St.absMin() > pausedUntil) { release(); } return; }
+    if (mode === 'waitOut') { if (k === 'duty' || k === 'field' || St.absMin() > (waitOut ? waitOut.until : 0)) { release(); return; } waitOutTick(); return; }
     // 동행 해제 조건: 근무·작전 시간
     if (mode === 'follow') {
       if (k === 'duty' || k === 'field') { release(); g.trigger(async () => { await PX.Dlg.say('cap', U.pick(['나 근무 들어가야 돼. 끝나고 찾아갈게.', '브리핑 시간이다. 이따 보자. 도망가지 마.', '작전 나간다. 금방 올게.'])); PX.Dlg.close(); }); return; }
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30) { release('늦었다. 잘 자, ' + U.josa(U.givenName(S.player.name), '아') + '.'); return; }
       if (cap.map !== g.mapId && !g.transition) followIntoMap();
       // 가끔 스킨십 요청
-      if (r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal) { lastSkinReq = now; g.trigger(() => skinRequest()); }
+      if (r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now)) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
       return;
     }
     if (mode === 'wait_door') {
@@ -4908,9 +5217,11 @@ PX.Cap = (() => {
   function schedule(S, g) {
     if (!cap.def) cap.def = PX.NPC_BY_ID.cap;
     const e = entry();
+    const ov = PX.Op && PX.Op.schedOverride();
+    if (ov) { cap.def = Object.assign({}, PX.NPC_BY_ID.cap, { sched: ov, we: ov, sched2: null }); cap.think(S, g.mapId); return; }
     if (e.spot === 'free') { // 개인 시간인데 플레이어가 혼자 있고 싶어함 → 막사
       cap.def = Object.assign({}, PX.NPC_BY_ID.cap, { sched: '00:00 cap.sofa', we: '00:00 cap.sofa', sched2: null });
-    } else cap.def = PX.NPC_BY_ID.cap;
+    } else cap.def = capDefNow();
     cap.think(S, g.mapId);
   }
 
@@ -4983,25 +5294,54 @@ PX.Cap = (() => {
   }
 
   // 동행 중 플레이어가 맵을 옮겼을 때
+  // 동행 중 플레이어가 다른 맵으로 들어갔을 때: 장소마다 대위가 판단한다
+  const NO_ENTRY = { shower: '샤워실', dawnshower: '새벽 샤워실' };
   function followIntoMap() {
-    const g = G(), S = St.S;
-    const to = g.mapId;
-    if (to === homeId() && mode === 'follow') { // 숙소엔 물어보고 들어간다
+    const g = G(), S = St.S, V = PX.DLG_V2 || {}, M = PX.Mind;
+    const to = g.mapId, from = g.prevMap;
+    // 대위가 들어가지 않는 곳: 밖에서 기다린다 (플레이어 입장은 그대로)
+    if (NO_ENTRY[to]) {
+      mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 90 };
+      if (M) { M.mem().contact = 'NONE'; M.apply(); }
+      const said = V.shower ? PX.Dlg.pick('v_shower', V.shower) : null;
+      if (said) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(said.l); PX.Dlg.close(); g.modal--; });
+      return;
+    }
+    if (to === homeId() && mode === 'follow') { // 숙소엔 물어보고 들어간다 (거절하면 한동안 다시 안 묻는다)
+      if (M && M.refused('home')) { release(U.pick(['오늘은 문 앞까지. 잘 자.', '들어가. 내일 보자.'])); return; }
       g.trigger(async () => {
-        await PX.Dlg.say('cap', U.pick(['숙소까지 들어가도 돼?', '나도 들어가도 돼? 잠깐만 있다 갈게.']), 'smirk');
-        const i = await PX.Dlg.choose([{ t: '들어와요.' }, { t: '오늘은 여기까지요.' }]);
-        if (i === 0) { await PX.Dlg.say('player', '들어와요.'); PX.Dlg.close(); startVisit(); }
-        else { await PX.Dlg.say('player', '오늘은 여기까지요.'); await PX.Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어.', '그래. 문 잘 잠그고. 내일 보자.']), 'smile'); PX.Dlg.close(); release(); S.rel.cap.noFollowUntil = St.absMin() + 120; }
+        g.modal++;
+        const bd = V.homeAsk ? PX.Dlg.pick('v_homeAsk', V.homeAsk) : null;
+        await PX.Dlg.runLines(bd ? bd.l : ['C*:나도 들어가도 돼?']);
+        const i = await PX.Dlg.choose([{ t: '들어와요.' }, { t: '차 한 잔만이에요.' }, { t: '오늘은 여기까지요.' }]);
+        if (i < 2) { await PX.Dlg.say('player', i === 0 ? '들어와요.' : '차 한 잔만이에요.'); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
+        else { await PX.Dlg.say('player', '오늘은 여기까지요.'); await PX.Dlg.runLines(U.pick(V.homeNo || [['C:응, 알았어.']])); PX.Dlg.close(); g.modal--; if (M) M.noteRefuse('home', 240); release(null, 60); }
       });
       mode = 'sched'; // 대답 전까지는 밖에서 대기
       return;
     }
-    moveTo(to, g.prevMap);
+    moveTo(to, from);
     const p = g.player, m = PX.W.maps[to];
     // 플레이어와 겹치지 않는 옆 칸
     const px = Math.floor(p.x), py = Math.floor(p.y);
     const cand = [[1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1]].map(([dx, dy]) => [px + dx, py + dy]).filter(([x, y]) => PX.W.walkable(m, x, y));
     if (cand.length) { cap.x = cand[0][0] + 0.5; cap.y = cand[0][1] + 0.5; }
+    if (M) M.apply(); // 손잡기·팔짱은 문을 지나도 이어진다
+    if (to === 'rubyway' && V.ruby && S.done.rubyLine !== S.day) { S.done.rubyLine = S.day; const bd = PX.Dlg.pick('v_ruby', V.ruby); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
+    if (to === 'q_captain' && V.capHome && S.done.capHomeLine !== S.day) { S.done.capHomeLine = S.day; const bd = PX.Dlg.pick('v_capHome', V.capHome); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
+  }
+  // 밖에서 기다리던 대위: 플레이어가 나오면 다시 동행
+  function waitOutTick() {
+    const g = G(), w = waitOut;
+    if (!w) return;
+    if (g.mapId === w.inside) return;
+    if (g.mapId === w.map) {
+      mode = 'follow'; waitOut = null; cap.setDirTo(g.player.x, g.player.y);
+      const V = PX.DLG_V2 || {};
+      if (V.showerOut) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(U.pick(V.showerOut)); PX.Dlg.close(); g.modal--; });
+      return;
+    }
+    release(); // 다른 데로 가 버렸다
   }
 
   // ---------- 이벤트 ----------
@@ -5010,6 +5350,16 @@ PX.Cap = (() => {
     g.modal++;
     cap.setDirTo(g.player.x, g.player.y); g.player.setDirTo(cap.x, cap.y);
     cap.showEmote('heart', 1.5);
+    // 장기작전에서 돌아와 찾아온 경우: 특별한 재회
+    const M = PX.Mind, reu = M && M.mem().reunion;
+    if (reu && PX.DLG_V2) {
+      const bd = PX.Dlg.pick('v_reunion', PX.DLG_V2.reunion);
+      await PX.Dlg.runLines(bd ? bd.l : ['C:나 왔어.']);
+      if (S.cap.giftPending) { const gid = S.cap.giftPending; S.cap.giftPending = null; cap.doPose('carry', 1.4, 'smile'); await PX.Dlg.runLines(['C:선물. 작전 중에 찾은 거야. 네 생각나서 챙겼어.']); St.addItem(gid); PX.UI.toast(`🎁 ${PX.U.josa(PX.ITEMS[gid].name, '을')} 받았다`); }
+      M.mem().reunion = null; M.mem().longing = 20; M.noteMeet(); M.noteTalk('reunion');
+      if (r.stage >= 3) { const i = await PX.Dlg.choose([{ t: '안아 줄게요.' }, { t: '수고했어요.' }]); if (i === 0) { PX.Dlg.close(); g.modal--; await M.perform('fronthug', true); g.modal++; } else await PX.Dlg.say('player', '수고했어요.'); }
+      g.memory('무사 귀환', `${reu.days}일 만에 돌아온 대위가 제일 먼저 나를 찾아왔다.`, true);
+    } else
     // 선물 들고 오기
     if (S.cap.giftPending) {
       const gid = S.cap.giftPending; S.cap.giftPending = null;
@@ -5022,19 +5372,28 @@ PX.Cap = (() => {
     } else {
       const cat = S.lastRival && St.absMin() - S.lastRivalMin < 60 && r.backoffUntil < St.absMin() ? 'jealousy' : null;
       if (cat) { await PX.Dlg.runLines(PX.Dlg.pick('jealousy', D.jealousy).l); S.lastRival = null; }
-      else await PX.Dlg.say('cap', U.fmt(U.pick(['어, 찾았다.', '여기 있었네. 한참 찾았어.', '{p아}. 근무 끝났어.', '나 왔어. 반갑지?', '너 보러 왔어. 딴 이유 없어.']), PX.Dlg.ctx()), 'smirk');
+      else { // 마지막으로 본 뒤 얼마나 지났는지에 맞는 인사
+        const gc = PX.Mind ? PX.Mind.gapCat() : 'again', V = PX.DLG_V2 || {};
+        const bd = V[gc === 'cont' || gc === 'brief' ? 'brief' : gc] ? PX.Dlg.pick('v_' + gc, V[gc === 'cont' ? 'brief' : gc]) : null;
+        if (bd) await PX.Dlg.runLines(bd.l); else await PX.Dlg.say('cap', U.fmt(U.pick(['{p아}. 근무 끝났어.', '나 왔어.', '너 보러 왔어. 딴 이유 없어.']), PX.Dlg.ctx()), 'smirk');
+        if (PX.Mind) PX.Mind.noteMeet();
+      }
     }
+    if (r.stage >= 2 && PX.Rom && !PX.Rom.nextDate() && !(PX.Mind && PX.Mind.refused('dateAsk')) && St.isWeekend() === false && Math.random() < 0.2) { PX.Dlg.close(); g.modal--; await PX.Rom.capAskDate(); g.modal++; }
     const opts = [{ t: '같이 다녀요.', k: 'follow' }, { t: '잠깐 얘기해요.', k: 'talk' }, { t: '오늘은 혼자 있고 싶어요.', k: 'alone' }, { t: '이따 봐요.', k: 'later' }];
     const i = await PX.Dlg.choose(opts);
     const k = opts[i].k;
     await PX.Dlg.say('player', opts[i].t);
     if (k === 'follow') { await PX.Dlg.say('cap', U.pick(['그 말 기다렸어.', '좋아. 어디든.', '오케이. 네 속도에 맞출게.']), 'smile'); startFollow(); St.addAff(2); }
-    else if (k === 'alone') { await PX.Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; mode = 'sched'; }
-    else if (k === 'later') { await PX.Dlg.say('cap', '응. 이따 꼭 보자.'); r.lastApproach = St.absMin() + 30; mode = 'sched'; r.noFollowUntil = St.absMin() + 60; }
+    else if (k === 'alone') { if (PX.Mind) PX.Mind.noteRefuse('follow', 600); await PX.Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; mode = 'sched'; }
+    else if (k === 'later') { if (PX.Mind) PX.Mind.noteRefuse('follow', 90); await PX.Dlg.say('cap', '응. 이따 꼭 보자.'); r.lastApproach = St.absMin() + 30; mode = 'sched'; r.noFollowUntil = St.absMin() + 60; }
     PX.Dlg.close(); g.modal--;
     if (k === 'talk') await PX.Dlg.capTalk();
   }
-  function startFollow() { mode = 'follow'; St.S.cap.follow = true; }
+  function startFollow() { mode = 'follow'; St.S.cap.follow = true; waitOut = null; }
+  // 동행 잠시 멈추기: 그 자리에서 기다린다 (한 시간 지나거나 근무 시간이면 자기 일정으로)
+  let pausedUntil = 0;
+  function pause() { if (PX.Mind) { PX.Mind.mem().contact = 'NONE'; PX.Mind.apply(); } mode = 'paused'; pausedUntil = St.absMin() + 60; cap.stop(); G().bubble(cap, U.pickFresh('pause', ['응. 여기 있을게.', '다녀와. 안 움직이고 있을게.', '기다리는 건 잘해. 매복 훈련 받았거든.'])); }
   function startVisit() {
     const g = G();
     mode = 'visit';
@@ -5130,41 +5489,9 @@ PX.Cap = (() => {
     PX.Dlg.close(); g.modal--;
     mode = 'stay'; // 07:30까지 있다가 아침 먹으러 간다
   }
-  async function skinRequest() {
-    const S = St.S, g = G(), r = S.rel.cap;
-    const list = PX.DLG_CAP.skinship.filter(b => r.stage >= b.s[0] && r.stage <= b.s[1]);
-    if (!list.length) return;
-    const bd = PX.Dlg.pick('skinship', list);
-    g.modal++;
-    cap.setDirTo(g.player.x, g.player.y);
-    await PX.Dlg.runLines(bd.l);
-    const i = await PX.Dlg.choose([{ t: '좋아요.' }, { t: '지금은 싫어요.' }]);
-    if (i === 0) { await PX.Dlg.say('player', '좋아요.'); PX.Dlg.close(); g.modal--; await doSkin(bd.act, true); }
-    else { await PX.Dlg.say('player', '지금은 싫어요.'); await PX.Dlg.say('cap', U.pick(['응, 알았어.', '그래. 싫으면 안 하는 거야.', '알았어. 대신 옆에서 걷는 건 돼?']), 'smile'); PX.Dlg.close(); g.modal--; lastSkinReq = St.absMin() + 60; }
-  }
-  // 스킨십 실행 (애니메이션 + 기록)
-  const SKIN_KO = { hand: '손잡기', pat: '머리 쓰다듬기', hug: '포옹', kiss: '입맞춤', cheek: '볼에 입맞춤', carry: '업어주기', armlink: '팔짱 끼기' };
-  async function doSkin(act, capAsked) {
-    const S = St.S, g = G(), p = g.player;
-    const m = PX.W.maps[cap.map];
-    if (act === 'hand' || act === 'armlink') {
-      if (mode !== 'follow') startFollow();
-      cap.holding = true; p.holding = true;
-      PX.UI.toast(act === 'hand' ? '🤝 손을 잡았다' : '💞 팔짱을 꼈다');
-    } else {
-      // 가까이 붙기
-      const t = PX.Path.nearestWalkable(m, p.x + 0.7, p.y - 0.7, 2);
-      if (t) { cap.x = t[0] + 0.5; cap.y = t[1] + 0.5; if (U.dist(cap.x, cap.y, p.x, p.y) > 1.3) { cap.x = p.x + 0.6; cap.y = p.y - 0.6; } }
-      cap.setDirTo(p.x, p.y); p.setDirTo(cap.x, cap.y);
-      if (act === 'pat') { cap.doPose('pat', 2.2, 'smile'); p.doPose('idle', 2.2, 'smile'); }
-      if (act === 'hug') { cap.doPose('hug', 2.8, 'smile'); p.doPose('hug', 2.8, 'blush'); }
-      if (act === 'kiss' || act === 'cheek') { cap.doPose('bend', 2, 'smile'); p.doPose('idle', 2, 'blush'); }
-      if (act === 'carry') { cap.doPose('carry', 2.5, 'smirk'); p.hidden = true; setTimeout(() => (p.hidden = false), 2500); g.bubble(cap, '가볍네. 더 먹어야겠다.'); }
-      cap.showEmote('heart', 2.5); setTimeout(() => p.showEmote('heart', 2), 400);
-    }
-    St.addAff(capAsked ? 4 : 5);
-    const key = 'skin_' + act;
-    if (!S.done[key]) { S.done[key] = 1; g.memory(SKIN_KO[act], `처음으로 ${SKIN_KO[act]}. ${act === 'hug' ? '품이 뜨끈했다.' : act === 'hand' ? '손이 반쯤 사라졌다.' : act === 'carry' ? '세상이 높아졌다.' : '얼굴이 화끈거렸다.'}`, true); }
+  async function doSkin(act, capAsked) { // 예전 이름 호환 (AI 대화 행동 등)
+    const map = { hand: 'hand', pat: 'pat', hug: 'fronthug', kiss: 'kiss', cheek: 'kisscheek', carry: 'carry', armlink: 'armlink' };
+    return PX.Mind.perform(map[act] || act, capAsked);
   }
 
   // ---------- 메시지 ----------
@@ -5172,7 +5499,8 @@ PX.Cap = (() => {
     const S = St.S, g = G(), r = S.rel.cap;
     const now = St.absMin();
     if (now - lastMsgCheck < 20) return; lastMsgCheck = now;
-    if (r.stage < 1 || mode === 'follow' || mode === 'visit' || mode === 'stay' || cap.map === g.mapId) return;
+    if (r.stage < 1 || mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'waitOut' || cap.map === g.mapId) return;
+    if (PX.Mind && PX.Mind.justParted(20)) return;
     if (S.time.min < 8 * 60 || S.time.min > 23 * 60 + 30) return;
     if (now - (S.cap.lastMsgMin || 0) < 150 || Math.random() > 0.3) return;
     if (r.noFollowUntil > now && S.time.min > 21 * 60) return;
@@ -5188,7 +5516,7 @@ PX.Cap = (() => {
     if (Math.random() < 0.25 && spotKind() === 'field') S.cap.giftPending = Math.random() < 0.5 ? 'capStone' : 'capSnack';
   }
 
-  return { forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, SKIN_KO, homeId, bump };
+  return { pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
 })();
 
 </script>
@@ -5264,7 +5592,10 @@ PX.UI = (() => {
     $('hLoc').textContent = PX.MAPS[G.mapId].name;
     const r = S.rel.cap;
     const near = G.cap.map === G.mapId;
-    $('capChip').innerHTML = `<b>${S.capName}</b>${near ? ' · 가까이 있음' : ''} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    const M = PX.Mind, op = S.cap.op && S.cap.op.phase === 'away' && !S.cap.op.joint;
+    const comp = PX.Cap.mode === 'follow' && near ? `<span class="ct">${M.ICON[M.contact()]} ${M.contact() === 'NONE' ? '동행 중' : M.NAME[M.contact()]}</span>` : '';
+    const html = `<b>${S.capName}</b>${op ? ' · 🛰️ 장기작전 중' : comp ? '' : near ? ' · 가까이 있음' : ''}${comp} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    if ($('capChip')._h !== html) { $('capChip')._h = html; $('capChip').innerHTML = html; }
   }
   function badge() { const n = St.S.messages.filter(m => m.reply == null).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
 
@@ -5462,6 +5793,13 @@ PX.UI = (() => {
           el('tr', null, el('td', null, '13:00~17:00'), el('td', null, '오후 근무')),
           el('tr', null, el('td', null, '주말'), el('td', null, '비번 · 자유 외출'))),
         el('p', { class: 'muted' }, `오늘 근무 ${done}/2회 완료. 근무지의 업무 자리를 눌러 근무하면 급여 ₢${j.pay}을 받아요.`));
+      const R = PX.Rom, dts = (S.dates || []).filter(d => d.state === 'planned' || d.state === 'on');
+      p.append(el('h4', null, '📅 약속'), ...(dts.length ? dts.map(d => el('p', null, `${R.dayKo(d.day)} ${Cal.fmtTime(d.min)} · ${d.name}${d.kind === 'proposal' ? ' (대위가 꼭 오래요)' : ''}`)) : [el('p', { class: 'muted' }, '잡힌 약속이 없어요. 대위에게 데이트 약속을 잡아 보세요.')]));
+      if (S.wedding && S.wedding.state === 'planned') p.append(el('p', null, `💒 결혼식 ${R.dayKo(S.wedding.day)} 11:00 · 606부대 연병장`));
+      const o = S.cap.op; if (o && o.phase === 'planned' && (o.told || o.joint)) p.append(el('p', null, o.joint ? `🛰️ 작전 명령: ${R.dayKo(o.startDay)} 06:00부터 ${o.days}일 · ${o.role}` : `🛰️ 대위 장기작전: ${R.dayKo(o.startDay)}부터 ${o.days}일`));
+      const lv = el('button', { class: 'menu-btn' }, el('span', null, '🏖️ 휴가 신청'), el('small', null, S.leave && S.leave.to >= S.day ? `${R.dayKo(S.leave.from)}~${R.dayKo(S.leave.to)} 휴가` : '하루~사흘 · 30일에 6일까지'));
+      lv.onclick = () => { R.applyLeave(); };
+      p.append(el('h4', null, '휴가'), lv);
       p.append(el('p', { class: 'muted' }, '대위의 일정은 단말에 나오지 않아요. 부대원들에게 물어보면 알려 줄지도 몰라요.'));
     },
     rel(p) {
@@ -5481,8 +5819,9 @@ PX.UI = (() => {
       const S = St.S;
       if (!S.messages.length) p.append(el('p', { class: 'muted' }, `${S.capName}에게 온 메시지가 없어요. 떨어져 있으면 가끔 연락이 와요.`));
       for (const m of S.messages) {
-        const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t));
+        const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t), ...(m.photo ? [el('img', { class: 'msgph', src: m.photo, alt: '사진' })] : []));
         if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
+        else if (m.reply === 'none') { /* 답장 필요 없는 메시지 */ }
         else if (m.reply != null) { box.append(el('div', { class: 'bub me' }, m.r[m.reply][0]), el('div', { class: 'bub cap' }, m.r[m.reply][2])); }
         else {
           const ch = el('div', { class: 'msgch' });
@@ -5554,6 +5893,7 @@ PX.UI = (() => {
     album(p) {
       const S = St.S;
       if (!S.album.length) p.append(el('p', { class: 'muted' }, '아직 추억이 없어요. 대위와의 첫 순간들이 자동으로 기록돼요. 📷 버튼으로 직접 찍을 수도 있어요.'));
+      if ((S.capPhotos || []).length) { p.append(el('h4', null, `📱 ${S.capName}가 보낸 사진`)); const g2 = el('div', { class: 'album' }); for (const a of S.capPhotos) g2.append(el('div', { class: 'ph' }, el('img', { src: a.img, alt: a.t }), el('small', null, a.t))); p.append(g2, el('h4', null, '📷 추억')); }
       const grid = el('div', { class: 'album' });
       for (const a of S.album.slice().reverse()) grid.append(el('div', { class: 'ph' }, a.img ? el('img', { src: a.img, alt: a.title }) : el('div', { class: 'noimg' }, '📷'), el('b', null, a.title), el('small', null, a.date), el('p', null, a.text)));
       p.append(grid);
@@ -6158,6 +6498,7 @@ PX.Act = (() => {
   // ---------- 이동 ----------
   async function travelMenu() {
     const g = G(), S = St.S, md = PX.MAPS[g.mapId];
+    if (PX.Op && PX.Op.inField()) return PX.Op.board(); // 합동작전 중: 작전 일과
     const list = (md.travel || []).filter(t => PX.MAPS[t.to]);
     if (!list.length) { PX.UI.toast('이곳에서는 다른 곳으로 갈 수 없어요'); return; }
     const it = await PX.UI.menu(`${md.name} · 이동`, list.map(t => ({ t: t.label, sub: `${t.mins >= 60 ? Math.round(t.mins / 60) + '시간' : t.mins + '분'}${t.need === 'scout' ? ' · 수색팀 소속이거나 대위와 동행할 때' : t.need === 'adult' ? ' · 성인만' : ''}`, k: t })));
@@ -7298,6 +7639,753 @@ PX.CapAct = (() => {
 
 </script>
   <script>
+/* js/game/capmind.js */
+// 대위의 단기 기억 · 접촉 상태 머신 · 스킨십 카탈로그
+// 대화·이동·스킨십·동행·메시지가 모두 이 기억을 함께 본다. (호감도 수치만으로 고르지 않는다)
+'use strict';
+PX.Mind = (() => {
+  const U = PX.U, St = PX.St;
+  const G = () => PX.Game;
+  const now = () => St.absMin();
+
+  // ---------- 1. 단기 기억 ----------
+  function mem() {
+    const c = St.S.cap;
+    if (!c.mem) c.mem = {};
+    return Object.assign(c.mem, Object.assign({ talk: -1e9, talkMap: null, topic: null, meet: -1e9, part: -1e9, skin: null, skinMin: -1e9, contact: 'NONE', refused: {}, lines: [], acts: {}, ph: {}, longing: 0, fatigue: 0, smile: -1e9, look: -1e9, goal: null, reunion: null, stayRefusedDay: -1 }, c.mem));
+  }
+  const gap = () => { const m = mem(); return now() - Math.max(m.talk, m.meet); };
+  // 마지막 대화·만남 이후 경과 시간 → 인사 종류
+  function gapCat() {
+    const m = mem(), g = gap();
+    if (m.reunion) return 'reunion';
+    if (g < 2) return 'cont'; if (g < 15) return 'brief'; if (g < 60) return 'recontact';
+    if (g < 360) return 'again'; if (g < 1440) return 'miss'; return 'long';
+  }
+  const noteTalk = (topic) => { const m = mem(); m.talk = now(); m.talkMap = G().mapId; if (topic) m.topic = topic; };
+  const noteMeet = () => { mem().meet = now(); };
+  // 헤어짐: 30분 동안 다시 따라오거나 부르지 않는다 (먼저 말을 거는 건 언제든 가능)
+  function notePart(mins = 30) { const m = mem(), r = St.S.rel.cap; m.part = now(); r.noFollowUntil = Math.max(r.noFollowUntil || 0, now() + mins); }
+  const justParted = (mins = 30) => now() - mem().part < mins;
+  function noteRefuse(act, mins = 180) { mem().refused[act] = now() + mins; }
+  const refused = (act) => (mem().refused[act] || 0) > now();
+  // 대사 ID · 표현 반복 방지
+  const PHRASES = [['miss', /보고 싶었|보고 싶다|보고 싶어/], ['cute', /귀여/], ['pretty', /예뻐|예쁘다/], ['hugq', /안아 줄까|안아줄까/], ['kissq', /뽀뽀해 줄까|뽀뽀할까|뽀뽀해도/], ['sleepq', /나랑 잘래|같이 잘래|같이 자자/]];
+  function phrasesOf(text) { return PHRASES.filter(([, re]) => re.test(text)).map(([k]) => k); }
+  function phraseOk(text) { const m = mem(); return phrasesOf(text).every(k => now() - (m.ph[k] || -1e9) > 45); }
+  function notePhrases(text) { const m = mem(); for (const k of phrasesOf(text)) m.ph[k] = now(); }
+  function noteLine(id) { const m = mem(); m.lines = [id, ...m.lines.filter(x => x !== id)].slice(0, 60); }
+  const usedRecently = (id, n = 25) => mem().lines.slice(0, n).includes(id);
+  // 오래 떨어져 있었다는 말: 실제로 오래 떨어져 있었을 때만
+  const LONG_RE = /오랜만|어디 갔다 왔|왜 이렇게 늦게|하루 종일 기다|한참 찾았|며칠 만|보고 싶었잖아/;
+  function textOk(text) { const g = gap(); if (LONG_RE.test(text) && g < 360 && !mem().reunion) return false; return phraseOk(text); }
+
+  // ---------- 2. 접촉 상태 머신 ----------
+  const WALK = { HAND_HOLD: 'hand', ARM_LINK: 'arm', WAIST_HOLD: 'waist', SHOULDER_HOLD: 'shoulder' };
+  const STILL = { SIDE_HUG: 1, FRONT_HUG: 1, BACK_HUG: 1, EMBRACE: 1 };
+  const REST = { LAP_REST: 1, CUDDLE: 1, SLEEP_CUDDLE: 1 };
+  const NAME = { NONE: '접촉 없음', HAND_HOLD: '손잡기', ARM_LINK: '팔짱', WAIST_HOLD: '허리 감싸기', SHOULDER_HOLD: '어깨 감싸기', SIDE_HUG: '옆에서 안기', FRONT_HUG: '포옹', BACK_HUG: '백허그', EMBRACE: '품에 안기', LAP_REST: '무릎베개', CUDDLE: '누워서 껴안기', SLEEP_CUDDLE: '함께 잠들기' };
+  const ICON = { NONE: '🚶', HAND_HOLD: '🤝', ARM_LINK: '💞', WAIST_HOLD: '🫶', SHOULDER_HOLD: '🤗', SIDE_HUG: '🤗', FRONT_HUG: '🫂', BACK_HUG: '🫂', EMBRACE: '🫂', LAP_REST: '😌', CUDDLE: '🛌', SLEEP_CUDDLE: '💤' };
+  const contact = () => mem().contact;
+  const isWalk = (c = contact()) => !!WALK[c], isHug = (c = contact()) => !!STILL[c], isRest = (c = contact()) => !!REST[c];
+  // 상태를 바꾸면 이전 자세를 먼저 끝내고 새 자세를 건다 (두 접촉이 동시에 유지되지 않게)
+  function setContact(st) {
+    const m = mem(), g = G(), cap = g.cap, p = g.player;
+    const prev = m.contact;
+    if (STILL[prev] || prev === 'NONE') { cap.tempPose = null; p.tempPose = null; }
+    m.contact = st;
+    apply();
+    if (STILL[st]) { cap.doPose(st === 'BACK_HUG' ? 'hug' : 'hug', 9999, 'smile'); p.doPose('hug', 9999, 'blush'); }
+    return prev;
+  }
+  function apply() {
+    const g = G(), cap = g.cap, p = g.player, st = mem().contact;
+    cap.holding = p.holding = !!WALK[st];
+    cap.holdWith = p; p.holdWith = cap;
+    cap.grip = WALK[st] || null;
+    p.grip = st === 'ARM_LINK' ? 'arm' : st === 'HAND_HOLD' ? 'hand' : 'free';
+    St.S.cap.holding = !!WALK[st];
+  }
+  // 걷기 시작하면 포옹은 자연스럽게 풀린다 · 맵을 떠나면 접촉 해제
+  let moveT = 0;
+  function tick(dt) {
+    const g = G(), st = contact();
+    if (!g.cap || st === 'NONE') return;
+    if (g.cap.map !== g.mapId || PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay') { mem().contact = 'NONE'; apply(); return; }
+    if (STILL[st] && g.player.moving) { moveT += dt; if (moveT > 0.25) { moveT = 0; setContact('NONE'); g.cap.tempPose = null; g.player.tempPose = null; if (Math.random() < 0.5) g.bubble(g.cap, U.pickFresh('hugEnd', ['벌써 가?', '…응, 가자.', '아쉽다.', '다음엔 더 길게.']), 1.8); } }
+    else moveT = 0;
+    if (REST[st] && !g.player.seat) setContact('NONE');
+  }
+
+  // ---------- 3. 스킨십 카탈로그 ----------
+  // where: any(같은 맵 가까이) · walk(동행 중 서서) · sit(같이 앉아서) · bed(침대·숙소) · hug(포옹 중)
+  // req/forbid: 필요한/안 되는 접촉 상태 · to: 끝난 뒤 접촉 상태(null이면 그대로) · cd: 쿨다운(게임 분)
+  // anim: pat · hug · bend · hold · lean · none · carry
+  const A = (id, o) => Object.assign({ id, need: 1, where: 'any', req: null, forbid: null, to: null, cd: 10, anim: 'bend', cat: 'light' }, o);
+  const HUGS = ['SIDE_HUG', 'FRONT_HUG', 'BACK_HUG', 'EMBRACE'];
+  const ACTS = [
+    // 접촉 상태 바꾸기 (걸을 때)
+    A('hand', { name: '손잡기', icon: '🤝', need: 2, cat: 'walk', forbid: ['HAND_HOLD'], to: 'HAND_HOLD', cd: 0, anim: 'hold', lines: [['C^:이거 내가 먼저 하려 했는데.'], ['N:큰 손이 내 손을 통째로 감싼다.', 'C*:손 차갑다. 내가 데워 줄게. 계속.'], ['C:잡았다. 이제 안 놔.']] }),
+    A('interlace', { name: '손깍지 끼기', icon: '🫱', need: 3, cat: 'walk', req: ['HAND_HOLD'], to: 'HAND_HOLD', cd: 5, anim: 'hold', lines: [['N:대위가 손가락 사이로 손가락을 하나씩 끼워 넣는다.', 'C*:이게 진짜 잡은 거지.'], ['C:깍지 끼니까 네 손이 진짜 작은 게 느껴진다.', 'C^:놓치면 큰일 나겠네.']] }),
+    A('armlink', { name: '팔짱 끼기', icon: '💞', need: 3, cat: 'walk', forbid: ['ARM_LINK'], to: 'ARM_LINK', cd: 0, anim: 'hold', lines: [['C*:팔 더 꽉 잡아. 놓치면 안 되니까.'], ['C:내 팔 굵어서 잡기 힘들지.', 'C^:양손으로 잡아도 돼.']] }),
+    A('waist', { name: '허리 감싸기', icon: '🫶', need: 4, cat: 'walk', forbid: ['WAIST_HOLD'], to: 'WAIST_HOLD', cd: 0, anim: 'hold', lines: [['N:커다란 팔이 허리를 둘러 자기 쪽으로 끌어당긴다.', 'C*:이 정도는 붙어 다녀야 연인이지.'], ['C:허리 가늘다. 밥 더 먹어.', 'C^:…말은 그렇게 해도 손은 안 뗄 거야.']] }),
+    A('shoulder', { name: '어깨 감싸기', icon: '🤗', need: 3, cat: 'walk', forbid: ['SHOULDER_HOLD'], to: 'SHOULDER_HOLD', cd: 0, anim: 'hold', lines: [['N:대위가 팔을 내 어깨에 툭 걸친다. 무겁고 따뜻하다.', 'C:이러면 아무도 너한테 안 부딪혀.'], ['C*:어깨동무. 학교 다닐 때 이후로 처음이다.']] }),
+    A('pull', { name: '자기 쪽으로 살짝 당기기', icon: '🫴', need: 3, cat: 'walk', req: ['HAND_HOLD', 'ARM_LINK', 'WAIST_HOLD', 'SHOULDER_HOLD'], cd: 8, anim: 'hold', lines: [['N:대위가 나를 슬쩍 자기 쪽으로 당긴다.', 'C:사람 지나가. …핑계야.'], ['C*:좀 더 붙어. 바람 막아 줄게.']] }),
+    A('thumb', { name: '엄지로 손등 쓰다듬기', icon: '👍', need: 3, cat: 'walk', req: ['HAND_HOLD'], cd: 8, anim: 'none', lines: [['N:잡은 손등을 엄지가 천천히 쓸어내린다.', 'C:…버릇 됐네. 잡으면 이렇게 하게 돼.'], ['N:걷는 동안 엄지가 손등 위에서 작게 원을 그린다.', 'C*:간지러워? 그럼 더 해야지.']] }),
+    A('release', { name: '손 놓기', icon: '✋', need: 0, cat: 'walk', req: ['HAND_HOLD', 'ARM_LINK', 'WAIST_HOLD', 'SHOULDER_HOLD'], to: 'NONE', cd: 0, anim: 'none', lines: [['C;:…아쉽다.'], ['C:응. 필요하면 다시 잡아.'], ['C*:놓아준 거 아니다. 잠깐 빌려준 거야.']] }),
+    // 가벼운 애정 표현
+    A('pat', { name: '머리 쓰다듬기', icon: '✋', need: 1, anim: 'pat', lines: [['N:커다란 손이 머리 위에 얹힌다.', 'C^:머리 작다. 한 손에 다 들어와.'], ['N:대위가 머리를 헝클어뜨렸다가, 다시 정리해 준다.', 'C*:원상복구. …거의.'], ['C:오늘도 잘했어. 그 말 하려고.']] }),
+    A('bangs', { name: '앞머리 정리해 주기', icon: '💇', need: 2, anim: 'bend', lines: [['N:대위가 손가락 끝으로 앞머리를 정리해 준다. 생각보다 섬세하다.', 'C:바람에 다 날렸네. …됐다. 예쁘다.'], ['C*:가만있어. 눈 찌르겠다.', 'N:손끝이 이마를 스친다.']] }),
+    A('cheek', { name: '뺨 쓰다듬기', icon: '🫳', need: 3, anim: 'bend', lines: [['N:큰 손바닥이 뺨을 감싼다. 굳은살이 까칠하다.', 'C:손 거칠지. 미안. 그래도 이러고 싶었어.'], ['C*:얼굴 뜨겁다. 내 손이 차가운 거 아니고.']] }),
+    A('chin', { name: '턱 살짝 받치기', icon: '☝️', need: 4, anim: 'bend', lines: [['N:대위가 손가락으로 턱을 살짝 들어 올린다.', 'C*:고개 숙이지 마. 얼굴 보고 싶어.'], ['C:이렇게 보니까 더 잘 보인다.', 'C^:…뭘 기대한 얼굴이야, 그건.']] }),
+    A('backpat', { name: '등 토닥이기', icon: '🫶', need: 1, anim: 'pat', lines: [['N:두툼한 손이 등을 툭툭 두드린다.', 'C:수고했어. 오늘 하루.'], ['C^:잘하고 있어. 진짜로.']] }),
+    A('wrist', { name: '손목 가볍게 잡기', icon: '🤚', need: 2, anim: 'hold', lines: [['N:대위가 손목을 가볍게 잡아 멈춰 세운다.', 'C:잠깐. 그냥… 가지 말라고.'], ['C*:맥박 빠르다. 왜 그럴까.']] }),
+    A('handkiss', { name: '손등에 입맞춤', icon: '💋', need: 4, cd: 20, anim: 'bend', lines: [['N:대위가 내 손을 들어 손등에 짧게 입을 맞춘다.', 'C*:기사 흉내. 어울려?'], ['N:잡고 있던 손등에 입술이 닿았다 떨어진다.', 'C^:손 잡고 있으면 자꾸 이러고 싶어져.']] }),
+    A('fingerkiss', { name: '손가락 끝에 입맞춤', icon: '💋', need: 4, cd: 20, anim: 'bend', lines: [['N:손가락 끝에 하나씩 입술이 닿는다. 다섯 번.', 'C*:하나도 안 빼먹었다.']] }),
+    A('forehead', { name: '이마 맞대기', icon: '🙇', need: 3, cd: 15, anim: 'bend', lines: [['N:대위가 허리를 숙여 이마를 맞댄다. 숨결이 가깝다.', 'C:열 없네. 다행이다.', 'C*:…핑계였어. 그냥 가까이 있고 싶어서.'], ['N:이마가 닿는다. 대위가 눈을 감는다.', 'C:잠깐만. 이대로.']] }),
+    A('nose', { name: '코끝 맞대기', icon: '👃', need: 4, cd: 15, anim: 'bend', lines: [['N:코끝이 살짝 닿는다.', 'C^:에스키모 인사래. 정시우가 알려 줬어.'], ['C*:코 차갑다. 데워 줄게.', 'N:코끝을 문지른다.']] }),
+    A('pinch', { name: '볼 살짝 꼬집기', icon: '🤏', need: 2, cd: 10, anim: 'bend', lines: [['N:대위가 볼을 살짝 꼬집는다.', 'C*:말랑하다. 이거 매일 해도 돼?'], ['C^:볼에 뭐 묻은 줄 알았는데 그냥 귀여워서 그랬어.']] }),
+    A('whisper', { name: '귀에 대고 속삭이기', icon: '🗣️', need: 3, cd: 15, anim: 'bend', lines: [['N:대위가 허리를 숙여 귀에 낮게 말한다.', 'C*:…오늘 너 진짜 예쁘다. 크게 말하면 다 들으니까.'], ['N:귓가에 낮은 목소리.', 'C:비밀 하나 알려 줄까. …아무것도 아니야. 이러고 싶었어.']] }),
+    A('lean', { name: '일부러 몸 숙여 눈 맞추기', icon: '🙃', need: 2, cd: 10, anim: 'bend', lines: [['N:올려다보자 대위가 일부러 허리를 숙여 눈높이를 맞춘다.', 'C*:목 아프지? 내가 내려올게.'], ['C^:이제 똑같은 높이다. …가까워졌네.']] }),
+    A('chinhead', { name: '머리 위에 턱 올리기', icon: '🗻', need: 3, cd: 15, anim: 'hug', lines: [['N:대위가 내 정수리에 턱을 툭 올린다.', 'C^:딱 맞는 받침대.'], ['C*:여기서 보면 세상이 다 내 거 같다. 너 포함.']] }),
+    A('bite', { name: '볼을 입술로 물었다 놓기', icon: '😙', need: 5, cd: 30, anim: 'bend', lines: [['N:대위가 볼을 입술로 살짝 물었다 놓는다.', 'C*:맛있어 보여서.'], ['C^:아프지? 아니지? 그럼 한 번 더.']] }),
+    A('carry', { name: '업어 달라고 하기', icon: '🧗', need: 4, cd: 30, anim: 'carry', lines: [['C^:올라와. 가볍네. 더 먹어야겠다.'], ['C*:업은 김에 집까지 갈까?']] }),
+    // 포옹
+    A('fronthug', { name: '정면으로 끌어안기', icon: '🫂', need: 3, cat: 'hug', forbid: HUGS, to: 'FRONT_HUG', cd: 3, anim: 'hug', lines: [['N:넓은 품이 뜨끈하다.', 'C:…좀 더 이러고 있자.'], ['N:대위가 두 팔로 꽉 끌어안는다. 숨이 막힐 만큼은 아니게.', 'C*:이 정도면 안 아프지?'], ['C^:안기면 네 머리가 딱 내 심장 자리야.']] }),
+    A('backhug', { name: '뒤에서 안기 (백허그)', icon: '🫂', need: 4, cat: 'hug', forbid: HUGS, to: 'BACK_HUG', cd: 3, anim: 'hug', lines: [['N:뒤에서 큰 팔이 감겨 온다. 등 전체가 따뜻하다.', 'C*:앞에 뭐 보고 있었어? 나도 같이 볼래.'], ['C:이러면 네가 어디 못 가지.']] }),
+    A('sidehug', { name: '옆에서 허리 감싸 안기', icon: '🤗', need: 3, cat: 'hug', forbid: HUGS, to: 'SIDE_HUG', cd: 3, anim: 'hug', lines: [['N:대위가 옆에서 허리를 감싸 자기 쪽으로 끌어당긴다.', 'C^:딱 붙었다.']] }),
+    A('embrace', { name: '품에 안기', icon: '🫂', need: 4, cat: 'hug', forbid: HUGS, to: 'EMBRACE', cd: 3, anim: 'hug', lines: [['N:팔 안에 가두듯 포근하게 안긴다. 바깥 소리가 멀어진다.', 'C:여기 있으면 아무 일도 안 생겨. 약속해.'], ['C*:들어와. 자리 비워 놨어.']] }),
+    A('hugmore', { name: '조금 더 안기', icon: '🫂', need: 3, where: 'hug', cd: 2, anim: 'hug', lines: [['C*:좀 더? 좋아. 얼마든지.'], ['N:팔이 더 깊게 감긴다.', 'C:…놓기 싫다.']] }),
+    A('rock', { name: '안은 채 천천히 흔들기', icon: '🎶', need: 4, where: 'hug', cd: 5, anim: 'hug', lines: [['N:대위가 안은 채 몸을 좌우로 천천히 흔든다.', 'C^:춤 아니야. 그냥 이러고 싶어서.']] }),
+    A('bury', { name: '어깨에 얼굴 묻기', icon: '😌', need: 4, where: 'hug', cd: 5, anim: 'hug', lines: [['N:대위가 고개를 숙여 내 어깨에 얼굴을 묻는다.', 'C:…잠깐만. 충전 중이야.'], ['C;:오늘 좀 힘들었거든. 이거면 돼.']] }),
+    A('hugpat', { name: '안은 채 등 토닥이기', icon: '🫶', need: 3, where: 'hug', cd: 4, anim: 'hug', lines: [['N:안은 채 등을 천천히 토닥인다.', 'C:괜찮아. 다 괜찮아.']] }),
+    A('lookface', { name: '얼굴 바라보기', icon: '👀', need: 3, where: 'hug', cd: 3, anim: 'hug', lines: [['N:대위가 안은 채 고개를 숙여 얼굴을 들여다본다.', 'C*:빨개졌다. 기록해 둔다.'], ['C^:이 거리에서 보는 게 제일 좋아.']] }),
+    A('hugkiss', { name: '안은 채 입맞춤', icon: '💋', need: 4, where: 'hug', cd: 15, anim: 'hug', lines: [['N:안긴 채로 짧게 입술이 닿는다.', 'C:…한 번 더 해도 돼?'], ['N:대위가 품 안에서 이마에 입을 맞춘다.', 'C^:안고 있으면 이것까지 해야 완성이야.']] }),
+    A('hugend', { name: '포옹 풀기', icon: '✋', need: 0, cat: 'hug', req: HUGS, to: 'NONE', cd: 0, anim: 'none', lines: [['C;:벌써?'], ['C:응. …한 번만 더 꽉.', 'N:놓기 직전에 한 번 더 꽉 안는다.']] }),
+    // 입맞춤
+    A('kissforehead', { name: '이마에 입맞춤', icon: '😚', need: 4, cat: 'kiss', cd: 15, anim: 'bend', lines: [['N:이마에 입술이 오래 머문다.', 'C:이건 잘 자라는 거 말고, 그냥 좋아서.'], ['C^:이마는 허락 안 받아도 되는 데라고 내가 정했어.']] }),
+    A('kisstemple', { name: '관자놀이에 입맞춤', icon: '😚', need: 4, cat: 'kiss', cd: 15, anim: 'bend', lines: [['N:관자놀이에 짧게 입술이 닿는다.', 'C*:여기 맥 뛰는 거 느껴져.']] }),
+    A('kisscheek', { name: '볼에 입맞춤', icon: '😚', need: 4, cat: 'kiss', cd: 10, anim: 'bend', lines: [['N:볼에 쪽.', 'C^:소리 났다. 다들 들었겠다.'], ['C*:한쪽만 하면 섭섭하잖아.', 'N:반대쪽 볼에도 쪽.']] }),
+    A('kissnose', { name: '코끝에 입맞춤', icon: '😚', need: 4, cat: 'kiss', cd: 15, anim: 'bend', lines: [['N:코끝에 쪽.', 'C^:제일 튀어나온 데부터.']] }),
+    A('kissmany', { name: '볼에 장난스럽게 여러 번', icon: '😘', need: 4, cat: 'kiss', cd: 30, anim: 'bend', lines: [['N:쪽, 쪽, 쪽. 볼에 연달아 입맞춤이 쏟아진다.', 'C*:셀 수 있으면 세 봐.'], ['C^:한 번만 하려 했는데 멈추는 법을 까먹었어.']] }),
+    A('kiss', { name: '입술에 짧게 입맞춤', icon: '💋', need: 4, cat: 'kiss', cd: 15, anim: 'bend', lines: [['N:짧게 입술이 닿았다 떨어진다.', 'C*:…짧았지. 일부러야. 아쉬우라고.'], ['N:대위가 허리를 숙인다. 짧고 조심스러운 입맞춤.', 'C:괜찮았어?']] }),
+    A('kisslong', { name: '조금 더 오래 입맞춤', icon: '💋', need: 5, cat: 'kiss', cd: 30, anim: 'bend', lines: [['N:이번엔 조금 더 오래. 큰 손이 뒷목을 받친다.', 'C:…숨 쉬었어?', 'C*:다음엔 숨 쉬는 법부터 같이 연습하자.'], ['N:입맞춤이 길어진다. 떨어지고 나서도 이마가 닿아 있다.', 'C:이러면 오늘 하루 다 괜찮아져.']] }),
+    A('kissafter', { name: '입맞춤 뒤 얼굴 바라보기', icon: '👀', need: 4, cat: 'kiss', cd: 10, anim: 'bend', after: ['kiss', 'kisslong', 'hugkiss'], lines: [['N:대위가 얼굴을 떼지 않고 가만히 바라본다.', 'C*:이 표정 보려고 하는 거야.']] }),
+    // 앉아서
+    A('sitclose', { name: '옆에 바짝 앉기', icon: '🪑', need: 2, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위가 엉덩이를 붙여 바짝 당겨 앉는다.', 'C*:자리 넓은데 왜 붙냐고? 넓어서.'], ['C:여기 앉으면 네 어깨가 내 팔에 닿아. 그게 좋아.']] }),
+    A('leanshoulder', { name: '어깨에 머리 기대기', icon: '😌', need: 3, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위 어깨에 머리를 기댄다. 대위가 숨을 고르며 움직이지 않는다.', 'C:…편해? 그럼 나 오늘 여기서 안 움직인다.'], ['C^:어깨 높이 딱 맞지. 이러려고 큰 거야.']] }),
+    A('sitwaist', { name: '앉은 채 허리에 팔 두르기', icon: '🫶', need: 4, where: 'sit', cd: 10, anim: 'none', lines: [['N:팔이 허리를 감아 자기 쪽으로 당긴다.', 'C*:앉아 있을 땐 이게 정석이야.']] }),
+    A('lappillow', { name: '무릎베개 해 주기', icon: '😌', need: 4, where: 'sit', to: 'LAP_REST', cd: 20, anim: 'none', lines: [['N:대위가 무릎을 툭툭 친다. 누우라는 뜻이다.', 'C:허벅지 단단해서 베개로는 별로일 거야.', 'C^:대신 머리는 계속 쓰다듬어 줄게.'], ['N:대위 무릎에 머리를 누인다. 커다란 손이 머리카락을 천천히 빗어 넘긴다.', 'C:자도 돼. 깨울 일 없어.']] }),
+    A('backstroke', { name: '등을 천천히 쓰다듬기', icon: '🫳', need: 3, where: 'sit', cd: 10, anim: 'none', lines: [['N:커다란 손이 등을 위아래로 천천히 쓸어내린다.', 'C:긴장 풀어. 여긴 안전해.']] }),
+    A('fingers', { name: '손가락 만지작거리기', icon: '🫱', need: 3, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위가 내 손가락을 하나씩 접었다 폈다 한다.', 'C*:손가락 하나가 내 손가락 반이야.'], ['C:가만있어. 반지 사이즈 재는 거 아니야. …아마.']] }),
+    A('cheekpoke', { name: '장난스럽게 뺨 누르기', icon: '👉', need: 2, where: 'sit', cd: 10, anim: 'none', lines: [['N:손가락이 볼을 꾹 누른다.', 'C^:들어간다. 신기하다.']] }),
+    // 침대 · 휴식 공간 (연인 이상, 같은 방에 있을 때)
+    A('liebeside', { name: '침대에 나란히 눕기', icon: '🛏️', need: 4, where: 'bed', cd: 10, anim: 'none', lines: [['N:침대가 대위 무게에 한쪽으로 기운다. 자연스럽게 그쪽으로 굴러간다.', 'C*:중력이야. 내 탓 아니야.'], ['C:천장 보는 거 좋다. 옆에 네가 있으니까.']] }),
+    A('armpillow', { name: '팔베개 해 주기', icon: '💪', need: 4, where: 'bed', cd: 15, anim: 'none', lines: [['N:대위가 팔을 쭉 뻗어 베개를 만든다. 단단하고 따뜻하다.', 'C:저려도 말 안 할게.', 'C*:대신 아침에 팔 못 쓰면 네가 밥 먹여 줘.']] }),
+    A('cuddle', { name: '옆으로 누워 끌어안기', icon: '🛌', need: 4, where: 'bed', to: 'CUDDLE', cd: 10, anim: 'none', lines: [['N:대위가 옆으로 돌아누워 품 안에 끌어안는다.', 'C:…이게 제일 좋은 자세야. 결정했어.'], ['N:뒤에서 감싸 안긴다. 등에 심장 소리가 느껴진다.', 'C*:심장 소리 크지. 너 때문이야.']] }),
+    A('hairstroke', { name: '머리카락 쓰다듬기', icon: '🫳', need: 4, where: 'bed', cd: 8, anim: 'none', lines: [['N:머리카락 사이로 손가락이 천천히 지나간다.', 'C:졸리면 자. 계속 이러고 있을게.']] }),
+    A('massage', { name: '어깨 주물러 주기', icon: '💆', need: 3, where: 'bed', cd: 30, anim: 'none', energy: 12, lines: [['N:큰 손이 어깨를 조심스럽게 주무른다. 힘 조절에 엄청 신경 쓰는 게 느껴진다.', 'C:아프면 말해. 나 손힘 세서.', 'C^:어깨 많이 뭉쳤네. 오늘 고생했구나.'], ['N:엄지가 날갯죽지 밑을 꾹꾹 누른다.', 'C*:여기가 제일 뭉쳤다. 내가 다 풀어 줄게.']] }),
+    A('blanket', { name: '이불 덮어 주기', icon: '🛏️', need: 4, where: 'bed', cd: 30, anim: 'none', lines: [['N:대위가 이불을 턱 밑까지 끌어올려 덮어 준다. 귀퉁이까지 꼼꼼하게.', 'C:군대식이야. 각 잡아서 덮었어.']] }),
+    A('watchsleep', { name: '잠든 척하기', icon: '😴', need: 4, where: 'bed', cd: 30, anim: 'none', lines: [['N:눈을 감는다. 한참 동안 시선이 느껴진다.', 'C:…자는 얼굴도 예쁘네. 이건 깨어 있을 땐 못 하는 말이야.', 'N:이마에 조심스러운 입맞춤.']] }),
+  ];
+  const BY = {}; for (const a of ACTS) BY[a.id] = a;
+
+  // 지금 이 행동을 할 수 있는가 → { ok, why }
+  function where() {
+    const g = G(), cap = g.cap, p = g.player;
+    if (!cap || cap.map !== g.mapId || U.dist(cap.x, cap.y, p.x, p.y) > 3.2) return null;
+    const md = PX.MAPS[g.mapId];
+    const privateRoom = md.home || md.innRoom || g.mapId === 'q_captain';
+    const onBed = p.seat && p.seat.obj && p.seat.obj.use === 'bed';
+    return { hug: isHug(), sit: !!p.seat && !onBed, bed: privateRoom && (onBed || PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay'), walk: !p.seat, privateRoom };
+  }
+  function check(a) {
+    const S = St.S, st = S.rel.cap.stage, c = contact(), w = where(), m = mem();
+    if (!w) return { ok: false, why: '대위가 가까이 있어야 해요' };
+    if (st < a.need) return { ok: false, why: `${St.STAGES[a.need]} 이상` };
+    if (a.req && !a.req.includes(c)) return { ok: false, hide: true };
+    if (a.forbid && a.forbid.includes(c)) return { ok: false, hide: true }; // 이미 하고 있는 건 다시 묻지 않는다
+    if (a.where === 'hug' && !w.hug) return { ok: false, hide: true };
+    if (a.where === 'sit' && !w.sit) return { ok: false, hide: true };
+    if (a.where === 'bed' && !w.bed) return { ok: false, hide: true };
+    if (a.cat === 'walk' && !w.walk && a.id !== 'release') return { ok: false, hide: true };
+    if (a.after && !a.after.includes(m.skin)) return { ok: false, hide: true };
+    if (S.rel.cap.backoffUntil > now() && a.cat === 'kiss') return { ok: false, why: '오늘은 조심스러워해요' };
+    const left = (m.acts[a.id] || -1e9) + a.cd - now();
+    if (left > 0) return { ok: false, why: `방금 했어요 (${Math.ceil(left)}분 뒤)` };
+    return { ok: true };
+  }
+  // 메뉴에 보일 행동 (숨길 건 숨기고, 못 하는 건 이유와 함께 흐리게)
+  function menuItems() {
+    const out = [];
+    for (const a of ACTS) { const c = check(a); if (c.hide) continue; out.push({ a, ok: c.ok, why: c.why }); }
+    return out;
+  }
+  // 실행: 이전 자세 끝내기 → 위치 맞추기 → 애니메이션 → 대사 → 상태·기록
+  async function perform(id, capAsked) {
+    const a = BY[id], g = G(), cap = g.cap, p = g.player, S = St.S, m = mem();
+    if (!a) return false;
+    const c = check(a); if (!c.ok) { if (c.why) PX.UI.toast(c.why); return false; }
+    if (a.to && WALK[a.to] && PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay') PX.Cap.startFollow();
+    // 포옹·서서 하는 행동은 가까이 붙는다 (손잡기 상태는 유지)
+    const w = where();
+    if (!w.sit && !w.bed && a.anim !== 'none' && !WALK[a.to || '']) {
+      const m2 = PX.W.maps[cap.map];
+      if (a.to === 'BACK_HUG') { const t = [p.x - (p.dir === 1 ? 0.6 : p.dir === 3 ? -0.6 : 0), p.y - (p.dir === 0 ? 0.6 : p.dir === 2 ? -0.6 : 0)]; if (PX.W.walkable(m2, Math.floor(t[0]), Math.floor(t[1]))) { cap.x = t[0]; cap.y = t[1]; } cap.dir = p.dir; }
+      else { const t = PX.Path.nearestWalkable(m2, p.x + 0.7, p.y - 0.7, 2); if (t) { cap.x = t[0] + 0.5; cap.y = t[1] + 0.5; if (U.dist(cap.x, cap.y, p.x, p.y) > 1.3) { cap.x = p.x + 0.6; cap.y = p.y - 0.6; } } cap.setDirTo(p.x, p.y); p.setDirTo(cap.x, cap.y); }
+      cap.stop();
+    }
+    if (a.to) setContact(a.to);
+    if (!STILL[a.to || ''] && !isHug()) {
+      if (a.anim === 'pat') { cap.doPose('pat', 2.2, 'smile'); p.doPose('idle', 2.2, 'smile'); }
+      else if (a.anim === 'bend') { cap.doPose('bend', 2, 'smile'); p.doPose('idle', 2, 'blush'); }
+      else if (a.anim === 'hug') { cap.doPose('hug', 2.4, 'smile'); p.doPose('hug', 2.4, 'blush'); }
+      else if (a.anim === 'carry') { cap.doPose('carry', 2.5, 'smirk'); p.hidden = true; setTimeout(() => (p.hidden = false), 2500); }
+    }
+    if (a.cat === 'kiss' || a.id === 'fronthug' || a.id === 'embrace') { cap.showEmote('heart', 2.2); setTimeout(() => p.showEmote('heart', 1.8), 400); }
+    m.acts[a.id] = now(); m.skin = a.id; m.skinMin = now(); noteMeet();
+    // 대사: 이 행동에서 최근에 안 나온 묶음
+    const pool = a.lines.map((l, i) => ({ l, k: a.id + '#' + i })).filter(x => !usedRecently(x.k, 12));
+    const pick = U.pick(pool.length ? pool : a.lines.map((l, i) => ({ l, k: a.id + '#' + i })));
+    noteLine(pick.k);
+    g.modal++; await PX.Dlg.runLines(pick.l); PX.Dlg.close(); g.modal--;
+    if (a.energy) S.energy = Math.min(100, S.energy + a.energy);
+    St.addAff(capAsked ? 3 : (a.need >= 4 ? 4 : 2));
+    const key = 'skin_' + a.id;
+    if (!S.done[key] && !['release', 'hugend'].includes(a.id) && (a.need >= 3 || ['hand', 'pat'].includes(a.id))) { S.done[key] = 1; g.memory(a.name, firstText(a), true); }
+    return true;
+  }
+  const firstText = (a) => ({ hand: '처음 손을 잡았다. 손이 반쯤 사라졌다.', fronthug: '처음 안겼다. 품이 뜨끈했다.', kiss: '처음 입을 맞췄다. 짧았는데 오래 기억날 것 같다.', waist: '허리에 감긴 팔이 묵직했다.', lappillow: '대위 무릎을 베고 잠깐 졸았다.', armpillow: '팔베개는 생각보다 단단했다.' }[a.id] || `처음으로 ${a.name}. 얼굴이 화끈거렸다.`);
+
+  // ---------- 대위가 먼저 원할 때 (먼저 묻고, 거절하면 같은 건 한동안 다시 안 묻는다) ----------
+  const ASKS = [
+    { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?']] },
+    { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?']] },
+    { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.']] },
+    { id: 'fronthug', ask: [['C:안아도 돼?', 'C*:지금 좀 안고 싶어. 이유는 안아 보고 말할게.'], ['C:…잠깐 이리 와 봐. 안아 보게.']] },
+    { id: 'pat', ask: [['C:머리 이리 내밀어. 쓰다듬게.']] },
+    { id: 'kisscheek', ask: [['C:볼 좀 빌려줘. 금방 돌려줄게.']] },
+    { id: 'kissforehead', ask: [['C:이마 좀. …이마에 하는 건 괜찮지?']] },
+    { id: 'kiss', ask: [['C:…해도 돼?', 'C*:뭘 하냐고 묻지 마. 알잖아.']] },
+  ];
+  async function capAsk() {
+    const g = G(), S = St.S, m = mem();
+    const list = ASKS.filter(x => { const a = BY[x.id]; return check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6); });
+    if (!list.length) return false;
+    const x = U.pick(list), bd = U.pick(x.ask);
+    noteLine('ask_' + x.id);
+    g.modal++;
+    g.cap.setDirTo(g.player.x, g.player.y);
+    await PX.Dlg.runLines(bd);
+    const i = await PX.Dlg.choose([{ t: '좋아요.' }, { t: '지금은 싫어요.' }]);
+    if (i === 0) { await PX.Dlg.say('player', '좋아요.'); PX.Dlg.close(); g.modal--; await perform(x.id, true); return true; }
+    await PX.Dlg.say('player', '지금은 싫어요.');
+    await PX.Dlg.say('cap', U.pickFresh('backoff', ['응, 알았어.', '그래. 싫으면 안 하는 거야.', '알았어. 대신 옆에서 걷는 건 돼?', '응. 물어본 거야. 조른 거 아니고.', '알았어. 다음엔 네가 먼저 하고 싶을 때까지 기다릴게.']), 'smile');
+    PX.Dlg.close(); g.modal--;
+    noteRefuse(x.id, 240);
+    return true;
+  }
+
+  return { mem, gap, gapCat, noteTalk, noteMeet, notePart, justParted, noteRefuse, refused, phraseOk, notePhrases, noteLine, usedRecently, textOk, contact, setContact, apply, isWalk, isHug, isRest, tick, ACTS, BY, check, menuItems, perform, capAsk, NAME, ICON, where };
+})();
+
+</script>
+  <script>
+/* js/game/longop.js */
+// 장기작전: 일정 · 직업별 동행 · 원거리 단말 메시지 · 사진 · 그리움 · 복귀 절차 · 합동작전 일과
+// 대위는 작전 중에 순간이동해서 나타나지 않는다. 멀리 있으면 단말로만 반응한다.
+'use strict';
+PX.Op = (() => {
+  const U = PX.U, St = PX.St, Cal = PX.Cal;
+  const G = () => PX.Game;
+  const now = () => St.absMin();
+  const op = () => St.S.cap.op || null;
+  const DAY = 1440;
+  const AREAS = ['외곽 3구역 능선', '붉은 협곡 지대', '은사막 북쪽 가장자리', '폐쇄 통신탑 일대', '모래폭풍 관측 구역'];
+  const SQUAD = ['park', 'lee', 'choi', 'jung'];
+
+  // ---------- 일정 ----------
+  // 열흘에 한 번꼴, 이틀 전에 잡히고 대위가 미리 말해 준다
+  function maybeSchedule() {
+    const S = St.S, o = op();
+    if (o && o.phase !== 'done') return;
+    if (S.rel.cap.stage < 1) return;
+    const last = o ? o.end : -1e9;
+    if (now() - last < 9 * DAY || Math.random() > 0.14) return;
+    plan();
+  }
+  function plan(opts = {}) {
+    const S = St.S, job = S.player.job;
+    const days = opts.days || U.pick([3, 4, 5, 5, 6, 7, 7, 10]);
+    const startDay = S.day + (opts.inDays != null ? opts.inDays : 2);
+    // 직업별 동행: 수색팀은 함께 · 군의관·정비는 가끔 · 민간 연구원은 승인된 공동 조사일 때만
+    const p = { scout: 1, medic: 0.25, engineer: 0.25, researcher: 0.12 }[job] || 0;
+    const joint = opts.joint != null ? opts.joint : Math.random() < p;
+    S.cap.op = { phase: 'planned', startDay, start: startDay * DAY + 6 * 60, days, end: (startDay + days) * DAY + 14 * 60, joint, area: U.pick(AREAS), comms: Array.from({ length: days + 1 }, (_, i) => i === 0 || Math.random() > 0.2), sent: {}, queue: [], jointDone: {}, told: false, role: joint ? { scout: '수색팀 소위', medic: '의료 지원', engineer: '현장 기술 지원', researcher: '공동 안전구역 조사' }[job] : null };
+    return S.cap.op;
+  }
+  const isAway = (id) => { const o = op(); return !!(o && o.phase === 'away' && (id === 'cap' || (SQUAD.includes(id) && !o.joint) || (o.joint && SQUAD.includes(id)))); };
+  const inField = () => { const o = op(); return !!(o && o.phase === 'away' && o.joint); };
+  const dayIdx = () => { const o = op(); return o ? Math.floor((now() - o.start) / DAY) + 1 : 0; };
+
+  // 매 분 호출
+  function tick() {
+    const S = St.S, o = op(), t = now(), g = G();
+    if (!o) return;
+    if (o.phase === 'planned') {
+      // 전날 저녁까지 못 만났으면 단말로 알린다
+      if (!o.told && t >= o.start - DAY + 18 * 60 - 6 * 60) { o.told = true; send(o.joint ? { t: `작전 명령 내려왔어. 내일 아침 6시, ${o.days}일. 이번엔 같이 간다. 장비 챙겨.`, r: [['네, 준비할게요.', 2, '좋아. 내 뒤로 두 걸음. 그것만 기억해.'], ['떨려요.', 2, '정상이야. 내가 있어.']] } : { t: `나 내일 아침에 장기작전 나가. ${o.days}일. 위치는 말 못 해. 미안.`, r: [['조심히 다녀와요.', 3, '응. 꼭 돌아올게. 약속.'], ['가기 전에 얼굴 봐요.', 3, '이따 저녁에 갈게. 기다려.']] }); }
+      if (t >= o.start) depart();
+      return;
+    }
+    if (o.phase === 'away') {
+      if (!o.joint) { awayMessages(); St.S.cap.mem && (St.S.cap.mem.longing = Math.min(100, (St.S.cap.mem.longing || 0) + 100 / (o.days * DAY))); }
+      if (t >= o.end) o.joint ? jointReturn() : returnHome();
+      return;
+    }
+    if (o.phase === 'return') returnTick();
+  }
+
+  // ---------- 출발 ----------
+  function depart() {
+    const S = St.S, o = op(), g = G();
+    o.phase = 'away';
+    PX.Cap.release(null, 0);
+    if (o.joint) { g.trigger(jointDepart); return; }
+    PX.Cap.moveTo(null); g.cap.map = null; PX.Cap.mode = 'op';
+    send({ t: '출발했어. 수송선 안이야.', photo: 'ship', r: [['조심히 다녀와요.', 2, '응. 도착하면 연락할게.'], ['벌써 보고 싶어요.', 3, '…출발한 지 십 분 됐어. 나도.']] });
+  }
+  // ---------- 원거리 메시지 ----------
+  const MSG = {
+    1: [{ t: '아침 먹었어? 난 먹었어. 맛은 없었고.', r: [['먹었어요.', 1, '잘했어. 나 없다고 거르지 마.'], ['아직이요.', 1, '지금 먹어. 확인한다.']] }, { t: '도착했다. 야영지 치는 중. 바람이 엄청 분다.', photo: 'camp', r: [['조심해요.', 2, '응. 텐트가 날아가면 사진 보내 줄게.']] }],
+    2: [{ t: '오늘 하루 종일 걸었어. 다리 아프다.', r: [['고생했어요.', 2, '그 말 들으니까 반은 나았다.'], ['주물러 주고 싶다.', 3, '돌아가면 해 줘. 기억해 둔다.']] }, { t: '여긴 바람이 엄청 불어. 모래가 안 들어간 데가 없어.', photo: 'desert', r: [['물 많이 마셔요.', 2, '응. 너 말 들으려고 방금 마셨어.']] }, { t: '너 지금 뭐 해?', r: [['일하는 중이에요.', 1, '열심히 하네. 나도 열심히 할게.'], ['대위님 생각이요.', 3, '…지금 그 말 때문에 경계 서다가 웃었어.']] }],
+    3: [{ t: '이상한 광물 하나 찾았어. 네가 좋아할 것 같아서 챙겨 놨어.', photo: 'mineral', r: [['예뻐요!', 2, '실물이 더 예뻐. 너처럼.'], ['위험한 건 아니죠?', 2, '박 중사가 두 번 확인했어.']] }, { t: '오늘은 통신이 좀 불안정해. 답 늦어도 걱정하지 마.', r: [['알겠어요.', 1, '고마워.']] }],
+    mid: [{ t: '보고 싶다.', r: [['저도요.', 3, '…지금 근무만 아니면 뛰어갔어.'], ['얼마 안 남았어요.', 2, '응. 세고 있어.']] }, { t: '나 돌아가면 하루는 네 옆에 붙어 있을 거야.', r: [['좋아요.', 3, '취소 불가다.'], ['하루는 너무 길어요.', 1, '그럼 두 시간만 붙어 있을게. 네가 싫다고 하면.']] }, { t: '박 중사가 나보고 단말 좀 그만 보래.', photo: 'squad', r: [['안 돼요. 계속 봐요.', 3, '명령 접수.'], ['박 중사님 말 들어요.', 1, '…알았어. 대신 밤에 볼게.']] }, { t: '정비하다가 손 다쳤어. 아니, 긁힌 거. 별거 아니야.', photo: 'gear', r: [['소독했어요?', 2, '했어. 네가 물어볼 줄 알았어.'], ['조심 좀 해요!', 2, '응. 혼나니까 좋네.']] }],
+    late: [{ t: '오늘은 진짜 네 목소리 듣고 싶네.', r: [['저도요.', 3, '돌아가면 하루 종일 말 걸어 줘.']] }, { t: '이제 며칠 안 남았어.', r: [['기다릴게요.', 3, '응. 그 말 들고 버틴다.']] }, { t: '돌아가면 안아 줘. 오래.', r: [['약속해요.', 3, '약속받았다. 저장.'], ['얼마나요?', 2, '내가 됐다고 할 때까지. 안 할 거지만.']] }],
+    last: [{ t: '내일 돌아가. 수송선 오후 도착.', photo: 'selfie', r: [['마중 나갈게요.', 3, '…보고하고 씻고 갈게. 냄새나니까. 기다려.'], ['무사히 와요.', 2, '응. 늘 그랬듯이.']] }],
+    night: [{ t: '여긴 별이 엄청 많아. 너도 보고 있어?', photo: 'night', r: [['네, 보고 있어요.', 3, '같은 거 보는 중이네.']] }, { t: '잘 자. 꿈에서 보자.', r: [['잘 자요.', 2, '응. 내 꿈 꿔.']] }, { t: '경계 근무 중. 졸리다. 너 생각하면 안 졸려.', r: [['힘내요.', 2, '두 시간 남았다. 버틴다.']] }],
+    meal: [{ t: '저녁은 전투식량 3번. 그나마 제일 맛있는 거야.', photo: 'meal', r: [['맛있게 먹어요.', 1, '네가 먹으라니까 맛있게 먹을게.'], ['돌아오면 냉삼 먹어요.', 3, '그거 들고 버틴다. 진짜로.']] }],
+  };
+  function awayMessages() {
+    const S = St.S, o = op(), d = dayIdx(), min = S.time.min;
+    if (d < 1 || d > o.days) return;
+    const comms = o.comms[d] !== false;
+    const slots = [[9 * 60, 'day'], [12 * 60 + 30, 'meal'], [16 * 60, 'day'], [21 * 60 + 30, 'night']];
+    const longing = (S.cap.mem && S.cap.mem.longing) || 0;
+    const nSlots = longing > 60 ? 4 : longing > 30 ? 3 : 2; // 그리울수록 자주
+    for (let i = 0; i < nSlots; i++) {
+      const [at, kind] = slots[i];
+      const key = d + ':' + i;
+      if (o.sent[key] || min < at) continue;
+      o.sent[key] = 1;
+      const pool = kind === 'meal' ? MSG.meal : kind === 'night' ? MSG.night : d === 1 ? MSG[1] : d === 2 ? MSG[2] : d === 3 ? MSG[3] : d === o.days ? MSG.last : d >= o.days - 1 ? MSG.late : MSG.mid;
+      const usedKey = 'opmsg', m = pickFresh(pool, usedKey);
+      if (!m) continue;
+      if (comms) send(m); else o.queue.push(m);
+    }
+    // 통신 복구: 밀린 메시지를 한꺼번에
+    if (comms && o.queue.length) { send({ t: `통신 복구됐다. 밀린 거 보낸다. (${o.queue.length}개)`, r: [] }); for (const m of o.queue.splice(0)) send(m, true); }
+  }
+  function pickFresh(pool, key) { const S = St.S; S.done[key] = S.done[key] || []; const c = pool.filter(m => !S.done[key].includes(m.t)); const m = U.pick(c.length ? c : pool); S.done[key] = [m.t, ...S.done[key]].slice(0, 30); return m; }
+  function send(m, quiet) {
+    const S = St.S;
+    const msg = { id: now() + Math.random(), t: m.t, r: m.r || [], day: S.day, min: S.time.min, reply: m.r && m.r.length ? null : 'none', photo: m.photo ? photo(m.photo) : null };
+    S.messages.unshift(msg); S.messages = S.messages.slice(0, 40);
+    if (msg.photo && !quiet) { S.capPhotos = S.capPhotos || []; S.capPhotos.unshift({ day: S.day, kind: m.photo, img: msg.photo, t: m.t }); S.capPhotos = S.capPhotos.slice(0, 24); }
+    if (!quiet) PX.UI.toast(`📱 ${S.capName}: ${m.t}${m.photo ? ' 📷' : ''}`, 4200);
+    PX.UI.badge();
+  }
+
+  // ---------- 사진 (대위의 SD 도트 + 배경을 즉석에서 그린다) ----------
+  function photo(kind) {
+    const W = 120, H = 90, c = PX.G.canvas(W, H), g = c.getContext('2d');
+    const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    const sky = { ship: '#2a3240', camp: '#e8956a', desert: '#f2b07a', mineral: '#3a2a3a', squad: '#d98d6c', gear: '#4a5560', night: '#141028', meal: '#5a4a3a', selfie: '#e8956a' }[kind] || '#555';
+    R(0, 0, W, H, sky);
+    if (kind === 'ship') { R(0, 0, W, H, '#3a4250'); for (let x = 6; x < W; x += 28) { R(x, 12, 20, 14, '#0e1220'); R(x + 3, 15, 2, 2, '#fff'); R(x + 12, 19, 1, 1, '#fff'); } R(0, 70, W, 20, '#2a303a'); }
+    else if (kind === 'night') { for (let i = 0; i < 50; i++) R((i * 37) % W, (i * 53) % 55, 1, 1, i % 5 ? '#fff' : '#ffd166'); R(0, 62, W, 28, '#5a2f25'); R(18, 52, 26, 12, '#3f5a3a'); R(30, 46, 2, 6, '#3f5a3a'); }
+    else if (kind === 'mineral') { R(0, 60, W, 30, '#5a3a30'); for (const [x, h, col] of [[50, 26, '#b9a0ff'], [62, 34, '#d6c0ff'], [74, 22, '#9b7fd0']]) { R(x, 60 - h, 10, h, col); R(x + 2, 62 - h, 3, h - 6, '#ffffff55'); } }
+    else if (kind === 'meal') { R(0, 0, W, H, '#6b5a48'); R(20, 30, 80, 46, '#9aa3ad'); R(26, 36, 30, 16, '#c9a27a'); R(60, 36, 34, 16, '#7fb86a'); R(26, 56, 68, 14, '#e8d6b0'); }
+    else if (kind === 'gear') { R(0, 0, W, H, '#4a5560'); R(10, 50, 100, 30, '#5a5f66'); R(30, 40, 50, 18, '#3a3f46'); R(40, 44, 10, 10, '#ffd166'); R(60, 46, 14, 6, '#d0563b'); }
+    else { R(0, 54, W, 36, '#c4613f'); R(0, 48, W, 8, '#d97a4f'); R(70, 30, 30, 22, '#8a3b30'); if (kind === 'camp' || kind === 'selfie') { R(12, 44, 30, 14, '#5a6b4f'); R(22, 36, 10, 8, '#5a6b4f'); } }
+    // 인물 (대위 + 단체사진이면 팀원)
+    const capApp = Object.assign({}, G().cap.app); delete capApp._k;
+    if (kind === 'ship' || kind === 'camp') capApp.hat = '#3f4a30';
+    const who = kind === 'squad' ? ['park', 'cap', 'lee'] : ['desert', 'mineral', 'meal', 'gear'].includes(kind) ? [] : ['cap'];
+    who.forEach((id, i) => {
+      const app = id === 'cap' ? capApp : Object.assign({}, PX.NPC_BY_ID[id].look);
+      const f = PX.S.get(app, 'idle', 0, 'F', id === 'cap' ? 'smirk' : 'smile');
+      const sc = id === 'cap' ? 2 : 1.6, w = f.c.width * sc, h = f.c.height * sc;
+      const x = who.length === 1 ? (W - w) / 2 + 14 : 10 + i * 36, y = H - h + (id === 'cap' ? 26 : 22);
+      g.imageSmoothingEnabled = false; g.drawImage(f.c, x, y, w, h);
+    });
+    if (kind === 'selfie' || kind === 'ship') { R(4, 4, 30, 9, '#00000066'); g.fillStyle = '#fff'; g.font = '7px sans-serif'; g.fillText(kind === 'ship' ? 'IN TRANSIT' : 'D-1', 7, 11); }
+    return c.toDataURL('image/png');
+  }
+
+  // ---------- 복귀 (혼자 다녀온 경우): 도착 → 보고 → 장비 반납 → 검진 → 샤워·환복 → 플레이어 찾기 ----------
+  const RETURN_STEPS = [[0, 'base.gate', '부대 도착'], [30, 'ops.cap', '복귀 보고'], [60, 'hg.w2', '장비 반납'], [90, 'med.patient', '의료 확인'], [120, 'shower', '샤워·환복'], [150, null, '찾아가기']];
+  function returnHome() {
+    const S = St.S, o = op();
+    o.phase = 'return'; o.retStart = now();
+    PX.Cap.mode = 'sched';
+    S.cap.giftPending = 'mineral';
+    const m = PX.Mind.mem(); m.reunion = { days: o.days }; m.longing = Math.max(m.longing || 0, 70);
+    send({ t: '착륙했다. 보고하고, 장비 반납하고, 씻고 갈게. 두 시간만 기다려.', r: [['기다릴게요.', 3, '응. 뛰어갈게.'], ['천천히 와요.', 2, '천천히는 안 돼. 그건 약속 못 해.']] });
+  }
+  function returnTick() {
+    const o = op(), g = G(), el = now() - o.retStart;
+    let step = RETURN_STEPS[0];
+    for (const s of RETURN_STEPS) if (el >= s[0]) step = s;
+    o.retStep = step[2];
+    if (step[1] === null) { o.phase = 'done'; o.end = now(); PX.Cap.mode = 'sched'; St.S.rel.cap.noFollowUntil = 0; if (PX.Mind) PX.Mind.mem().part = -1e9; return; }
+  }
+  // 복귀 절차 중의 일정 (actors 의 일정 대신)
+  function schedOverride() {
+    const o = op();
+    if (!o || o.phase !== 'return') return null;
+    const step = RETURN_STEPS.find(s => s[2] === o.retStep) || RETURN_STEPS[0];
+    if (step[1] === 'shower') return '00:00 -';
+    return step[1] ? '00:00 ' + step[1] : null;
+  }
+
+  // ---------- 합동작전 (플레이어도 투입) ----------
+  async function jointDepart() {
+    const S = St.S, o = op(), g = G(), V = PX.DLG_V2;
+    g.modal++;
+    await PX.Dlg.runLines([`N:새벽 6시. 수송선 격납고. 엔진 소리가 바닥을 울린다. 작전 기간 ${o.days}일, ${o.area}.`, ...(PX.Dlg.pick('v_opJoint', V.opJoint) || { l: ['C:내 뒤로 두 걸음.'] }).l]);
+    PX.Dlg.close(); g.modal--;
+    const f = document.getElementById('fade'); f.classList.add('on', 'long'); await U.sleep(600);
+    St.advance(120);
+    g.enterMap('outskirts', 27.5, 44.5);
+    PX.Cap.moveTo('outskirts'); g.cap.x = 28.5; g.cap.y = 43.5; PX.Cap.mode = 'follow'; S.cap.follow = true;
+    await U.sleep(300); f.classList.remove('on', 'long');
+    PX.UI.toast(`🛰️ 합동작전 1일 차 · ${o.area} · 역할: ${o.role}`, 4500);
+    g.memory('첫 합동작전', `${o.area}. ${o.role}로 대위와 같은 작전에 투입됐다.`, true);
+  }
+  // 작전 일과 게시판 (외곽 수색구역 안내 단말에서 연다)
+  const TASKS = [
+    { k: 'brief', t: '📋 작전 브리핑', day1: true, run: async () => { await lines(['N:대위가 지도를 펼친다. 손가락이 경로를 짚는다.', 'C:오늘은 여기까지. 흔적 확인, 중계기 점검, 해 지기 전에 복귀.', 'C*:질문? 없으면… 아, 넌 내 뒤로 두 걸음. 그게 제일 중요해.']); } },
+    { k: 'camp', t: '⛺ 야영지 설치', day1: true, run: async () => { await PX.Mini.timing({ title: '⛺ 야영지 설치', help: '말뚝을 박을 때(초록 구간) 누르세요', rounds: 4, speed: 60, btn: '쾅!' }); await lines(['C:잘 박았네. 바람에 안 날아가겠다.', 'C^:옆 텐트가 내 거야. 무서우면 불러.']); } },
+    { k: 'gear', t: '🔧 장비 점검', run: async () => { await PX.Mini.run('circuit'); await lines([U.pick(['C:배선 깔끔하다. 오 상사가 보면 좋아하겠어.', 'C*:두 번 확인했지? 박 중사 버릇 옮았네.'])]); } },
+    { k: 'trace', t: '🔍 외계 생명체 흔적 조사', run: async () => { await PX.Mini.run('drone'); await lines([U.pick(['C:이 발자국은 이틀 됐어. 크기 봐. 위험한 건 아니야.', 'C:사막도마뱀 흔적이네. 무해해. 기록만 해 둬.', 'N:모래 위로 이상한 무늬가 이어진다. 대위가 한참 들여다보더니 사진을 찍는다.', 'C:이건 보고서에 넣는다. 잘 찾았어.'])]); } },
+    { k: 'watch', t: '🌙 경계 근무', night: true, run: async () => { await PX.Mini.timing({ title: '🌙 경계 근무', help: '움직임(초록 구간)이 보이면 누르세요', rounds: 5, speed: 55, btn: '확인!', bg: '#141028' }); await lines(['N:교대 시간. 대위가 보온병을 내민다.', 'C:졸리지? 나도. 근데 너랑 서니까 시간이 빨리 가.']); } },
+    { k: 'meal', t: '🍲 작전 중 식사', run: async () => { St.S.energy = Math.min(100, St.S.energy + 20); await lines([U.pick([['N:전투식량을 데운다. 대위가 자기 것에서 고기를 골라 내 쪽으로 옮긴다.', 'C:3번이 제일 맛있어. 그중에 고기가 제일 맛있고. 그러니까 네 거.'], ['N:모닥불 옆에서 다 같이 먹는다. 이준혁이 농담을 하고 최민재가 남은 걸 노린다.', 'C^:이게 우리 팀이야. 시끄럽지.']])].flat()); } },
+    { k: 'night', t: '💬 야간 대화', night: true, run: async () => { await lines(U.pick([['N:텐트 앞. 별이 쏟아진다. 대위가 옆에 앉는다.', 'C:작전 중엔 이런 말 안 하는데.', 'C*:…같이 와서 좋다. 무섭기도 하고. 네가 다칠까 봐.', { q: [['대위님 뒤에 있으면 안 다쳐요.', 4, ['C^:그 말 믿고 내일도 앞에 설게.']], ['저도 대위님 지킬게요.', 4, ['C!:…', 'C*:그 말은 반칙이다.']]] }], ['C:별 많지. 부대에선 이렇게 안 보여.', 'C:여기 오면 늘 혼자 봤는데.', 'C^:오늘은 아니네.']])); St.addAff(4); } },
+    { k: 'rest', t: '😴 텐트에서 하루 마치기', always: true, run: async () => { await G().sleepUntil(6); } },
+  ];
+  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function board() {
+    const o = op(), d = dayIdx(), S = St.S;
+    if (!inField()) return false;
+    const night = S.time.min >= 19 * 60 || S.time.min < 5 * 60;
+    if (d > o.days || now() >= o.end - 120) { const it = await PX.UI.menu(`🛰️ 작전 ${d}일 차 · 귀환`, [{ t: '🚁 귀환 수송선 타기', k: 1 }]); if (it) jointReturn(); return true; }
+    const done = o.jointDone[d] = o.jointDone[d] || {};
+    const items = TASKS.filter(x => (!x.day1 || d === 1) && (!x.night || night)).map(x => ({ t: (done[x.k] ? '✔ ' : '') + x.t, k: x, off: !!done[x.k] && !x.always, offMsg: '오늘은 이미 했어요' }));
+    const it = await PX.UI.menu(`🛰️ 합동작전 ${d}/${o.days}일 차 · ${o.area}`, items);
+    if (!it) return true;
+    done[it.k.k] = 1;
+    await it.k.run(); St.advance(it.k.k === 'rest' ? 0 : 40); St.addAff(2);
+    return true;
+  }
+  async function jointReturn() {
+    const S = St.S, o = op(), g = G();
+    if (o.phase !== 'away') return;
+    o.phase = 'done'; o.end = now();
+    const f = document.getElementById('fade'); f.classList.add('on', 'long'); await U.sleep(600);
+    St.advance(120);
+    const m = PX.W.maps.base; g.enterMap('base', 31.5, 40.5);
+    PX.Cap.moveTo('base'); g.cap.x = 32.5; g.cap.y = 40.5; PX.Cap.mode = 'follow';
+    await U.sleep(300); f.classList.remove('on', 'long');
+    g.modal++; const bd = PX.Dlg.pick('v_opJointEnd', PX.DLG_V2.opJointEnd); await PX.Dlg.runLines(bd ? bd.l : ['C:고생했다.']); PX.Dlg.close(); g.modal--;
+    if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('opJointEnd'); }
+    S.stats.ops = (S.stats.ops || 0) + 1; St.addAff(6);
+    g.memory('함께 귀환', `${o.days}일간의 ${o.area} 작전을 마치고 함께 돌아왔다.`, true);
+  }
+
+  return { maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
+})();
+
+</script>
+  <script>
+/* js/game/romance.js */
+// 정식버전 관계 콘텐츠: 데이트 약속 · 휴가 신청 · 축제 당일 연출 · 프러포즈 · 약혼 · 결혼식 · 동거 · 기념일
+'use strict';
+PX.Rom = (() => {
+  const U = PX.U, St = PX.St, Cal = PX.Cal, W = PX.W;
+  const G = () => PX.Game;
+  const now = () => St.absMin();
+  const DAY = 1440;
+  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
+  const st = () => St.S.rel.cap.stage;
+
+  // ---------- 데이트 약속 ----------
+  const PLACES = [
+    { map: 'cafe', name: '향열매 카페', at: [12, 15, 19] }, { map: 'samgyup', name: '냉삼집', at: [12, 18, 19] }, { map: 'lake', name: '인공호수 공원', at: [11, 15, 18] },
+    { map: 'hill', name: '관람언덕', at: [16, 18, 19] }, { map: 'starroom', name: '별비 투영실', at: [19, 20] }, { map: 'plaza', name: '중앙광장 분수대', at: [12, 18, 20] },
+    { map: 'beach', name: '흰모래 해변돔', at: [11, 14, 16] }, { map: 'corridor', name: '인공노을 회랑', at: [17, 18] },
+  ];
+  const dates = () => (St.S.dates = St.S.dates || []);
+  const nextDate = () => dates().find(d => d.state === 'planned' || d.state === 'on');
+  // 그 시각에 대위가 시간이 되는가 (근무·장기작전·작전 예정)
+  function capFreeAt(day, min) {
+    const o = St.S.cap.op;
+    if (o && o.phase !== 'done' && day * DAY + min >= o.start - 60 && day * DAY + min <= o.end + 240) return false;
+    const wd = (Cal.dayNumber ? null : null, (St.weekday() + (day - St.S.day)) % 7 + 7) % 7;
+    const weekend = wd === 0 || wd === 6 || onLeave('cap', day);
+    return weekend ? min >= 10 * 60 : min >= 18 * 60;
+  }
+  async function askDate() {
+    const S = St.S, g = G();
+    if (nextDate()) { const d = nextDate(); PX.UI.toast(`📅 이미 약속이 있어요: ${dayKo(d.day)} ${Cal.fmtTime(d.min)} ${d.name}`); return; }
+    const pl = await PX.UI.menu('📅 어디서 만날까요?', PLACES.map(p => ({ t: p.name, k: p })));
+    if (!pl) return;
+    const days = [0, 1, 2, 3, 4, 5, 6].map(k => S.day + k).filter(d => d > S.day || S.time.min < 17 * 60).slice(0, 5);
+    const dy = await PX.UI.menu('📅 언제?', days.map(d => ({ t: dayKo(d), k: d })));
+    if (!dy) return;
+    const tm = await PX.UI.menu('⏰ 몇 시?', pl.k.at.map(h => ({ t: `${h}:00`, k: h * 60 })).filter(x => dy.k > S.day || x.k > S.time.min + 60));
+    if (!tm) return;
+    g.modal++;
+    await PX.Dlg.say('player', `${dayKo(dy.k)} ${Cal.fmtTime(tm.k)}에 ${pl.k.name}에서 만나요.`);
+    if (!capFreeAt(dy.k, tm.k)) {
+      await PX.Dlg.runLines(['C;:아, 그때 근무야. …아니면 작전.', 'C:저녁이나 주말이면 무조건 비울게. 다시 정하자.']);
+      PX.Dlg.close(); g.modal--; return;
+    }
+    await PX.Dlg.runLines([U.pick([['C!:…데이트 신청이야, 이거?', 'C^:받았다. 취소 불가.'], ['C*:네가 먼저 하자고 해 주니까 좋네.', 'C:그날 일 다 미리 끝내 놓을게.'], ['C:좋아. 십 분 일찍 가 있을게. 늘 그래.']])].flat());
+    PX.Dlg.close(); g.modal--;
+    dates().push({ id: now(), day: dy.k, min: tm.k, map: pl.k.map, name: pl.k.name, state: 'planned', by: 'p' });
+    PX.UI.toast(`📅 약속: ${dayKo(dy.k)} ${Cal.fmtTime(tm.k)} · ${pl.k.name}`, 3500);
+    if (PX.Mind) PX.Mind.noteTalk('date');
+  }
+  // 대위가 먼저 데이트를 신청 (동의할 때만 약속)
+  async function capAskDate() {
+    const S = St.S, g = G();
+    if (nextDate() || st() < 2) return false;
+    const pl = U.pick(PLACES), wd = St.weekday(), toSat = ((6 - wd) + 7) % 7 || 7, day = S.day + toSat, min = pl.at[pl.at.length - 1] * 60;
+    if (!capFreeAt(day, min)) return false;
+    g.modal++;
+    await PX.Dlg.runLines([`C:이번 주말에 ${pl.name} 갈래? ${Cal.fmtTime(min)}.`, U.pick(['C*:데이트 신청이야. 정식으로.', 'C:싫으면 싫다고 해. 다른 데 찾으면 되니까.'])]);
+    const i = await PX.Dlg.choose([{ t: '좋아요.' }, { t: '다른 날이 좋아요.' }]);
+    if (i === 0) { await PX.Dlg.say('player', '좋아요.'); await PX.Dlg.say('cap', U.pick(['좋아. 그날 하루 비워 둔다.', '…좋다고 했다. 들었어.']), 'smile'); dates().push({ id: now(), day, min, map: pl.map, name: pl.name, state: 'planned', by: 'c' }); PX.UI.toast(`📅 약속: ${dayKo(day)} ${Cal.fmtTime(min)} · ${pl.name}`, 3500); }
+    else { await PX.Dlg.say('player', '다른 날이 좋아요.'); await PX.Dlg.say('cap', '응. 네가 편한 날 말해 줘. 그날로 할게.', 'smile'); if (PX.Mind) PX.Mind.noteRefuse('dateAsk', 3 * DAY); }
+    PX.Dlg.close(); g.modal--;
+    return true;
+  }
+  function dayKo(d) { const S = St.S, k = d - S.day; if (k === 0) return '오늘'; if (k === 1) return '내일'; if (k === 2) return '모레'; return Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, d)).replace(/^\d+\./, ''); }
+  // 매 분: 약속 2시간 전 알림 → 대위가 먼저 가 있기 → 만나면 데이트 시작 → 끝 · 바람맞으면 순하게
+  function tick() {
+    const S = St.S, g = G(), d = nextDate();
+    if (!d) return;
+    const at = d.day * DAY + d.min, t = now();
+    if (d.state === 'planned') {
+      if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
+      if (t >= at - 15 && t < at + 60 && !d.capThere) { // 대위가 먼저 가서 기다린다 (보이지 않는 이동)
+        if (PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay' && PX.Cap.mode !== 'op') { d.capThere = true; PX.Cap.mode = 'date'; if (g.cap.map !== d.map) { PX.Cap.moveTo(d.map); const m = W.maps[d.map]; const a = m.def.arrive ? [m.def.arrive[0] + 1.5, m.def.arrive[1] - 1.5] : [m.exit.x + 0.5, m.exit.y - 2.5]; const tt = PX.Path.nearestWalkable(m, a[0], a[1], 4); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; } } }
+      }
+      if (d.capThere && g.mapId === d.map && g.cap.map === d.map && U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < 6 && !g.modal) { d.state = 'on'; d.started = t; g.trigger(() => startDate(d)); }
+      if (t >= at + 60) { // 바람맞음: 탓하지 않는다
+        d.state = 'missed'; if (PX.Cap.mode === 'date') PX.Cap.mode = 'sched';
+        sendMsg(U.pick(['오늘 무슨 일 있었어? 괜찮으면 됐어. 다음에 또 잡자.', '바빴구나. 괜찮아. 무사하면 됐어.']), [['미안해요. 다음엔 꼭 갈게요.', 1, '응. 사과 안 해도 돼. 다음엔 내가 데리러 갈게.']]);
+      }
+      return;
+    }
+    if (d.state === 'on' && (t - d.started > 180 || g.mapId !== d.map && !PX.MAPS[g.mapId].date && PX.MAPS[g.mapId].kind === 'in' && PX.MAPS[g.mapId].home)) endDate(d);
+  }
+  async function startDate(d) {
+    const S = St.S, g = G();
+    PX.Cap.startFollow(); g.cap.setDirTo(g.player.x, g.player.y);
+    if (d.kind === 'proposal') return proposal(d);
+    const late = now() - (d.day * DAY + d.min);
+    await lines([late > 10 ? U.pick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : U.pick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
+    if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('dateStart'); }
+    St.addAff(4);
+  }
+  async function endDate(d) {
+    if (d.state !== 'on') return;
+    d.state = 'done';
+    const S = St.S, bd = PX.Dlg.pick('v_dateEnd', PX.DLG_V2.dateEnd);
+    if (bd && G().cap.map === G().mapId) await lines(bd.l);
+    S.stats.dates = (S.stats.dates || 0) + 1; St.addAff(6);
+    if (once('date_' + d.map)) G().memory(`약속 데이트 · ${d.name}`, `약속한 시간에 ${d.name}에서 만났다.`, true);
+  }
+  function sendMsg(t, r) { PX.Op.send({ t, r }); }
+
+  // ---------- 휴가 ----------
+  function onLeave(who, day) { const L = St.S[who === 'cap' ? 'capLeave' : 'leave']; return !!(L && day >= L.from && day <= L.to); }
+  async function applyLeave() {
+    const S = St.S;
+    if (S.leave && S.leave.to >= S.day) { PX.UI.toast(`🏖️ 이미 휴가 신청됨: ${dayKo(S.leave.from)}~${dayKo(S.leave.to)}`); return; }
+    const used = (S.leaveUsed || []).filter(d => d > S.day - 30).length;
+    if (used >= 6) { PX.UI.toast('🏖️ 30일 동안 쓸 수 있는 휴가(6일)를 다 썼어요'); return; }
+    const o = S.cap.op; if (o && o.phase !== 'done' && o.joint) { PX.UI.toast('🛰️ 작전 명령이 걸려 있어서 휴가를 쓸 수 없어요'); return; }
+    const it = await PX.UI.menu('🏖️ 휴가 신청 (내일부터)', [1, 2, 3].filter(n => n + used <= 6).map(n => ({ t: `${n}일`, k: n })));
+    if (!it) return;
+    S.leave = { from: S.day + 1, to: S.day + it.k }; S.leaveUsed = (S.leaveUsed || []).concat(Array.from({ length: it.k }, (_, i) => S.day + 1 + i));
+    PX.UI.toast(`🏖️ 휴가 승인: ${dayKo(S.leave.from)}부터 ${it.k}일 · 배수아 하사가 근무표를 고쳐 줬어요`, 4000);
+    // 대위도 같이 휴가를 맞춰 볼 수 있다 (연인 이상, 작전 없을 때)
+    if (st() >= 4 && !(o && o.phase !== 'done') && Math.random() < 0.6) { S.capLeave = { from: S.leave.from, to: S.leave.to }; sendMsg('휴가 냈다며. 나도 냈어. 같은 날로.', [['진짜요?', 3, '진짜. 강 중령님이 웃으시더라. 어디 갈래?'], ['여행 가요!', 4, '좋아. 짐은 내가 들게.']]); }
+    else if (st() >= 2) sendMsg('휴가 냈다며. 잘 쉬어. 나는 그날 근무라 아쉽다.', [['아쉬워요.', 2, '저녁엔 비워 둘게.']]);
+  }
+
+  // ---------- 축제 당일 연출 ----------
+  const fx = [];
+  function festivalScene() {
+    const S = St.S, g = G(), md = PX.MAPS[g.mapId];
+    const outId = md.kind === 'out' ? g.mapId : null;
+    if (!outId) return;
+    const ev = Cal.eventsOn(S.time).filter(e => ['festival', 'base'].includes(e.eventType) && Cal.openAt(e, S.time, S.time.min) && (e.location || '').match(outId === 'base' ? /부대|연병장|606/ : /돔|광장|상업|도시/));
+    if (!ev.length) return;
+    const e = ev[0], key = 'fest_' + e.id + '_' + S.day;
+    if (S.done[key]) return;
+    S.done[key] = 1;
+    const withCap = g.cap.map === g.mapId && ['follow', 'date'].includes(PX.Cap.mode);
+    if (/불꽃|별빛|퍼레이드|네온|기념제/.test(e.originalTitle) && St.isNight()) fireworks(12);
+    g.trigger(async () => {
+      await lines([`N:🎉 ${e.originalTitle}. ${e.description.slice(0, 60)}`, ...(withCap ? [`N:${e.captainReaction}`, U.pick(['C^:축제다. 오늘은 손 놓지 마.', 'C*:사람 많다. 내 옆에 딱 붙어.', 'C:이런 날 같이 와서 좋다.'])] : [])]);
+      if (withCap) { St.addAff(4); if (once('festmem_' + e.id)) g.memory(e.originalTitle, `${e.originalTitle}에 대위와 함께 갔다. ${e.captainReaction}`, true); }
+    });
+  }
+  function fireworks(n) { for (let i = 0; i < n; i++) fx.push({ t: -i * 0.35, x: 0.15 + Math.random() * 0.7, y: 0.12 + Math.random() * 0.25, c: U.pick(['#ff6b9b', '#ffd166', '#7fe3ff', '#b8f0c8', '#d6a2ff']) }); }
+  let fxLast = 0;
+  function overlay(g, Wd, Hd) {
+    const tnow = performance.now() / 1000, dt = Math.min(0.05, fxLast ? tnow - fxLast : 0); fxLast = tnow;
+    if (!fx.length) return;
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const f = fx[i]; f.t += dt;
+      if (f.t < 0) continue;
+      if (f.t > 1.6) { fx.splice(i, 1); continue; }
+      const r = f.t < 0.4 ? 0 : (f.t - 0.4) * 28, cx = f.x * Wd, cy = f.y * Hd;
+      g.fillStyle = f.c; g.globalAlpha = Math.max(0, 1 - (f.t - 0.4) / 1.2);
+      if (f.t < 0.4) g.fillRect(cx, Hd - (Hd - cy) * (f.t / 0.4), 1, 3);
+      else for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; g.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 0.8), 2, 2); }
+      g.globalAlpha = 1;
+    }
+  }
+
+  // ---------- 프러포즈 · 약혼 · 결혼 · 동거 ----------
+  // 깊어진 사랑 + 호감 950 + 연인 30일 이상 → 대위가 특별한 저녁 약속을 잡는다
+  function proposalCheck() {
+    const S = St.S, r = S.rel.cap;
+    if (r.stage !== 5 || r.aff < 950 || r.loverSince == null || S.day - r.loverSince < 30) return;
+    if (S.propose && (S.propose.state === 'planned' || S.day < (S.propose.retryDay || 0))) return;
+    if (nextDate()) return;
+    const o = S.cap.op; if (o && o.phase !== 'done') return;
+    const day = S.day + 1, min = 19 * 60 + 30;
+    S.propose = { state: 'planned', day };
+    dates().push({ id: now(), day, min, map: 'hill', name: '관람언덕', state: 'planned', by: 'c', kind: 'proposal' });
+    sendMsg('내일 저녁 일곱 시 반. 관람언덕. 꼭 와. …예쁘게 하고 와도 돼. 안 해도 예쁘지만.', [['무슨 날이에요?', 2, '와 보면 알아.'], ['갈게요.', 3, '응. 기다릴게.']]);
+  }
+  async function proposal(d) {
+    const S = St.S, g = G(), r = S.rel.cap;
+    g.modal++;
+    await PX.Dlg.runLines(['N:노을이 돔 유리에 번진다. 대위가 평소와 다르게 말이 없다.', 'C:…연습 많이 했는데, 막상 하니까 다 까먹었다.', 'N:대위가 주머니에서 작은 것을 꺼낸다. 외곽에서 주운 광물을 직접 깎아 만든 반지다.', 'C:이거 만드는 데 석 달 걸렸어. 손이 커서.', 'C:나랑 결혼해 줄래?', 'C;:…대답 천천히 해도 돼. 백 년이라도 기다릴게.']);
+    const i = await PX.Dlg.choose([{ t: '네. 할게요.' }, { t: '조금만 더 시간을 주세요.' }]);
+    if (i === 0) {
+      await PX.Dlg.say('player', '네. 할게요.', 'blush');
+      await PX.Dlg.runLines(['C!:…', 'N:대위가 반지를 끼워 준다. 손이 떨려서 두 번 만에 들어간다.', 'C^:손 떨린 거 비밀이다.', 'N:대위가 나를 번쩍 안아 들었다가, 조심스럽게 내려놓는다.']);
+      r.stage = 6; S.engagedDay = S.day; St.addItem('ring'); St.addAff(20);
+      S.propose.state = 'yes'; d.state = 'done';
+      g.memory('프러포즈', '관람언덕, 노을 아래에서. 직접 깎은 광물 반지.', true);
+      PX.UI.toast('💍 약혼했다!', 3500);
+    } else {
+      await PX.Dlg.say('player', '조금만 더 시간을 주세요.');
+      await PX.Dlg.runLines(['C:응. 당연하지.', 'C^:반지는 내가 갖고 있을게. 네가 됐다고 할 때 다시 꺼낼게.', 'C:…오늘 와 줘서 고마워. 그걸로 충분해.']);
+      S.propose.state = 'wait'; S.propose.retryDay = S.day + 14; d.state = 'done';
+    }
+    PX.Dlg.close(); g.modal--;
+  }
+  // 플레이어가 반지를 건네는 경우 (선물하기에서 호출)
+  async function playerProposes() {
+    const S = St.S, g = G(), r = S.rel.cap;
+    g.modal++;
+    await PX.Dlg.runLines(['P:대위님. 이거… 받아 줄래요?', 'C!:…', 'C;:이거 반지야? 너 지금… 나한테 먼저?', 'C:…잠깐만. 숨 좀 쉬고.', 'C^:응. 할게. 결혼. 백 번이라도.', 'N:대위가 반지를 새끼손가락에 겨우 끼운다. 그리고 웃는다. 아주 오래.']);
+    PX.Dlg.close(); g.modal--;
+    r.stage = 6; S.engagedDay = S.day; St.addAff(25); S.propose = { state: 'yes', day: S.day };
+    g.memory('내가 한 프러포즈', '반지는 대위 새끼손가락에 겨우 들어갔다. 대위는 그날 하루 종일 웃었다.', true);
+    PX.UI.toast('💍 약혼했다!', 3500);
+  }
+  // 결혼식: 약혼 10일 뒤부터, 행정동 배수아 하사에게 신청 → 다음 토요일 11시 연병장
+  async function planWedding() {
+    const S = St.S;
+    if (st() !== 6) return;
+    if (S.wedding) { PX.UI.toast(`💒 결혼식: ${dayKo(S.wedding.day)} 11:00 · 연병장`); return; }
+    if (S.day - (S.engagedDay || S.day) < 10) { PX.UI.toast('💒 약혼하고 열흘은 지나야 날짜를 잡을 수 있대요'); return; }
+    const wd = St.weekday(), toSat = ((6 - wd) + 7) % 7 || 7;
+    S.wedding = { day: S.day + toSat, min: 11 * 60, state: 'planned' };
+    PX.UI.toast(`💒 결혼식 날짜: ${dayKo(S.wedding.day)} 11:00 · 606부대 연병장`, 4500);
+    sendMsg('배 하사가 결혼식 날 잡아 줬대. …나 지금 손 떨려. 작전 때도 안 떨렸는데.', [['저도요.', 4, '같이 떨자. 그날까지.']]);
+  }
+  function weddingTick() {
+    const S = St.S, g = G(), w = S.wedding;
+    if (!w || w.state !== 'planned') return;
+    const at = w.day * DAY + w.min, t = now();
+    if (t >= at && t < at + 180 && g.mapId === 'base' && !g.modal) { w.state = 'on'; g.trigger(wedding); }
+    else if (t >= at + 180 && w.state === 'planned') { w.day += 7; sendMsg('결혼식은 다음 주 토요일로 옮겼어. 괜찮아. 천천히 하자.', []); }
+  }
+  async function wedding() {
+    const S = St.S, g = G(), r = S.rel.cap, p = g.player;
+    // 부대원들이 모인다 (연병장 깃대 앞)
+    const guests = ['kang', 'park', 'lee', 'choi', 'jung', 'yoon', 'bae', 'nam', 'oh', 'kimh'];
+    guests.forEach((id, i) => { const n = g.npcs.find(n => n.id === id); if (!n) return; n.stop(); n.leaveSeat(); n.map = 'base'; n.x = p.x - 3 + (i % 5) * 1.2; n.y = p.y + 2 + Math.floor(i / 5) * 1.2; n.dir = 2; n.busy = true; });
+    PX.Cap.moveTo('base'); g.cap.x = p.x + 1; g.cap.y = p.y; PX.Cap.mode = 'follow';
+    fireworks(8);
+    g.modal++;
+    await PX.Dlg.runLines(['N:연병장에 부대원들이 모였다. 다들 처음 보는 단정한 차림이다.', 'N:강태욱 중령이 앞에 선다. 오늘은 지휘관이 아니라 주례다.', `N:"${S.capName} 대위. 이 사람을 평생 지키겠나." "예. 목숨 걸고." "목숨은 걸지 말고. 오래 살아서 지켜라."`, 'N:웃음이 터진다. 이준혁이 휘파람을 분다.', 'C:…네 차례야.']);
+    const i = await PX.Dlg.choose([{ t: '평생 옆에 있을게요.' }, { t: '오래 살아서 같이 늙어요.' }]);
+    await PX.Dlg.say('player', i === 0 ? '평생 옆에 있을게요.' : '오래 살아서 같이 늙어요.', 'blush');
+    await PX.Dlg.runLines(['C^:…그 말 평생 기억할게.', 'N:대위가 허리를 숙인다. 부대원들의 환호 속에서 짧고 긴 입맞춤.', 'N:최민재가 "이제 밥 먹어요?"라고 묻는다. 남기철 조리장이 특식을 준비해 뒀다.']);
+    PX.Dlg.close(); g.modal--;
+    r.stage = 7; S.marriedDay = S.day; S.wedding.state = 'done'; St.addAff(30);
+    guests.forEach(id => { const n = g.npcs.find(n => n.id === id); if (n) n.busy = false; });
+    g.memory('결혼식', '606부대 연병장. 강태욱 중령의 주례, 부대원들의 환호, 그리고 대위의 떨리는 손.', true);
+    PX.UI.toast('💒 부부가 되었다!', 4000);
+    // 동거: 대위가 내 숙소로 들어온다
+    g.trigger(async () => {
+      g.modal++;
+      await PX.Dlg.runLines(['C:그럼… 이제 짐 옮겨도 돼? 내 짐 별로 없어. 냉각기 하나랑 공구함.']);
+      const k = await PX.Dlg.choose([{ t: '오늘부터 같이 살아요.' }, { t: '조금 천천히요.' }]);
+      if (k === 0) { S.cap.cohab = true; await PX.Dlg.runLines(['C^:오늘부터 네 숙소가 우리 집이다.', 'C*:문틀은 내가 알아서 피할게.']); g.memory('같이 살기', '대위의 짐은 정말로 냉각기 하나와 공구함뿐이었다.', true); }
+      else await PX.Dlg.runLines(['C:응. 네가 편할 때. 열쇠만 하나 줘. 가끔 와서 냉장고 채워 둘게.']);
+      PX.Dlg.close(); g.modal--;
+    });
+  }
+  // 동거: 밤 22:30 이후 플레이어가 집에 있으면 대위도 집으로 온다 (근무·작전 제외)
+  function cohabTick() {
+    const S = St.S, g = G();
+    if (!S.cap.cohab) return;
+    const home = PX.JOBS[S.player.job].home, t = S.time.min;
+    const o = S.cap.op; if (o && o.phase !== 'done') return;
+    if (t >= 22 * 60 + 30 && g.mapId === home && !['visit', 'stay', 'follow'].includes(PX.Cap.mode) && S.done.cohabDay !== S.day) {
+      S.done.cohabDay = S.day;
+      PX.Cap.moveTo(home, PX.MAPS[home].parent); PX.Cap.mode = 'visit';
+      g.trigger(() => lines([U.pick(['N:문이 열린다. "다녀왔어."', 'N:익숙한 발소리. 문틀에 머리 박는 소리. "…다녀왔어."']), U.pick(['C:오늘 하루 어땠어?', 'C^:집에 오니까 네가 있네. 이게 제일 좋아.', 'C*:씻고 올게. 기다려. 아니, 먼저 자도 돼. 깨울 거지만.'])]));
+    }
+  }
+  // 기념일: 연인 100·200·300·365·500·1000일, 결혼 1주년마다 (그날 첫 대화)
+  function annivToday() {
+    const S = St.S, r = S.rel.cap;
+    if (r.loverSince == null) return null;
+    const n = S.day - r.loverSince;
+    if ([100, 200, 300, 365, 500, 730, 1000].includes(n)) return { n, kind: 'lover' };
+    if (S.marriedDay != null && n > 0 && (S.day - S.marriedDay) > 0 && (S.day - S.marriedDay) % 365 === 0) return { n: S.day - S.marriedDay, kind: 'wedding' };
+    return null;
+  }
+  function annivCheck() {
+    const S = St.S, a = annivToday(), g = G();
+    if (!a || S.done['anniv_' + S.day]) return false;
+    if (g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 4) return false;
+    S.done['anniv_' + S.day] = 1;
+    g.trigger(async () => { const bd = PX.Dlg.pick('v_anniv', PX.DLG_V2.anniv); await lines(bd ? bd.l : ['C:오늘 우리 기념일이야.']); St.addItem('mineral'); PX.UI.toast('🎁 기념일 선물: 대위가 깎은 광물 조각'); g.memory(a.kind === 'wedding' ? `결혼 ${Math.round(a.n / 365)}주년` : `연인 ${a.n}일`, '대위는 날짜를 하루도 틀리지 않았다.', true); St.addAff(8); });
+    return true;
+  }
+
+  function minute() { tick(); weddingTick(); cohabTick(); if (St.S.time.min % 30 === 0) proposalCheck(); annivCheck(); }
+  return { askDate, capAskDate, nextDate, tick, minute, applyLeave, onLeave, festivalScene, overlay, fireworks, playerProposes, planWedding, proposalCheck, annivToday, dayKo, capFreeAt };
+})();
+
+</script>
+  <script>
 /* js/game/ai.js */
 // AI 자유 대화 (claude.ai 아티팩트에서만 동작 — 아티팩트 런타임의 sample 기능 사용)
 // 다른 곳(HTML 파일 · 로컬)에서는 기능이 숨겨지고 고정 대사만 쓴다.
@@ -7394,6 +8482,22 @@ ${q ? `부탁해 둔 것: ${PX.ITEMS[q.item].name}을 구해 달라고 했다.\n
 - lines: 1~2개. 짧은 행동 묘사가 필요하면 text를 "(…)"로 감싼다. 각 text 60자 이내.
 - aff: 이번 대화로 친해진 정도 -1~2 (평범하면 0 또는 1).`;
 
+  // 단기 기억 · 접촉 · 장기작전 · 약속 → 대위가 방금 일을 기억하고 맞게 말하도록
+  function memLine(S) {
+    const M = PX.Mind; if (!M) return '';
+    const m = M.mem(), g = M.gap(), ct = M.contact(), o = S.cap.op, R = PX.Rom;
+    const gapKo = g < 2 ? '방금 전까지 이야기하던 중(인사하지 말고 이어서 말할 것)' : g < 15 ? '몇 분 전에 이야기함(오랜만이라고 하지 말 것)' : g < 60 ? '한 시간 안에 봄' : g < 360 ? '몇 시간 만' : g < 1440 ? '하루 가까이 못 봄' : '며칠 못 봄';
+    const out = [`마지막 대화·만남: ${gapKo}`, `지금 접촉 상태: ${M.NAME[ct]}${ct !== 'NONE' ? ' (이미 하고 있으니 같은 걸 다시 제안하지 말 것)' : ''}`];
+    if (m.skin && St.absMin() - m.skinMin < 30) out.push(`방금 한 스킨십: ${(M.BY[m.skin] || {}).name || m.skin}`);
+    const ref = Object.entries(m.refused || {}).filter(([, t]) => t > St.absMin()).map(([k]) => k);
+    if (ref.length) out.push(`플레이어가 최근 거절한 것: ${ref.join(', ')} (다시 조르지 말 것)`);
+    if (o && o.phase === 'planned') out.push(`장기작전 예정: ${o.days}일${o.joint ? ' (플레이어도 함께 투입)' : ''}`);
+    if (o && o.phase === 'away' && o.joint) out.push(`지금 합동 장기작전 중 (${o.area}). 작전 중엔 상관과 부하로서 짧게, 그래도 다정하게`);
+    if (m.reunion) out.push('장기작전에서 막 돌아와 처음 만나는 중');
+    const d = R && R.nextDate(); if (d) out.push(`데이트 약속: ${R.dayKo(d.day)} ${Cal.fmtTime(d.min)} ${d.name}${d.state === 'on' ? ' (지금 데이트 중)' : ''}`);
+    if (S.rel.cap.stage === 6) out.push('플레이어와 약혼한 사이'); if (S.rel.cap.stage === 7) out.push(`플레이어와 결혼한 부부${S.cap.cohab ? ', 플레이어 숙소에서 같이 산다' : ''}`);
+    return out.join('\n');
+  }
   function situation(S, mode) {
     const G = PX.Game, m = PX.MAPS[G.mapId], r = S.rel.cap;
     const ev = Cal.eventsOn(S.time).map(e => `${e.originalTitle}(${e.location}${e.startTime ? ' ' + e.startTime + '~' + e.endTime : ''})`);
@@ -7411,7 +8515,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
 근처 사람: ${who.join(', ') || '없음'}
 오늘 행사: ${ev.join(', ') || '없음'}
 오늘 행사 자세히: ${evFull.join(' / ') || '-'}
-최근 추억: ${mem.join(' / ') || '-'}`;
+최근 추억: ${mem.join(' / ') || '-'}
+${memLine(S)}`;
   }
   // 로어북 색인 (성인 항목 제외) — 대위가 장소·행사를 자연스럽게 언급할 수 있게
   let loreIdx = null;
@@ -7646,6 +8751,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     PX.Act.spawnCritters(m);
     if (!silent) dateCheck(id);
     if (!silent && !St.S.done.intro && PX.MAPS[id].kind === 'out' && Game.prevMap === PX.JOBS[St.S.player.job].home && St.S.time.min < 12 * 60) Game.trigger(firstMeet);
+    if (PX.Rom && PX.MAPS[id].kind === 'out') setTimeout(() => { if (Game.mapId === id) PX.Rom.festivalScene(); }, 900);
   }
   Game.enterMap = enterMap;
   let capCommentT = 40;
@@ -7842,6 +8948,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     const S = St.S, job = PX.JOBS[S.player.job];
     if (o.spot !== job.workSpot) { UI.toast(`🔧 ${o.f.name} — ${job.short}의 업무 자리가 아니에요`); return; }
     if (St.isWeekend()) { UI.toast('🏖️ 오늘은 비번(주말)이에요'); return; }
+    if (PX.Rom.onLeave('p', S.day)) { UI.toast('🏖️ 오늘은 휴가예요. 푹 쉬세요'); return; }
+    if (PX.Op.inField()) { UI.toast('🛰️ 작전 중이에요. 작전 일과는 안내 단말에서'); return; }
     const t = S.time.min;
     const shift = t >= 9 * 60 && t < 12 * 60 ? 0 : t >= 13 * 60 && t < 17 * 60 ? 1 : -1;
     if (shift < 0) { UI.toast('⏰ 근무 시간이 아니에요 (09:00~12:00, 13:00~17:00)'); return; }
@@ -8022,40 +9130,93 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   }
 
   // ---------- 대위 메뉴 ----------
+  // 대위 메뉴: 지금 상황에서 할 수 있는 것만 (이미 하고 있는 건 다시 묻지 않는다)
   async function capMenu() {
-    const S = St.S, r = S.rel.cap, cap = Game.cap;
+    const S = St.S, r = S.rel.cap, cap = Game.cap, M = PX.Mind;
     const duty = Cap.onDuty() && Cap.mode !== 'follow';
     const st = r.stage;
     const items = [{ t: '💬 대화하기', k: 'talk' }];
     if (PX.AI.available()) items.push({ t: '✨ 자유롭게 대화하기', k: 'ai', sub: '하고 싶은 말을 직접 입력 · AI가 대위로 대답해요' });
-    if (Cap.mode === 'follow') items.push({ t: '🙋 이제 혼자 갈게요', k: 'unfollow' });
-    else items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty || Cap.mode === 'visit' || Cap.mode === 'stay', offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
+    items.push({ t: '😊 표정·행동으로 반응하기', k: 'react', sub: '웃으며 바라보기 · 빤히 보기 · 부끄러워하기 …' });
+    if (!duty) items.push({ t: '🤝 스킨십', k: 'skin', sub: M.contact() !== 'NONE' ? `지금: ${M.NAME[M.contact()]}` : '손잡기 · 포옹 · 입맞춤 …' });
     for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', fn: a.fn });
+    if (Cap.mode === 'follow') items.push({ t: '🧭 동행 관리', k: 'comp', sub: `지금: ${M.NAME[M.contact()] === '접촉 없음' ? '함께 걷기' : M.NAME[M.contact()]}` });
+    else if (Cap.mode !== 'visit' && Cap.mode !== 'stay') items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty, offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
+    const dt = PX.Rom.nextDate();
+    if (dt && dt.state === 'on') items.push({ t: '🌇 데이트 마치기', k: 'dateEnd' });
+    else if (st >= 2 && !dt) items.push({ t: '📅 데이트 약속 잡기', k: 'date', sub: '장소와 시간을 정해요' });
+    if (st === 6) items.push({ t: '💒 결혼식 날짜 잡기', k: 'wed', sub: S.wedding ? `${PX.Rom.dayKo(S.wedding.day)} 11:00 · 연병장` : '약혼 열흘 뒤부터' });
     items.push({ t: '❓ 물어보기', k: 'topic', sub: '대위에 대해 궁금한 것' });
     items.push({ t: '🎁 선물하기', k: 'gift' });
-    items.push({ t: '🤝 스킨십', k: 'skin', sub: '손잡기 · 쓰다듬기 · 포옹 …', off: duty, offMsg: '근무 중이에요' });
     items.push({ t: '😮‍💨 고민 털어놓기', k: 'comfort' });
     if (Cap.mode === 'visit') { items.push({ t: '🌙 자고 가도 돼요', k: 'stay', off: st < 2, offMsg: '아직은 조금 이른 것 같아요' }, { t: '🚪 이제 가 보세요', k: 'leave' }); }
-    else items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
+    else if (Cap.mode !== 'follow') items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
     const it = await UI.menu(`${S.capName} 대위`, items);
     if (!it) return;
     if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.fn(); }
     if (it.k === 'topic') return PX.CapAct.askTopic();
+    if (it.k === 'date') return PX.Rom.askDate();
+    if (it.k === 'dateEnd') { const d = PX.Rom.nextDate(); if (d) { d.started = -1e9; } return; }
+    if (it.k === 'wed') return PX.Rom.planWedding();
     if (it.k === 'talk') return Dlg.capTalk();
     if (it.k === 'ai') return PX.AI.chat();
-    if (it.k === 'follow') { Cap.startFollow(); Game.bubble(cap, U.pick(['좋아. 어디든.', '그 말 기다렸어.'])); St.addAff(1); return; }
-    if (it.k === 'unfollow') { Cap.release(U.pick(['응. 이따 또 보자.', '아쉽네. 조심히 가.'])); return; }
+    if (it.k === 'react') return reactMenu();
+    if (it.k === 'comp') return compMenu();
+    if (it.k === 'follow') { Cap.startFollow(); M.noteMeet(); Game.bubble(cap, U.pickFresh('followYes', ['좋아. 어디든.', '그 말 기다렸어.', '오케이. 네 속도에 맞출게.', '가자. 오늘은 네가 대장이야.'])); St.addAff(1); return; }
     if (it.k === 'gift') return gift();
     if (it.k === 'skin') return skinMenu();
     if (it.k === 'comfort') return Dlg.capTalk('comfort');
-    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; Cap.release(); Cap.mode = 'sched'; return; }
-    if (it.k === 'stay') { S.cap.lastStayAskDay = -1; Game.modal++; await Dlg.say('player', '…자고 가도 돼요.', 'blush'); await Dlg.runLines(U.pick(PX.DLG_CAP.stayYes)); Dlg.close(); Game.modal--; S.cap.stay = 'sofa'; S.cap.lastStayAskDay = S.day; Cap.mode = 'stay'; St.addAff(6); const m = W.maps[Game.mapId]; const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa')); if (sofa) { cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]); cap.pose = 'lie'; } if (!S.done.firstStay) { S.done.firstStay = 1; Game.memory('첫 숙박', '먼저 자고 가라고 했다. 대위는 소파에서 웃으며 잠들었다.', true); } return; }
-    if (it.k === 'leave') { Game.modal++; await Dlg.say('player', '이제 가 보세요.'); await Dlg.say('cap', U.pick(['응. 오늘 고마웠어. 잘 자.', '알았어. 쫓겨나는 것도 좋다. 또 올게.']), 'smile'); Dlg.close(); Game.modal--; const m = W.maps[Game.mapId]; cap.leaveSeat(); Cap.mode = 'sched'; r.noFollowUntil = (S.day + 1) * 1440 + 6 * 60; cap.goTo(m, m.exit.x, m.exit.y, () => Cap.moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); }
+    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; M.noteRefuse('follow', 600); M.notePart(60); return; }
+    if (it.k === 'stay') { S.cap.lastStayAskDay = -1; Game.modal++; await Dlg.say('player', '…자고 가도 돼요.', 'blush'); await Dlg.runLines(U.pick(PX.DLG_CAP.stayYes)); Dlg.close(); Game.modal--; S.cap.stay = 'sofa'; S.cap.lastStayAskDay = S.day; Cap.mode = 'stay'; St.addAff(6); const m = W.maps[Game.mapId]; const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa') && o.seats && o.seats.some(x => !x.by)); if (sofa) { const a = W.accessTile(m, sofa); if (a) cap.goTo(m, a.x, a.y, () => { const seat = sofa.seats.find(x => !x.by); if (seat) cap.sitOn(seat); }); } return; }
+    if (it.k === 'leave') { Game.modal++; await Dlg.say('player', '이제 가 보세요.'); await Dlg.runLines(PX.Dlg.pick('v_farewell', PX.DLG_V2.farewell).l); Dlg.close(); Game.modal--; const m = W.maps[Game.mapId]; cap.leaveSeat(); Cap.release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => Cap.moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); }
+  }
+  // 동행 관리: 지금 상태는 '사용 중'으로 표시하고 다시 고르게 하지 않는다
+  async function compMenu() {
+    const M = PX.Mind, c = M.contact(), st = St.S.rel.cap.stage;
+    const row = (t, k, need, cur) => ({ t: (cur ? '✔ ' : '') + t, k, off: cur || st < need, offMsg: cur ? '지금 하고 있어요' : '아직은 조금 이른 것 같아요', sub: cur ? '사용 중' : st < need ? `(${St.STAGES[need]} 이상)` : null });
+    const it = await UI.menu('🧭 동행 관리', [
+      row('🚶 함께 걷기 (접촉 없이)', 'NONE', 0, c === 'NONE'), row('🤝 손잡기', 'hand', 2, c === 'HAND_HOLD'), row('💞 팔짱', 'armlink', 3, c === 'ARM_LINK'),
+      row('🫶 허리 감싸기', 'waist', 4, c === 'WAIST_HOLD'), row('🤗 어깨 감싸기', 'shoulder', 3, c === 'SHOULDER_HOLD'),
+      { t: '⏸️ 여기서 잠깐 기다려 줘요', k: 'pause', sub: '대위가 이 자리에서 기다려요' }, { t: '👋 동행 종료', k: 'end' }]);
+    if (!it) return;
+    if (it.k === 'NONE') { if (c !== 'NONE') await M.perform('release'); return; }
+    if (it.k === 'pause') { Cap.pause(); return; }
+    if (it.k === 'end') { Game.modal++; await Dlg.say('player', '오늘은 여기까지 같이 갈게요.'); const bd = PX.Dlg.pick('v_farewell', PX.DLG_V2.farewell); await Dlg.runLines(bd ? bd.l : ['C:응. 이따 보자.']); Dlg.close(); Game.modal--; Cap.release(null, 30); return; }
+    await M.perform(it.k);
+  }
+  // 스킨십: 카탈로그에서 지금 가능한 것만 (못 하는 건 이유와 함께)
+  async function skinMenu() {
+    const M = PX.Mind, list = M.menuItems();
+    const groups = [['walk', '걸을 때'], ['light', '가벼운 애정 표현'], ['hug', '포옹'], ['kiss', '입맞춤']];
+    const items = [];
+    for (const x of list) items.push({ t: `${x.a.icon} ${x.a.name}`, k: x.a.id, off: !x.ok, offMsg: x.why, sub: !x.ok ? x.why : x.a.where === 'sit' ? '앉아 있을 때' : x.a.where === 'bed' ? '침대·숙소에서' : x.a.where === 'hug' ? '포옹 중' : null, g: x.a.cat });
+    items.sort((a, b) => groups.findIndex(g => g[0] === a.g) - groups.findIndex(g => g[0] === b.g));
+    const it = await UI.menu(`🤝 스킨십 · 지금: ${M.NAME[M.contact()]}`, items);
+    if (it) await M.perform(it.k);
+  }
+  // 플레이어의 표정·행동 → 대위의 반응
+  async function reactMenu() {
+    const it = await UI.menu('😊 표정·행동', [{ t: '😊 웃으며 바라보기', k: 'smile' }, { t: '👀 빤히 바라보기', k: 'stare' }, { t: '😳 부끄러워하기', k: 'shy' }, { t: '😤 삐진 척하기', k: 'angry' }, { t: '🥱 피곤한 티 내기', k: 'tired' }]);
+    if (!it) return;
+    return react(it.k);
+  }
+  async function react(kind) {
+    const M = PX.Mind, cap = Game.cap, p = Game.player, bd = PX.Dlg.pick('v_r_' + kind, PX.DLG_V2['r_' + kind]);
+    if (!bd) return;
+    p.doPose('idle', 2, kind === 'shy' ? 'blush' : kind === 'angry' ? 'angry' : kind === 'smile' ? 'smile' : 'normal');
+    if (kind === 'smile' || kind === 'stare') { cap.setDirTo(p.x, p.y); if (St.S.rel.cap.stage >= 2 && U.dist(cap.x, cap.y, p.x, p.y) > 1.2) cap.goTo(W.maps[cap.map], Math.floor(p.x + 1), Math.floor(p.y)); }
+    M.mem()[kind === 'smile' ? 'smile' : 'look'] = St.absMin();
+    Game.modal++; await Dlg.runLines(bd.l); Dlg.close(); Game.modal--;
+    if (kind === 'angry') { St.S.rel.cap.backoffUntil = St.absMin() + 120; cap.showEmote('sweat', 2); }
+    else if (kind === 'tired') St.S.energy = Math.min(100, St.S.energy + 3);
+    else { cap.showEmote(kind === 'shy' ? 'heart' : 'note', 1.6); St.addAff(1); }
+    M.noteTalk('react_' + kind);
   }
   async function gift() {
     const S = St.S, r = S.rel.cap;
     const id = await UI.pickGift();
     if (!id) return;
+    if (id === 'ring' && r.stage === 5) { St.addItem(id, -1); return PX.Rom.playerProposes(); }
     const it = PX.ITEMS[id];
     St.addItem(id, -1);
     const like = it.capLike;
@@ -8073,26 +9234,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     if (like >= 1) PX.Audio.heart();
     if (!S.done.firstGiftToCap) { S.done.firstGiftToCap = 1; Game.memory('내가 준 선물', `${S.capName}에게 ${PX.U.josa(it.name, '을')} 줬다.`, true); }
   }
-  async function skinMenu() {
-    const S = St.S, st = S.rel.cap.stage, cap = Game.cap;
-    const holding = cap.holding;
-    const opts = [
-      { t: holding ? '🤝 손 놓기' : '🤝 손잡기', k: holding ? 'unhand' : 'hand', need: 2 },
-      { t: '💞 팔짱 끼기', k: 'armlink', need: 4 },
-      { t: '✋ 머리 쓰다듬어 주기', k: 'pat', need: 1 },
-      { t: '🫂 안아 주기', k: 'hug', need: 3 },
-      { t: '😚 볼에 입맞춤', k: 'cheek', need: 4 },
-      { t: '💋 입맞춤', k: 'kiss', need: 4 },
-      { t: '🧗 업어 달라고 하기', k: 'carry', need: 4 },
-    ].map(o => Object.assign(o, { off: st < o.need, offMsg: '아직은 조금 이른 것 같아요', sub: st < o.need ? `(${St.STAGES[o.need]} 이상)` : null }));
-    const it = await UI.menu('스킨십', opts);
-    if (!it) return;
-    if (it.k === 'unhand') { cap.holding = false; Game.player.holding = false; UI.toast('손을 놓았다'); Game.bubble(cap, '…아쉽다.'); return; }
-    const lines = { hand: ['C^:이거 내가 먼저 하려 했는데.'], armlink: ['C*:팔 더 꽉 잡아. 놓치면 안 되니까.'], pat: ['N:대위가 순순히 고개를 숙인다.', 'C^:…이거 매일 해 줘.'], hug: ['N:넓은 품이 뜨끈하다.', 'C:…좀 더 이러고 있자.'], cheek: ['C!:…', 'C^:한 번 더. 반대쪽도.'], kiss: ['C*:먼저 해 주는 거야? 오늘 무슨 날이야.'], carry: ['C*:업혀. 꽉 잡아.'] };
-    if (it.k !== 'hand' && it.k !== 'armlink' && Cap.mode !== 'follow' && Cap.mode !== 'visit' && Cap.mode !== 'stay') Cap.startFollow();
-    await Cap.doSkin(it.k, false);
-    Game.modal++; await Dlg.runLines(lines[it.k]); Dlg.close(); Game.modal--;
-  }
+
 
   // ---------- 탭 → 행동 ----------
   function interactables() {
@@ -8177,10 +9319,18 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     p.walkPath(path, () => { Game.target = null; if (it.cx != null) p.setDirTo(it.cx, it.cy); else if (it.a) p.setDirTo(it.a.x, it.a.y); if (!it.a || U.dist(p.x, p.y, it.a.x, it.a.y) < 2.6) it.fn(); });
   }
   // 가까운 상호작용 (행동 버튼 · E키)
-  function nearest() {
-    const p = Game.player; let best = null, bd = 1.6;
-    for (const it of interactables()) { const d = U.dist(p.x, p.y, it.a ? it.a.x : it.x, it.a ? it.a.y : it.y); const lim = it.a ? 1.9 : 1.3; if (d < lim && d < bd + (it.a ? 0.4 : 0)) { bd = d; best = it; } }
-    return best;
+  // 가까운 대상들 (가까운 순). 대위는 전용 버튼이 따로 있으니 다른 대상이 있으면 기본 버튼을 차지하지 않는다
+  function nearby() {
+    const p = Game.player, out = [];
+    for (const it of interactables()) { const d = U.dist(p.x, p.y, it.a ? it.a.x : it.x, it.a ? it.a.y : it.y); const lim = it.a ? 1.9 : 1.3; if (d < lim) out.push({ it, d: d - (it.a ? 0.2 : 0) }); }
+    return out.sort((a, b) => a.d - b.d).map(x => x.it);
+  }
+  function nearest() { const l = nearby(); return l.find(i => i.type !== 'cap') || l[0] || null; }
+  const capNear = () => Game.cap && Game.cap.map === Game.mapId && !Game.cap.hidden && U.dist(Game.cap.x, Game.cap.y, Game.player.x, Game.player.y) < 3.2;
+  async function pickNearby() {
+    const l = nearby(); if (!l.length) return;
+    const it = await UI.menu('주변 대상', l.map(i => ({ t: i.type === 'cap' ? `💗 ${St.S.capName}와(과) 대화`.replace('와(과)', U.hasBatchim(St.S.capName) ? '과' : '와') : i.label, k: i })));
+    if (it) { const t = it.k; Game.player.stop(); if (t.cx != null) Game.player.setDirTo(t.cx, t.cy); else if (t.a) Game.player.setDirTo(t.a.x, t.a.y); t.fn(); }
   }
 
   // ---------- 입력 ----------
@@ -8339,7 +9489,10 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   $('termBtn').onclick = () => { if (!Game.modal) UI.terminal(); };
   $('photoBtn').onclick = () => { if (!Game.modal) { Game.memory('사진', `${PX.MAPS[Game.mapId].name}에서 찰칵.`, true); PX.Audio.blip(2); } };
   $('decorBtn').onclick = () => { if (!Game.modal) PX.Decor.start(); };
-  $('capChip').onclick = () => { if (!Game.modal) UI.terminal('rel'); };
+  $('capChip').onclick = () => { if (Game.modal) return; if (Cap.mode === 'follow' && Game.cap.map === Game.mapId) compMenu(); else UI.terminal('rel'); };
+  $('talkBtn').onclick = () => { if (!Game.modal && capNear()) { Game.player.setDirTo(Game.cap.x, Game.cap.y); capMenu(); } };
+  $('skinBtn').onclick = () => { if (!Game.modal && capNear()) skinMenu(); };
+  $('moreBtn').onclick = () => { if (!Game.modal) pickNearby(); };
 
   // ---------- 루프 ----------
   let last = 0, acc = 0, hudT = 0, npcT = 0, saveT = 0, minuteAcc = 0;
@@ -8384,6 +9537,21 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   }
   function trimCrowd() { if (!Game.critters) return; const ex = Game.critters.filter(c => c.extra && !c.fixed); ex.slice(0, Math.floor(ex.length / 2)).forEach(c => { c.hidden = true; c.map = null; }); Game.critters = Game.critters.filter(c => c.map); }
   Game.trimCrowd = trimCrowd;
+  // 플레이어가 멈춰 서서 대위를 계속 바라보면 대위가 먼저 반응한다
+  let stareT = 0;
+  function stareTick(dt) {
+    const p = Game.player, cap = Game.cap;
+    if (Game.modal || p.moving || !capNear() || cap.moving) { stareT = 0; return; }
+    const facing = A.vecDir(cap.x - p.x, cap.y - p.y, p.dir) === p.dir;
+    stareT = facing ? stareT + dt : 0;
+    if (stareT > 7 && !Game.bubbles.some(b => b.actor === cap)) {
+      stareT = -25;
+      cap.setDirTo(p.x, p.y);
+      const st = St.S.rel.cap.stage;
+      Game.bubble(cap, U.pickFresh('stareB' + (st >= 4 ? 'L' : 'P'), st >= 4 ? ['왜 그렇게 봐?', '계속 봐도 돼. 돈 안 받아.', '내 얼굴 마음에 들어?', '그렇게 보면 기대하게 되는데.', '뽀뽀해도 되는 상황인가?', '…뭐. 왜. 좋아서?'] : ['뭐 묻었어?', '왜 그렇게 봐?', '할 말 있어?', '…흉터 봐? 괜찮아.']), 2.6);
+      PX.Mind.mem().look = St.absMin();
+    }
+  }
   function frame(t) {
     if (!Game.running) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -8399,6 +9567,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     for (const a of Game.actors) a.update(dt);
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
     if (PX.CapAct) PX.CapAct.tick(dt);
+    if (PX.Mind) { PX.Mind.tick(dt); stareTick(dt); }
     capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;
     if (npcT <= 0 && !Game.sleeping) { npcT = 0.5; if (!Game.modal) for (const n of Game.npcs) n.think(S, Game.mapId); }
@@ -8425,6 +9594,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   // 오버레이: 목적지 표시 · 감정 아이콘 · 가까운 물체 화살표
   function overlay(g) {
     PX.Decor.overlay(g);
+    PX.Rom.overlay(g, W.view.w, W.view.h);
     const S = St.S, md = PX.MAPS[Game.mapId], now = performance.now() / 1000;
     if (md.stars) { // 투영실 천장 별
       const r = U.rng('stars' + Math.floor(now / 3));
@@ -8536,10 +9706,12 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     const btn = $('actBtn');
     document.getElementById('joy').style.visibility = Game.modal || PX.Decor.active ? 'hidden' : '';
     if (Game.modal && Game.joy && Game.joy.active) Game.joyEnd();
-    if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); return; }
+    if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); $('capBtns').classList.add('hidden'); $('moreBtn').classList.add('hidden'); return; }
     if (Game.player.seat) { btn.textContent = '⬆️ 일어나기'; btn.classList.remove('hidden'); return; }
-    const it = nearest();
+    const l = nearby(), it = l.find(i => i.type !== 'cap') || l[0];
     if (it) { btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
+    $('capBtns').classList.toggle('hidden', !capNear() || PX.Cap.onDuty() && Cap.mode !== 'follow' && !capNear());
+    $('moreBtn').classList.toggle('hidden', l.length < 2);
   }
 
   // ---------- 시간 이벤트 ----------
@@ -8548,6 +9720,8 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
     if (S.time.min % 5 === 0 && Game.mapId) W.updateEvents(W.maps[Game.mapId], S.time, S.time.min);
     if (!Game.sleeping) S.energy = Math.max(0, S.energy - 0.025);
     Cap.msgTick();
+    PX.Op.tick();
+    PX.Rom.minute();
     // 새벽 2시까지 안 자면 쓰러지듯 잠든다
     if (!Game.sleeping && S.time.min >= 2 * 60 && S.time.min < 2 * 60 + 2 && !Game.passing) {
       Game.passing = true;
@@ -8556,6 +9730,7 @@ ${r.backoffUntil > St.absMin() ? '주의: 오늘 플레이어가 장난이 싫�
   });
   St.on('newDay', () => {
     const S = St.S;
+    PX.Op.maybeSchedule();
     St.makeQuests();
     S.rel.cap.talksToday = 0;
     // 계절이 바뀌면 옷 갱신

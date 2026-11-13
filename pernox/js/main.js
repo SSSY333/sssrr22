@@ -105,6 +105,7 @@
     PX.Act.spawnCritters(m);
     if (!silent) dateCheck(id);
     if (!silent && !St.S.done.intro && PX.MAPS[id].kind === 'out' && Game.prevMap === PX.JOBS[St.S.player.job].home && St.S.time.min < 12 * 60) Game.trigger(firstMeet);
+    if (PX.Rom && PX.MAPS[id].kind === 'out') setTimeout(() => { if (Game.mapId === id) PX.Rom.festivalScene(); }, 900);
   }
   Game.enterMap = enterMap;
   let capCommentT = 40;
@@ -301,6 +302,8 @@
     const S = St.S, job = PX.JOBS[S.player.job];
     if (o.spot !== job.workSpot) { UI.toast(`🔧 ${o.f.name} — ${job.short}의 업무 자리가 아니에요`); return; }
     if (St.isWeekend()) { UI.toast('🏖️ 오늘은 비번(주말)이에요'); return; }
+    if (PX.Rom.onLeave('p', S.day)) { UI.toast('🏖️ 오늘은 휴가예요. 푹 쉬세요'); return; }
+    if (PX.Op.inField()) { UI.toast('🛰️ 작전 중이에요. 작전 일과는 안내 단말에서'); return; }
     const t = S.time.min;
     const shift = t >= 9 * 60 && t < 12 * 60 ? 0 : t >= 13 * 60 && t < 17 * 60 ? 1 : -1;
     if (shift < 0) { UI.toast('⏰ 근무 시간이 아니에요 (09:00~12:00, 13:00~17:00)'); return; }
@@ -481,40 +484,93 @@
   }
 
   // ---------- 대위 메뉴 ----------
+  // 대위 메뉴: 지금 상황에서 할 수 있는 것만 (이미 하고 있는 건 다시 묻지 않는다)
   async function capMenu() {
-    const S = St.S, r = S.rel.cap, cap = Game.cap;
+    const S = St.S, r = S.rel.cap, cap = Game.cap, M = PX.Mind;
     const duty = Cap.onDuty() && Cap.mode !== 'follow';
     const st = r.stage;
     const items = [{ t: '💬 대화하기', k: 'talk' }];
     if (PX.AI.available()) items.push({ t: '✨ 자유롭게 대화하기', k: 'ai', sub: '하고 싶은 말을 직접 입력 · AI가 대위로 대답해요' });
-    if (Cap.mode === 'follow') items.push({ t: '🙋 이제 혼자 갈게요', k: 'unfollow' });
-    else items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty || Cap.mode === 'visit' || Cap.mode === 'stay', offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
+    items.push({ t: '😊 표정·행동으로 반응하기', k: 'react', sub: '웃으며 바라보기 · 빤히 보기 · 부끄러워하기 …' });
+    if (!duty) items.push({ t: '🤝 스킨십', k: 'skin', sub: M.contact() !== 'NONE' ? `지금: ${M.NAME[M.contact()]}` : '손잡기 · 포옹 · 입맞춤 …' });
     for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', fn: a.fn });
+    if (Cap.mode === 'follow') items.push({ t: '🧭 동행 관리', k: 'comp', sub: `지금: ${M.NAME[M.contact()] === '접촉 없음' ? '함께 걷기' : M.NAME[M.contact()]}` });
+    else if (Cap.mode !== 'visit' && Cap.mode !== 'stay') items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty, offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
+    const dt = PX.Rom.nextDate();
+    if (dt && dt.state === 'on') items.push({ t: '🌇 데이트 마치기', k: 'dateEnd' });
+    else if (st >= 2 && !dt) items.push({ t: '📅 데이트 약속 잡기', k: 'date', sub: '장소와 시간을 정해요' });
+    if (st === 6) items.push({ t: '💒 결혼식 날짜 잡기', k: 'wed', sub: S.wedding ? `${PX.Rom.dayKo(S.wedding.day)} 11:00 · 연병장` : '약혼 열흘 뒤부터' });
     items.push({ t: '❓ 물어보기', k: 'topic', sub: '대위에 대해 궁금한 것' });
     items.push({ t: '🎁 선물하기', k: 'gift' });
-    items.push({ t: '🤝 스킨십', k: 'skin', sub: '손잡기 · 쓰다듬기 · 포옹 …', off: duty, offMsg: '근무 중이에요' });
     items.push({ t: '😮‍💨 고민 털어놓기', k: 'comfort' });
     if (Cap.mode === 'visit') { items.push({ t: '🌙 자고 가도 돼요', k: 'stay', off: st < 2, offMsg: '아직은 조금 이른 것 같아요' }, { t: '🚪 이제 가 보세요', k: 'leave' }); }
-    else items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
+    else if (Cap.mode !== 'follow') items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
     const it = await UI.menu(`${S.capName} 대위`, items);
     if (!it) return;
     if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.fn(); }
     if (it.k === 'topic') return PX.CapAct.askTopic();
+    if (it.k === 'date') return PX.Rom.askDate();
+    if (it.k === 'dateEnd') { const d = PX.Rom.nextDate(); if (d) { d.started = -1e9; } return; }
+    if (it.k === 'wed') return PX.Rom.planWedding();
     if (it.k === 'talk') return Dlg.capTalk();
     if (it.k === 'ai') return PX.AI.chat();
-    if (it.k === 'follow') { Cap.startFollow(); Game.bubble(cap, U.pick(['좋아. 어디든.', '그 말 기다렸어.'])); St.addAff(1); return; }
-    if (it.k === 'unfollow') { Cap.release(U.pick(['응. 이따 또 보자.', '아쉽네. 조심히 가.'])); return; }
+    if (it.k === 'react') return reactMenu();
+    if (it.k === 'comp') return compMenu();
+    if (it.k === 'follow') { Cap.startFollow(); M.noteMeet(); Game.bubble(cap, U.pickFresh('followYes', ['좋아. 어디든.', '그 말 기다렸어.', '오케이. 네 속도에 맞출게.', '가자. 오늘은 네가 대장이야.'])); St.addAff(1); return; }
     if (it.k === 'gift') return gift();
     if (it.k === 'skin') return skinMenu();
     if (it.k === 'comfort') return Dlg.capTalk('comfort');
-    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; Cap.release(); Cap.mode = 'sched'; return; }
-    if (it.k === 'stay') { S.cap.lastStayAskDay = -1; Game.modal++; await Dlg.say('player', '…자고 가도 돼요.', 'blush'); await Dlg.runLines(U.pick(PX.DLG_CAP.stayYes)); Dlg.close(); Game.modal--; S.cap.stay = 'sofa'; S.cap.lastStayAskDay = S.day; Cap.mode = 'stay'; St.addAff(6); const m = W.maps[Game.mapId]; const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa')); if (sofa) { cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]); cap.pose = 'lie'; } if (!S.done.firstStay) { S.done.firstStay = 1; Game.memory('첫 숙박', '먼저 자고 가라고 했다. 대위는 소파에서 웃으며 잠들었다.', true); } return; }
-    if (it.k === 'leave') { Game.modal++; await Dlg.say('player', '이제 가 보세요.'); await Dlg.say('cap', U.pick(['응. 오늘 고마웠어. 잘 자.', '알았어. 쫓겨나는 것도 좋다. 또 올게.']), 'smile'); Dlg.close(); Game.modal--; const m = W.maps[Game.mapId]; cap.leaveSeat(); Cap.mode = 'sched'; r.noFollowUntil = (S.day + 1) * 1440 + 6 * 60; cap.goTo(m, m.exit.x, m.exit.y, () => Cap.moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); }
+    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; M.noteRefuse('follow', 600); M.notePart(60); return; }
+    if (it.k === 'stay') { S.cap.lastStayAskDay = -1; Game.modal++; await Dlg.say('player', '…자고 가도 돼요.', 'blush'); await Dlg.runLines(U.pick(PX.DLG_CAP.stayYes)); Dlg.close(); Game.modal--; S.cap.stay = 'sofa'; S.cap.lastStayAskDay = S.day; Cap.mode = 'stay'; St.addAff(6); const m = W.maps[Game.mapId]; const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa') && o.seats && o.seats.some(x => !x.by)); if (sofa) { const a = W.accessTile(m, sofa); if (a) cap.goTo(m, a.x, a.y, () => { const seat = sofa.seats.find(x => !x.by); if (seat) cap.sitOn(seat); }); } return; }
+    if (it.k === 'leave') { Game.modal++; await Dlg.say('player', '이제 가 보세요.'); await Dlg.runLines(PX.Dlg.pick('v_farewell', PX.DLG_V2.farewell).l); Dlg.close(); Game.modal--; const m = W.maps[Game.mapId]; cap.leaveSeat(); Cap.release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => Cap.moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); }
+  }
+  // 동행 관리: 지금 상태는 '사용 중'으로 표시하고 다시 고르게 하지 않는다
+  async function compMenu() {
+    const M = PX.Mind, c = M.contact(), st = St.S.rel.cap.stage;
+    const row = (t, k, need, cur) => ({ t: (cur ? '✔ ' : '') + t, k, off: cur || st < need, offMsg: cur ? '지금 하고 있어요' : '아직은 조금 이른 것 같아요', sub: cur ? '사용 중' : st < need ? `(${St.STAGES[need]} 이상)` : null });
+    const it = await UI.menu('🧭 동행 관리', [
+      row('🚶 함께 걷기 (접촉 없이)', 'NONE', 0, c === 'NONE'), row('🤝 손잡기', 'hand', 2, c === 'HAND_HOLD'), row('💞 팔짱', 'armlink', 3, c === 'ARM_LINK'),
+      row('🫶 허리 감싸기', 'waist', 4, c === 'WAIST_HOLD'), row('🤗 어깨 감싸기', 'shoulder', 3, c === 'SHOULDER_HOLD'),
+      { t: '⏸️ 여기서 잠깐 기다려 줘요', k: 'pause', sub: '대위가 이 자리에서 기다려요' }, { t: '👋 동행 종료', k: 'end' }]);
+    if (!it) return;
+    if (it.k === 'NONE') { if (c !== 'NONE') await M.perform('release'); return; }
+    if (it.k === 'pause') { Cap.pause(); return; }
+    if (it.k === 'end') { Game.modal++; await Dlg.say('player', '오늘은 여기까지 같이 갈게요.'); const bd = PX.Dlg.pick('v_farewell', PX.DLG_V2.farewell); await Dlg.runLines(bd ? bd.l : ['C:응. 이따 보자.']); Dlg.close(); Game.modal--; Cap.release(null, 30); return; }
+    await M.perform(it.k);
+  }
+  // 스킨십: 카탈로그에서 지금 가능한 것만 (못 하는 건 이유와 함께)
+  async function skinMenu() {
+    const M = PX.Mind, list = M.menuItems();
+    const groups = [['walk', '걸을 때'], ['light', '가벼운 애정 표현'], ['hug', '포옹'], ['kiss', '입맞춤']];
+    const items = [];
+    for (const x of list) items.push({ t: `${x.a.icon} ${x.a.name}`, k: x.a.id, off: !x.ok, offMsg: x.why, sub: !x.ok ? x.why : x.a.where === 'sit' ? '앉아 있을 때' : x.a.where === 'bed' ? '침대·숙소에서' : x.a.where === 'hug' ? '포옹 중' : null, g: x.a.cat });
+    items.sort((a, b) => groups.findIndex(g => g[0] === a.g) - groups.findIndex(g => g[0] === b.g));
+    const it = await UI.menu(`🤝 스킨십 · 지금: ${M.NAME[M.contact()]}`, items);
+    if (it) await M.perform(it.k);
+  }
+  // 플레이어의 표정·행동 → 대위의 반응
+  async function reactMenu() {
+    const it = await UI.menu('😊 표정·행동', [{ t: '😊 웃으며 바라보기', k: 'smile' }, { t: '👀 빤히 바라보기', k: 'stare' }, { t: '😳 부끄러워하기', k: 'shy' }, { t: '😤 삐진 척하기', k: 'angry' }, { t: '🥱 피곤한 티 내기', k: 'tired' }]);
+    if (!it) return;
+    return react(it.k);
+  }
+  async function react(kind) {
+    const M = PX.Mind, cap = Game.cap, p = Game.player, bd = PX.Dlg.pick('v_r_' + kind, PX.DLG_V2['r_' + kind]);
+    if (!bd) return;
+    p.doPose('idle', 2, kind === 'shy' ? 'blush' : kind === 'angry' ? 'angry' : kind === 'smile' ? 'smile' : 'normal');
+    if (kind === 'smile' || kind === 'stare') { cap.setDirTo(p.x, p.y); if (St.S.rel.cap.stage >= 2 && U.dist(cap.x, cap.y, p.x, p.y) > 1.2) cap.goTo(W.maps[cap.map], Math.floor(p.x + 1), Math.floor(p.y)); }
+    M.mem()[kind === 'smile' ? 'smile' : 'look'] = St.absMin();
+    Game.modal++; await Dlg.runLines(bd.l); Dlg.close(); Game.modal--;
+    if (kind === 'angry') { St.S.rel.cap.backoffUntil = St.absMin() + 120; cap.showEmote('sweat', 2); }
+    else if (kind === 'tired') St.S.energy = Math.min(100, St.S.energy + 3);
+    else { cap.showEmote(kind === 'shy' ? 'heart' : 'note', 1.6); St.addAff(1); }
+    M.noteTalk('react_' + kind);
   }
   async function gift() {
     const S = St.S, r = S.rel.cap;
     const id = await UI.pickGift();
     if (!id) return;
+    if (id === 'ring' && r.stage === 5) { St.addItem(id, -1); return PX.Rom.playerProposes(); }
     const it = PX.ITEMS[id];
     St.addItem(id, -1);
     const like = it.capLike;
@@ -532,26 +588,7 @@
     if (like >= 1) PX.Audio.heart();
     if (!S.done.firstGiftToCap) { S.done.firstGiftToCap = 1; Game.memory('내가 준 선물', `${S.capName}에게 ${PX.U.josa(it.name, '을')} 줬다.`, true); }
   }
-  async function skinMenu() {
-    const S = St.S, st = S.rel.cap.stage, cap = Game.cap;
-    const holding = cap.holding;
-    const opts = [
-      { t: holding ? '🤝 손 놓기' : '🤝 손잡기', k: holding ? 'unhand' : 'hand', need: 2 },
-      { t: '💞 팔짱 끼기', k: 'armlink', need: 4 },
-      { t: '✋ 머리 쓰다듬어 주기', k: 'pat', need: 1 },
-      { t: '🫂 안아 주기', k: 'hug', need: 3 },
-      { t: '😚 볼에 입맞춤', k: 'cheek', need: 4 },
-      { t: '💋 입맞춤', k: 'kiss', need: 4 },
-      { t: '🧗 업어 달라고 하기', k: 'carry', need: 4 },
-    ].map(o => Object.assign(o, { off: st < o.need, offMsg: '아직은 조금 이른 것 같아요', sub: st < o.need ? `(${St.STAGES[o.need]} 이상)` : null }));
-    const it = await UI.menu('스킨십', opts);
-    if (!it) return;
-    if (it.k === 'unhand') { cap.holding = false; Game.player.holding = false; UI.toast('손을 놓았다'); Game.bubble(cap, '…아쉽다.'); return; }
-    const lines = { hand: ['C^:이거 내가 먼저 하려 했는데.'], armlink: ['C*:팔 더 꽉 잡아. 놓치면 안 되니까.'], pat: ['N:대위가 순순히 고개를 숙인다.', 'C^:…이거 매일 해 줘.'], hug: ['N:넓은 품이 뜨끈하다.', 'C:…좀 더 이러고 있자.'], cheek: ['C!:…', 'C^:한 번 더. 반대쪽도.'], kiss: ['C*:먼저 해 주는 거야? 오늘 무슨 날이야.'], carry: ['C*:업혀. 꽉 잡아.'] };
-    if (it.k !== 'hand' && it.k !== 'armlink' && Cap.mode !== 'follow' && Cap.mode !== 'visit' && Cap.mode !== 'stay') Cap.startFollow();
-    await Cap.doSkin(it.k, false);
-    Game.modal++; await Dlg.runLines(lines[it.k]); Dlg.close(); Game.modal--;
-  }
+
 
   // ---------- 탭 → 행동 ----------
   function interactables() {
@@ -636,10 +673,18 @@
     p.walkPath(path, () => { Game.target = null; if (it.cx != null) p.setDirTo(it.cx, it.cy); else if (it.a) p.setDirTo(it.a.x, it.a.y); if (!it.a || U.dist(p.x, p.y, it.a.x, it.a.y) < 2.6) it.fn(); });
   }
   // 가까운 상호작용 (행동 버튼 · E키)
-  function nearest() {
-    const p = Game.player; let best = null, bd = 1.6;
-    for (const it of interactables()) { const d = U.dist(p.x, p.y, it.a ? it.a.x : it.x, it.a ? it.a.y : it.y); const lim = it.a ? 1.9 : 1.3; if (d < lim && d < bd + (it.a ? 0.4 : 0)) { bd = d; best = it; } }
-    return best;
+  // 가까운 대상들 (가까운 순). 대위는 전용 버튼이 따로 있으니 다른 대상이 있으면 기본 버튼을 차지하지 않는다
+  function nearby() {
+    const p = Game.player, out = [];
+    for (const it of interactables()) { const d = U.dist(p.x, p.y, it.a ? it.a.x : it.x, it.a ? it.a.y : it.y); const lim = it.a ? 1.9 : 1.3; if (d < lim) out.push({ it, d: d - (it.a ? 0.2 : 0) }); }
+    return out.sort((a, b) => a.d - b.d).map(x => x.it);
+  }
+  function nearest() { const l = nearby(); return l.find(i => i.type !== 'cap') || l[0] || null; }
+  const capNear = () => Game.cap && Game.cap.map === Game.mapId && !Game.cap.hidden && U.dist(Game.cap.x, Game.cap.y, Game.player.x, Game.player.y) < 3.2;
+  async function pickNearby() {
+    const l = nearby(); if (!l.length) return;
+    const it = await UI.menu('주변 대상', l.map(i => ({ t: i.type === 'cap' ? `💗 ${St.S.capName}와(과) 대화`.replace('와(과)', U.hasBatchim(St.S.capName) ? '과' : '와') : i.label, k: i })));
+    if (it) { const t = it.k; Game.player.stop(); if (t.cx != null) Game.player.setDirTo(t.cx, t.cy); else if (t.a) Game.player.setDirTo(t.a.x, t.a.y); t.fn(); }
   }
 
   // ---------- 입력 ----------
@@ -798,7 +843,10 @@
   $('termBtn').onclick = () => { if (!Game.modal) UI.terminal(); };
   $('photoBtn').onclick = () => { if (!Game.modal) { Game.memory('사진', `${PX.MAPS[Game.mapId].name}에서 찰칵.`, true); PX.Audio.blip(2); } };
   $('decorBtn').onclick = () => { if (!Game.modal) PX.Decor.start(); };
-  $('capChip').onclick = () => { if (!Game.modal) UI.terminal('rel'); };
+  $('capChip').onclick = () => { if (Game.modal) return; if (Cap.mode === 'follow' && Game.cap.map === Game.mapId) compMenu(); else UI.terminal('rel'); };
+  $('talkBtn').onclick = () => { if (!Game.modal && capNear()) { Game.player.setDirTo(Game.cap.x, Game.cap.y); capMenu(); } };
+  $('skinBtn').onclick = () => { if (!Game.modal && capNear()) skinMenu(); };
+  $('moreBtn').onclick = () => { if (!Game.modal) pickNearby(); };
 
   // ---------- 루프 ----------
   let last = 0, acc = 0, hudT = 0, npcT = 0, saveT = 0, minuteAcc = 0;
@@ -843,6 +891,21 @@
   }
   function trimCrowd() { if (!Game.critters) return; const ex = Game.critters.filter(c => c.extra && !c.fixed); ex.slice(0, Math.floor(ex.length / 2)).forEach(c => { c.hidden = true; c.map = null; }); Game.critters = Game.critters.filter(c => c.map); }
   Game.trimCrowd = trimCrowd;
+  // 플레이어가 멈춰 서서 대위를 계속 바라보면 대위가 먼저 반응한다
+  let stareT = 0;
+  function stareTick(dt) {
+    const p = Game.player, cap = Game.cap;
+    if (Game.modal || p.moving || !capNear() || cap.moving) { stareT = 0; return; }
+    const facing = A.vecDir(cap.x - p.x, cap.y - p.y, p.dir) === p.dir;
+    stareT = facing ? stareT + dt : 0;
+    if (stareT > 7 && !Game.bubbles.some(b => b.actor === cap)) {
+      stareT = -25;
+      cap.setDirTo(p.x, p.y);
+      const st = St.S.rel.cap.stage;
+      Game.bubble(cap, U.pickFresh('stareB' + (st >= 4 ? 'L' : 'P'), st >= 4 ? ['왜 그렇게 봐?', '계속 봐도 돼. 돈 안 받아.', '내 얼굴 마음에 들어?', '그렇게 보면 기대하게 되는데.', '뽀뽀해도 되는 상황인가?', '…뭐. 왜. 좋아서?'] : ['뭐 묻었어?', '왜 그렇게 봐?', '할 말 있어?', '…흉터 봐? 괜찮아.']), 2.6);
+      PX.Mind.mem().look = St.absMin();
+    }
+  }
   function frame(t) {
     if (!Game.running) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
@@ -858,6 +921,7 @@
     for (const a of Game.actors) a.update(dt);
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
     if (PX.CapAct) PX.CapAct.tick(dt);
+    if (PX.Mind) { PX.Mind.tick(dt); stareTick(dt); }
     capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;
     if (npcT <= 0 && !Game.sleeping) { npcT = 0.5; if (!Game.modal) for (const n of Game.npcs) n.think(S, Game.mapId); }
@@ -884,6 +948,7 @@
   // 오버레이: 목적지 표시 · 감정 아이콘 · 가까운 물체 화살표
   function overlay(g) {
     PX.Decor.overlay(g);
+    PX.Rom.overlay(g, W.view.w, W.view.h);
     const S = St.S, md = PX.MAPS[Game.mapId], now = performance.now() / 1000;
     if (md.stars) { // 투영실 천장 별
       const r = U.rng('stars' + Math.floor(now / 3));
@@ -995,10 +1060,12 @@
     const btn = $('actBtn');
     document.getElementById('joy').style.visibility = Game.modal || PX.Decor.active ? 'hidden' : '';
     if (Game.modal && Game.joy && Game.joy.active) Game.joyEnd();
-    if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); return; }
+    if (Game.modal || PX.Decor.active) { btn.classList.add('hidden'); $('capBtns').classList.add('hidden'); $('moreBtn').classList.add('hidden'); return; }
     if (Game.player.seat) { btn.textContent = '⬆️ 일어나기'; btn.classList.remove('hidden'); return; }
-    const it = nearest();
+    const l = nearby(), it = l.find(i => i.type !== 'cap') || l[0];
     if (it) { btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
+    $('capBtns').classList.toggle('hidden', !capNear() || PX.Cap.onDuty() && Cap.mode !== 'follow' && !capNear());
+    $('moreBtn').classList.toggle('hidden', l.length < 2);
   }
 
   // ---------- 시간 이벤트 ----------
@@ -1007,6 +1074,8 @@
     if (S.time.min % 5 === 0 && Game.mapId) W.updateEvents(W.maps[Game.mapId], S.time, S.time.min);
     if (!Game.sleeping) S.energy = Math.max(0, S.energy - 0.025);
     Cap.msgTick();
+    PX.Op.tick();
+    PX.Rom.minute();
     // 새벽 2시까지 안 자면 쓰러지듯 잠든다
     if (!Game.sleeping && S.time.min >= 2 * 60 && S.time.min < 2 * 60 + 2 && !Game.passing) {
       Game.passing = true;
@@ -1015,6 +1084,7 @@
   });
   St.on('newDay', () => {
     const S = St.S;
+    PX.Op.maybeSchedule();
     St.makeQuests();
     S.rel.cap.talksToday = 0;
     // 계절이 바뀌면 옷 갱신

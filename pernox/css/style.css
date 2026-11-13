@@ -222,3 +222,13 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 #chatbar.kbtop { top: calc(var(--safe-t) + 96px); bottom: auto; }
 .sheet-wrap.kbtop { align-items: flex-start; padding-top: calc(var(--safe-t) + 12px); }
 .sheet-wrap.kbtop .sheet { border-radius: 18px; border-bottom: 3px solid var(--line); max-height: 46vh; }
+
+/* 오른쪽 아래: 기본 상호작용 위에 대위 전용 버튼 · 주변 대상 고르기 */
+#capBtns { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(104px + var(--safe-b)); display: flex; gap: 8px; pointer-events: auto; }
+#capBtns button, #moreBtn { width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--line); background: var(--panel2); font-size: 22px; box-shadow: 0 3px 0 var(--line); }
+#capBtns button#talkBtn { background: #ffd1e6; }
+#moreBtn { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(104px + var(--safe-b)); pointer-events: auto; font-size: 24px; line-height: 1; }
+#capBtns:not(.hidden) ~ #moreBtn { bottom: calc(166px + var(--safe-b)); }
+.chip-cap .ct { margin-left: 6px; }
+
+.msgph { display: block; width: 180px; max-width: 70%; margin: 6px 0 0; border-radius: 8px; border: 2px solid var(--line); image-rendering: pixelated; }

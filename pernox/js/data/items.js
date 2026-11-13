@@ -36,6 +36,7 @@
   it('book', { name: '페르녹스 생태도감 (보급판)', price: 30, capLike: 0, icon: '📗', desc: '외계 생물 그림이 가득하다.' });
   it('rubyrose', { name: '루비 장미', price: 8, capLike: 1, icon: '🌹', desc: '루비웨이 노점의 붉은 장미 한 송이.' });
   it('rosebunch', { name: '루비 장미 다발', price: 30, capLike: 1, icon: '💐', desc: '네온 아래서 더 붉게 보이는 장미 다발.' });
+  it('ring', { name: '은하 결정 반지', price: 320, capLike: 2, icon: '💍', desc: '제4행성 광물을 깎아 만든 반지. 마음을 전할 때.' });
   it('perfume', { name: '향열매 향수', price: 55, capLike: 1, icon: '🧴', desc: '은은하고 시원한 향.' });
   it('pass', { name: '606부대 출입 허가증', cat: 'key', price: 0, icon: '🪪', desc: '민간인이 부대 시설에 들어갈 때 필요하다.' });
   it('capStone', { name: '대위가 주운 이상한 돌', cat: 'gift', price: 0, capLike: 0, icon: '🪨', desc: '"네가 좋아할 것 같아서." 반짝이는 줄무늬가 있다.', noGift: true });
@@ -84,14 +85,14 @@
     px: { name: '보급창고 PX', clerk: 'song', items: ['coffee', 'hotchoco', 'protein', 'ramen', 'samgyup', 'earthSnack', 'iceDessert', 'handfan', 'hotpack', 'toolkit', 'patch', 'mineral', 'f_plant', 'f_bigplant', 'f_lamp', 'f_rug', 'f_rug_blue', 'f_sidetable', 'f_cabinet', 'f_chair', 'f_stool', 'f_sofa', 'f_sofa_green', 'f_table', 'f_desk', 'f_shelf', 'f_mirror', 'f_cooler', 'f_tv', 'f_aquarium', 'f_bigbed', 'f_wardrobe'] },
     cafe: { name: '향열매 카페', clerk: 'shin', items: ['coffee', 'fruitTea', 'iceDessert', 'hotchoco', 'earthSnack', 'glassflower', 'perfume', 'book', 'f_cafetable', 'f_plant'] },
     samgyup: { name: '냉삼집 포장 코너', clerk: 'moon', items: ['samgyupMeal', 'ramen', 'coffee'] },
-    flower: { name: '유리돔 꽃시장', clerk: 'go', items: ['bouquet', 'glassflower', 'perfume', 'f_glassvase', 'f_plant', 'f_bigplant'] },
+    flower: { name: '유리돔 꽃시장', clerk: 'go', items: ['bouquet', 'glassflower', 'perfume', 'ring', 'f_glassvase', 'f_plant', 'f_bigplant'] },
     arcade: { name: '오락실 카운터', items: ['earthSnack', 'iceDessert', 'coffee'] },
     festival: { name: '축제 · 야시장 매대', items: ['skewer', 'fruitIce', 'earthSnack', 'iceDessert', 'festivalBadge', 'glassflower'] },
     farm: { name: '농업돔 매대', items: ['fruitTea', 'rawfruit', 'fruitIce', 'f_plant'] },
     souvenir: { name: '관람언덕 기념품 매대', items: ['souvenir', 'glassflower', 'coffee', 'iceDessert'] },
     beach: { name: '해변 매점', items: ['fruitIce', 'iceDessert', 'coffee', 'skewer'] },
     seafood: { name: '해양도시 매대', items: ['seafood', 'iceDessert', 'souvenir'] },
-    mineral: { name: '광물도시 매대', items: ['mineral', 'mineralSalt', 'protein', 'souvenir'] },
+    mineral: { name: '광물도시 매대', items: ['mineral', 'mineralSalt', 'ring', 'protein', 'souvenir'] },
     smoked: { name: '냉훈제거리', items: ['smoked', 'hotchoco', 'iceDessert', 'souvenir'] },
     vending: { name: '자판기', items: ['coffee', 'hotchoco', 'protein', 'earthSnack'] },
   };

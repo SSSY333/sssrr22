@@ -68,7 +68,10 @@ PX.UI = (() => {
     $('hLoc').textContent = PX.MAPS[G.mapId].name;
     const r = S.rel.cap;
     const near = G.cap.map === G.mapId;
-    $('capChip').innerHTML = `<b>${S.capName}</b>${near ? ' · 가까이 있음' : ''} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    const M = PX.Mind, op = S.cap.op && S.cap.op.phase === 'away' && !S.cap.op.joint;
+    const comp = PX.Cap.mode === 'follow' && near ? `<span class="ct">${M.ICON[M.contact()]} ${M.contact() === 'NONE' ? '동행 중' : M.NAME[M.contact()]}</span>` : '';
+    const html = `<b>${S.capName}</b>${op ? ' · 🛰️ 장기작전 중' : comp ? '' : near ? ' · 가까이 있음' : ''}${comp} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
+    if ($('capChip')._h !== html) { $('capChip')._h = html; $('capChip').innerHTML = html; }
   }
   function badge() { const n = St.S.messages.filter(m => m.reply == null).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
 
@@ -266,6 +269,13 @@ PX.UI = (() => {
           el('tr', null, el('td', null, '13:00~17:00'), el('td', null, '오후 근무')),
           el('tr', null, el('td', null, '주말'), el('td', null, '비번 · 자유 외출'))),
         el('p', { class: 'muted' }, `오늘 근무 ${done}/2회 완료. 근무지의 업무 자리를 눌러 근무하면 급여 ₢${j.pay}을 받아요.`));
+      const R = PX.Rom, dts = (S.dates || []).filter(d => d.state === 'planned' || d.state === 'on');
+      p.append(el('h4', null, '📅 약속'), ...(dts.length ? dts.map(d => el('p', null, `${R.dayKo(d.day)} ${Cal.fmtTime(d.min)} · ${d.name}${d.kind === 'proposal' ? ' (대위가 꼭 오래요)' : ''}`)) : [el('p', { class: 'muted' }, '잡힌 약속이 없어요. 대위에게 데이트 약속을 잡아 보세요.')]));
+      if (S.wedding && S.wedding.state === 'planned') p.append(el('p', null, `💒 결혼식 ${R.dayKo(S.wedding.day)} 11:00 · 606부대 연병장`));
+      const o = S.cap.op; if (o && o.phase === 'planned' && (o.told || o.joint)) p.append(el('p', null, o.joint ? `🛰️ 작전 명령: ${R.dayKo(o.startDay)} 06:00부터 ${o.days}일 · ${o.role}` : `🛰️ 대위 장기작전: ${R.dayKo(o.startDay)}부터 ${o.days}일`));
+      const lv = el('button', { class: 'menu-btn' }, el('span', null, '🏖️ 휴가 신청'), el('small', null, S.leave && S.leave.to >= S.day ? `${R.dayKo(S.leave.from)}~${R.dayKo(S.leave.to)} 휴가` : '하루~사흘 · 30일에 6일까지'));
+      lv.onclick = () => { R.applyLeave(); };
+      p.append(el('h4', null, '휴가'), lv);
       p.append(el('p', { class: 'muted' }, '대위의 일정은 단말에 나오지 않아요. 부대원들에게 물어보면 알려 줄지도 몰라요.'));
     },
     rel(p) {
@@ -285,8 +295,9 @@ PX.UI = (() => {
       const S = St.S;
       if (!S.messages.length) p.append(el('p', { class: 'muted' }, `${S.capName}에게 온 메시지가 없어요. 떨어져 있으면 가끔 연락이 와요.`));
       for (const m of S.messages) {
-        const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t));
+        const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t), ...(m.photo ? [el('img', { class: 'msgph', src: m.photo, alt: '사진' })] : []));
         if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
+        else if (m.reply === 'none') { /* 답장 필요 없는 메시지 */ }
         else if (m.reply != null) { box.append(el('div', { class: 'bub me' }, m.r[m.reply][0]), el('div', { class: 'bub cap' }, m.r[m.reply][2])); }
         else {
           const ch = el('div', { class: 'msgch' });
@@ -358,6 +369,7 @@ PX.UI = (() => {
     album(p) {
       const S = St.S;
       if (!S.album.length) p.append(el('p', { class: 'muted' }, '아직 추억이 없어요. 대위와의 첫 순간들이 자동으로 기록돼요. 📷 버튼으로 직접 찍을 수도 있어요.'));
+      if ((S.capPhotos || []).length) { p.append(el('h4', null, `📱 ${S.capName}가 보낸 사진`)); const g2 = el('div', { class: 'album' }); for (const a of S.capPhotos) g2.append(el('div', { class: 'ph' }, el('img', { src: a.img, alt: a.t }), el('small', null, a.t))); p.append(g2, el('h4', null, '📷 추억')); }
       const grid = el('div', { class: 'album' });
       for (const a of S.album.slice().reverse()) grid.append(el('div', { class: 'ph' }, a.img ? el('img', { src: a.img, alt: a.title }) : el('div', { class: 'noimg' }, '📷'), el('b', null, a.title), el('small', null, a.date), el('p', null, a.text)));
       p.append(grid);

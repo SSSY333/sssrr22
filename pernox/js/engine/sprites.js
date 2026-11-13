@@ -31,7 +31,9 @@ PX.S = (() => {
     const cx = B.ax;
     let footY = B.ay;
     const sit = pose === 'sit' || pose === 'eat';
-    const walk = pose === 'walk' || pose === 'walkhold' || pose === 'walkholdL';
+    // gw_<grip>_<L|R> = 걸으며 접촉, gi_… = 서서 접촉 (grip: hand 손 · arm 팔짱 · waist 허리 · shoulder 어깨 · free 접촉 없이 나란히)
+    const gp = /^g([wi])_(\w+)_([LR])$/.exec(pose);
+    const walk = pose === 'walk' || pose === 'walkhold' || pose === 'walkholdL' || (gp && gp[1] === 'w');
     const phase = walk ? [0, 1, 0, -1][fr % 4] : 0;
     const bob = walk ? (fr % 2) : (pose === 'idle' ? (fr % 2) : 0);
     // 다리
@@ -96,7 +98,7 @@ PX.S = (() => {
       };
       const L = tx - aw, Rr = tx + B.tw, alen = B.th - 1;
       const swing = walk ? phase : 0;
-      const armPose = pose === 'walkhold' ? 'hold' : pose === 'walkholdL' ? 'holdL' : pose;
+      const armPose = pose === 'walkhold' ? 'hold' : pose === 'walkholdL' ? 'holdL' : gp ? 'grip' : pose;
       switch (armPose) {
         case 'wave': arm(L, ay0 + swing, alen, 0); arm(Rr, ay0, alen, 2); R(Rr - 1, ay0 - alen - 2 - (fr % 2), aw + 2, 2, skin); break;
         case 'hug': case 'carry': case 'work': {
@@ -104,6 +106,18 @@ PX.S = (() => {
           R(L + 1, ay0 + 2 - o, aw + 2, aw + 1, sleeveLen ? slv : skin); R(Rr - 3, ay0 + 2 + o, aw + 2, aw + 1, sleeveLen ? slv : skin);
           R(tx + 1, ay0 + 4 - o, 3, 2, skin); R(tx + B.tw - 4, ay0 + 4 + o, 3, 2, skin);
           if (pose === 'carry') R(tx - 1, ay0 + 1, B.tw + 2, 5, '#c9a86a');
+          break;
+        }
+        case 'grip': { // 접촉 자세: 상대 쪽 팔만 바뀐다
+          const right = gp[3] === 'R', near = right ? Rr : L, far = right ? L : Rr, g2 = gp[2];
+          arm(far, ay0 + Math.max(0, right ? -swing : swing), alen, 0);
+          // 큰 체격(대위)은 상대가 작으니 팔을 내려서 상대의 손·허리·어깨 높이에 맞춘다
+          const big = !!app.big, sl = sleeveLen ? slv : skin, hx2 = (w) => right ? near + aw : near - w;
+          if (g2 === 'hand') { if (big) { arm(near, ay0, alen - 2, 0); R(hx2(4), ay0 + alen - 3, 4, aw - 1, skin); } else arm(near, ay0 + 3, 4, 3); }
+          else if (g2 === 'arm') { arm(near, ay0 + 1, 3, 3); R(right ? near + 3 : near - 3 - aw + 1, ay0 - 1, aw, 4, skin); }
+          else if (g2 === 'waist') { if (big) { R(near, ay0, aw, 11, sl); R(hx2(9), ay0 + 10, 9, aw, sl); R(hx2(9) + (right ? 7 : 0), ay0 + 10, 2, aw, skin); } else arm(near, ay0 + 5, 8, 3); }
+          else if (g2 === 'shoulder') { if (big) { R(near, ay0, aw, 6, sl); R(hx2(10), ay0 + 5, 10, aw, sl); R(hx2(10) + (right ? 8 : 0), ay0 + 5, 2, aw, skin); } else { R(right ? near : near - aw, ay0 - 3, aw, 4, sl); arm(near, ay0 - 3, 8, 3); } }
+          else arm(near, ay0 + Math.max(0, right ? swing : -swing), alen, 0);
           break;
         }
         case 'hold': arm(L, ay0, alen, 0); arm(Rr, ay0 + 3, 4, 3); break;
