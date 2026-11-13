@@ -4,7 +4,7 @@
 PX.CapAct = (() => {
   const U = PX.U, St = PX.St, W = PX.W;
   const G = () => PX.Game;
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls, { reply: true }); PX.Dlg.close(); g.modal--; }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   // 하루 한 번만 호감이 오르는 행동 (같은 날 또 하면 짧은 반응)
   const today = (k) => { const S = St.S; if (S.done['ca_' + k] === S.day) return false; S.done['ca_' + k] = S.day; return true; };
@@ -334,7 +334,7 @@ PX.CapAct = (() => {
       for (let i = 0; i < 20 && g.modal; i++) await U.sleep(250); // 다른 장면이 끝나길 잠깐 기다린다
       if (g.modal || g.mapId !== here || cap.map !== here) return; // 장소가 바뀌었으면 그 대사는 하지 않는다
       const ls = U.pickFresh('join_' + kind, J.lines);
-      g.modal++; await PX.Dlg.runLines(how === 'near' && !S.done[k + S.day] ? [U.pickFresh('joinHi', ['C:어, 여기 있었네.', 'C^:마침 잘 만났다.', 'C:나도 끼워 줘.', 'C*:혼자 하게 둘 리가 없지.']), ...ls] : ls); PX.Dlg.close(); g.modal--;
+      g.modal++; await PX.Dlg.runLines(how === 'near' && !S.done[k + S.day] ? [U.pickFresh('joinHi', ['C:어, 여기 있었네.', 'C^:마침 잘 만났다.', 'C:나도 끼워 줘.', 'C*:혼자 하게 둘 리가 없지.']), ...ls] : ls, { reply: true }); PX.Dlg.close(); g.modal--;
       if (!S.done[k + S.day]) { S.done[k + S.day] = 1; St.addAff(3); }
       if (kind === 'meal' && !S.done.firstMealTogether) { S.done.firstMealTogether = 1; g.memory('같이 먹은 밥', '식판을 나란히 놓고 먹었다. 대위가 고기를 옮겨 줬다.', true); }
       if (PX.Mind) PX.Mind.noteTalk('join_' + kind);

@@ -79,7 +79,7 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 
 /* 말풍선 · 토스트 */
 #bubbles { position: fixed; inset: 0; pointer-events: none; z-index: 22; }
-.bubble { position: absolute; left: 0; top: 0; max-width: 200px; padding: 6px 10px; background: #fff7ef; color: #2a1020; border: 3px solid var(--line); border-radius: 12px; font-size: 14px; white-space: nowrap; animation: pop .2s; }
+.bubble { position: absolute; left: 0; top: 0; width: max-content; max-width: 190px; padding: 6px 10px; background: #fff7ef; color: #2a1020; border: 3px solid var(--line); border-radius: 12px; font-size: 14px; line-height: 1.35; white-space: normal; word-break: keep-all; overflow-wrap: anywhere; text-align: center; animation: pop .2s; }
 .bubble::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--line); }
 @keyframes pop { from { transform: scale(.6); opacity: 0; } }
 #toasts { position: fixed; left: 50%; transform: translateX(-50%); top: calc(118px + var(--safe-t)); z-index: 80; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; width: min(92vw, 420px); }
@@ -232,3 +232,6 @@ h1 { margin: 6px 0 14px; font-size: 30px; line-height: 1.25; font-weight: 400; t
 .chip-cap .ct { margin-left: 6px; }
 
 .msgph { display: block; width: 180px; max-width: 70%; margin: 6px 0 0; border-radius: 8px; border: 2px solid var(--line); image-rendering: pixelated; }
+
+/* 대화·선택지 글자: 한국어 단어 중간에서 끊기지 않게 */
+#dlg .dtext, #choices .choice, .toast, .bubble, .menu-btn span, .menu-btn small { word-break: keep-all; overflow-wrap: anywhere; }

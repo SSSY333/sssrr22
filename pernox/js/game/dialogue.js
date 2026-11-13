@@ -30,8 +30,15 @@ PX.Dlg = (() => {
   const FACES = { '*': 'smirk', '^': 'smile', ';': 'sad', '!': 'surprise', '~': 'blush' };
 
   let typing = null;
-  function say(speaker, text, face) {
-    return new Promise(res => {
+  // 대화창은 하나다: 여러 흐름이 동시에 말하려 해도 한 줄씩 차례로 (이름·대사가 섞이지 않게)
+  let lane = Promise.resolve(), pending = null;
+  // 오류 복구용: 기다리던 줄을 풀어 주고 대기열을 비운다 (대화가 영영 안 나오는 일 없게)
+  function reset() { const p = pending; pending = null; lane = Promise.resolve(); clearInterval(typing); typing = null; if (p) try { p(-1); } catch (e) { /* 무시 */ } }
+  const inLane = (fn) => { const p = lane.then(fn, fn); lane = p.catch(() => {}); return p; };
+  function say(speaker, text, face) { return inLane(() => sayNow(speaker, text, face)); }
+  function sayNow(speaker, text, face) {
+    return new Promise(res0 => {
+      const res = (v) => { pending = null; res0(v); }; pending = res;
       open = true; box.classList.remove('hidden'); chEl.innerHTML = ''; chEl.classList.add('hidden');
       const nm = speaker === 'cap' ? St.S.capName : speaker === 'player' ? St.S.player.name : speaker === 'narr' ? '' : (PX.NPC_BY_ID[speaker] || (PX.EXTRA && PX.EXTRA[speaker]) || { name: speaker }).name;
       nameEl.textContent = nm; nameEl.style.display = nm ? '' : 'none';
@@ -46,7 +53,9 @@ PX.Dlg = (() => {
       nextEl.classList.add('hidden');
       clearInterval(typing);
       const finish = () => { clearInterval(typing); typing = null; textEl.textContent = text; nextEl.classList.remove('hidden'); };
-      typing = setInterval(() => { i += 2; textEl.textContent = text.slice(0, i); if (i >= text.length) finish(); }, 28);
+      // 글자 단위(이모지·결합 문자 포함)로 끊어서 찍는다 — 중간에 깨진 문자가 보이지 않게
+      const parts = (typeof Intl !== 'undefined' && Intl.Segmenter) ? [...new Intl.Segmenter('ko', { granularity: 'grapheme' }).segment(text)].map(x => x.segment) : Array.from(text);
+      typing = setInterval(() => { i += 2; textEl.textContent = parts.slice(0, i).join(''); if (i >= parts.length) finish(); }, 28);
       PX.Audio && PX.Audio.blip(speaker === 'cap' ? 0.7 : speaker === 'player' ? 1.2 : 1);
       const onTap = (e) => {
         e.preventDefault();
@@ -59,8 +68,10 @@ PX.Dlg = (() => {
       setTimeout(() => document.addEventListener('keydown', onKey), 50);
     });
   }
-  function choose(opts) {
-    return new Promise(res => {
+  function choose(...a) { return inLane(() => chooseNow(...a)); }
+  function chooseNow(opts) {
+    return new Promise(res0 => {
+      const res = (v) => { pending = null; res0(v < 0 ? 0 : v); }; pending = res;
       chEl.innerHTML = ''; chEl.classList.remove('hidden'); nextEl.classList.add('hidden');
       box.classList.remove('hidden');
       opts.forEach((o, i) => {
@@ -87,7 +98,9 @@ PX.Dlg = (() => {
   async function runLines(lines, opt = {}) {
     const res = { aff: 0, tags: [] };
     const c = ctx();
-    for (const ln of lines) {
+    let replied = false;
+    for (let li = 0; li < lines.length; li++) {
+      const ln = lines[li], last = li === lines.length - 1;
       if (typeof ln === 'object' && ln.q) {
         let q = ln.q.slice();
         if (opt.refuse) q.push(['그런 말은 좀 싫어요.', 0, null, 'hurt']);
@@ -101,17 +114,20 @@ PX.Dlg = (() => {
         continue;
       }
       const xm = /^[XS]:([a-z0-9_]+):(.*)$/.exec(ln); // X: 이름 없는 사람 · S: NPC — 나레이션이 남의 말을 대신하지 않게 화자를 따로 둔다
-      if (xm) { await say(xm[1], U.fmt(xm[2], c)); continue; }
+      if (xm) { const tx = U.fmt(xm[2], c); await say(xm[1], tx); if (opt.reply && last && PX.Reply && PX.Reply.isQ(tx) && (PX.NPC_BY_ID[xm[1]] || (PX.EXTRA && PX.EXTRA[xm[1]]))) { const r = await PX.Reply.ask(xm[1], tx); res.aff += r.aff; replied = true; } continue; }
       const m = /^([CPN])([*^;!~]?):(.*)$/.exec(ln);
       if (!m) { await say('narr', U.fmt(ln, c)); continue; }
       const who = m[1] === 'C' ? (opt.speaker || 'cap') : m[1] === 'P' ? 'player' : 'narr';
       const face = m[2] ? FACES[m[2]] : (m[1] === 'P' ? 'normal' : 'normal');
-      await say(who, U.fmt(m[3], c), m[1] === 'P' && m[2] === '!' ? 'blush' : face);
+      const tx = U.fmt(m[3], c);
+      await say(who, tx, m[1] === 'P' && m[2] === '!' ? 'blush' : face);
+      // 질문으로 끝나면 그 질문에 맞는 대답을 고른다 (장난·유혹 대사는 아래에서 따로)
+      if (opt.reply && !opt.refuse && last && who === 'cap' && PX.Reply && PX.Reply.isQ(tx)) { const r = await PX.Reply.ask('cap', tx); res.aff += r.aff; replied = true; }
+      if (last) res.lastText = tx;
     }
     if (opt.refuse && !lines.some(l => typeof l === 'object')) {
-      const i = await choose([{ t: '…(웃는다)' }, { t: '대위님도 참.' }, { t: '그런 말은 좀 싫어요.', hurt: true }]);
-      if (i === 0) res.aff += 2; else if (i === 1) { await say('player', '대위님도 참.'); res.aff += 1; }
-      else { await say('player', '그런 말은 좀 싫어요.'); res.tags.push('hurt'); }
+      const r = await PX.Reply.tease(res.lastText || '');
+      res.aff += r.aff; if (r.hurt) res.tags.push('hurt');
     }
     return res;
   }
@@ -195,7 +211,7 @@ PX.Dlg = (() => {
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
-    const res = await runLines(bd.l, { refuse });
+    const res = await runLines(bd.l, { refuse, reply: true });
     if (cat === 'jealousy') S.lastRival = null; // 대사가 끝난 뒤에 지운다
     let gain = res.aff;
     if (firstToday) { gain += 4; r.talksToday = 0; }
@@ -297,7 +313,9 @@ PX.Dlg = (() => {
     { const f = r.f || 0, busy = ['workout', 'cook', 'grill', 'work_hangar', 'work_med', 'guard', 'sleep', 'eat'].includes(act);
       if (!busy && !npc.seat && (r.lastTalkDay !== S.day)) npc.doPose('wave', 1.2);
       if (f >= 70 && Math.random() < 0.4) npc.showEmote('heart', 1.6); else if (/[!]$/.test(line) && Math.random() < 0.5) npc.showEmote('note', 1.4); }
-    await say(npc.id, U.fmt(line, ctx()), 'smile');
+    const said = U.fmt(line, ctx());
+    await say(npc.id, said, 'smile');
+    if (PX.Reply && PX.Reply.isQ(said) && act !== 'sleep') { const rr = await PX.Reply.ask(npc.id, said); if (rr.aff) St.addNpcF(npc.id, rr.aff); if (r.lastTalkDay !== S.day) { St.addNpcF(npc.id, 3); r.lastTalkDay = S.day; } r.talks++; close(); G.modal--; return; }
     // 이어서: 궁금한 것 물어보기 · (아티팩트) 자유롭게 이야기하기
     const fresh = PS && PS.ask.some((q, i) => !(S.done.askSeen || {})[npc.id + i]);
     if (PS && act !== 'sleep' && (fresh || (PX.AI && PX.AI.available()) || Math.random() < 0.25)) {
@@ -317,5 +335,5 @@ PX.Dlg = (() => {
     if (!['kang', 'nam', 'ryu', 'moon', 'song'].includes(npc.id)) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
   }
 
-  return { thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  return { reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();

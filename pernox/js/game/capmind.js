@@ -206,7 +206,7 @@ PX.Mind = (() => {
     const pool = a.lines.map((l, i) => ({ l, k: a.id + '#' + i })).filter(x => !usedRecently(x.k, 12));
     const pick = U.pick(pool.length ? pool : a.lines.map((l, i) => ({ l, k: a.id + '#' + i })));
     noteLine(pick.k);
-    g.modal++; await PX.Dlg.runLines(pick.l); PX.Dlg.close(); g.modal--;
+    g.modal++; await PX.Dlg.runLines(pick.l, { reply: true }); PX.Dlg.close(); g.modal--;
     if (a.energy) S.energy = Math.min(100, S.energy + a.energy);
     St.addAff(capAsked ? 3 : (a.need >= 4 ? 4 : 2));
     const key = 'skin_' + a.id;

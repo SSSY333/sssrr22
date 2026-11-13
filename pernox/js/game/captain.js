@@ -315,7 +315,7 @@ PX.Cap = (() => {
     const M = PX.Mind, reu = M && M.mem().reunion;
     if (reu && PX.DLG_V2) {
       const bd = PX.Dlg.pick('v_reunion', PX.DLG_V2.reunion);
-      await PX.Dlg.runLines(bd ? bd.l : ['C:나 왔어.']);
+      await PX.Dlg.runLines(bd ? bd.l : ['C:나 왔어.'], { reply: true });
       if (S.cap.giftPending) { const gid = S.cap.giftPending; S.cap.giftPending = null; cap.doPose('carry', 1.4, 'smile'); await PX.Dlg.runLines(['C:선물. 작전 중에 찾은 거야. 네 생각나서 챙겼어.']); St.addItem(gid); PX.UI.toast(`🎁 ${PX.U.josa(PX.ITEMS[gid].name, '을')} 받았다`); }
       M.mem().reunion = null; M.mem().longing = 20; M.noteMeet(); M.noteTalk('reunion');
       if (r.stage >= 3) { const i = await PX.Dlg.choose([{ t: '안아 줄게요.' }, { t: '수고했어요.' }]); if (i === 0) { PX.Dlg.close(); g.modal--; await M.perform('fronthug', true); g.modal++; } else await PX.Dlg.say('player', '수고했어요.'); }
@@ -336,7 +336,7 @@ PX.Cap = (() => {
       else { // 마지막으로 본 뒤 얼마나 지났는지에 맞는 인사
         const gc = PX.Mind ? PX.Mind.gapCat() : 'again', V = PX.DLG_V2 || {};
         const bd = V[gc === 'cont' || gc === 'brief' ? 'brief' : gc] ? PX.Dlg.pick('v_' + gc, V[gc === 'cont' ? 'brief' : gc]) : null;
-        if (bd) await PX.Dlg.runLines(bd.l); else await PX.Dlg.say('cap', U.fmt(U.pick(['{p아}. 근무 끝났어.', '나 왔어.', '너 보러 왔어. 딴 이유 없어.']), PX.Dlg.ctx()), 'smirk');
+        if (bd) await PX.Dlg.runLines(bd.l, { reply: true }); else await PX.Dlg.say('cap', U.fmt(U.pick(['{p아}. 근무 끝났어.', '나 왔어.', '너 보러 왔어. 딴 이유 없어.']), PX.Dlg.ctx()), 'smirk');
         if (PX.Mind) PX.Mind.noteMeet();
       }
     }

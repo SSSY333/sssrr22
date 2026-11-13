@@ -10,7 +10,7 @@ PX.Act = (() => {
     const pool = (PX.DLG_CAP2.activity[key] || []).concat(extra || []);
     if (!pool.length) return;
     G().cap.setDirTo(G().player.x, G().player.y);
-    await lines(U.pickFresh('capSay_' + key, pool));
+    const g = G(); g.modal++; await PX.Dlg.runLines(U.pickFresh('capSay_' + key, pool), { reply: true }); PX.Dlg.close(); g.modal--;
   }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   const ARRIVE = { base: [27.5, 58.5], dome: [23.5, 40.5], plaza: [26.5, 45.5] };

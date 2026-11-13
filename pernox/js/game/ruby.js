@@ -114,7 +114,7 @@ PX.Ruby = (() => {
     let pool = R.talk.slice();
     if (a.extra === 'mp' && !withCap()) pool = pool.filter(t => !t.includes('대위님 일행'));
     if (a.extra === 'pubboss' || a.extra === 'innclerk') pool = pool.filter(t => withCap() || !t.includes('대위'));
-    await lines([`X:${a.id}:` + U.pickFresh('xtalk_' + a.extra, pool)]);
+    { const g2 = G(); g2.modal++; await PX.Dlg.runLines([`X:${a.id}:` + U.pickFresh('xtalk_' + a.extra, pool)], { reply: true }); PX.Dlg.close(); g2.modal--; }
     // 직원은 하는 일로 이어진다
     const next = { dealer: () => H.cards(), pubboss: () => H.rumor(), host: () => H.reserve(), usher: null, maskhost: () => H.mask(), rosevendor: () => H.rosecart(), cocktailer: () => H.cocktail(), busker: () => H.busk() }[a.extra];
     if (next) await next();

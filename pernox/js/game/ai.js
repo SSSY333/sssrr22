@@ -219,7 +219,6 @@ ${memLine(S)}`;
   }
 
   // ---------- 마주 보고 자유 대화 ----------
-  const SUGGEST = ['오늘 뭐 했어요?', '보고 싶었어요.', '흉터는 어쩌다 생긴 거예요?', '저 오늘 좀 힘들었어요.', '그런 장난은 싫어요.'];
   async function chat(npc) {
     if (!available() || busy) return;
     const G = PX.Game, S = St.S, cap = npc || G.cap, who = npc ? npc.id : 'cap', whoName = npc ? npc.def.name : S.capName;
@@ -230,8 +229,7 @@ ${memLine(S)}`;
     const input = bar.querySelector('input'), send = bar.querySelector('.send'), end = bar.querySelector('.end'), chips = bar.querySelector('.chips2'), last = bar.querySelector('.last');
     last.textContent = '';
     chips.innerHTML = '';
-    for (const s of (npc ? ['오늘 어땠어요?', ...(PSN ? PSN.ask.map(a => a[0]).slice(0, 3) : []), '요즘 고민 있어요?'] : SUGGEST)) { const b = U.el('button', null, s); b.onclick = () => { input.value = s; input.focus(); }; chips.append(b); }
-    if (!npc) await PX.Dlg.say('cap', U.pick(['응. 무슨 얘기 할까.', '말해. 다 들어 줄게.', '그래, 나 지금 시간 있어.']), 'smile');
+    // 예시 문구 없이 바로 입력
     let total = 0;
     for (;;) {
       PX.Dlg.close();
@@ -279,5 +277,26 @@ ${memLine(S)}`;
     St.addAff(U.clamp(res.aff, -2, 3));
     return res.lines.map(l => l.text).join(' ');
   }
-  return { available, chat, replyMsg, npcBible, bible, clean, get ready() { return ready; } };
+  // 질문에 대한 직접 대답: 한 번 주고받기 (대위 또는 NPC)
+  async function answer(who, q, text) {
+    if (!available() || busy) return null;
+    const G = PX.Game, S = St.S, npc = who === 'cap' ? null : G.npcs.find(n => n.id === who);
+    if (who !== 'cap' && !npc) return null;
+    const whoName = npc ? npc.def.name : S.capName;
+    busy = true;
+    const th = PX.Dlg.thinking(npc ? npc.id : null);
+    let res;
+    try { res = await ask(`(방금 ${whoName}가 "${q}"라고 말했고, 그 말에 대한 플레이어의 대답) ${text}`, 'talk', npc); }
+    catch (e) { th.stop(); busy = false; PX.UI.toast('📡 ' + errText(e), 3500); return null; }
+    th.stop(); busy = false;
+    for (const l of res.lines) {
+      const face = ['normal', 'smile', 'smirk', 'sad', 'surprise'].includes(l.face) ? l.face : 'normal', t = l.text.trim();
+      if (/^\(.*\)$/.test(t)) { const inner = t.slice(1, -1).trim(); await PX.Dlg.say('narr', inner.startsWith(whoName) ? inner : `${U.josa(whoName, '이')} ${inner}`); }
+      else await PX.Dlg.say(npc ? npc.id : 'cap', t, face);
+    }
+    if (npc) { if (res.aff) St.addNpcF(npc.id, U.clamp(res.aff, -2, 3)); return { aff: 0 }; }
+    if (res.action === 'backoff') { S.rel.cap.backoffUntil = St.absMin() + 12 * 60; G.cap.showEmote('sweat', 2); return { aff: 0, hurt: false }; }
+    return { aff: U.clamp(res.aff, -3, 5) };
+  }
+  return { answer, available, chat, replyMsg, npcBible, bible, clean, get ready() { return ready; } };
 })();

@@ -671,7 +671,7 @@
     if (!path) { UI.toast('그곳까지 갈 길이 없어요'); return; }
     p.speedNow = path.length > 8 ? 5.4 : 3.6;
     Game.target = { x: gx, y: gy, t: 0 };
-    p.walkPath(path, () => { Game.target = null; if (it.cx != null) p.setDirTo(it.cx, it.cy); else if (it.a) p.setDirTo(it.a.x, it.a.y); if (!it.a || U.dist(p.x, p.y, it.a.x, it.a.y) < 2.6) it.fn(); });
+    p.walkPath(path, () => { Game.target = null; if (it.cx != null) p.setDirTo(it.cx, it.cy); else if (it.a) p.setDirTo(it.a.x, it.a.y); if (Game.modal) return; /* 걷는 동안 다른 대화가 시작됐으면 겹쳐 열지 않는다 */ if (!it.a || U.dist(p.x, p.y, it.a.x, it.a.y) < 2.6) it.fn(); });
   }
   // 가까운 상호작용 (행동 버튼 · E키)
   // 가까운 대상들 (가까운 순). 대위는 전용 버튼이 따로 있으니 다른 대상이 있으면 기본 버튼을 차지하지 않는다
@@ -777,6 +777,7 @@
     for (const l of m.links || []) if (Math.floor(p.y) === l.y0 && Math.floor(p.x) >= l.x0 && Math.floor(p.x) <= l.x1) { goLink(l); break; }
   }
   function actionBtn() {
+    if (Game.modal) return; // 대화 중엔 새 상호작용을 열지 않는다
     if (Game.player.seat) { standUp(); return; }
     const it = nearest();
     if (it) { Game.player.stop(); if (it.cx != null) Game.player.setDirTo(it.cx, it.cy); it.fn(); }
@@ -913,7 +914,7 @@
   Game.errors = [];
   function recover(where, e) {
     Game.errors.push(`${where}: ${e && e.message || e}`); if (Game.errors.length > 20) Game.errors.shift();
-    try { Dlg.close(); } catch (x) { /* 무시 */ }
+    try { Dlg.reset(); Dlg.close(); } catch (x) { /* 무시 */ }
     document.querySelectorAll('.sheet-wrap').forEach(w => w.remove());
     const mini = document.getElementById('mini'); if (mini && !mini.classList.contains('hidden')) { mini.classList.add('hidden'); mini.innerHTML = ''; }
     $('chatbar').classList.add('hidden'); $('fade').classList.remove('on', 'long');
