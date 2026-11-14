@@ -48,13 +48,14 @@
     const S = St.S;
     enterMap(S.pos.map, S.pos.x, S.pos.y, true);
     for (const n2 of Game.npcs) n2.place(S);
-    if (Cap.mode === 'stay') { const m = W.maps[Cap.homeId()]; Cap.moveTo(Cap.homeId()); const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa')); if (sofa) Game.cap.sitOn(sofa.seats[0]); Game.cap.pose = 'lie'; }
+    if (Cap.restore(S.capState)) { /* 저장할 때의 동행·방문·대기 상태 그대로 */ }
+    else if (S.cap.stay && Game.mapId === Cap.homeId()) { Cap.mode = 'stay'; const m = W.maps[Cap.homeId()]; Cap.moveTo(Cap.homeId()); const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa')); if (sofa) Game.cap.sitOn(sofa.seats[0]); Game.cap.pose = 'lie'; }
     else Game.cap.place(S);
     run();
     UI.toast(`📂 저장 칸 ${n} 불러옴 · ${Cal.fmtDate(S.time)} ${Cal.fmtTime(S.time.min)}`);
   };
   Game.toTitle = () => { Game.running = false; $('hud').classList.add('hidden'); UI.title(); };
-  Game.beforeSave = (S) => { S.pos = { map: Game.mapId, x: Game.player.x, y: Game.player.y }; };
+  Game.beforeSave = (S) => { S.pos = { map: Game.mapId, x: Game.player.x, y: Game.player.y }; S.capState = Cap.saveState(); };
 
   async function intro() {
     const S = St.S, job = PX.JOBS[S.player.job];

@@ -386,6 +386,28 @@ PX.Cap = (() => {
     else { S.cap.freeWin = null; mode = 'sched'; }
     if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('afterTreat'); }
   }
+  // ---------- 저장 · 불러오기: 동행·방문·대기 상태와 위치를 그대로 ----------
+  function saveState() {
+    if (!cap) return null;
+    return { mode, map: cap.map, x: cap.x, y: cap.y, waitOut, pausedUntil, seat: cap.seat ? { x: cap.seat.x, y: cap.seat.y } : null, pose: cap.pose };
+  }
+  function restore(st) {
+    const KEEP = ['follow', 'visit', 'stay', 'paused', 'waitOut', 'date', 'op', 'wait_door'];
+    if (!st || !KEEP.includes(st.mode) || !cap) return false;
+    const g = G(), S = St.S;
+    mode = st.mode; waitOut = st.waitOut || null; pausedUntil = st.pausedUntil || 0;
+    if (mode === 'follow') S.cap.follow = true;
+    if (!st.map) { cap.map = null; return true; } // 작전 등으로 부대에 없음
+    moveTo(st.map);
+    const m = PX.W.maps[st.map];
+    if (mode === 'follow' && st.map === g.mapId) { // 동행 중이었으면 내 바로 옆
+      const t = PX.Path.nearestWalkable(m, Math.floor(g.player.x) + 1, Math.floor(g.player.y), 3);
+      if (t) { cap.x = t[0] + 0.5; cap.y = t[1] + 0.5; }
+    } else if (st.x != null && PX.W.walkable(m, Math.floor(st.x), Math.floor(st.y))) { cap.x = st.x; cap.y = st.y; }
+    if (st.seat) { const o = m.objs.find(o => o.seats && o.seats.some(x => Math.abs(x.x - st.seat.x) < 0.01 && Math.abs(x.y - st.seat.y) < 0.01)); const seat = o && o.seats.find(x => Math.abs(x.x - st.seat.x) < 0.01 && Math.abs(x.y - st.seat.y) < 0.01); if (seat && !seat.by) { cap.sitOn(seat); if (st.pose) cap.pose = st.pose; } }
+    if (PX.Mind) try { PX.Mind.apply(); } catch (e) { /* 무시 */ }
+    return true;
+  }
   function startFollow() { mode = 'follow'; St.S.cap.follow = true; waitOut = null; }
   // 동행 잠시 멈추기: 그 자리에서 기다린다 (한 시간 지나거나 근무 시간이면 자기 일정으로)
   let pausedUntil = 0;
@@ -512,5 +534,5 @@ PX.Cap = (() => {
     if (Math.random() < 0.25 && spotKind() === 'field') S.cap.giftPending = Math.random() < 0.5 ? 'capStone' : 'capSnack';
   }
 
-  return { afterTreat, pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
+  return { saveState, restore, afterTreat, pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
 })();
