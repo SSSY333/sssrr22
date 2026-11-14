@@ -589,7 +589,7 @@
     items.push({ t: '😊 표정·행동으로 반응하기', k: 'react', sub: '웃으며 바라보기 · 빤히 보기 · 부끄러워하기 …' });
     if (S.rel.cap.stage >= 4) items.push({ t: '💞 부르는 말 바꾸기', k: 'call', sub: `지금: ${S.player.callCap || '오빠'}` });
     if (!duty) items.push({ t: '🤝 스킨십', k: 'skin', sub: M.contact() !== 'NONE' ? `지금: ${M.NAME[M.contact()]}` : '손잡기 · 포옹 · 입맞춤 …' });
-    for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', fn: a.fn });
+    for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', run: a.fn }); // run: 메뉴가 자동 실행하지 않게 (두 번 실행 방지)
     if (Cap.mode === 'follow') items.push({ t: '🧭 동행 관리', k: 'comp', sub: `지금: ${M.NAME[M.contact()] === '접촉 없음' ? '함께 걷기' : M.NAME[M.contact()]}` });
     else if (Cap.mode !== 'visit' && Cap.mode !== 'stay') items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty, offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
     const dt = PX.Rom.nextDate();
@@ -603,7 +603,7 @@
     else if (Cap.mode !== 'follow') items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
     const it = await UI.menu(`${S.capName} 대위`, items);
     if (!it) return;
-    if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.fn(); }
+    if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.run(); }
     if (it.k === 'topic') return PX.CapAct.askTopic();
     if (it.k === 'date') return PX.Rom.askDate();
     if (it.k === 'dateEnd') { const d = PX.Rom.nextDate(); if (d) { d.started = -1e9; } return; }

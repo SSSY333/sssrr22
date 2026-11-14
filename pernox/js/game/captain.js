@@ -66,6 +66,7 @@ PX.Cap = (() => {
   }
   // 대위를 다른 맵으로 옮김 (보이지 않는 이동)
   function moveTo(mapId, fromMap) {
+    if (cap) cap.atSpot = null; // 이전 일정 자리(예: 의무실 침대)가 남아 다른 곳에서 의무실 행동이 뜨지 않게
     cap.stop(); cap.leaveSeat(); cap.holding = false;
     cap.map = mapId;
     if (!mapId) return;

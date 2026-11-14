@@ -5709,7 +5709,7 @@ PX.Dlg = (() => {
   const capLinesOf = (bd) => [].concat(bd && (bd.l || bd)).flatMap(x => typeof x === 'string' ? (/^C[*^;!~]?:/.test(x) ? [x.replace(/^C[*^;!~]?:/, '')] : []) : x && x.q ? x.q.flatMap(q => (q[2] || []).filter(y => typeof y === 'string' && /^C/.test(y)).map(y => y.replace(/^C[*^;!~]?:/, ''))) : []);
   const bundleSeen = (bd) => capLinesOf(bd).slice(0, 2).some(capSaid); // 첫 대사들이 이미 나온 묶음
   function sayNow(speaker, text, face) {
-    if (speaker === 'cap') try { noteCapSaid(text); } catch (e) { /* 무시 */ }
+    if (speaker === 'cap') try { noteCapSaid(text); recentCap.push({ t: text, at: St.absMin() }); if (recentCap.length > 8) recentCap.shift(); } catch (e) { /* 무시 */ }
     if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
     else if (speaker === 'player' && toCap()) text = lover(text);
     if (speaker === 'cap' && lovers()) { const gn = U.givenName(St.S.player.name); text = text.replace(new RegExp('^' + gn + '(아|야)([,.!]|\\s)'), (m, a, b) => Math.random() < 0.5 ? '자기야' + b : m); }
@@ -5863,6 +5863,7 @@ PX.Dlg = (() => {
     // 한 번도 안 나온 묶음부터. 다 나왔으면 가장 오래전에 나온 것들(하위 1/4) 중에서
     const used = S.recent;
     { const fresh2 = ok.filter(({ bd }) => !bundleSeen(bd)); if (fresh2.length) ok.splice(0, ok.length, ...fresh2); else if (cond.strict) return null; }
+    { const nt = ok.filter(({ bd }) => !topicClash(capLinesOf(bd))); if (nt.length) ok.splice(0, ok.length, ...nt); }
     const never = ok.filter(({ i }) => used[cat + i] == null);
     const pool = never.length ? never : ok.slice().sort((a, b) => (used[cat + a.i] || 0) - (used[cat + b.i] || 0)).slice(0, Math.max(1, Math.ceil(ok.length / 4)));
     const weighted = [];
@@ -6067,13 +6068,22 @@ PX.Dlg = (() => {
   }
 
   // 대위 대사 후보 중 아직 안 한 말부터 (한 줄짜리든 여러 줄 묶음이든)
+  const recentCap = []; // 방금 한 말 (같은 만남 안에서 같은 주제를 두 번 묻지 않게)
+  const recentCapText = (mins = 20) => recentCap.filter(x => St.absMin() - x.at <= mins).map(x => x.t).join(' ');
+  // 방금(20분 안) 물어본 주제를 또 묻는 묶음인가 (대위의 질문 줄만 본다)
+  const TOPICS = [/밥|먹었|먹을래|식당|메뉴|냉삼|배고/, /어땠|하루|뭐 했|별일|그새/, /피곤|지쳐|잘 잤|아파|안색/, /걸을래|산책|걷자/, /비번|주말|계획/, /보고 싶었|보고 싶어/];
+  function topicClash(lines) {
+    const just = recentCapText(20); if (!just) return false;
+    const qs = lines.filter(l => /\?\s*$/.test(l)).join(' '); if (!qs) return false;
+    return TOPICS.some(re => re.test(just) && re.test(qs));
+  }
   function capPick(arr) {
     if (!arr || !arr.length) return undefined;
     const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
     const un = arr.filter(x => !capSaid(first(x)));
     return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : arr);
   }
-  return { capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  return { topicClash, recentCapText, capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();
 
 </script>
@@ -6485,6 +6495,8 @@ PX.Ask = (() => {
     const c = ctx(), S = St.S;
     S.done.capAskSeen = S.done.capAskSeen || [];
     const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
+    // 방금 같은 주제(밥·하루·피곤·산책…)를 이미 물었으면 그 주제 제안은 빼기
+    const ok2 = ok.filter(p => !PX.Dlg.topicClash(p.q.map(l => l.replace(/^C[*^;!~]?:/, '')))); if (ok2.length) ok.splice(0, ok.length, ...ok2);
     const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id) && p.q.some(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))));
     // 지금 상황에 가장 구체적으로 맞는 것(가중치가 높은 것)부터 · 일반적인 제안은 맞는 게 없을 때만
     const base = fresh.length ? fresh : ok, top = Math.max(...base.map(p => p.w));
@@ -6594,6 +6606,7 @@ PX.Situ = (() => {
     const scored = ok.map(b => ({ b, sc: spec(b, c) })).filter(x => x.sc >= minSpec);
     if (!scored.length) return null;
     const newLines = scored.filter(x => !PX.Dlg.bundleSeen(x.b)); // 대위 대사가 아직 안 나온 것만
+    { const nt = scored.filter(x => !PX.Dlg.topicClash(x.b.l.filter(y => typeof y === 'string' && /^C/.test(y)).map(y => y.replace(/^C[*^;!~]?:/, '')))); if (nt.length) scored.splice(0, scored.length, ...nt); }
     if (newLines.length) scored.splice(0, scored.length, ...newLines); else if (strict) return null;
     const fresh = scored.filter(x => seen['situ' + x.b.id] == null);
     let pool;
@@ -6684,6 +6697,7 @@ PX.Cap = (() => {
   }
   // 대위를 다른 맵으로 옮김 (보이지 않는 이동)
   function moveTo(mapId, fromMap) {
+    if (cap) cap.atSpot = null; // 이전 일정 자리(예: 의무실 침대)가 남아 다른 곳에서 의무실 행동이 뜨지 않게
     cap.stop(); cap.leaveSeat(); cap.holding = false;
     cap.map = mapId;
     if (!mapId) return;
@@ -9008,8 +9022,8 @@ PX.CapAct = (() => {
     const mode = PX.Cap.mode, sp = cap.atSpot || '', m = cap.map;
     if (mode === 'follow') return 'walk';
     if (mode === 'visit' || mode === 'stay') return 'home';
-    if (sp === 'med.patient' || (m === 'med' && cap.seat)) return 'med';
-    if (m === 'gym' || sp.startsWith('gym.') || sp.startsWith('base.train')) return 'gym';
+    if (m === 'med' && (sp === 'med.patient' || cap.seat || postField())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
+    if (m === 'gym' || (m === 'base' && sp.startsWith('base.train'))) return 'gym';
     if (m === 'mess') return 'meal';
     if (m === 'ops') return 'ops';
     if (m === 'hangar') return 'hangar';
@@ -10987,7 +11001,7 @@ ${memLine(S)}`;
     items.push({ t: '😊 표정·행동으로 반응하기', k: 'react', sub: '웃으며 바라보기 · 빤히 보기 · 부끄러워하기 …' });
     if (S.rel.cap.stage >= 4) items.push({ t: '💞 부르는 말 바꾸기', k: 'call', sub: `지금: ${S.player.callCap || '오빠'}` });
     if (!duty) items.push({ t: '🤝 스킨십', k: 'skin', sub: M.contact() !== 'NONE' ? `지금: ${M.NAME[M.contact()]}` : '손잡기 · 포옹 · 입맞춤 …' });
-    for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', fn: a.fn });
+    for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', run: a.fn }); // run: 메뉴가 자동 실행하지 않게 (두 번 실행 방지)
     if (Cap.mode === 'follow') items.push({ t: '🧭 동행 관리', k: 'comp', sub: `지금: ${M.NAME[M.contact()] === '접촉 없음' ? '함께 걷기' : M.NAME[M.contact()]}` });
     else if (Cap.mode !== 'visit' && Cap.mode !== 'stay') items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty, offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
     const dt = PX.Rom.nextDate();
@@ -11001,7 +11015,7 @@ ${memLine(S)}`;
     else if (Cap.mode !== 'follow') items.push({ t: '🌙 오늘은 혼자 있고 싶어요', k: 'alone' });
     const it = await UI.menu(`${S.capName} 대위`, items);
     if (!it) return;
-    if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.fn(); }
+    if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.run(); }
     if (it.k === 'topic') return PX.CapAct.askTopic();
     if (it.k === 'date') return PX.Rom.askDate();
     if (it.k === 'dateEnd') { const d = PX.Rom.nextDate(); if (d) { d.started = -1e9; } return; }

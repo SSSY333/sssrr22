@@ -79,7 +79,7 @@ PX.Dlg = (() => {
   const capLinesOf = (bd) => [].concat(bd && (bd.l || bd)).flatMap(x => typeof x === 'string' ? (/^C[*^;!~]?:/.test(x) ? [x.replace(/^C[*^;!~]?:/, '')] : []) : x && x.q ? x.q.flatMap(q => (q[2] || []).filter(y => typeof y === 'string' && /^C/.test(y)).map(y => y.replace(/^C[*^;!~]?:/, ''))) : []);
   const bundleSeen = (bd) => capLinesOf(bd).slice(0, 2).some(capSaid); // 첫 대사들이 이미 나온 묶음
   function sayNow(speaker, text, face) {
-    if (speaker === 'cap') try { noteCapSaid(text); } catch (e) { /* 무시 */ }
+    if (speaker === 'cap') try { noteCapSaid(text); recentCap.push({ t: text, at: St.absMin() }); if (recentCap.length > 8) recentCap.shift(); } catch (e) { /* 무시 */ }
     if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
     else if (speaker === 'player' && toCap()) text = lover(text);
     if (speaker === 'cap' && lovers()) { const gn = U.givenName(St.S.player.name); text = text.replace(new RegExp('^' + gn + '(아|야)([,.!]|\\s)'), (m, a, b) => Math.random() < 0.5 ? '자기야' + b : m); }
@@ -233,6 +233,7 @@ PX.Dlg = (() => {
     // 한 번도 안 나온 묶음부터. 다 나왔으면 가장 오래전에 나온 것들(하위 1/4) 중에서
     const used = S.recent;
     { const fresh2 = ok.filter(({ bd }) => !bundleSeen(bd)); if (fresh2.length) ok.splice(0, ok.length, ...fresh2); else if (cond.strict) return null; }
+    { const nt = ok.filter(({ bd }) => !topicClash(capLinesOf(bd))); if (nt.length) ok.splice(0, ok.length, ...nt); }
     const never = ok.filter(({ i }) => used[cat + i] == null);
     const pool = never.length ? never : ok.slice().sort((a, b) => (used[cat + a.i] || 0) - (used[cat + b.i] || 0)).slice(0, Math.max(1, Math.ceil(ok.length / 4)));
     const weighted = [];
@@ -437,11 +438,20 @@ PX.Dlg = (() => {
   }
 
   // 대위 대사 후보 중 아직 안 한 말부터 (한 줄짜리든 여러 줄 묶음이든)
+  const recentCap = []; // 방금 한 말 (같은 만남 안에서 같은 주제를 두 번 묻지 않게)
+  const recentCapText = (mins = 20) => recentCap.filter(x => St.absMin() - x.at <= mins).map(x => x.t).join(' ');
+  // 방금(20분 안) 물어본 주제를 또 묻는 묶음인가 (대위의 질문 줄만 본다)
+  const TOPICS = [/밥|먹었|먹을래|식당|메뉴|냉삼|배고/, /어땠|하루|뭐 했|별일|그새/, /피곤|지쳐|잘 잤|아파|안색/, /걸을래|산책|걷자/, /비번|주말|계획/, /보고 싶었|보고 싶어/];
+  function topicClash(lines) {
+    const just = recentCapText(20); if (!just) return false;
+    const qs = lines.filter(l => /\?\s*$/.test(l)).join(' '); if (!qs) return false;
+    return TOPICS.some(re => re.test(just) && re.test(qs));
+  }
   function capPick(arr) {
     if (!arr || !arr.length) return undefined;
     const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
     const un = arr.filter(x => !capSaid(first(x)));
     return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : arr);
   }
-  return { capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  return { topicClash, recentCapText, capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();

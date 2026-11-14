@@ -53,6 +53,7 @@ PX.Situ = (() => {
     const scored = ok.map(b => ({ b, sc: spec(b, c) })).filter(x => x.sc >= minSpec);
     if (!scored.length) return null;
     const newLines = scored.filter(x => !PX.Dlg.bundleSeen(x.b)); // 대위 대사가 아직 안 나온 것만
+    { const nt = scored.filter(x => !PX.Dlg.topicClash(x.b.l.filter(y => typeof y === 'string' && /^C/.test(y)).map(y => y.replace(/^C[*^;!~]?:/, '')))); if (nt.length) scored.splice(0, scored.length, ...nt); }
     if (newLines.length) scored.splice(0, scored.length, ...newLines); else if (strict) return null;
     const fresh = scored.filter(x => seen['situ' + x.b.id] == null);
     let pool;

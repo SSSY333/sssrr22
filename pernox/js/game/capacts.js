@@ -17,8 +17,8 @@ PX.CapAct = (() => {
     const mode = PX.Cap.mode, sp = cap.atSpot || '', m = cap.map;
     if (mode === 'follow') return 'walk';
     if (mode === 'visit' || mode === 'stay') return 'home';
-    if (sp === 'med.patient' || (m === 'med' && cap.seat)) return 'med';
-    if (m === 'gym' || sp.startsWith('gym.') || sp.startsWith('base.train')) return 'gym';
+    if (m === 'med' && (sp === 'med.patient' || cap.seat || postField())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
+    if (m === 'gym' || (m === 'base' && sp.startsWith('base.train'))) return 'gym';
     if (m === 'mess') return 'meal';
     if (m === 'ops') return 'ops';
     if (m === 'hangar') return 'hangar';

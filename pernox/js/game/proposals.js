@@ -159,6 +159,8 @@ PX.Ask = (() => {
     const c = ctx(), S = St.S;
     S.done.capAskSeen = S.done.capAskSeen || [];
     const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
+    // 방금 같은 주제(밥·하루·피곤·산책…)를 이미 물었으면 그 주제 제안은 빼기
+    const ok2 = ok.filter(p => !PX.Dlg.topicClash(p.q.map(l => l.replace(/^C[*^;!~]?:/, '')))); if (ok2.length) ok.splice(0, ok.length, ...ok2);
     const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id) && p.q.some(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))));
     // 지금 상황에 가장 구체적으로 맞는 것(가중치가 높은 것)부터 · 일반적인 제안은 맞는 게 없을 때만
     const base = fresh.length ? fresh : ok, top = Math.max(...base.map(p => p.w));
