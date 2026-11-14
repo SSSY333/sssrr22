@@ -130,11 +130,11 @@ PX.CapAct = (() => {
   };
   A.forehead = async () => { await lines(['N:손등을 대위 이마에 대 본다. 뜨겁다. 원래 뜨거운 사람이긴 하다.', 'C*:열 있어? 너 때문일걸.', 'C:…농담이고. 괜찮아. 걱정해 줘서 고마워.']); gain('forehead', 2); };
   A.water = async () => {
-    await lines(['N:물병을 건넨다. 대위가 한 번에 절반을 비운다.', U.pick(['C:살 것 같다. 외곽은 물도 모래 맛이야.', 'C^:딱 필요했어. 어떻게 알았어?', 'C*:네가 주니까 물도 달다. …진짜야, 웃지 마.'])]);
+    await lines(['N:물병을 건넨다. 대위가 한 번에 절반을 비운다.', PX.Dlg.capPick(['C:살 것 같다. 외곽은 물도 모래 맛이야.', 'C^:딱 필요했어. 어떻게 알았어?', 'C*:네가 주니까 물도 달다. …진짜야, 웃지 마.'])]);
     gain('water', 3);
   };
   A.dust = async () => {
-    await lines(['N:어깨와 머리에 앉은 붉은 모래를 털어 준다. 대위가 고개를 숙여 준다.', 'C:…이런 거 해 주는 사람 처음이야.', U.pick(['C*:머리도. 거기 더 있어. 아마.', 'C^:다 털었어? 아쉽네.'])]);
+    await lines(['N:어깨와 머리에 앉은 붉은 모래를 털어 준다. 대위가 고개를 숙여 준다.', 'C:…이런 거 해 주는 사람 처음이야.', PX.Dlg.capPick(['C*:머리도. 거기 더 있어. 아마.', 'C^:다 털었어? 아쉽네.'])]);
     if (gain('dust', 4) && once('capDust')) G().memory('붉은 모래', '수색에서 돌아온 대위의 어깨에서 모래를 털어 줬다. 큰 사람이 고개를 숙였다.', true);
   };
   const FIELD = [
@@ -157,25 +157,25 @@ PX.CapAct = (() => {
   };
   A.count = async () => {
     const n = 18 + Math.floor(Math.random() * 14);
-    await lines(['N:하나, 둘, 셋…', `N:…${n - 2}, ${n - 1}, ${n}.`, U.pick(['C;:…후.', 'C!:몇 개야?']), `P:${n}개요.`, U.pick(['C*:네가 세니까 평소보다 다섯 개 더 했어.', 'C^:목소리 좋다. 계속 세 줘. 숫자 말고 아무거나.'])]);
+    await lines(['N:하나, 둘, 셋…', `N:…${n - 2}, ${n - 1}, ${n}.`, PX.Dlg.capPick(['C;:…후.', 'C!:몇 개야?']), `P:${n}개요.`, PX.Dlg.capPick(['C*:네가 세니까 평소보다 다섯 개 더 했어.', 'C^:목소리 좋다. 계속 세 줘. 숫자 말고 아무거나.'])]);
     St.advance(8); gain('count', 3);
   };
-  A.towel = async () => { await lines(['N:수건을 건넨다. 대위가 얼굴을 닦다 말고 이쪽을 본다.', U.pick(['C*:닦아 주는 것까지 해 주면 안 돼?', 'C:고마워. 딱 필요했어.']), ...(St.S.rel.cap.stage >= 3 ? ['N:수건으로 이마를 꾹꾹 눌러 닦아 준다.', 'C^:…오늘 운동 제일 잘한 일이 이거다.'] : [])]); gain('towel', 3); };
+  A.towel = async () => { await lines(['N:수건을 건넨다. 대위가 얼굴을 닦다 말고 이쪽을 본다.', PX.Dlg.capPick(['C*:닦아 주는 것까지 해 주면 안 돼?', 'C:고마워. 딱 필요했어.']), ...(St.S.rel.cap.stage >= 3 ? ['N:수건으로 이마를 꾹꾹 눌러 닦아 준다.', 'C^:…오늘 운동 제일 잘한 일이 이거다.'] : [])]); gain('towel', 3); };
   A.eat = async () => {
     const g = G(), cap = g.cap;
     if (cap.seat) { const s = (cap.seat.obj.seats || []).find(s => !s.by) || null; if (s) g.player.sitOn(s); }
     await U.sleep(400);
-    await lines(['N:대위 옆자리에 앉는다.', U.pick(['C^:왔어? 기다렸어. 숟가락 안 들고.', 'C:여기. 네 자리야. 늘.']), U.pick(['C:오늘 뭐 했는지 말해 봐. 먹으면서 들을게.', 'C*:너랑 먹으면 급식도 외식 같아.'])]);
+    await lines(['N:대위 옆자리에 앉는다.', PX.Dlg.capPick(['C^:왔어? 기다렸어. 숟가락 안 들고.', 'C:여기. 네 자리야. 늘.']), PX.Dlg.capPick(['C:오늘 뭐 했는지 말해 봐. 먹으면서 들을게.', 'C*:너랑 먹으면 급식도 외식 같아.'])]);
     St.advance(20); St.S.energy = Math.min(100, St.S.energy + 8); gain('eat', 4);
   };
   A.sidedish = async () => {
-    await lines(['N:내 반찬 하나를 대위 식판에 얹어 준다.', 'C!:…이거 나 주는 거야?', U.pick(['C^:그럼 난 이거. 제일 큰 걸로.', 'C*:이런 건 연인끼리 하는 건데. 알고 한 거지?']), 'N:대위가 제일 잘 익은 것을 골라 내 식판에 올려놓는다.']);
+    await lines(['N:내 반찬 하나를 대위 식판에 얹어 준다.', 'C!:…이거 나 주는 거야?', PX.Dlg.capPick(['C^:그럼 난 이거. 제일 큰 걸로.', 'C*:이런 건 연인끼리 하는 건데. 알고 한 거지?']), 'N:대위가 제일 잘 익은 것을 골라 내 식판에 올려놓는다.']);
     if (gain('sidedish', 4) && once('capSide')) G().memory('반찬 한 점', '반찬을 얹어 줬더니 대위가 제일 큰 걸 돌려줬다.', true);
   };
   A.coffee = async () => {
     if (!has('coffee')) { PX.UI.toast('☕ 커피가 없어요 (PX나 카페에서 살 수 있어요)'); return; }
     St.addItem('coffee', -1);
-    await lines(['N:책상에 커피를 내려놓는다.', 'C!:…어.', U.pick(['C^:방금 보고서 세 줄이 저절로 써졌어.', 'C*:식혀서 가져왔네. 나 뜨거운 거 못 마시는 거 기억했구나.']), 'C:고마워. 금방 끝낼게.']);
+    await lines(['N:책상에 커피를 내려놓는다.', 'C!:…어.', PX.Dlg.capPick(['C^:방금 보고서 세 줄이 저절로 써졌어.', 'C*:식혀서 가져왔네. 나 뜨거운 거 못 마시는 거 기억했구나.']), 'C:고마워. 금방 끝낼게.']);
     gain('coffee', 5);
   };
   A.papers = async () => {
@@ -186,7 +186,7 @@ PX.CapAct = (() => {
     await lines(sc >= 0.6 ? ['C!:벌써? 나 혼자 하면 한 시간인데.', 'C^:퇴근이 당겨졌다. 그 시간 네 거야.'] : ['C:괜찮아, 반은 줄었어.', 'C*:사실 옆에 있어 준 게 더 도움 됐어.']);
     gain('papers', 5);
   };
-  A.cheer = async () => { await lines(['P:힘내요, 대위님.', U.pick(['C*:방금 그걸로 삼십 분은 버틴다.', 'C^:…한 번만 더 말해 줘. 녹음하게.', 'C:응. 끝나고 바로 갈게.'])]); gain('cheer', 2); };
+  A.cheer = async () => { await lines(['P:힘내요, 대위님.', PX.Dlg.capPick(['C*:방금 그걸로 삼십 분은 버틴다.', 'C^:…한 번만 더 말해 줘. 녹음하게.', 'C:응. 끝나고 바로 갈게.'])]); gain('cheer', 2); };
   const TOOLS = [['십자드라이버', '🔩 나사가 십자 모양이다'], ['토크 렌치', '🔧 볼트를 정해진 힘으로 조여야 한다'], ['절연 테이프', '⚡ 전선 피복이 벗겨졌다'], ['에어 블로어', '💨 틈에 모래가 꼈다']];
   A.tool = async () => {
     const t = U.pick(TOOLS);
@@ -197,20 +197,20 @@ PX.CapAct = (() => {
     St.advance(10); gain('tool', it.k === t[0] ? 4 : 2);
   };
   A.watchCraft = async () => {
-    await lines(['N:대위의 큰 손이 작은 광물 조각을 천천히 간다. 숨소리까지 조심스럽다.', U.pick(['C:…보고 있으면 손 떨려.', 'C:이 부분이 제일 어려워. 너무 갈면 깨져.']), 'C*:다 되면 제일 먼저 보여 줄게. 아니, 줄게.']);
+    await lines(['N:대위의 큰 손이 작은 광물 조각을 천천히 간다. 숨소리까지 조심스럽다.', PX.Dlg.capPick(['C:…보고 있으면 손 떨려.', 'C:이 부분이 제일 어려워. 너무 갈면 깨져.']), 'C*:다 되면 제일 먼저 보여 줄게. 아니, 줄게.']);
     St.advance(15); gain('watchCraft', 3);
   };
   A.massage = async () => {
-    await lines(['N:대위 어깨에 손을 올린다. 돌덩이 같다.', 'C!:…어.', U.pick(['C;:거기. 거기 좀 더.', 'C:…아. 거기 뭉쳤구나. 몰랐어.']), 'C^:너 손 작은데 힘 좋다. 다음엔 내가 해 줄게. 살살.']);
+    await lines(['N:대위 어깨에 손을 올린다. 돌덩이 같다.', 'C!:…어.', PX.Dlg.capPick(['C;:거기. 거기 좀 더.', 'C:…아. 거기 뭉쳤구나. 몰랐어.']), 'C^:너 손 작은데 힘 좋다. 다음엔 내가 해 줄게. 살살.']);
     St.advance(10); gain('massage', 4);
   };
-  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines([U.pick(['C:응. 여기 있어. 아무 말 안 해도 돼.', 'C*:조금 더 붙어. 냉각기 바람 막아 줄게.'])]); gain('sitBy', 2); };
-  A.collar = async () => { await lines(['N:대위의 구겨진 옷깃을 펴 준다. 대위가 숨을 멈춘다.', U.pick(['C*:…가까이 오면 미리 말해. 심장 준비하게.', 'C^:매일 구기고 다녀야겠다.'])]); gain('collar', 3); };
+  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines([PX.Dlg.capPick(['C:응. 여기 있어. 아무 말 안 해도 돼.', 'C*:조금 더 붙어. 냉각기 바람 막아 줄게.'])]); gain('sitBy', 2); };
+  A.collar = async () => { await lines(['N:대위의 구겨진 옷깃을 펴 준다. 대위가 숨을 멈춘다.', PX.Dlg.capPick(['C*:…가까이 오면 미리 말해. 심장 준비하게.', 'C^:매일 구기고 다녀야겠다.'])]); gain('collar', 3); };
   A.snack = async () => {
     const id = ['earthSnack', 'iceDessert', 'fruitTea', 'hotchoco'].find(has);
     if (!id) { PX.UI.toast('🍬 나눠 먹을 간식이 없어요'); return; }
     St.addItem(id, -1);
-    await lines([`N:${PX.ITEMS[id].name}을(를) 반으로 나눈다.`.replace('을(를)', U.hasBatchim(PX.ITEMS[id].name) ? '을' : '를'), U.pick(['C:큰 쪽 네가 먹어.', 'C!:나 주는 거야? 네 건데?']), 'C^:반 나눠 먹으니까 두 배로 맛있다. 계산이 이상한데 맞아.']);
+    await lines([`N:${PX.ITEMS[id].name}을(를) 반으로 나눈다.`.replace('을(를)', U.hasBatchim(PX.ITEMS[id].name) ? '을' : '를'), PX.Dlg.capPick(['C:큰 쪽 네가 먹어.', 'C!:나 주는 거야? 네 건데?']), 'C^:반 나눠 먹으니까 두 배로 맛있다. 계산이 이상한데 맞아.']);
     gain('snack', 4);
   };
   A.race = async () => {

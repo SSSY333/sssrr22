@@ -45,13 +45,15 @@ PX.Situ = (() => {
   const text = (b) => b.l.filter(x => typeof x === 'string').join(' ');
 
   // 지금 맞는 것 중 가장 구체적인 단계에서, 안 본 것부터
-  function pick(minSpec = 2) {
+  function pick(minSpec = 2, strict) {
     index();
     const S = St.S, c = now(), seen = S.recent;
     const ok = (PX.SITU || []).filter(b => match(b, c) && PX.Dlg.ctxOk(text(b)) && (!PX.Mind || PX.Mind.textOk(text(b))));
     if (!ok.length) return null;
     const scored = ok.map(b => ({ b, sc: spec(b, c) })).filter(x => x.sc >= minSpec);
     if (!scored.length) return null;
+    const newLines = scored.filter(x => !PX.Dlg.bundleSeen(x.b)); // 대위 대사가 아직 안 나온 것만
+    if (newLines.length) scored.splice(0, scored.length, ...newLines); else if (strict) return null;
     const fresh = scored.filter(x => seen['situ' + x.b.id] == null);
     let pool;
     if (fresh.length) { const top = Math.max(...fresh.map(x => x.sc)); pool = fresh.filter(x => x.sc >= top - 0.5); }
@@ -65,7 +67,7 @@ PX.Situ = (() => {
   function hasFresh(minSpec = 2) {
     index();
     const S = St.S, c = now();
-    return (PX.SITU || []).some(b => match(b, c) && spec(b, c) >= minSpec && S.recent['situ' + b.id] == null && PX.Dlg.ctxOk(text(b)));
+    return (PX.SITU || []).some(b => match(b, c) && spec(b, c) >= minSpec && S.recent['situ' + b.id] == null && !PX.Dlg.bundleSeen(b) && PX.Dlg.ctxOk(text(b)));
   }
   return { pick, hasFresh, now, match, spec };
 })();

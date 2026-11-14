@@ -176,6 +176,8 @@
 
   // ---------- 말풍선 · 기록 · 사진 ----------
   Game.bubble = (actor, text, sec = 3) => {
+    // 대위 말풍선: 사흘 안에 했던 말이면 그냥 조용히 (반복보다 침묵)
+    if (actor === Game.cap && text && PX.Dlg && PX.Dlg.capSaid) { const S = St.S, k = String(text); S.capBub = S.capBub || {}; const h = U.hash(k); if (S.capBub[h] && St.absMin() - S.capBub[h] < 3 * 1440) return; S.capBub[h] = St.absMin(); }
     const b = U.el('div', { class: 'bubble' }, text);
     $('bubbles').append(b);
     Game.bubbles.push({ actor, el: b, until: performance.now() + sec * 1000 });
@@ -615,7 +617,7 @@
     if (it.k === 'gift') return gift();
     if (it.k === 'skin') return skinMenu();
     if (it.k === 'comfort') return Dlg.capTalk('comfort');
-    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; M.noteRefuse('follow', 600); M.notePart(60); return; }
+    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', PX.Dlg.capPick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; M.noteRefuse('follow', 600); M.notePart(60); return; }
     if (it.k === 'stay') { S.cap.lastStayAskDay = -1; Game.modal++; await Dlg.say('player', '…자고 가도 돼요.', 'blush'); await Dlg.runLines(U.pick(PX.DLG_CAP.stayYes)); Dlg.close(); Game.modal--; S.cap.stay = 'sofa'; S.cap.lastStayAskDay = S.day; Cap.mode = 'stay'; St.addAff(6); const m = W.maps[Game.mapId]; const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa') && o.seats && o.seats.some(x => !x.by)); if (sofa) { const a = W.accessTile(m, sofa); if (a) cap.goTo(m, a.x, a.y, () => { const seat = sofa.seats.find(x => !x.by); if (seat) cap.sitOn(seat); }); } return; }
     if (it.k === 'leave') { Game.modal++; await Dlg.say('player', '이제 가 보세요.'); await Dlg.runLines(PX.Dlg.pick('v_farewell', PX.DLG_V2.farewell).l); Dlg.close(); Game.modal--; const m = W.maps[Game.mapId]; cap.leaveSeat(); Cap.release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => Cap.moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); }
   }

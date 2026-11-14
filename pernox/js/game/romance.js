@@ -41,7 +41,7 @@ PX.Rom = (() => {
       await PX.Dlg.runLines(['C;:아, 그때 근무야. …아니면 작전.', 'C:저녁이나 주말이면 무조건 비울게. 다시 정하자.']);
       PX.Dlg.close(); g.modal--; return;
     }
-    await PX.Dlg.runLines([U.pick([['C!:…데이트 신청이야, 이거?', 'C^:받았다. 취소 불가.'], ['C*:네가 먼저 하자고 해 주니까 좋네.', 'C:그날 일 다 미리 끝내 놓을게.'], ['C:좋아. 십 분 일찍 가 있을게. 늘 그래.']])].flat());
+    await PX.Dlg.runLines([PX.Dlg.capPick([['C!:…데이트 신청이야, 이거?', 'C^:받았다. 취소 불가.'], ['C*:네가 먼저 하자고 해 주니까 좋네.', 'C:그날 일 다 미리 끝내 놓을게.'], ['C:좋아. 십 분 일찍 가 있을게. 늘 그래.']])].flat());
     PX.Dlg.close(); g.modal--;
     dates().push({ id: now(), day: dy.k, min: tm.k, map: pl.k.map, name: pl.k.name, state: 'planned', by: 'p' });
     PX.UI.toast(`📅 약속: ${dayKo(dy.k)} ${Cal.fmtTime(tm.k)} · ${pl.k.name}`, 3500);
@@ -54,9 +54,9 @@ PX.Rom = (() => {
     const pl = U.pick(PLACES), wd = St.weekday(), toSat = ((6 - wd) + 7) % 7 || 7, day = S.day + toSat, min = pl.at[pl.at.length - 1] * 60;
     if (!capFreeAt(day, min)) return false;
     g.modal++;
-    await PX.Dlg.runLines([`C:이번 주말에 ${pl.name} 갈래? ${Cal.fmtTime(min)}.`, U.pick(['C*:데이트 신청이야. 정식으로.', 'C:싫으면 싫다고 해. 다른 데 찾으면 되니까.'])]);
+    await PX.Dlg.runLines([`C:이번 주말에 ${pl.name} 갈래? ${Cal.fmtTime(min)}.`, U.pickFresh('dateAskTail', ['C*:데이트 신청이야. 정식으로.', 'C:싫으면 싫다고 해. 다른 데 찾으면 되니까.', 'C^:거기 가 보고 싶었어. 너랑.', 'C*:미리 말하는 거야. 그날 비워 둬.', 'C:시간 안 되면 말해. 날짜는 바꾸면 돼.', 'C;:…긴장했다. 데이트 신청은 매번 처음 같아.'].filter(l => !PX.Dlg.capSaid(l.slice(2))).concat(['C^:어때?']))]);
     const i = await PX.Dlg.choose([{ t: '좋아요.' }, { t: '다른 날이 좋아요.' }]);
-    if (i === 0) { await PX.Dlg.say('player', '좋아요.'); await PX.Dlg.say('cap', U.pick(['좋아. 그날 하루 비워 둔다.', '…좋다고 했다. 들었어.']), 'smile'); dates().push({ id: now(), day, min, map: pl.map, name: pl.name, state: 'planned', by: 'c' }); PX.UI.toast(`📅 약속: ${dayKo(day)} ${Cal.fmtTime(min)} · ${pl.name}`, 3500); }
+    if (i === 0) { await PX.Dlg.say('player', '좋아요.'); await PX.Dlg.say('cap', PX.Dlg.capPick(['좋아. 그날 하루 비워 둔다.', '…좋다고 했다. 들었어.']), 'smile'); dates().push({ id: now(), day, min, map: pl.map, name: pl.name, state: 'planned', by: 'c' }); PX.UI.toast(`📅 약속: ${dayKo(day)} ${Cal.fmtTime(min)} · ${pl.name}`, 3500); }
     else { await PX.Dlg.say('player', '다른 날이 좋아요.'); await PX.Dlg.say('cap', '응. 네가 편한 날 말해 줘. 그날로 할게.', 'smile'); if (PX.Mind) PX.Mind.noteRefuse('dateAsk', 3 * DAY); }
     PX.Dlg.close(); g.modal--;
     return true;
@@ -86,7 +86,7 @@ PX.Rom = (() => {
     PX.Cap.startFollow(); g.cap.setDirTo(g.player.x, g.player.y);
     if (d.kind === 'proposal') return proposal(d);
     const late = now() - (d.day * DAY + d.min);
-    await lines([late > 10 ? U.pick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : U.pick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
+    await lines([late > 10 ? PX.Dlg.capPick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : PX.Dlg.capPick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
     if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('dateStart'); }
     St.addAff(4);
   }
@@ -131,7 +131,7 @@ PX.Rom = (() => {
     const withCap = g.cap.map === g.mapId && ['follow', 'date'].includes(PX.Cap.mode);
     if (/불꽃|별빛|퍼레이드|네온|기념제/.test(e.originalTitle) && St.isNight()) fireworks(12);
     g.trigger(async () => {
-      await lines([`N:🎉 ${e.originalTitle}. ${e.description.slice(0, 60)}`, ...(withCap ? [`N:${e.captainReaction}`, U.pick(['C^:축제다. 오늘은 손 놓지 마.', 'C*:사람 많다. 내 옆에 딱 붙어.', 'C:이런 날 같이 와서 좋다.'])] : [])]);
+      await lines([`N:🎉 ${e.originalTitle}. ${e.description.slice(0, 60)}`, ...(withCap ? [`N:${e.captainReaction}`, PX.Dlg.capPick(['C^:축제다. 오늘은 손 놓지 마.', 'C*:사람 많다. 내 옆에 딱 붙어.', 'C:이런 날 같이 와서 좋다.'])] : [])]);
       if (withCap) { St.addAff(4); if (once('festmem_' + e.id)) g.memory(e.originalTitle, `${e.originalTitle}에 대위와 함께 갔다. ${e.captainReaction}`, true); }
     });
   }
@@ -248,7 +248,7 @@ PX.Rom = (() => {
     if (t >= 22 * 60 + 30 && g.mapId === home && !['visit', 'stay', 'follow'].includes(PX.Cap.mode) && S.done.cohabDay !== S.day) {
       S.done.cohabDay = S.day;
       PX.Cap.moveTo(home, PX.MAPS[home].parent); PX.Cap.mode = 'visit';
-      g.trigger(() => lines([...U.pick([['N:문이 열린다.', 'C:다녀왔어.'], ['N:익숙한 발소리. 문틀에 머리 박는 소리.', 'C;:…다녀왔어.']]), U.pick(['C:오늘 하루 어땠어?', 'C^:집에 오니까 네가 있네. 이게 제일 좋아.', 'C*:씻고 올게. 기다려. 아니, 먼저 자도 돼. 깨울 거지만.'])]));
+      g.trigger(() => lines([...U.pick([['N:문이 열린다.', 'C:다녀왔어.'], ['N:익숙한 발소리. 문틀에 머리 박는 소리.', 'C;:…다녀왔어.']]), PX.Dlg.capPick(['C:오늘 하루 어땠어?', 'C^:집에 오니까 네가 있네. 이게 제일 좋아.', 'C*:씻고 올게. 기다려. 아니, 먼저 자도 돼. 깨울 거지만.'])]));
     }
   }
   // 기념일: 연인 100·200·300·365·500·1000일, 결혼 1주년마다 (그날 첫 대화)
@@ -265,7 +265,7 @@ PX.Rom = (() => {
     if (!a || S.done['anniv_' + S.day]) return false;
     if (g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 4) return false;
     S.done['anniv_' + S.day] = 1;
-    g.trigger(async () => { const bd = a.kind === 'wedding' ? { l: U.pick([['C:오늘 무슨 날인지 알아?', 'C^:결혼기념일. 일 년 더 내 옆에 있어 줘서 고마워.'], ['C*:결혼기념일 선물. 이번에도 직접 깎았어.', 'C^:내년에도, 그다음 해에도.'], ['C:그날 네 손 떨리던 거 아직 기억나.', 'C^:나도 떨렸어. 지금 말하는 거야.']]) } : PX.Dlg.pick('v_anniv', PX.DLG_V2.anniv); await lines(bd ? bd.l : ['C:오늘 우리 기념일이야.']); St.addItem('mineral'); PX.UI.toast('🎁 기념일 선물: 대위가 깎은 광물 조각'); g.memory(a.kind === 'wedding' ? `결혼 ${Math.round(a.n / 365)}주년` : `연인 ${Math.round(a.n / 365)}주년`, '대위는 날짜를 하루도 틀리지 않았다.', true); St.addAff(8); });
+    g.trigger(async () => { const bd = a.kind === 'wedding' ? { l: PX.Dlg.capPick([['C:오늘 무슨 날인지 알아?', 'C^:결혼기념일. 일 년 더 내 옆에 있어 줘서 고마워.'], ['C*:결혼기념일 선물. 이번에도 직접 깎았어.', 'C^:내년에도, 그다음 해에도.'], ['C:그날 네 손 떨리던 거 아직 기억나.', 'C^:나도 떨렸어. 지금 말하는 거야.']]) } : PX.Dlg.pick('v_anniv', PX.DLG_V2.anniv); await lines(bd ? bd.l : ['C:오늘 우리 기념일이야.']); St.addItem('mineral'); PX.UI.toast('🎁 기념일 선물: 대위가 깎은 광물 조각'); g.memory(a.kind === 'wedding' ? `결혼 ${Math.round(a.n / 365)}주년` : `연인 ${Math.round(a.n / 365)}주년`, '대위는 날짜를 하루도 틀리지 않았다.', true); St.addAff(8); });
     return true;
   }
 

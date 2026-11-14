@@ -145,7 +145,7 @@ PX.Cap = (() => {
     }
     if (mode === 'visit') {
       if (g.mapId !== homeId() || k === 'duty' || k === 'field') { release(); return; }
-      if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(U.pick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: '조심히 가요.' }, { t: '조금만 더 있다 가요.' }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
+      if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(PX.Dlg.capPick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: '조심히 가요.' }, { t: '조금만 더 있다 가요.' }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
       if (S.cap.cohab && S.time.min >= 22 * 60 && !g.modal) { S.cap.stay = 'bed'; mode = 'stay'; return; } // 같이 사는 사이: 묻지 않고 함께 잔다
       if (S.time.min >= 22 * 60 && !g.modal) g.trigger(nightCheck);
       return;
@@ -439,7 +439,7 @@ PX.Cap = (() => {
     else if (i === 1) { g.goOutside(); startFollow(); g.trigger(async () => { await PX.Dlg.say('cap', '나와 줬네. 산책할래?', 'smile'); PX.Dlg.close(); }); }
     else {
       await PX.Dlg.say('player', '오늘은 좀 쉬고 싶어요.');
-      await PX.Dlg.say('cap', U.pick(['응, 알았어. 푹 자. 내일 보자.', '그래. 얼굴은 내일 보면 되지. 잘 자.']), 'smile'); PX.Dlg.close();
+      await PX.Dlg.say('cap', PX.Dlg.capPick(['응, 알았어. 푹 자. 내일 보자.', '그래. 얼굴은 내일 보면 되지. 잘 자.']), 'smile'); PX.Dlg.close();
       S.rel.cap.noFollowUntil = (S.day + 1) * 1440 + 6 * 60; release();
     }
   }

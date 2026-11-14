@@ -5689,7 +5689,20 @@ PX.Dlg = (() => {
     if (speaker === 'cap' && G && G.cap && !G.cap.atDoor && (G.cap.map !== G.mapId || G.cap.hidden)) { console.warn('대위 부재로 생략:', text); return Promise.resolve(); }
     return inLane(() => sayNow(speaker, text, face));
   }
+  // ---------- 대위가 한 번 한 말은 기록 (저장 파일) — 다른 말이 남아 있는 한 다시 하지 않는다 ----------
+  const capKey = (t) => {
+    const S = St.S, gn = U.givenName(S.player.name || ''), names = [S.player.name, gn, S.capName].filter(Boolean);
+    let x = String(t).replace(/\{[^}]*\}/g, '');
+    for (const n of names) x = x.split(n).join('');
+    x = x.replace(/자기야|자기|오빠|대위님/g, '').replace(/^[아야이],?/, '').replace(/[\s.,!?…~]/g, '');
+    return U.hash(x);
+  };
+  function capSaid(t) { const S = St.S; S.capSaid = S.capSaid || {}; return S.capSaid[capKey(t)] != null; }
+  function noteCapSaid(t) { const S = St.S; S.capSaid = S.capSaid || {}; S.capSaid[capKey(t)] = St.absMin(); const ks = Object.keys(S.capSaid); if (ks.length > 6000) { ks.sort((a, b) => S.capSaid[a] - S.capSaid[b]).slice(0, 1000).forEach(k => delete S.capSaid[k]); } }
+  const capLinesOf = (bd) => [].concat(bd && (bd.l || bd)).flatMap(x => typeof x === 'string' ? (/^C[*^;!~]?:/.test(x) ? [x.replace(/^C[*^;!~]?:/, '')] : []) : x && x.q ? x.q.flatMap(q => (q[2] || []).filter(y => typeof y === 'string' && /^C/.test(y)).map(y => y.replace(/^C[*^;!~]?:/, ''))) : []);
+  const bundleSeen = (bd) => capLinesOf(bd).slice(0, 2).some(capSaid); // 첫 대사들이 이미 나온 묶음
   function sayNow(speaker, text, face) {
+    if (speaker === 'cap') try { noteCapSaid(text); } catch (e) { /* 무시 */ }
     if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
     else if (speaker === 'player' && toCap()) text = lover(text);
     if (speaker === 'cap' && lovers()) { const gn = U.givenName(St.S.player.name); text = text.replace(new RegExp('^' + gn + '(아|야)([,.!]|\\s)'), (m, a, b) => Math.random() < 0.5 ? '자기야' + b : m); }
@@ -5842,6 +5855,7 @@ PX.Dlg = (() => {
     if (M) { const ok2 = ok.filter(({ bd }) => M.textOk(txt(bd))); if (ok2.length) ok.splice(0, ok.length, ...ok2); else if (ok.some(({ bd }) => /오랜만|어디 갔다 왔|한참 찾았|하루 종일 기다/.test(txt(bd)))) return null; }
     // 한 번도 안 나온 묶음부터. 다 나왔으면 가장 오래전에 나온 것들(하위 1/4) 중에서
     const used = S.recent;
+    { const fresh2 = ok.filter(({ bd }) => !bundleSeen(bd)); if (fresh2.length) ok.splice(0, ok.length, ...fresh2); else if (cond.strict) return null; }
     const never = ok.filter(({ i }) => used[cat + i] == null);
     const pool = never.length ? never : ok.slice().sort((a, b) => (used[cat + a.i] || 0) - (used[cat + b.i] || 0)).slice(0, Math.max(1, Math.ceil(ok.length / 4)));
     const weighted = [];
@@ -5897,6 +5911,11 @@ PX.Dlg = (() => {
     if (cat === 'v:reunion' && M) M.mem().reunion = null;
     if (!forceCat && !cat.startsWith('v:') && cat !== 'jobVisit' && cat !== 'working' && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
     if (!bd) bd = pick('small', PX.DLG_CAP2.small) || pick('praise', D.praise);
+    if (bd && bundleSeen(bd)) { // 이 상황 묶음은 다 들었다 → 아직 안 들은 말이 있는 곳에서
+      const alt = (PX.Situ && PX.Situ.pick(1, true)) || pick('qa', PX.Ask ? PX.Ask.QA : [], { strict: true }) || (PX.DLG_CAP2 && PX.DLG_CAP2.place[G.mapId] && pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId], { strict: true })) || pick('small', PX.DLG_CAP2.small, { strict: true })
+        || ['praise', 'tease', 'aegyo', 'greet', 'worry', ...(r.stage >= 2 ? ['flirt'] : []), ...(part === 'night' ? ['night'] : [])].map(k => D[k] && pick(k, D[k], { strict: true })).find(Boolean);
+      if (alt) { bd = alt; cat = alt.situ ? 'situ' : cat; }
+    }
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat) || (cat === 'situ' && bd && bd.tease);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
@@ -6040,7 +6059,14 @@ PX.Dlg = (() => {
     if (!['kang', 'nam', 'ryu', 'moon', 'song'].includes(npc.id)) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
   }
 
-  return { askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  // 대위 대사 후보 중 아직 안 한 말부터 (한 줄짜리든 여러 줄 묶음이든)
+  function capPick(arr) {
+    if (!arr || !arr.length) return undefined;
+    const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
+    const un = arr.filter(x => !capSaid(first(x)));
+    return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : arr);
+  }
+  return { capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();
 
 </script>
@@ -6214,7 +6240,7 @@ PX.Reply = (() => {
   async function react(who, cat, mood) {
     if (who === 'cap') {
       const pool = (CAP_RE_CAT[cat] && CAP_RE_CAT[cat][mood]) || CAP_RE[mood];
-      const ln = U.pickFresh('re_' + cat + mood, pool);
+      const unsaid = pool.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); const ln = U.pickFresh('re_' + cat + mood, unsaid.length ? unsaid : pool);
       const m = /^C([*^;!~]?):(.*)$/.exec(ln);
       await PX.Dlg.say('cap', U.fmt(m[2], PX.Dlg.ctx()), { '*': 'smirk', '^': 'smile', ';': 'sad', '!': 'surprise', '~': 'blush' }[m[1]] || 'normal');
       if (mood === 'flirt') G().cap.showEmote('heart', 1.4);
@@ -6452,7 +6478,7 @@ PX.Ask = (() => {
     const c = ctx(), S = St.S;
     S.done.capAskSeen = S.done.capAskSeen || [];
     const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
-    const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id));
+    const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id) && p.q.some(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))));
     // 지금 상황에 가장 구체적으로 맞는 것(가중치가 높은 것)부터 · 일반적인 제안은 맞는 게 없을 때만
     const base = fresh.length ? fresh : ok, top = Math.max(...base.map(p => p.w));
     const pool = base.filter(p => p.w >= top - 1);
@@ -6464,7 +6490,8 @@ PX.Ask = (() => {
   async function propose(skipQ, id) {
     const S = St.S, p = pick(id), tn = toneOf();
     S.done.capAskSeen = [p.id, ...(S.done.capAskSeen || []).filter(x => x !== p.id)].slice(0, 8);
-    if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, p.q));
+    const un = (arr) => { const u = arr.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : arr; };
+    if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, un(p.q)));
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
     const F = (t) => U.fmt(t, PX.Dlg.ctx());
@@ -6483,7 +6510,7 @@ PX.Ask = (() => {
     }
     const o = opts[i];
     await PX.Dlg.say('player', items[i].t, o.mood === 'flirt' ? 'blush' : 'normal');
-    if (o.re) await capSay(U.pick(o.re));
+    if (o.re) await capSay(U.pickFresh('re_' + p.id + i, un(o.re)));
     if (o.mood === 'flirt') G().cap.showEmote('heart', 1.4);
     return { k: o.k, mood: o.mood };
   }
@@ -6552,13 +6579,15 @@ PX.Situ = (() => {
   const text = (b) => b.l.filter(x => typeof x === 'string').join(' ');
 
   // 지금 맞는 것 중 가장 구체적인 단계에서, 안 본 것부터
-  function pick(minSpec = 2) {
+  function pick(minSpec = 2, strict) {
     index();
     const S = St.S, c = now(), seen = S.recent;
     const ok = (PX.SITU || []).filter(b => match(b, c) && PX.Dlg.ctxOk(text(b)) && (!PX.Mind || PX.Mind.textOk(text(b))));
     if (!ok.length) return null;
     const scored = ok.map(b => ({ b, sc: spec(b, c) })).filter(x => x.sc >= minSpec);
     if (!scored.length) return null;
+    const newLines = scored.filter(x => !PX.Dlg.bundleSeen(x.b)); // 대위 대사가 아직 안 나온 것만
+    if (newLines.length) scored.splice(0, scored.length, ...newLines); else if (strict) return null;
     const fresh = scored.filter(x => seen['situ' + x.b.id] == null);
     let pool;
     if (fresh.length) { const top = Math.max(...fresh.map(x => x.sc)); pool = fresh.filter(x => x.sc >= top - 0.5); }
@@ -6572,7 +6601,7 @@ PX.Situ = (() => {
   function hasFresh(minSpec = 2) {
     index();
     const S = St.S, c = now();
-    return (PX.SITU || []).some(b => match(b, c) && spec(b, c) >= minSpec && S.recent['situ' + b.id] == null && PX.Dlg.ctxOk(text(b)));
+    return (PX.SITU || []).some(b => match(b, c) && spec(b, c) >= minSpec && S.recent['situ' + b.id] == null && !PX.Dlg.bundleSeen(b) && PX.Dlg.ctxOk(text(b)));
   }
   return { pick, hasFresh, now, match, spec };
 })();
@@ -6727,7 +6756,7 @@ PX.Cap = (() => {
     }
     if (mode === 'visit') {
       if (g.mapId !== homeId() || k === 'duty' || k === 'field') { release(); return; }
-      if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(U.pick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: '조심히 가요.' }, { t: '조금만 더 있다 가요.' }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
+      if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(PX.Dlg.capPick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: '조심히 가요.' }, { t: '조금만 더 있다 가요.' }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
       if (S.cap.cohab && S.time.min >= 22 * 60 && !g.modal) { S.cap.stay = 'bed'; mode = 'stay'; return; } // 같이 사는 사이: 묻지 않고 함께 잔다
       if (S.time.min >= 22 * 60 && !g.modal) g.trigger(nightCheck);
       return;
@@ -7021,7 +7050,7 @@ PX.Cap = (() => {
     else if (i === 1) { g.goOutside(); startFollow(); g.trigger(async () => { await PX.Dlg.say('cap', '나와 줬네. 산책할래?', 'smile'); PX.Dlg.close(); }); }
     else {
       await PX.Dlg.say('player', '오늘은 좀 쉬고 싶어요.');
-      await PX.Dlg.say('cap', U.pick(['응, 알았어. 푹 자. 내일 보자.', '그래. 얼굴은 내일 보면 되지. 잘 자.']), 'smile'); PX.Dlg.close();
+      await PX.Dlg.say('cap', PX.Dlg.capPick(['응, 알았어. 푹 자. 내일 보자.', '그래. 얼굴은 내일 보면 되지. 잘 자.']), 'smile'); PX.Dlg.close();
       S.rel.cap.noFollowUntil = (S.day + 1) * 1440 + 6 * 60; release();
     }
   }
@@ -8370,14 +8399,14 @@ PX.Act = (() => {
     if (b) { const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return; }
     if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
     G().cap.setDirTo(G().player.x, G().player.y);
-    await lines([U.pick(['C*:예약 화면 봤어? …물침대 방도 있대.', 'C^:고르는 건 네가 해. 난 따라갈게.', 'C*:어느 방이든. 근데 욕조 큰 방은 좀 궁금하긴 하다.'])]);
+    await lines([PX.Dlg.capPick(['C*:예약 화면 봤어? …물침대 방도 있대.', 'C^:고르는 건 네가 해. 난 따라갈게.', 'C*:어느 방이든. 근데 욕조 큰 방은 좀 궁금하긴 하다.'])]);
     const it = await PX.UI.menu('은밀숙소 · 객실 예약 (다음 날 정오까지)', INN_ROOMS.map(r => ({ t: `${r.t} · ₢${r.price}`, sub: r.sub, k: r })).concat([{ t: '구경만 할래요', k: null }]));
     if (!it || !it.k) { await lines(['C:응. 구경만. 화면 끌게.']); return; }
     const r = it.k;
     if (!St.spend(r.price)) { PX.UI.toast('돈이 모자라요'); return; }
     const until = (S.day + 1) * 1440 + 12 * 60;
     S.done.innBook = { room: r.id, until };
-    await lines([U.pick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
+    await lines([PX.Dlg.capPick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
     await goInnRoom(r.id);
     if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(INN_ARRIVE[r.id])), 600);
   }
@@ -8726,7 +8755,7 @@ PX.Ruby = (() => {
     const g = G(); if (cap) PX.Cap.sitNear(g);
     for (let i = 0; i < 4; i++) { g.fade(); await U.sleep(320); }
     if (cap) {
-      await lines([U.pick([['C:한 장 더 찍자. 나 눈 감았어.'], ['C*:이거 내 단말 배경으로 한다.'], ['C^:네 컷 중에 네가 제일 예쁜 컷은… 네 장 다.']])]);
+      await lines([PX.Dlg.capPick([['C:한 장 더 찍자. 나 눈 감았어.'], ['C*:이거 내 단말 배경으로 한다.'], ['C^:네 컷 중에 네가 제일 예쁜 컷은… 네 장 다.']])]);
       St.addAff(3);
       const key = 'booth_' + it.k.k;
       if (once(key)) g.memory('네온 포토부스 · ' + it.k.t.replace(/^\S+\s/, ''), it.k.txt, true);
@@ -8846,7 +8875,7 @@ PX.Ruby = (() => {
     if (!withCap()) return;
     if (it.k === 'mine') await lines(['C:…이거. 퍼퓸덴에서 네가 만든 거지.', 'C*:기억한다고 했잖아. 이 냄새 나면 너 생각난다고.']);
     else if (it.k === 'liked') await lines([`C:${S.done.likedNote}. 너 그거 좋다고 했잖아.`, 'C^:난 네가 좋다고 한 건 다 외워.']);
-    else await lines([U.pick([['C:향 좋다. 근데 난 네 샴푸 냄새가 더 좋아.'], ['C*:이러다 졸겠다. 졸면 깨워 줘. 아니, 깨우지 마.']])]);
+    else await lines([PX.Dlg.capPick([['C:향 좋다. 근데 난 네 샴푸 냄새가 더 좋아.'], ['C*:이러다 졸겠다. 졸면 깨워 줘. 아니, 깨우지 마.']])]);
   };
   // 다이스키스 카드 하이로우 (LB87)
   H.cards = async () => {
@@ -8870,7 +8899,7 @@ PX.Ruby = (() => {
     if (iWon) {
       await lines(['C;:…졌다. 벌칙 받을게. 순순히.']);
       const pen = await PX.UI.menu('대위 벌칙 고르기', [{ t: '💪 그 자리에서 팔굽혀펴기 20개', k: 'push' }, { t: '🤫 비밀 하나 말하기', k: 'secret' }, { t: '🥺 애교 한마디', k: 'cute' }, { t: '봐주기', k: 'none' }]);
-      const P = { push: ['N:대위가 바닥에 엎드린다. 스물. 숨도 안 찬다.', 'C*:벌칙 맞아? 이거 아침 운동인데.'], secret: [U.pick(['C:…처음 너 봤을 때, 사실 보고서 세 번 다시 썼어. 집중이 안 돼서.', 'C:네 숙소 앞 가로등, 내가 고쳐 달라고 민원 넣은 거야. 어두워서.', 'C:작전 나갈 때 네 사진 방탄조끼 안에 넣고 다녀.']), 'C;:…이제 됐지?'], cute: ['C;:…', 'C~:…자기야, 나 한 판만 봐주라.', 'N:주변 테이블이 조용해진다. 대위 귀가 새빨갛다.', 'C;:두 번은 없다.'], none: ['C^:봐주는 거야? 다음 판은 내가 봐줄게.'] }[pen ? pen.k : 'none'];
+      const P = { push: ['N:대위가 바닥에 엎드린다. 스물. 숨도 안 찬다.', 'C*:벌칙 맞아? 이거 아침 운동인데.'], secret: [PX.Dlg.capPick(['C:…처음 너 봤을 때, 사실 보고서 세 번 다시 썼어. 집중이 안 돼서.', 'C:네 숙소 앞 가로등, 내가 고쳐 달라고 민원 넣은 거야. 어두워서.', 'C:작전 나갈 때 네 사진 방탄조끼 안에 넣고 다녀.']), 'C;:…이제 됐지?'], cute: ['C;:…', 'C~:…자기야, 나 한 판만 봐주라.', 'N:주변 테이블이 조용해진다. 대위 귀가 새빨갛다.', 'C;:두 번은 없다.'], none: ['C^:봐주는 거야? 다음 판은 내가 봐줄게.'] }[pen ? pen.k : 'none'];
       await lines(P); St.addAff(4);
       if (pen && pen.k === 'cute' && once('capCute')) G().memory('대위의 애교', '벌칙으로 애교를 시켰다. 다이스키스가 조용해졌다.', true);
     } else {
@@ -8917,8 +8946,8 @@ PX.Ruby = (() => {
     S.done[k] = (S.done[k] || 0) + (it.k < 3 ? 1 : 0);
     if (!withCap()) { PX.UI.toast('🍻 한 잔 마셨다'); return; }
     const n = S.done[k];
-    if (it.k === 3) await lines([U.pick(['C:잘 골랐다. 나도 그거.', 'C*:취한 너도 귀엽지만, 멀쩡한 너랑 오래 얘기하는 게 더 좋아.'])]);
-    else if (n === 1) await lines([U.pick(['C:건배. 오늘 무사히 끝난 거에.', 'C*:첫 잔은 원샷 안 해도 돼. 천천히.'])]);
+    if (it.k === 3) await lines([PX.Dlg.capPick(['C:잘 골랐다. 나도 그거.', 'C*:취한 너도 귀엽지만, 멀쩡한 너랑 오래 얘기하는 게 더 좋아.'])]);
+    else if (n === 1) await lines([PX.Dlg.capPick(['C:건배. 오늘 무사히 끝난 거에.', 'C*:첫 잔은 원샷 안 해도 돼. 천천히.'])]);
     else if (n === 2) await lines(['C:나 여기서 멈출게. 두 잔.', 'C^:너 데려다줘야 하니까. 그게 내 몫이야.']);
     else await lines(['C;:…너 세 잔째다.', 'C:물 한 잔 시켜 줄게. 그다음에 업혀.']);
   };
@@ -9085,11 +9114,11 @@ PX.CapAct = (() => {
   };
   A.forehead = async () => { await lines(['N:손등을 대위 이마에 대 본다. 뜨겁다. 원래 뜨거운 사람이긴 하다.', 'C*:열 있어? 너 때문일걸.', 'C:…농담이고. 괜찮아. 걱정해 줘서 고마워.']); gain('forehead', 2); };
   A.water = async () => {
-    await lines(['N:물병을 건넨다. 대위가 한 번에 절반을 비운다.', U.pick(['C:살 것 같다. 외곽은 물도 모래 맛이야.', 'C^:딱 필요했어. 어떻게 알았어?', 'C*:네가 주니까 물도 달다. …진짜야, 웃지 마.'])]);
+    await lines(['N:물병을 건넨다. 대위가 한 번에 절반을 비운다.', PX.Dlg.capPick(['C:살 것 같다. 외곽은 물도 모래 맛이야.', 'C^:딱 필요했어. 어떻게 알았어?', 'C*:네가 주니까 물도 달다. …진짜야, 웃지 마.'])]);
     gain('water', 3);
   };
   A.dust = async () => {
-    await lines(['N:어깨와 머리에 앉은 붉은 모래를 털어 준다. 대위가 고개를 숙여 준다.', 'C:…이런 거 해 주는 사람 처음이야.', U.pick(['C*:머리도. 거기 더 있어. 아마.', 'C^:다 털었어? 아쉽네.'])]);
+    await lines(['N:어깨와 머리에 앉은 붉은 모래를 털어 준다. 대위가 고개를 숙여 준다.', 'C:…이런 거 해 주는 사람 처음이야.', PX.Dlg.capPick(['C*:머리도. 거기 더 있어. 아마.', 'C^:다 털었어? 아쉽네.'])]);
     if (gain('dust', 4) && once('capDust')) G().memory('붉은 모래', '수색에서 돌아온 대위의 어깨에서 모래를 털어 줬다. 큰 사람이 고개를 숙였다.', true);
   };
   const FIELD = [
@@ -9112,25 +9141,25 @@ PX.CapAct = (() => {
   };
   A.count = async () => {
     const n = 18 + Math.floor(Math.random() * 14);
-    await lines(['N:하나, 둘, 셋…', `N:…${n - 2}, ${n - 1}, ${n}.`, U.pick(['C;:…후.', 'C!:몇 개야?']), `P:${n}개요.`, U.pick(['C*:네가 세니까 평소보다 다섯 개 더 했어.', 'C^:목소리 좋다. 계속 세 줘. 숫자 말고 아무거나.'])]);
+    await lines(['N:하나, 둘, 셋…', `N:…${n - 2}, ${n - 1}, ${n}.`, PX.Dlg.capPick(['C;:…후.', 'C!:몇 개야?']), `P:${n}개요.`, PX.Dlg.capPick(['C*:네가 세니까 평소보다 다섯 개 더 했어.', 'C^:목소리 좋다. 계속 세 줘. 숫자 말고 아무거나.'])]);
     St.advance(8); gain('count', 3);
   };
-  A.towel = async () => { await lines(['N:수건을 건넨다. 대위가 얼굴을 닦다 말고 이쪽을 본다.', U.pick(['C*:닦아 주는 것까지 해 주면 안 돼?', 'C:고마워. 딱 필요했어.']), ...(St.S.rel.cap.stage >= 3 ? ['N:수건으로 이마를 꾹꾹 눌러 닦아 준다.', 'C^:…오늘 운동 제일 잘한 일이 이거다.'] : [])]); gain('towel', 3); };
+  A.towel = async () => { await lines(['N:수건을 건넨다. 대위가 얼굴을 닦다 말고 이쪽을 본다.', PX.Dlg.capPick(['C*:닦아 주는 것까지 해 주면 안 돼?', 'C:고마워. 딱 필요했어.']), ...(St.S.rel.cap.stage >= 3 ? ['N:수건으로 이마를 꾹꾹 눌러 닦아 준다.', 'C^:…오늘 운동 제일 잘한 일이 이거다.'] : [])]); gain('towel', 3); };
   A.eat = async () => {
     const g = G(), cap = g.cap;
     if (cap.seat) { const s = (cap.seat.obj.seats || []).find(s => !s.by) || null; if (s) g.player.sitOn(s); }
     await U.sleep(400);
-    await lines(['N:대위 옆자리에 앉는다.', U.pick(['C^:왔어? 기다렸어. 숟가락 안 들고.', 'C:여기. 네 자리야. 늘.']), U.pick(['C:오늘 뭐 했는지 말해 봐. 먹으면서 들을게.', 'C*:너랑 먹으면 급식도 외식 같아.'])]);
+    await lines(['N:대위 옆자리에 앉는다.', PX.Dlg.capPick(['C^:왔어? 기다렸어. 숟가락 안 들고.', 'C:여기. 네 자리야. 늘.']), PX.Dlg.capPick(['C:오늘 뭐 했는지 말해 봐. 먹으면서 들을게.', 'C*:너랑 먹으면 급식도 외식 같아.'])]);
     St.advance(20); St.S.energy = Math.min(100, St.S.energy + 8); gain('eat', 4);
   };
   A.sidedish = async () => {
-    await lines(['N:내 반찬 하나를 대위 식판에 얹어 준다.', 'C!:…이거 나 주는 거야?', U.pick(['C^:그럼 난 이거. 제일 큰 걸로.', 'C*:이런 건 연인끼리 하는 건데. 알고 한 거지?']), 'N:대위가 제일 잘 익은 것을 골라 내 식판에 올려놓는다.']);
+    await lines(['N:내 반찬 하나를 대위 식판에 얹어 준다.', 'C!:…이거 나 주는 거야?', PX.Dlg.capPick(['C^:그럼 난 이거. 제일 큰 걸로.', 'C*:이런 건 연인끼리 하는 건데. 알고 한 거지?']), 'N:대위가 제일 잘 익은 것을 골라 내 식판에 올려놓는다.']);
     if (gain('sidedish', 4) && once('capSide')) G().memory('반찬 한 점', '반찬을 얹어 줬더니 대위가 제일 큰 걸 돌려줬다.', true);
   };
   A.coffee = async () => {
     if (!has('coffee')) { PX.UI.toast('☕ 커피가 없어요 (PX나 카페에서 살 수 있어요)'); return; }
     St.addItem('coffee', -1);
-    await lines(['N:책상에 커피를 내려놓는다.', 'C!:…어.', U.pick(['C^:방금 보고서 세 줄이 저절로 써졌어.', 'C*:식혀서 가져왔네. 나 뜨거운 거 못 마시는 거 기억했구나.']), 'C:고마워. 금방 끝낼게.']);
+    await lines(['N:책상에 커피를 내려놓는다.', 'C!:…어.', PX.Dlg.capPick(['C^:방금 보고서 세 줄이 저절로 써졌어.', 'C*:식혀서 가져왔네. 나 뜨거운 거 못 마시는 거 기억했구나.']), 'C:고마워. 금방 끝낼게.']);
     gain('coffee', 5);
   };
   A.papers = async () => {
@@ -9141,7 +9170,7 @@ PX.CapAct = (() => {
     await lines(sc >= 0.6 ? ['C!:벌써? 나 혼자 하면 한 시간인데.', 'C^:퇴근이 당겨졌다. 그 시간 네 거야.'] : ['C:괜찮아, 반은 줄었어.', 'C*:사실 옆에 있어 준 게 더 도움 됐어.']);
     gain('papers', 5);
   };
-  A.cheer = async () => { await lines(['P:힘내요, 대위님.', U.pick(['C*:방금 그걸로 삼십 분은 버틴다.', 'C^:…한 번만 더 말해 줘. 녹음하게.', 'C:응. 끝나고 바로 갈게.'])]); gain('cheer', 2); };
+  A.cheer = async () => { await lines(['P:힘내요, 대위님.', PX.Dlg.capPick(['C*:방금 그걸로 삼십 분은 버틴다.', 'C^:…한 번만 더 말해 줘. 녹음하게.', 'C:응. 끝나고 바로 갈게.'])]); gain('cheer', 2); };
   const TOOLS = [['십자드라이버', '🔩 나사가 십자 모양이다'], ['토크 렌치', '🔧 볼트를 정해진 힘으로 조여야 한다'], ['절연 테이프', '⚡ 전선 피복이 벗겨졌다'], ['에어 블로어', '💨 틈에 모래가 꼈다']];
   A.tool = async () => {
     const t = U.pick(TOOLS);
@@ -9152,20 +9181,20 @@ PX.CapAct = (() => {
     St.advance(10); gain('tool', it.k === t[0] ? 4 : 2);
   };
   A.watchCraft = async () => {
-    await lines(['N:대위의 큰 손이 작은 광물 조각을 천천히 간다. 숨소리까지 조심스럽다.', U.pick(['C:…보고 있으면 손 떨려.', 'C:이 부분이 제일 어려워. 너무 갈면 깨져.']), 'C*:다 되면 제일 먼저 보여 줄게. 아니, 줄게.']);
+    await lines(['N:대위의 큰 손이 작은 광물 조각을 천천히 간다. 숨소리까지 조심스럽다.', PX.Dlg.capPick(['C:…보고 있으면 손 떨려.', 'C:이 부분이 제일 어려워. 너무 갈면 깨져.']), 'C*:다 되면 제일 먼저 보여 줄게. 아니, 줄게.']);
     St.advance(15); gain('watchCraft', 3);
   };
   A.massage = async () => {
-    await lines(['N:대위 어깨에 손을 올린다. 돌덩이 같다.', 'C!:…어.', U.pick(['C;:거기. 거기 좀 더.', 'C:…아. 거기 뭉쳤구나. 몰랐어.']), 'C^:너 손 작은데 힘 좋다. 다음엔 내가 해 줄게. 살살.']);
+    await lines(['N:대위 어깨에 손을 올린다. 돌덩이 같다.', 'C!:…어.', PX.Dlg.capPick(['C;:거기. 거기 좀 더.', 'C:…아. 거기 뭉쳤구나. 몰랐어.']), 'C^:너 손 작은데 힘 좋다. 다음엔 내가 해 줄게. 살살.']);
     St.advance(10); gain('massage', 4);
   };
-  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines([U.pick(['C:응. 여기 있어. 아무 말 안 해도 돼.', 'C*:조금 더 붙어. 냉각기 바람 막아 줄게.'])]); gain('sitBy', 2); };
-  A.collar = async () => { await lines(['N:대위의 구겨진 옷깃을 펴 준다. 대위가 숨을 멈춘다.', U.pick(['C*:…가까이 오면 미리 말해. 심장 준비하게.', 'C^:매일 구기고 다녀야겠다.'])]); gain('collar', 3); };
+  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines([PX.Dlg.capPick(['C:응. 여기 있어. 아무 말 안 해도 돼.', 'C*:조금 더 붙어. 냉각기 바람 막아 줄게.'])]); gain('sitBy', 2); };
+  A.collar = async () => { await lines(['N:대위의 구겨진 옷깃을 펴 준다. 대위가 숨을 멈춘다.', PX.Dlg.capPick(['C*:…가까이 오면 미리 말해. 심장 준비하게.', 'C^:매일 구기고 다녀야겠다.'])]); gain('collar', 3); };
   A.snack = async () => {
     const id = ['earthSnack', 'iceDessert', 'fruitTea', 'hotchoco'].find(has);
     if (!id) { PX.UI.toast('🍬 나눠 먹을 간식이 없어요'); return; }
     St.addItem(id, -1);
-    await lines([`N:${PX.ITEMS[id].name}을(를) 반으로 나눈다.`.replace('을(를)', U.hasBatchim(PX.ITEMS[id].name) ? '을' : '를'), U.pick(['C:큰 쪽 네가 먹어.', 'C!:나 주는 거야? 네 건데?']), 'C^:반 나눠 먹으니까 두 배로 맛있다. 계산이 이상한데 맞아.']);
+    await lines([`N:${PX.ITEMS[id].name}을(를) 반으로 나눈다.`.replace('을(를)', U.hasBatchim(PX.ITEMS[id].name) ? '을' : '를'), PX.Dlg.capPick(['C:큰 쪽 네가 먹어.', 'C!:나 주는 거야? 네 건데?']), 'C^:반 나눠 먹으니까 두 배로 맛있다. 계산이 이상한데 맞아.']);
     gain('snack', 4);
   };
   A.race = async () => {
@@ -9522,20 +9551,22 @@ PX.Mind = (() => {
 
   // ---------- 대위가 먼저 원할 때 (먼저 묻고, 거절하면 같은 건 한동안 다시 안 묻는다) ----------
   const ASKS = [
-    { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?']] },
-    { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?']] },
-    { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.']] },
-    { id: 'fronthug', ask: [['C:안아도 돼?', 'C*:지금 좀 안고 싶어. 이유는 안아 보고 말할게.'], ['C:…잠깐 이리 와 봐. 안아 보게.']] },
-    { id: 'pat', ask: [['C:머리 이리 내밀어. 쓰다듬게.']] },
-    { id: 'kisscheek', ask: [['C:볼 좀 빌려줘. 금방 돌려줄게.']] },
-    { id: 'kissforehead', ask: [['C:이마 좀. …이마에 하는 건 괜찮지?']] },
-    { id: 'kiss', ask: [['C:…해도 돼?', 'C*:뭘 하냐고 묻지 마. 알잖아.']] },
+    { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?'], ['C*:손이 심심하다. 네 손도 심심해 보이고.'], ['C:잃어버리면 안 되니까. 손.'], ['C^:손 시렵지? 아니어도 잡자.'], ['C:…손 잡고 걸어도 돼?']] },
+    { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?'], ['C*:팔짱 껴 볼래? 내 팔 튼튼해.'], ['C:여기 걸어. 내 팔에. 안 넘어지게.']] },
+    { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.'], ['C*:이쪽으로 붙어. 허리 잡을게. 괜찮지?'], ['C:…허리에 손 올려도 돼?']] },
+    { id: 'fronthug', ask: [['C:안아도 돼?', 'C*:지금 좀 안고 싶어. 이유는 안아 보고 말할게.'], ['C:…잠깐 이리 와 봐. 안아 보게.'], ['C;:오늘 좀 힘들었어. 한 번만 안아도 돼?'], ['C^:충전 필요해. 안아 줘.'], ['C*:이리 와. 꽉 안고 싶다.']] },
+    { id: 'pat', ask: [['C:머리 이리 내밀어. 쓰다듬게.'], ['C^:잘했어. 머리 줘. 상이야.'], ['C*:머리 높이가 딱 내 손 높이네. 쓰다듬어도 돼?']] },
+    { id: 'kisscheek', ask: [['C:볼 좀 빌려줘. 금방 돌려줄게.'], ['C*:볼에 하나만. 딱 하나.'], ['C^:오늘 수고했다는 뜻으로… 볼에 해도 돼?']] },
+    { id: 'kissforehead', ask: [['C:이마 좀. …이마에 하는 건 괜찮지?'], ['C:앞머리 좀 올려 봐. 이마에 하나 하게.'], ['C^:잘 자라는 인사. 이마에.']] },
+    { id: 'kiss', ask: [['C:…해도 돼?', 'C*:뭘 하냐고 묻지 마. 알잖아.'], ['C;:지금 엄청 참고 있어. 해도 돼?'], ['C*:눈 감아 볼래? 싫으면 안 감아도 돼.'], ['C:…가까이 가도 돼?']] },
   ];
   async function capAsk() {
     const g = G(), S = St.S, m = mem();
     const list = ASKS.filter(x => { const a = BY[x.id]; return check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6); });
     if (!list.length) return false;
-    const x = U.pick(list), bd = U.pick(x.ask);
+    const ln = (b) => (Array.isArray(b) ? b : [b]).find(y => typeof y === 'string' && /^C/.test(y)) || '';
+    const fresh = list.filter(x => x.ask.some(b => !PX.Dlg.capSaid(ln(b).replace(/^C[*^;!~]?:/, ''))));
+    const x = U.pickFresh('capAskKind', fresh.length ? fresh : list), bd = PX.Dlg.capPick(x.ask);
     noteLine('ask_' + x.id);
     g.modal++;
     g.cap.setDirTo(g.player.x, g.player.y);
@@ -9731,8 +9762,8 @@ PX.Op = (() => {
   const TASKS = [
     { k: 'brief', t: '📋 작전 브리핑', day1: true, run: async () => { await lines(['N:대위가 지도를 펼친다. 손가락이 경로를 짚는다.', 'C:오늘은 여기까지. 흔적 확인, 중계기 점검, 해 지기 전에 복귀.', 'C*:질문? 없으면… 아, 넌 내 뒤로 두 걸음. 그게 제일 중요해.']); } },
     { k: 'camp', t: '⛺ 야영지 설치', day1: true, run: async () => { await PX.Mini.timing({ title: '⛺ 야영지 설치', help: '말뚝을 박을 때(초록 구간) 누르세요', rounds: 4, speed: 60, btn: '쾅!' }); await lines(['C:잘 박았네. 바람에 안 날아가겠다.', 'C^:옆 텐트가 내 거야. 무서우면 불러.']); } },
-    { k: 'gear', t: '🔧 장비 점검', run: async () => { await PX.Mini.run('circuit'); await lines([U.pick(['C:배선 깔끔하다. 오 상사가 보면 좋아하겠어.', 'C*:두 번 확인했지? 박 중사 버릇 옮았네.'])]); } },
-    { k: 'trace', t: '🔍 외계 생명체 흔적 조사', run: async () => { await PX.Mini.run('drone'); await lines([U.pick(['C:이 발자국은 이틀 됐어. 크기 봐. 위험한 건 아니야.', 'C:사막도마뱀 흔적이네. 무해해. 기록만 해 둬.', 'N:모래 위로 이상한 무늬가 이어진다. 대위가 한참 들여다보더니 사진을 찍는다.', 'C:이건 보고서에 넣는다. 잘 찾았어.'])]); } },
+    { k: 'gear', t: '🔧 장비 점검', run: async () => { await PX.Mini.run('circuit'); await lines([PX.Dlg.capPick(['C:배선 깔끔하다. 오 상사가 보면 좋아하겠어.', 'C*:두 번 확인했지? 박 중사 버릇 옮았네.'])]); } },
+    { k: 'trace', t: '🔍 외계 생명체 흔적 조사', run: async () => { await PX.Mini.run('drone'); await lines([PX.Dlg.capPick(['C:이 발자국은 이틀 됐어. 크기 봐. 위험한 건 아니야.', 'C:사막도마뱀 흔적이네. 무해해. 기록만 해 둬.', 'N:모래 위로 이상한 무늬가 이어진다. 대위가 한참 들여다보더니 사진을 찍는다.', 'C:이건 보고서에 넣는다. 잘 찾았어.'])]); } },
     { k: 'watch', t: '🌙 경계 근무', night: true, run: async () => { await PX.Mini.timing({ title: '🌙 경계 근무', help: '움직임(초록 구간)이 보이면 누르세요', rounds: 5, speed: 55, btn: '확인!', bg: '#141028' }); await lines(['N:교대 시간. 대위가 보온병을 내민다.', 'C:졸리지? 나도. 근데 너랑 서니까 시간이 빨리 가.']); } },
     { k: 'meal', t: '🍲 작전 중 식사', run: async () => { St.S.energy = Math.min(100, St.S.energy + 20); await lines([U.pick([['N:전투식량을 데운다. 대위가 자기 것에서 고기를 골라 내 쪽으로 옮긴다.', 'C:3번이 제일 맛있어. 그중에 고기가 제일 맛있고. 그러니까 네 거.'], ['N:모닥불 옆에서 다 같이 먹는다. 이준혁이 농담을 하고 최민재가 남은 걸 노린다.', 'C^:이게 우리 팀이야. 시끄럽지.']])].flat()); } },
     { k: 'night', t: '💬 야간 대화', night: true, run: async () => { await lines(U.pick([['N:텐트 앞. 별이 쏟아진다. 대위가 옆에 앉는다.', 'C:작전 중엔 이런 말 안 하는데.', 'C*:…같이 와서 좋다. 무섭기도 하고. 네가 다칠까 봐.', { q: [['대위님 뒤에 있으면 안 다쳐요.', 4, ['C^:그 말 믿고 내일도 앞에 설게.']], ['저도 대위님 지킬게요.', 4, ['C!:…', 'C*:그 말은 반칙이다.']]] }], ['C:별 많지. 부대에선 이렇게 안 보여.', 'C:여기 오면 늘 혼자 봤는데.', 'C^:오늘은 아니네.']])); St.addAff(4); } },
@@ -9816,7 +9847,7 @@ PX.Rom = (() => {
       await PX.Dlg.runLines(['C;:아, 그때 근무야. …아니면 작전.', 'C:저녁이나 주말이면 무조건 비울게. 다시 정하자.']);
       PX.Dlg.close(); g.modal--; return;
     }
-    await PX.Dlg.runLines([U.pick([['C!:…데이트 신청이야, 이거?', 'C^:받았다. 취소 불가.'], ['C*:네가 먼저 하자고 해 주니까 좋네.', 'C:그날 일 다 미리 끝내 놓을게.'], ['C:좋아. 십 분 일찍 가 있을게. 늘 그래.']])].flat());
+    await PX.Dlg.runLines([PX.Dlg.capPick([['C!:…데이트 신청이야, 이거?', 'C^:받았다. 취소 불가.'], ['C*:네가 먼저 하자고 해 주니까 좋네.', 'C:그날 일 다 미리 끝내 놓을게.'], ['C:좋아. 십 분 일찍 가 있을게. 늘 그래.']])].flat());
     PX.Dlg.close(); g.modal--;
     dates().push({ id: now(), day: dy.k, min: tm.k, map: pl.k.map, name: pl.k.name, state: 'planned', by: 'p' });
     PX.UI.toast(`📅 약속: ${dayKo(dy.k)} ${Cal.fmtTime(tm.k)} · ${pl.k.name}`, 3500);
@@ -9829,9 +9860,9 @@ PX.Rom = (() => {
     const pl = U.pick(PLACES), wd = St.weekday(), toSat = ((6 - wd) + 7) % 7 || 7, day = S.day + toSat, min = pl.at[pl.at.length - 1] * 60;
     if (!capFreeAt(day, min)) return false;
     g.modal++;
-    await PX.Dlg.runLines([`C:이번 주말에 ${pl.name} 갈래? ${Cal.fmtTime(min)}.`, U.pick(['C*:데이트 신청이야. 정식으로.', 'C:싫으면 싫다고 해. 다른 데 찾으면 되니까.'])]);
+    await PX.Dlg.runLines([`C:이번 주말에 ${pl.name} 갈래? ${Cal.fmtTime(min)}.`, U.pickFresh('dateAskTail', ['C*:데이트 신청이야. 정식으로.', 'C:싫으면 싫다고 해. 다른 데 찾으면 되니까.', 'C^:거기 가 보고 싶었어. 너랑.', 'C*:미리 말하는 거야. 그날 비워 둬.', 'C:시간 안 되면 말해. 날짜는 바꾸면 돼.', 'C;:…긴장했다. 데이트 신청은 매번 처음 같아.'].filter(l => !PX.Dlg.capSaid(l.slice(2))).concat(['C^:어때?']))]);
     const i = await PX.Dlg.choose([{ t: '좋아요.' }, { t: '다른 날이 좋아요.' }]);
-    if (i === 0) { await PX.Dlg.say('player', '좋아요.'); await PX.Dlg.say('cap', U.pick(['좋아. 그날 하루 비워 둔다.', '…좋다고 했다. 들었어.']), 'smile'); dates().push({ id: now(), day, min, map: pl.map, name: pl.name, state: 'planned', by: 'c' }); PX.UI.toast(`📅 약속: ${dayKo(day)} ${Cal.fmtTime(min)} · ${pl.name}`, 3500); }
+    if (i === 0) { await PX.Dlg.say('player', '좋아요.'); await PX.Dlg.say('cap', PX.Dlg.capPick(['좋아. 그날 하루 비워 둔다.', '…좋다고 했다. 들었어.']), 'smile'); dates().push({ id: now(), day, min, map: pl.map, name: pl.name, state: 'planned', by: 'c' }); PX.UI.toast(`📅 약속: ${dayKo(day)} ${Cal.fmtTime(min)} · ${pl.name}`, 3500); }
     else { await PX.Dlg.say('player', '다른 날이 좋아요.'); await PX.Dlg.say('cap', '응. 네가 편한 날 말해 줘. 그날로 할게.', 'smile'); if (PX.Mind) PX.Mind.noteRefuse('dateAsk', 3 * DAY); }
     PX.Dlg.close(); g.modal--;
     return true;
@@ -9861,7 +9892,7 @@ PX.Rom = (() => {
     PX.Cap.startFollow(); g.cap.setDirTo(g.player.x, g.player.y);
     if (d.kind === 'proposal') return proposal(d);
     const late = now() - (d.day * DAY + d.min);
-    await lines([late > 10 ? U.pick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : U.pick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
+    await lines([late > 10 ? PX.Dlg.capPick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : PX.Dlg.capPick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
     if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('dateStart'); }
     St.addAff(4);
   }
@@ -9906,7 +9937,7 @@ PX.Rom = (() => {
     const withCap = g.cap.map === g.mapId && ['follow', 'date'].includes(PX.Cap.mode);
     if (/불꽃|별빛|퍼레이드|네온|기념제/.test(e.originalTitle) && St.isNight()) fireworks(12);
     g.trigger(async () => {
-      await lines([`N:🎉 ${e.originalTitle}. ${e.description.slice(0, 60)}`, ...(withCap ? [`N:${e.captainReaction}`, U.pick(['C^:축제다. 오늘은 손 놓지 마.', 'C*:사람 많다. 내 옆에 딱 붙어.', 'C:이런 날 같이 와서 좋다.'])] : [])]);
+      await lines([`N:🎉 ${e.originalTitle}. ${e.description.slice(0, 60)}`, ...(withCap ? [`N:${e.captainReaction}`, PX.Dlg.capPick(['C^:축제다. 오늘은 손 놓지 마.', 'C*:사람 많다. 내 옆에 딱 붙어.', 'C:이런 날 같이 와서 좋다.'])] : [])]);
       if (withCap) { St.addAff(4); if (once('festmem_' + e.id)) g.memory(e.originalTitle, `${e.originalTitle}에 대위와 함께 갔다. ${e.captainReaction}`, true); }
     });
   }
@@ -10023,7 +10054,7 @@ PX.Rom = (() => {
     if (t >= 22 * 60 + 30 && g.mapId === home && !['visit', 'stay', 'follow'].includes(PX.Cap.mode) && S.done.cohabDay !== S.day) {
       S.done.cohabDay = S.day;
       PX.Cap.moveTo(home, PX.MAPS[home].parent); PX.Cap.mode = 'visit';
-      g.trigger(() => lines([...U.pick([['N:문이 열린다.', 'C:다녀왔어.'], ['N:익숙한 발소리. 문틀에 머리 박는 소리.', 'C;:…다녀왔어.']]), U.pick(['C:오늘 하루 어땠어?', 'C^:집에 오니까 네가 있네. 이게 제일 좋아.', 'C*:씻고 올게. 기다려. 아니, 먼저 자도 돼. 깨울 거지만.'])]));
+      g.trigger(() => lines([...U.pick([['N:문이 열린다.', 'C:다녀왔어.'], ['N:익숙한 발소리. 문틀에 머리 박는 소리.', 'C;:…다녀왔어.']]), PX.Dlg.capPick(['C:오늘 하루 어땠어?', 'C^:집에 오니까 네가 있네. 이게 제일 좋아.', 'C*:씻고 올게. 기다려. 아니, 먼저 자도 돼. 깨울 거지만.'])]));
     }
   }
   // 기념일: 연인 100·200·300·365·500·1000일, 결혼 1주년마다 (그날 첫 대화)
@@ -10040,7 +10071,7 @@ PX.Rom = (() => {
     if (!a || S.done['anniv_' + S.day]) return false;
     if (g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 4) return false;
     S.done['anniv_' + S.day] = 1;
-    g.trigger(async () => { const bd = a.kind === 'wedding' ? { l: U.pick([['C:오늘 무슨 날인지 알아?', 'C^:결혼기념일. 일 년 더 내 옆에 있어 줘서 고마워.'], ['C*:결혼기념일 선물. 이번에도 직접 깎았어.', 'C^:내년에도, 그다음 해에도.'], ['C:그날 네 손 떨리던 거 아직 기억나.', 'C^:나도 떨렸어. 지금 말하는 거야.']]) } : PX.Dlg.pick('v_anniv', PX.DLG_V2.anniv); await lines(bd ? bd.l : ['C:오늘 우리 기념일이야.']); St.addItem('mineral'); PX.UI.toast('🎁 기념일 선물: 대위가 깎은 광물 조각'); g.memory(a.kind === 'wedding' ? `결혼 ${Math.round(a.n / 365)}주년` : `연인 ${Math.round(a.n / 365)}주년`, '대위는 날짜를 하루도 틀리지 않았다.', true); St.addAff(8); });
+    g.trigger(async () => { const bd = a.kind === 'wedding' ? { l: PX.Dlg.capPick([['C:오늘 무슨 날인지 알아?', 'C^:결혼기념일. 일 년 더 내 옆에 있어 줘서 고마워.'], ['C*:결혼기념일 선물. 이번에도 직접 깎았어.', 'C^:내년에도, 그다음 해에도.'], ['C:그날 네 손 떨리던 거 아직 기억나.', 'C^:나도 떨렸어. 지금 말하는 거야.']]) } : PX.Dlg.pick('v_anniv', PX.DLG_V2.anniv); await lines(bd ? bd.l : ['C:오늘 우리 기념일이야.']); St.addItem('mineral'); PX.UI.toast('🎁 기념일 선물: 대위가 깎은 광물 조각'); g.memory(a.kind === 'wedding' ? `결혼 ${Math.round(a.n / 365)}주년` : `연인 ${Math.round(a.n / 365)}주년`, '대위는 날짜를 하루도 틀리지 않았다.', true); St.addAff(8); });
     return true;
   }
 
@@ -10536,6 +10567,8 @@ ${memLine(S)}`;
 
   // ---------- 말풍선 · 기록 · 사진 ----------
   Game.bubble = (actor, text, sec = 3) => {
+    // 대위 말풍선: 사흘 안에 했던 말이면 그냥 조용히 (반복보다 침묵)
+    if (actor === Game.cap && text && PX.Dlg && PX.Dlg.capSaid) { const S = St.S, k = String(text); S.capBub = S.capBub || {}; const h = U.hash(k); if (S.capBub[h] && St.absMin() - S.capBub[h] < 3 * 1440) return; S.capBub[h] = St.absMin(); }
     const b = U.el('div', { class: 'bubble' }, text);
     $('bubbles').append(b);
     Game.bubbles.push({ actor, el: b, until: performance.now() + sec * 1000 });
@@ -10975,7 +11008,7 @@ ${memLine(S)}`;
     if (it.k === 'gift') return gift();
     if (it.k === 'skin') return skinMenu();
     if (it.k === 'comfort') return Dlg.capTalk('comfort');
-    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', U.pick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; M.noteRefuse('follow', 600); M.notePart(60); return; }
+    if (it.k === 'alone') { Game.modal++; await Dlg.say('player', '오늘은 혼자 있고 싶어요.'); await Dlg.say('cap', PX.Dlg.capPick(['응, 알았어. 푹 쉬어. 내일 보자.', '그래. 필요하면 불러. 바로 갈게.']), 'smile'); Dlg.close(); Game.modal--; r.noFollowUntil = (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; M.noteRefuse('follow', 600); M.notePart(60); return; }
     if (it.k === 'stay') { S.cap.lastStayAskDay = -1; Game.modal++; await Dlg.say('player', '…자고 가도 돼요.', 'blush'); await Dlg.runLines(U.pick(PX.DLG_CAP.stayYes)); Dlg.close(); Game.modal--; S.cap.stay = 'sofa'; S.cap.lastStayAskDay = S.day; Cap.mode = 'stay'; St.addAff(6); const m = W.maps[Game.mapId]; const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa') && o.seats && o.seats.some(x => !x.by)); if (sofa) { const a = W.accessTile(m, sofa); if (a) cap.goTo(m, a.x, a.y, () => { const seat = sofa.seats.find(x => !x.by); if (seat) cap.sitOn(seat); }); } return; }
     if (it.k === 'leave') { Game.modal++; await Dlg.say('player', '이제 가 보세요.'); await Dlg.runLines(PX.Dlg.pick('v_farewell', PX.DLG_V2.farewell).l); Dlg.close(); Game.modal--; const m = W.maps[Game.mapId]; cap.leaveSeat(); Cap.release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => Cap.moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); }
   }

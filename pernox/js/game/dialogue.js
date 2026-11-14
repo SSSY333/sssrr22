@@ -66,7 +66,20 @@ PX.Dlg = (() => {
     if (speaker === 'cap' && G && G.cap && !G.cap.atDoor && (G.cap.map !== G.mapId || G.cap.hidden)) { console.warn('대위 부재로 생략:', text); return Promise.resolve(); }
     return inLane(() => sayNow(speaker, text, face));
   }
+  // ---------- 대위가 한 번 한 말은 기록 (저장 파일) — 다른 말이 남아 있는 한 다시 하지 않는다 ----------
+  const capKey = (t) => {
+    const S = St.S, gn = U.givenName(S.player.name || ''), names = [S.player.name, gn, S.capName].filter(Boolean);
+    let x = String(t).replace(/\{[^}]*\}/g, '');
+    for (const n of names) x = x.split(n).join('');
+    x = x.replace(/자기야|자기|오빠|대위님/g, '').replace(/^[아야이],?/, '').replace(/[\s.,!?…~]/g, '');
+    return U.hash(x);
+  };
+  function capSaid(t) { const S = St.S; S.capSaid = S.capSaid || {}; return S.capSaid[capKey(t)] != null; }
+  function noteCapSaid(t) { const S = St.S; S.capSaid = S.capSaid || {}; S.capSaid[capKey(t)] = St.absMin(); const ks = Object.keys(S.capSaid); if (ks.length > 6000) { ks.sort((a, b) => S.capSaid[a] - S.capSaid[b]).slice(0, 1000).forEach(k => delete S.capSaid[k]); } }
+  const capLinesOf = (bd) => [].concat(bd && (bd.l || bd)).flatMap(x => typeof x === 'string' ? (/^C[*^;!~]?:/.test(x) ? [x.replace(/^C[*^;!~]?:/, '')] : []) : x && x.q ? x.q.flatMap(q => (q[2] || []).filter(y => typeof y === 'string' && /^C/.test(y)).map(y => y.replace(/^C[*^;!~]?:/, ''))) : []);
+  const bundleSeen = (bd) => capLinesOf(bd).slice(0, 2).some(capSaid); // 첫 대사들이 이미 나온 묶음
   function sayNow(speaker, text, face) {
+    if (speaker === 'cap') try { noteCapSaid(text); } catch (e) { /* 무시 */ }
     if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
     else if (speaker === 'player' && toCap()) text = lover(text);
     if (speaker === 'cap' && lovers()) { const gn = U.givenName(St.S.player.name); text = text.replace(new RegExp('^' + gn + '(아|야)([,.!]|\\s)'), (m, a, b) => Math.random() < 0.5 ? '자기야' + b : m); }
@@ -219,6 +232,7 @@ PX.Dlg = (() => {
     if (M) { const ok2 = ok.filter(({ bd }) => M.textOk(txt(bd))); if (ok2.length) ok.splice(0, ok.length, ...ok2); else if (ok.some(({ bd }) => /오랜만|어디 갔다 왔|한참 찾았|하루 종일 기다/.test(txt(bd)))) return null; }
     // 한 번도 안 나온 묶음부터. 다 나왔으면 가장 오래전에 나온 것들(하위 1/4) 중에서
     const used = S.recent;
+    { const fresh2 = ok.filter(({ bd }) => !bundleSeen(bd)); if (fresh2.length) ok.splice(0, ok.length, ...fresh2); else if (cond.strict) return null; }
     const never = ok.filter(({ i }) => used[cat + i] == null);
     const pool = never.length ? never : ok.slice().sort((a, b) => (used[cat + a.i] || 0) - (used[cat + b.i] || 0)).slice(0, Math.max(1, Math.ceil(ok.length / 4)));
     const weighted = [];
@@ -274,6 +288,11 @@ PX.Dlg = (() => {
     if (cat === 'v:reunion' && M) M.mem().reunion = null;
     if (!forceCat && !cat.startsWith('v:') && cat !== 'jobVisit' && cat !== 'working' && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
     if (!bd) bd = pick('small', PX.DLG_CAP2.small) || pick('praise', D.praise);
+    if (bd && bundleSeen(bd)) { // 이 상황 묶음은 다 들었다 → 아직 안 들은 말이 있는 곳에서
+      const alt = (PX.Situ && PX.Situ.pick(1, true)) || pick('qa', PX.Ask ? PX.Ask.QA : [], { strict: true }) || (PX.DLG_CAP2 && PX.DLG_CAP2.place[G.mapId] && pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId], { strict: true })) || pick('small', PX.DLG_CAP2.small, { strict: true })
+        || ['praise', 'tease', 'aegyo', 'greet', 'worry', ...(r.stage >= 2 ? ['flirt'] : []), ...(part === 'night' ? ['night'] : [])].map(k => D[k] && pick(k, D[k], { strict: true })).find(Boolean);
+      if (alt) { bd = alt; cat = alt.situ ? 'situ' : cat; }
+    }
     const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat) || (cat === 'situ' && bd && bd.tease);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
@@ -417,5 +436,12 @@ PX.Dlg = (() => {
     if (!['kang', 'nam', 'ryu', 'moon', 'song'].includes(npc.id)) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
   }
 
-  return { askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  // 대위 대사 후보 중 아직 안 한 말부터 (한 줄짜리든 여러 줄 묶음이든)
+  function capPick(arr) {
+    if (!arr || !arr.length) return undefined;
+    const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
+    const un = arr.filter(x => !capSaid(first(x)));
+    return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : arr);
+  }
+  return { capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();

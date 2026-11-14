@@ -217,20 +217,22 @@ PX.Mind = (() => {
 
   // ---------- 대위가 먼저 원할 때 (먼저 묻고, 거절하면 같은 건 한동안 다시 안 묻는다) ----------
   const ASKS = [
-    { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?']] },
-    { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?']] },
-    { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.']] },
-    { id: 'fronthug', ask: [['C:안아도 돼?', 'C*:지금 좀 안고 싶어. 이유는 안아 보고 말할게.'], ['C:…잠깐 이리 와 봐. 안아 보게.']] },
-    { id: 'pat', ask: [['C:머리 이리 내밀어. 쓰다듬게.']] },
-    { id: 'kisscheek', ask: [['C:볼 좀 빌려줘. 금방 돌려줄게.']] },
-    { id: 'kissforehead', ask: [['C:이마 좀. …이마에 하는 건 괜찮지?']] },
-    { id: 'kiss', ask: [['C:…해도 돼?', 'C*:뭘 하냐고 묻지 마. 알잖아.']] },
+    { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?'], ['C*:손이 심심하다. 네 손도 심심해 보이고.'], ['C:잃어버리면 안 되니까. 손.'], ['C^:손 시렵지? 아니어도 잡자.'], ['C:…손 잡고 걸어도 돼?']] },
+    { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?'], ['C*:팔짱 껴 볼래? 내 팔 튼튼해.'], ['C:여기 걸어. 내 팔에. 안 넘어지게.']] },
+    { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.'], ['C*:이쪽으로 붙어. 허리 잡을게. 괜찮지?'], ['C:…허리에 손 올려도 돼?']] },
+    { id: 'fronthug', ask: [['C:안아도 돼?', 'C*:지금 좀 안고 싶어. 이유는 안아 보고 말할게.'], ['C:…잠깐 이리 와 봐. 안아 보게.'], ['C;:오늘 좀 힘들었어. 한 번만 안아도 돼?'], ['C^:충전 필요해. 안아 줘.'], ['C*:이리 와. 꽉 안고 싶다.']] },
+    { id: 'pat', ask: [['C:머리 이리 내밀어. 쓰다듬게.'], ['C^:잘했어. 머리 줘. 상이야.'], ['C*:머리 높이가 딱 내 손 높이네. 쓰다듬어도 돼?']] },
+    { id: 'kisscheek', ask: [['C:볼 좀 빌려줘. 금방 돌려줄게.'], ['C*:볼에 하나만. 딱 하나.'], ['C^:오늘 수고했다는 뜻으로… 볼에 해도 돼?']] },
+    { id: 'kissforehead', ask: [['C:이마 좀. …이마에 하는 건 괜찮지?'], ['C:앞머리 좀 올려 봐. 이마에 하나 하게.'], ['C^:잘 자라는 인사. 이마에.']] },
+    { id: 'kiss', ask: [['C:…해도 돼?', 'C*:뭘 하냐고 묻지 마. 알잖아.'], ['C;:지금 엄청 참고 있어. 해도 돼?'], ['C*:눈 감아 볼래? 싫으면 안 감아도 돼.'], ['C:…가까이 가도 돼?']] },
   ];
   async function capAsk() {
     const g = G(), S = St.S, m = mem();
     const list = ASKS.filter(x => { const a = BY[x.id]; return check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6); });
     if (!list.length) return false;
-    const x = U.pick(list), bd = U.pick(x.ask);
+    const ln = (b) => (Array.isArray(b) ? b : [b]).find(y => typeof y === 'string' && /^C/.test(y)) || '';
+    const fresh = list.filter(x => x.ask.some(b => !PX.Dlg.capSaid(ln(b).replace(/^C[*^;!~]?:/, ''))));
+    const x = U.pickFresh('capAskKind', fresh.length ? fresh : list), bd = PX.Dlg.capPick(x.ask);
     noteLine('ask_' + x.id);
     g.modal++;
     g.cap.setDirTo(g.player.x, g.player.y);

@@ -166,7 +166,7 @@ PX.Reply = (() => {
   async function react(who, cat, mood) {
     if (who === 'cap') {
       const pool = (CAP_RE_CAT[cat] && CAP_RE_CAT[cat][mood]) || CAP_RE[mood];
-      const ln = U.pickFresh('re_' + cat + mood, pool);
+      const unsaid = pool.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); const ln = U.pickFresh('re_' + cat + mood, unsaid.length ? unsaid : pool);
       const m = /^C([*^;!~]?):(.*)$/.exec(ln);
       await PX.Dlg.say('cap', U.fmt(m[2], PX.Dlg.ctx()), { '*': 'smirk', '^': 'smile', ';': 'sad', '!': 'surprise', '~': 'blush' }[m[1]] || 'normal');
       if (mood === 'flirt') G().cap.showEmote('heart', 1.4);

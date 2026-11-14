@@ -289,14 +289,14 @@ PX.Act = (() => {
     if (b) { const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return; }
     if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
     G().cap.setDirTo(G().player.x, G().player.y);
-    await lines([U.pick(['C*:예약 화면 봤어? …물침대 방도 있대.', 'C^:고르는 건 네가 해. 난 따라갈게.', 'C*:어느 방이든. 근데 욕조 큰 방은 좀 궁금하긴 하다.'])]);
+    await lines([PX.Dlg.capPick(['C*:예약 화면 봤어? …물침대 방도 있대.', 'C^:고르는 건 네가 해. 난 따라갈게.', 'C*:어느 방이든. 근데 욕조 큰 방은 좀 궁금하긴 하다.'])]);
     const it = await PX.UI.menu('은밀숙소 · 객실 예약 (다음 날 정오까지)', INN_ROOMS.map(r => ({ t: `${r.t} · ₢${r.price}`, sub: r.sub, k: r })).concat([{ t: '구경만 할래요', k: null }]));
     if (!it || !it.k) { await lines(['C:응. 구경만. 화면 끌게.']); return; }
     const r = it.k;
     if (!St.spend(r.price)) { PX.UI.toast('돈이 모자라요'); return; }
     const until = (S.day + 1) * 1440 + 12 * 60;
     S.done.innBook = { room: r.id, until };
-    await lines([U.pick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
+    await lines([PX.Dlg.capPick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
     await goInnRoom(r.id);
     if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(INN_ARRIVE[r.id])), 600);
   }

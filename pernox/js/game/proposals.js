@@ -159,7 +159,7 @@ PX.Ask = (() => {
     const c = ctx(), S = St.S;
     S.done.capAskSeen = S.done.capAskSeen || [];
     const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
-    const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id));
+    const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id) && p.q.some(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))));
     // 지금 상황에 가장 구체적으로 맞는 것(가중치가 높은 것)부터 · 일반적인 제안은 맞는 게 없을 때만
     const base = fresh.length ? fresh : ok, top = Math.max(...base.map(p => p.w));
     const pool = base.filter(p => p.w >= top - 1);
@@ -171,7 +171,8 @@ PX.Ask = (() => {
   async function propose(skipQ, id) {
     const S = St.S, p = pick(id), tn = toneOf();
     S.done.capAskSeen = [p.id, ...(S.done.capAskSeen || []).filter(x => x !== p.id)].slice(0, 8);
-    if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, p.q));
+    const un = (arr) => { const u = arr.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : arr; };
+    if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, un(p.q)));
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
     const F = (t) => U.fmt(t, PX.Dlg.ctx());
@@ -190,7 +191,7 @@ PX.Ask = (() => {
     }
     const o = opts[i];
     await PX.Dlg.say('player', items[i].t, o.mood === 'flirt' ? 'blush' : 'normal');
-    if (o.re) await capSay(U.pick(o.re));
+    if (o.re) await capSay(U.pickFresh('re_' + p.id + i, un(o.re)));
     if (o.mood === 'flirt') G().cap.showEmote('heart', 1.4);
     return { k: o.k, mood: o.mood };
   }

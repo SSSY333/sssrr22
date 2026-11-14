@@ -186,7 +186,7 @@ PX.Ruby = (() => {
     const g = G(); if (cap) PX.Cap.sitNear(g);
     for (let i = 0; i < 4; i++) { g.fade(); await U.sleep(320); }
     if (cap) {
-      await lines([U.pick([['C:한 장 더 찍자. 나 눈 감았어.'], ['C*:이거 내 단말 배경으로 한다.'], ['C^:네 컷 중에 네가 제일 예쁜 컷은… 네 장 다.']])]);
+      await lines([PX.Dlg.capPick([['C:한 장 더 찍자. 나 눈 감았어.'], ['C*:이거 내 단말 배경으로 한다.'], ['C^:네 컷 중에 네가 제일 예쁜 컷은… 네 장 다.']])]);
       St.addAff(3);
       const key = 'booth_' + it.k.k;
       if (once(key)) g.memory('네온 포토부스 · ' + it.k.t.replace(/^\S+\s/, ''), it.k.txt, true);
@@ -306,7 +306,7 @@ PX.Ruby = (() => {
     if (!withCap()) return;
     if (it.k === 'mine') await lines(['C:…이거. 퍼퓸덴에서 네가 만든 거지.', 'C*:기억한다고 했잖아. 이 냄새 나면 너 생각난다고.']);
     else if (it.k === 'liked') await lines([`C:${S.done.likedNote}. 너 그거 좋다고 했잖아.`, 'C^:난 네가 좋다고 한 건 다 외워.']);
-    else await lines([U.pick([['C:향 좋다. 근데 난 네 샴푸 냄새가 더 좋아.'], ['C*:이러다 졸겠다. 졸면 깨워 줘. 아니, 깨우지 마.']])]);
+    else await lines([PX.Dlg.capPick([['C:향 좋다. 근데 난 네 샴푸 냄새가 더 좋아.'], ['C*:이러다 졸겠다. 졸면 깨워 줘. 아니, 깨우지 마.']])]);
   };
   // 다이스키스 카드 하이로우 (LB87)
   H.cards = async () => {
@@ -330,7 +330,7 @@ PX.Ruby = (() => {
     if (iWon) {
       await lines(['C;:…졌다. 벌칙 받을게. 순순히.']);
       const pen = await PX.UI.menu('대위 벌칙 고르기', [{ t: '💪 그 자리에서 팔굽혀펴기 20개', k: 'push' }, { t: '🤫 비밀 하나 말하기', k: 'secret' }, { t: '🥺 애교 한마디', k: 'cute' }, { t: '봐주기', k: 'none' }]);
-      const P = { push: ['N:대위가 바닥에 엎드린다. 스물. 숨도 안 찬다.', 'C*:벌칙 맞아? 이거 아침 운동인데.'], secret: [U.pick(['C:…처음 너 봤을 때, 사실 보고서 세 번 다시 썼어. 집중이 안 돼서.', 'C:네 숙소 앞 가로등, 내가 고쳐 달라고 민원 넣은 거야. 어두워서.', 'C:작전 나갈 때 네 사진 방탄조끼 안에 넣고 다녀.']), 'C;:…이제 됐지?'], cute: ['C;:…', 'C~:…자기야, 나 한 판만 봐주라.', 'N:주변 테이블이 조용해진다. 대위 귀가 새빨갛다.', 'C;:두 번은 없다.'], none: ['C^:봐주는 거야? 다음 판은 내가 봐줄게.'] }[pen ? pen.k : 'none'];
+      const P = { push: ['N:대위가 바닥에 엎드린다. 스물. 숨도 안 찬다.', 'C*:벌칙 맞아? 이거 아침 운동인데.'], secret: [PX.Dlg.capPick(['C:…처음 너 봤을 때, 사실 보고서 세 번 다시 썼어. 집중이 안 돼서.', 'C:네 숙소 앞 가로등, 내가 고쳐 달라고 민원 넣은 거야. 어두워서.', 'C:작전 나갈 때 네 사진 방탄조끼 안에 넣고 다녀.']), 'C;:…이제 됐지?'], cute: ['C;:…', 'C~:…자기야, 나 한 판만 봐주라.', 'N:주변 테이블이 조용해진다. 대위 귀가 새빨갛다.', 'C;:두 번은 없다.'], none: ['C^:봐주는 거야? 다음 판은 내가 봐줄게.'] }[pen ? pen.k : 'none'];
       await lines(P); St.addAff(4);
       if (pen && pen.k === 'cute' && once('capCute')) G().memory('대위의 애교', '벌칙으로 애교를 시켰다. 다이스키스가 조용해졌다.', true);
     } else {
@@ -377,8 +377,8 @@ PX.Ruby = (() => {
     S.done[k] = (S.done[k] || 0) + (it.k < 3 ? 1 : 0);
     if (!withCap()) { PX.UI.toast('🍻 한 잔 마셨다'); return; }
     const n = S.done[k];
-    if (it.k === 3) await lines([U.pick(['C:잘 골랐다. 나도 그거.', 'C*:취한 너도 귀엽지만, 멀쩡한 너랑 오래 얘기하는 게 더 좋아.'])]);
-    else if (n === 1) await lines([U.pick(['C:건배. 오늘 무사히 끝난 거에.', 'C*:첫 잔은 원샷 안 해도 돼. 천천히.'])]);
+    if (it.k === 3) await lines([PX.Dlg.capPick(['C:잘 골랐다. 나도 그거.', 'C*:취한 너도 귀엽지만, 멀쩡한 너랑 오래 얘기하는 게 더 좋아.'])]);
+    else if (n === 1) await lines([PX.Dlg.capPick(['C:건배. 오늘 무사히 끝난 거에.', 'C*:첫 잔은 원샷 안 해도 돼. 천천히.'])]);
     else if (n === 2) await lines(['C:나 여기서 멈출게. 두 잔.', 'C^:너 데려다줘야 하니까. 그게 내 몫이야.']);
     else await lines(['C;:…너 세 잔째다.', 'C:물 한 잔 시켜 줄게. 그다음에 업혀.']);
   };
