@@ -341,7 +341,7 @@ function render(dt) {
     if (o.minStage && (!S || S.rel.stage < o.minStage)) continue;
     const sp = objSprite(o), [sx, sy] = iso(o.x + 0.5, o.y + 0.5); if (!inView(sx, sy)) continue;
     const fw = o.fw || 1, fh = o.fh || 1, flat = o.flat || (o.kind === 'furn' && FURN[o.k].flat), wallI = o.kind === 'furn' && FURN[o.k].wall;
-    const key = o.keyFix != null ? o.keyFix : wallI ? o.x + o.y + 0.1 : o.x + o.y + (fw - 1) + (fh - 1) + (flat ? 0.2 : 2);
+    const key = o.keyFix != null ? o.keyFix : wallI ? o.x + o.y + 0.1 : flat ? -1000 + o.x + o.y : o.x + o.y + (fw - 1) + (fh - 1) + 2;   // 러그 · 매트 같은 바닥 장식은 늘 사람 · 가구 밑에
     o._key = key;
     const ghost = G.decor && G.decor.drag && G.decor.drag.o === o;
     list.push({ d: ghost ? 999 : key, f: () => {
@@ -360,7 +360,7 @@ function render(dt) {
     const [sx, sy] = iso(a.x, a.y); if (!inView(sx, sy)) continue;
     let d = a.x + a.y;
     if (a.seat) { const s = m.benches[a.seat.bench].seats[a.seat.idx]; const sd = typeof seatDepth === 'function' ? seatDepth(a, m) : null; d = sd != null ? sd : s[0] + s[1] + 2.05; }
-    else if (a.seatFurn) d = (a.seatFurn._key || a.seatFurn.x + a.seatFurn.y + 2) + (a.seatFurn.front ? 0.05 : -0.05);
+    else if (a.seatFurn) d = (a.seatFurn._key || a.seatFurn.x + a.seatFurn.y + 2) + (a._bedLie ? 0.3 : a.seatFurn.front ? 0.05 : -0.05);
     else if (a.carried) d = G.det.x + G.det.y + 0.05;
     else if (!a.seatFurn) for (const s of solids) {
       if (sx + 8 < s.sx0 || sx - 8 > s.sx1) continue;

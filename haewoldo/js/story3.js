@@ -211,7 +211,7 @@ async function apptMenu() {
   if (place === 'home' && S.rel.stage < 5 && !S.rel.flags.married) place = 'cafe';
   const a = { id: 'a' + S.day + '_' + Date.now().toString(36).slice(-3), day, min: times[ti][0], place, status: 'set', resched: 0, made: S.day };
   S.appts.push(a); qSet('appt_' + a.id, { state: 'ACTIVE' });
-  await say('det', 'blush', c ? `${dateLabel(day)} ${fmtTime(a.min)}, ${APPT_PLACES[place].name}. 수첩에 적었다. 늦으면 벌금이다?` : `${dateLabel(day)} ${fmtTime(a.min)}, ${APPT_PLACES[place].name}. 수첩에 적었어요. 늦으면 안 돼요?`);
+  await say('det', 'blush', c ? `${dateLabel(day)} ${fmtTime(a.min)}, ${APPT_PLACES[place].name}. 수첩에 적었다. 늦으면 벌금이다?` : `${dateLabel(day)} ${fmtTime(a.min)}, ${APPT_PLACES[place].name}. 수첩에 적었어요. 늦으면 안 돼요!`);
   toast(`📅 약속 — ${dateLabel(day)} ${fmtTime(a.min)} ${APPT_PLACES[place].name}`);
 }
 function calendarMenu() {
