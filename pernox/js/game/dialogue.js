@@ -9,7 +9,33 @@ PX.Dlg = (() => {
     nameEl = box.querySelector('.dname'); textEl = box.querySelector('.dtext'); chEl = document.getElementById('choices');
     portEl = box.querySelector('canvas'); nextEl = box.querySelector('.dnext');
   }
-  const ctx = () => { const S = St.S, r = S.rel.cap, op = S.cap.op; return { p: S.player.name, c: S.capName, rival: S.lastRival || '', days: op ? op.days : 3, n: r.loverSince != null ? S.day - r.loverSince : 100 }; };
+  const ctx = () => { const S = St.S, r = S.rel.cap, op = S.cap.op, lov = r.stage >= 4, call = S.player.callCap || '오빠', gn = U.givenName(S.player.name);
+    // {ob} 내가 대위를 부르는 말(오빠/자기) · {oc} 부를 때(오빠/자기야) · {cv} 대위가 나를 부를 때(연인이면 가끔 자기야)
+    return { p: S.player.name, c: S.capName, rival: S.lastRival || '', days: op ? op.days : 3, n: r.loverSince != null ? S.day - r.loverSince : 100,
+      ob: lov ? call : '대위님', oc: lov ? (call === '자기' ? '자기야' : '오빠') : '대위님', cv: lov && Math.random() < 0.5 ? '자기야' : U.josa(gn, '아') }; };
+  // ---------- 연인 말투: 플레이어가 대위에게 하는 말을 반말 + 오빠/자기로 ----------
+  let npcActive = null; // 부대원과 대화 중이면 그 사람에게 하는 말
+  const lovers = () => St.S.rel.cap.stage >= 4;
+  function toCap() { const G = PX.Game; if (!lovers() || npcActive || !G.cap || G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 6 || G.cap.atDoor; }
+  function lover(t) {
+    if (!t || !lovers()) return t;
+    const call = St.S.player.callCap || '오빠', ob = call;
+    // 존댓말 → 반말
+    t = t.replace(/^(\([^)]*\)\s*)?네([,.!])/, (m, a, b) => (a || '') + '응' + b).replace(/아니요|아뇨/g, '아니');
+    t = t.replace(/(^|[\s…])저는/g, '$1나는').replace(/(^|[\s…])전 /g, '$1난 ').replace(/(^|[\s…])제가/g, '$1내가').replace(/(^|[\s…])저도/g, '$1나도').replace(/(^|[\s…])저를/g, '$1나를').replace(/(^|[\s…])저한테/g, '$1나한테').replace(/(^|[\s…])저랑/g, '$1나랑').replace(/(^|[\s…])제 /g, '$1내 ').replace(/(^|[\s…])저희/g, '$1우리');
+    t = t.replace(/리셨/g, '렸').replace(/하셨/g, '했').replace(/오셨/g, '왔').replace(/가셨/g, '갔').replace(/드셨/g, '먹었').replace(/보셨/g, '봤').replace(/주셨/g, '줬').replace(/계셨/g, '있었').replace(/으셨/g, '었');
+    t = t.replace(/입니다/g, '이야').replace(/습니다/g, '어').replace(/이에요/g, '이야').replace(/예요/g, '야').replace(/마세요/g, '마').replace(/드세요/g, '먹어').replace(/주세요/g, '줘').replace(/하세요/g, '해').replace(/가세요/g, '가').replace(/오세요/g, '와').replace(/쉬세요/g, '쉬어').replace(/보세요/g, '봐').replace(/계세요/g, '있어').replace(/으세요/g, '어').replace(/세요/g, '어').replace(/드릴게/g, '줄게').replace(/드려/g, '줘').replace(/군요/g, '구나').replace(/죠([.?!…~\s]|$)/g, '지$1');
+    t = t.replace(/([가-힣])요([.?!…~,\s)]|$)/g, '$1$2');
+    // 대위님 · 너 → 오빠/자기
+    const J = { 은: '는', 는: '는', 이: '가', 가: '가', 을: '를', 를: '를', 과: '랑', 와: '랑', 이랑: '랑', 랑: '랑', 께: '한테', 께서: '가' };
+    t = t.replace(/대위님(께서|이랑|은|는|이|가|을|를|과|와|랑|께)?/g, (m, j) => ob + (j ? J[j] : ''));
+    const B = '(^|[\\s“"\'(…])';
+    t = t.replace(new RegExp(B + '너(이랑|랑|는|도|를|한테|밖에|야|만|보다|처럼|하고|의)', 'g'), (m, a, j) => a + ob + (j === '이랑' ? '랑' : j));
+    t = t.replace(new RegExp(B + '너(?=[\\s.?!,…~]|$)', 'g'), (m, a) => a + ob);
+    t = t.replace(new RegExp(B + '넌(?=[\\s.?!,…~]|$)', 'g'), (m, a) => a + ob + '는').replace(new RegExp(B + '네가', 'g'), (m, a) => a + ob + '가').replace(new RegExp(B + '널(?=[\\s.?!,…~]|$)', 'g'), (m, a) => a + ob + '를');
+    t = t.replace(new RegExp(B + '네 (?=[가-힣])', 'g'), (m, a) => a + ob + ' ');
+    return t;
+  }
 
   function portrait(speaker, face) {
     const g = portEl.getContext('2d');
@@ -41,6 +67,9 @@ PX.Dlg = (() => {
     return inLane(() => sayNow(speaker, text, face));
   }
   function sayNow(speaker, text, face) {
+    if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
+    else if (speaker === 'player' && toCap()) text = lover(text);
+    if (speaker === 'cap' && lovers()) { const gn = U.givenName(St.S.player.name); text = text.replace(new RegExp('^' + gn + '(아|야)([,.!]|\\s)'), (m, a, b) => Math.random() < 0.5 ? '자기야' + b : m); }
     if (PX.Dlg.onSay) try { PX.Dlg.onSay(speaker, text); } catch (e) {}
     return new Promise(res0 => {
       const res = (v) => { pending = null; res0(v); }; pending = res;
@@ -80,7 +109,7 @@ PX.Dlg = (() => {
       chEl.innerHTML = ''; chEl.classList.remove('hidden'); nextEl.classList.add('hidden');
       box.classList.remove('hidden');
       opts.forEach((o, i) => {
-        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, o.t);
+        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, toCap() ? lover(o.t) : o.t);
         b.addEventListener('click', (e) => { e.stopPropagation(); chEl.classList.add('hidden'); res(i); });
         chEl.append(b);
       });
@@ -103,6 +132,11 @@ PX.Dlg = (() => {
 
   // 대사 줄 실행 → { aff, tags }
   async function runLines(lines, opt = {}) {
+    const others = lines.some(l => typeof l === 'string' && /^[SX]:/.test(l));
+    const prevNpc = npcActive; if (others && !npcActive) npcActive = 'scene';
+    try { return await runLines0(lines, opt); } finally { npcActive = prevNpc; }
+  }
+  async function runLines0(lines, opt = {}) {
     const res = { aff: 0, tags: [] };
     const c = ctx();
     let replied = false, skipQ = false;
@@ -200,6 +234,7 @@ PX.Dlg = (() => {
     const S = St.S, r = S.rel.cap, G = PX.Game, D = PX.DLG_CAP;
     const cap = G.cap;
     if (!cap || cap.map !== G.mapId || cap.hidden) return; // 없는 사람과는 대화하지 않는다
+    if (S.rel.cap.stage >= 4 && !S.player.callCap && !forceCat) { G.modal++; await askCall(); close(); G.modal--; return; } // 연인인데 아직 호칭을 안 정했으면 먼저
     const min = S.time.min, part = Cal.partOfDay(min);
     const firstToday = r.lastTalkDay !== S.day;
     const backoff = r.backoffUntil > St.absMin();
@@ -212,9 +247,11 @@ PX.Dlg = (() => {
       else if (duty && !PX.Cap.isMeal()) cat = 'working';
       else if (gc === 'reunion') cat = 'v:reunion';
       else if (S.cap.op && S.cap.op.phase === 'planned' && !S.cap.op.inPerson) { S.cap.op.inPerson = true; S.cap.op.told = true; cat = S.cap.op.joint ? 'v:opJoint' : 'v:opBefore'; }
+      else if (PX.Situ && !backoff && PX.Situ.hasFresh(3) && Math.random() < 0.85) cat = 'situ'; // 장소·시간·상황이 딱 맞는 대사가 있으면 우선
       else if ((gc === 'cont' || gc === 'brief') && Math.random() < 0.55) cat = 'v:' + gc;
       else if (gc === 'recontact' && Math.random() < 0.4) cat = 'v:recontact';
       else if (gc === 'long' || gc === 'miss') cat = 'v:' + gc;
+      else if (PX.Situ && !backoff && PX.Situ.hasFresh(2) && Math.random() < 0.8) cat = 'situ'; // 지금 장소·시간·상황에 딱 맞는 대사가 있으면 그걸로
       else if (gc === 'again' && Math.random() < 0.45) cat = 'v:again';
       else if (ct !== 'NONE' && Math.random() < 0.45) cat = M.isHug() ? 'v:c_hug' : ct === 'HAND_HOLD' ? 'v:c_hand' : ct === 'WAIST_HOLD' ? 'v:c_waist' : 'v:c_walk';
       else if (PX.Cap.mode === 'follow' && Math.random() < 0.2) cat = 'v:c_walk';
@@ -233,11 +270,11 @@ PX.Dlg = (() => {
         else if (PX.Ask && Math.random() < 0.3) cat = 'qa';
       }
     }
-    let bd = cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'qa' ? pick('qa', PX.Ask.QA) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
+    let bd = cat === 'situ' ? PX.Situ.pick(2) : cat.startsWith('v:') ? pick('v_' + cat.slice(2), V[cat.slice(2)] || []) : cat === 'jobVisit' ? pick('jv_' + S.player.job, D.jobVisit[S.player.job]) : cat === 'place' ? pick('pl_' + G.mapId, PX.DLG_CAP2.place[G.mapId]) : cat === 'qa' ? pick('qa', PX.Ask.QA) : cat === 'small' ? pick('small', PX.DLG_CAP2.small) : pick(cat, D[cat]);
     if (cat === 'v:reunion' && M) M.mem().reunion = null;
     if (!forceCat && !cat.startsWith('v:') && cat !== 'jobVisit' && cat !== 'working' && PX.CapAct && Math.random() < 0.5) { const cb = PX.CapAct.talkBundle(); if (cb) { bd = cb; cat = 'ctx'; } }
     if (!bd) bd = pick('small', PX.DLG_CAP2.small) || pick('praise', D.praise);
-    const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat);
+    const refuse = ['tease', 'flirt', 'explicit', 'aegyo'].includes(cat) || (cat === 'situ' && bd && bd.tease);
     G.modal++;
     cap.setDirTo(G.player.x, G.player.y); G.player.setDirTo(cap.x, cap.y);
     const res = await runLines(bd.l, { refuse, reply: true });
@@ -266,6 +303,15 @@ PX.Dlg = (() => {
   const nextMorning = () => { const S = St.S; return (S.day + (S.time.min >= 6 * 60 ? 1 : 0)) * 1440 + 6 * 60; };
 
   // 고백 이벤트 (고백 직전 단계, 호감도 충분)
+  // 연인이 되면 서로 반말. 나는 대위를 뭐라고 부를지 고른다 (나중에 설정에서 바꿀 수 있다)
+  async function askCall() {
+    const S = St.S, again = !!S.player.callCap;
+    await runLines(again ? ['C*:호칭 바꾸고 싶어? 뭐든 좋아. 뭐라고 부를 건데?'] : ['C*:이제 대위님은 그만. 근무 밖에선 반말해. 나도 그럴 거니까.', 'C^:뭐라고 부를 거야?']);
+    const i = await choose([{ t: '오빠.' }, { t: '자기야.' }]);
+    S.player.callCap = i === 0 ? '오빠' : '자기';
+    await say('player', i === 0 ? '…오빠.' : '…자기야.', 'blush');
+    await runLines(again ? [i === 0 ? 'C~:…오빠. 좋다. 몇 번을 들어도.' : 'C~:자기야. 응. 그것도 좋아.'] : [i === 0 ? 'C!:…' : 'C~:…', i === 0 ? 'C~:한 번 더. 아니, 계속 그렇게 불러.' : 'C~:와. 이거 생각보다 세다. 심장에.', 'C^:나도 이제 너 자기라고 부를 거야. 싫으면 말하고.']);
+  }
   async function maybeConfess() {
     const S = St.S, r = S.rel.cap;
     if (r.stage !== 3 || r.aff < St.THRESH[4] || r.confessDay === S.day) return;
@@ -279,6 +325,7 @@ PX.Dlg = (() => {
       await runLines(PX.DLG_CAP.confessYes);
       r.stage = 4; r.loverSince = S.day; St.addAff(20);
       G.cap.showEmote('heart', 4);
+      await askCall();
       G.memory('고백', `${PX.U.josa(S.capName, '이')} 진지하게 고백했다. 오늘부터 연인.`, true);
       PX.UI.toast('💗 연인이 되었다!');
     } else if (i === 1) { await say('player', '조금만 더 생각해 볼게요.'); await runLines(PX.DLG_CAP.confessWait); }
@@ -287,7 +334,8 @@ PX.Dlg = (() => {
   }
 
   // ---------- NPC 대화 ----------
-  async function npcTalk(npc) {
+  async function npcTalk(npc) { npcActive = npc.id; try { return await npcTalk0(npc); } finally { npcActive = null; } }
+  async function npcTalk0(npc) {
     const S = St.S, d = npc.def, r = S.rel.npc[npc.id];
     const part = Cal.partOfDay(S.time.min), w = St.weather();
     const L = d.lines || {};
@@ -369,5 +417,5 @@ PX.Dlg = (() => {
     if (!['kang', 'nam', 'ryu', 'moon', 'song'].includes(npc.id)) { S.lastRival = d.name.slice(1); S.lastRivalMin = St.absMin(); }
   }
 
-  return { ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  return { askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();

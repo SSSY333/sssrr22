@@ -121,7 +121,7 @@ PX.Reply = (() => {
   // 말투 정하기: 상대·관계·직업
   function tone(who) {
     const S = St.S, st = S.rel.cap.stage, mil = PX.JOBS[S.player.job].military;
-    if (who === 'cap') return st >= 5 ? 'c' : st >= 3 ? 'h' : 'p';
+    if (who === 'cap') return st >= 4 ? 'c' : st >= 3 ? 'h' : 'p'; // 연인부터 서로 반말
     const d = PX.NPC_BY_ID[who];
     if (!d) return 'p';
     if (mil && d.age <= 23 && !d.banmal) return 'f'; // 후배 병사에겐 편한 말
@@ -146,7 +146,7 @@ PX.Reply = (() => {
     // 연애 단계면 말투를 하나 섞는다 (반존대 ↔ 존댓말)
     return out.slice(0, love ? 4 : 3).map((r, i) => {
       let t = r[tn];
-      if (who === 'cap' && S.rel.cap.stage >= 3 && i === 1) t = r[tn === 'c' ? 'h' : tn === 'h' ? 'c' : 'p'] || t;
+      if (who === 'cap' && S.rel.cap.stage === 3 && i === 1) t = r.c || t; // 고백 직전엔 반말이 하나씩 섞인다
       if (r.mood === 'flirt' && tn === 'p') t = r.p;
       return { t: fill(t), mood: r.mood, cat };
     });

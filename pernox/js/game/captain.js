@@ -21,6 +21,7 @@ PX.Cap = (() => {
     if (e.spot === 'cap.bed') return 'sleep';
     if (e.spot.startsWith('mess')) return 'meal';
     if (e.spot.startsWith('cap.')) return 'rest';
+    if (e.spot.startsWith('gym.')) return 'gym'; // 아침 운동은 근무가 아니다
     return 'duty';
   }
   const onDuty = () => ['duty', 'field'].includes(spotKind());
@@ -357,7 +358,7 @@ PX.Cap = (() => {
     if (r.stage >= 2 && PX.Rom && !PX.Rom.nextDate() && !(PX.Mind && PX.Mind.refused('dateAsk')) && St.isWeekend() === false && Math.random() < 0.2) { PX.Dlg.close(); g.modal--; await PX.Rom.capAskDate(); g.modal++; }
     // 상황에 맞는 제안 · 질문과 그 질문에 맞는 대답 (말투는 관계에 따라)
     const { k } = await PX.Ask.propose();
-    if (['follow', 'meal', 'walk', 'escort'].includes(k)) {
+    if (['follow', 'meal', 'walk', 'escort', 'hand', 'hug', 'kiss', 'sit'].includes(k)) {
       startFollow(); St.addAff(2);
       if (k === 'meal') PX.UI.toast('🍚 같이 식당에 가요 · 식당에서 앉으면 같이 먹을 수 있어요', 3200);
       if (k === 'escort') PX.UI.toast('🏠 대위가 숙소까지 데려다줘요', 2600);
@@ -366,6 +367,10 @@ PX.Cap = (() => {
     else if (k === 'later') { if (PX.Mind) PX.Mind.noteRefuse('follow', 90); r.lastApproach = St.absMin() + 30; mode = 'sched'; r.noFollowUntil = St.absMin() + 60; }
     PX.Dlg.close(); g.modal--;
     if (k === 'talk') await PX.Dlg.capTalk();
+    // 대답에 따라 스킨십 (내가 먼저 청한 것이므로 거절 없이)
+    const SK = { hand: 'hand', hug: 'fronthug', kiss: 'kisscheek' };
+    if (SK[k] && PX.Mind) { try { await PX.Mind.perform(SK[k], true); } catch (e) { console.error(e); } }
+    if (k === 'sit' && !g.player.seat) { const b = PX.W.maps[g.mapId].objs.find(o => o.seats && o.seats.some(x => !x.by) && U.dist(o.x + (o.fw || 1) / 2, o.y + (o.fd || 1) / 2, g.player.x, g.player.y) < 3); const st = b && b.seats.find(x => !x.by); if (st && b.use !== 'bed' && !(b.f && b.f.use === 'bed')) { g.player.x = st.x; g.player.y = st.y; g.player.sitOn(st); } else PX.UI.toast('🪑 가까운 자리에 앉으면 대위도 옆에 앉아요', 2400); }
   }
   // 수색 복귀 후 치료를 받은 뒤: 바로 가 버리지 않고 이후를 정한다
   async function afterTreat() {

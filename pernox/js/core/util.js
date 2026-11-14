@@ -77,7 +77,7 @@ PX.U = (() => {
       const w = who === 'p' ? givenName(ctx.p) : who === 'pf' ? ctx.p : who === 'cg' ? givenName(ctx.c) : who === 'c' ? ctx.c : (ctx.rival || '그 사람');
       return j ? josa(w, j) : w;
     });
-    t = t.replace(/\{(days|n)\}/g, (_, k) => ctx[k] != null ? ctx[k] : '');
+    t = t.replace(/\{(days|n|ob|oc|cv)\}/g, (_, k) => ctx[k] != null ? ctx[k] : '');
     return t;
   }
 

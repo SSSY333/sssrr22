@@ -17,6 +17,10 @@ PX.Ask = (() => {
       morning: m >= 6 * 60 && m < 9 * 60, offwork: m >= 17 * 60 && m < 18 * 60 + 30,
       evening: m >= 19 * 60 && m < 22 * 60, night: m >= 22 * 60 || m < 5 * 60,
       after: (() => { const o = S.cap.op; return o && o.phase === 'done' && St.absMin() - o.end < 600; })(),
+      h: m / 60, parent: md.kind === 'out' ? g.mapId : md.parent, lov: S.rel.cap.stage >= 4,
+      home: g.mapId === PX.JOBS[S.player.job].home ? 'p' : g.mapId === 'q_captain' ? 'c' : null,
+      seat: g.player.seat ? 'sit' : null, f: PX.Cap.mode === 'follow', ct: PX.Mind ? PX.Mind.contact() : 'NONE', se: St.season(),
+      field: !!(PX.CapAct && PX.CapAct.postField && PX.CapAct.postField()), at: (...ids) => ids.includes(g.mapId) || ids.includes(md.kind === 'out' ? g.mapId : md.parent),
     };
   };
 
@@ -142,7 +146,7 @@ PX.Ask = (() => {
         O('later', 'neu', '오늘은 패스할게요.', '오늘은 패스요.', '오늘은 패스.', ['C:다음엔 끌고 간다.']),
         O('rest', 'neg', '근육통이 아직 안 풀렸어요.', '근육통이 아직이에요.', '근육통 아직 안 풀렸어.', ['C;:어디. 내가 풀어 줄까? 농담이야. 쉬어.']),
       ] },
-  ];
+  ].concat(PX.ASK_MORE || []);
 
   const toneOf = () => (PX.Reply ? PX.Reply.tone('cap') : 'p');
   const FACE = { '*': 'smirk', '^': 'smile', ';': 'sad', '!': 'surprise', '~': 'blush' };
@@ -156,7 +160,9 @@ PX.Ask = (() => {
     S.done.capAskSeen = S.done.capAskSeen || [];
     const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
     const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id));
-    const pool = fresh.length ? fresh : ok;
+    // 지금 상황에 가장 구체적으로 맞는 것(가중치가 높은 것)부터 · 일반적인 제안은 맞는 게 없을 때만
+    const base = fresh.length ? fresh : ok, top = Math.max(...base.map(p => p.w));
+    const pool = base.filter(p => p.w >= top - 1);
     let tot = pool.reduce((a, p) => a + p.w, 0), r = Math.random() * tot;
     for (const p of pool) { r -= p.w; if (r <= 0) return p; }
     return pool[0];
@@ -168,7 +174,8 @@ PX.Ask = (() => {
     if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, p.q));
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
-    const items = opts.map(o => ({ t: o[tn] })).concat([{ t: '✍️ 직접 대답하기' }]);
+    const F = (t) => U.fmt(t, PX.Dlg.ctx());
+    const items = opts.map(o => ({ t: F(o[tn]) })).concat([{ t: '✍️ 직접 대답하기' }]);
     const i = await PX.Dlg.choose(items);
     if (i === items.length - 1) {
       PX.Dlg.close();
@@ -182,7 +189,7 @@ PX.Ask = (() => {
       return { k, mood };
     }
     const o = opts[i];
-    await PX.Dlg.say('player', o[tn], o.mood === 'flirt' ? 'blush' : 'normal');
+    await PX.Dlg.say('player', items[i].t, o.mood === 'flirt' ? 'blush' : 'normal');
     if (o.re) await capSay(U.pick(o.re));
     if (o.mood === 'flirt') G().cap.showEmote('heart', 1.4);
     return { k: o.k, mood: o.mood };
@@ -197,7 +204,7 @@ PX.Ask = (() => {
     ['C:일 힘들지 않아? 솔직하게.'], ['C:별 좋아해? 외곽에선 진짜 잘 보여.'], ['C:생일 언제야? 까먹으면 안 되니까.'],
     ['C:나는 바다를 사진으로만 봤어. 너는 본 적 있어?'], ['C:아침형이야, 저녁형이야?'], ['C;:나 오늘 좀 피곤해 보여?'],
     ['C:노래 뭐 들어? 나도 알려 줘.'], ['C:여기서 제일 좋아하는 장소 있어?'], ['C*:나 없을 때 누구랑 놀아?'],
-  ].map(l => ({ l }));
+  ].concat(PX.QA_MORE || []).map(l => ({ l, s: /손 잡아도|질투|나 생각해|처음 만난 날|재킷 입어|사진 하나 찍어|나랑 있으면 편해|귀찮게|서운한/.test(l.join(' ')) ? [2, 7] : undefined }));
 
   return { propose, pick, P, QA };
 })();
