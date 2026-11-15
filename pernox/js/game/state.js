@@ -78,8 +78,6 @@ PX.St = (() => {
   }
   function addNpcF(id, n) { const r = S.rel.npc[id]; if (r) r.f = Math.max(0, Math.min(100, r.f + n)); }
 
-  // (NPC 부탁은 없앴다 · 예전 저장의 부탁 목록은 비운다)
-  function makeQuests() { S.quests = []; }
   // ---------- 아이템 · 돈 ----------
   function addItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; if (S.inv[id] <= 0) delete S.inv[id]; }
   const has = id => (S.inv[id] || 0) > 0;
@@ -122,7 +120,7 @@ PX.St = (() => {
     }
     // 새로 추가된 NPC가 있으면 관계값 생성
     for (const n of PX.NPCS) if (n.id !== 'cap' && !d.rel.npc[n.id]) d.rel.npc[n.id] = { f: 25, lastTalkDay: -1, talks: 0, idx: 0 };
-    d.quests = []; d.codex = d.codex || {};
+    delete d.quests; delete d.codex;
     d.capBday = d.capBday || { m: 8, d: 14 }; // 예전 저장: 대위 생일 기본값 (설정에서 바꿀 수 있음)
     return d;
   }
@@ -139,5 +137,5 @@ PX.St = (() => {
   function lastSlot() { try { return JSON.parse(store.get('pernox.meta') || '{}').last || null; } catch (e) { return null; } }
   function wipe(slot) { store.del(KEY(slot)); }
 
-  return { makeQuests, newGame, get S() { return S; }, set S(v) { S = v; }, advance, on, season, weather, weekday, isWeekend, absMin, isNight, capRel, stageName, addAff, addNpcF, addItem, has, spend, save, load, peek, lastSlot, wipe, STAGES, THRESH, SAVE_VERSION, migrate };
+  return { newGame, get S() { return S; }, set S(v) { S = v; }, advance, on, season, weather, weekday, isWeekend, absMin, isNight, capRel, stageName, addAff, addNpcF, addItem, has, spend, save, load, peek, lastSlot, wipe, STAGES, THRESH, SAVE_VERSION, migrate };
 })();

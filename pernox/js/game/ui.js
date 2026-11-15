@@ -189,7 +189,7 @@ PX.UI = (() => {
   }
 
   // ---------- 개인 단말 ----------
-  const TABS = [['map', '🗺️ 지도'], ['cal', '📅 일정표'], ['duty', '🗓️ 근무표'], ['rel', '💞 관계도'], ['msg', '📱 메시지'], ['inv', '🎒 소지품'], ['quest', '📋 대위 부탁'], ['codex', '📗 생태도감'], ['album', '📷 사진첩'], ['lore', '📚 로어북'], ['set', '⚙️ 설정·저장']];
+  const TABS = [['map', '🗺️ 지도'], ['cal', '📅 일정표'], ['duty', '🗓️ 근무표'], ['rel', '💞 관계도'], ['msg', '📱 메시지'], ['inv', '🎒 소지품'], ['quest', '📋 대위 부탁'], ['album', '📷 사진첩'], ['lore', '📚 로어북'], ['set', '⚙️ 설정·저장']];
   let termTab = 'cal';
   function terminal(tab) {
     if (tab) termTab = tab;
@@ -292,17 +292,45 @@ PX.UI = (() => {
       p.append(el('p', { class: 'muted' }, `${S.capName} 대위 지금: ${PX.Cap.status()}`));
     },
     rel(p) {
-      const S = St.S, r = S.rel.cap;
+      const S = St.S, r = S.rel.cap, d = S.done, M = PX.Mind;
       const pct = r.stage >= 7 ? 100 : Math.round(Math.min(1, (r.aff - St.THRESH[r.stage]) / Math.max(1, St.THRESH[r.stage + 1] - St.THRESH[r.stage])) * 100);
+      const HINT = ['자주 말 걸고, 같이 밥 먹고, 부탁을 들어주면 가까워져요.', '동행하고 손을 잡아 보세요. 대위가 먼저 다가오기 시작해요.', '데이트 신청을 받아 주거나 먼저 해 보세요. 설렘이 쌓여요.', '조금만 더 가까워지면 대위가 무언가 말하려 할지도…', '연인이에요. 약속을 지키고, 깊은 부탁을 들어주며 더 깊어져요.', '서로가 일상이 됐어요. 대위가 미래 이야기를 꺼내기 시작해요.', '약혼했어요. 함께할 날들을 준비해요.', '부부예요. 이 행성이 멸망할 때까지.'];
       p.append(el('div', { class: 'relcard' },
         el('b', null, `${S.capName} 대위`), el('small', null, '606부대 수색팀 팀장 · 35세 · 193cm'),
         el('div', { class: 'stages' }, ...St.STAGES.map((s, i) => el('span', { class: i === r.stage ? 'on' : i < r.stage ? 'past' : '' }, s))),
         el('div', { class: 'bar' }, el('i', { style: `width:${pct}%` })),
-        el('small', null, `호감도 ${r.aff} / 1000 · 처음 만난 지 ${S.day - r.metDay}일${r.loverSince != null ? ` · 연인 ${S.day - r.loverSince + 1}일째` : ''}`),
-        el('small', null, r.stage === 3 ? '조금만 더 가까워지면 대위가 무언가 말하려 할지도…' : r.stage >= 4 ? '약혼 · 결혼은 Beta 0.6에서 열립니다.' : '대화, 선물, 동행, 스킨십으로 가까워져요. 거절해도 불이익은 없어요.')));
-      const list = el('div', { class: 'npclist' });
-      for (const n of PX.NPCS) { if (n.id === 'cap') continue; const rr = S.rel.npc[n.id]; list.append(el('div', { class: 'li' }, el('b', null, n.name), el('small', null, n.job), el('div', { class: 'bar sm' }, el('i', { style: `width:${rr.f}%` })))); }
-      p.append(el('h4', null, '부대원 · 주민'), list);
+        el('small', null, `호감도 ${r.aff} / 1000${r.stage < 7 ? ` · 다음 단계까지 ${Math.max(0, St.THRESH[r.stage + 1] - r.aff)}` : ''}`),
+        el('small', null, HINT[r.stage] || '')));
+      // 지금
+      const now = [PX.Cap.status()];
+      if (M && PX.Cap.mode === 'follow') now.push(`${M.ICON[M.contact()]} ${M.contact() === 'NONE' ? '나란히 걷는 중' : M.NAME[M.contact()]}`);
+      if (PX.Plan && PX.Plan.label()) now.push(`📌 약속: ${PX.Plan.label()}`);
+      if (PX.CapFavor && PX.CapFavor.pending()) now.push('📋 부탁받은 일이 있어요');
+      if (S.player.callCap) now.push(`내가 부르는 말: ${S.player.callCap}`);
+      p.append(el('h4', null, '지금'), el('p', null, now.join(' · ')));
+      // 함께한 기록
+      const cnt = (pre) => Object.keys(d).filter(k => k.startsWith(pre)).length;
+      const rec = [
+        ['처음 만난 지', `${S.day - r.metDay}일`], r.loverSince != null ? ['연인이 된 지', `${S.day - r.loverSince + 1}일째`] : null,
+        ['추억', `${S.album.length}개`], ['해 본 스킨십', `${cnt('skin_') + cnt('cdom_')}가지`],
+        ['지킨 약속', `${cnt('planm_')}번`], ['들어준 부탁', `${S.stats.favors || 0}번`],
+        ['같이 한 장소 활동', `${cnt('pam_')}가지`], ['받은 메시지', `${S.messages.length}통`],
+      ].filter(Boolean);
+      p.append(el('h4', null, '함께한 기록'), el('div', { class: 'npclist' }, ...rec.map(([k, v]) => el('div', { class: 'li' }, el('small', null, k), el('b', null, v)))));
+      // 대위에 대해 알게 된 것 (가까워질수록 열린다)
+      const bd = S.capBday ? `${S.capBday.m}월 ${S.capBday.d}일` : '?';
+      const FACTS = [
+        [0, '생일', bd], [0, '좋아하는 음식', '냉삼, 김치찌개, 차가운 건 전부'], [0, '싫어하는 것', '더위. 그리고 주삿바늘 (비밀)'],
+        [1, '취미', '외계 광물 깎기. 막사 작업대에서'], [1, '좋아하는 선물', '광물 조각, 공구, 냉각 선풍기'], [1, '버릇', '문틀에 머리를 박는다. 하루에 한 번은'],
+        [2, '무서워하는 것', '거미. 외계 생물은 괜찮은데 다리 많은 건 싫대'], [2, '잠버릇', '수색 다녀온 날은 잠을 설친다'],
+        [3, '가족', '지구의 어머니께 가끔 영상편지를 보낸다'], [3, '첫눈에 반한 날', '처음 본 날부터. 본인 피셜'],
+        [4, '나만 아는 것', d.favm_md_check ? '오래된 무릎 상처. 신병 때 다쳤다' : '아직 털어놓지 않은 상처가 있는 것 같다'],
+        [4, '아버지', d.favm_en_knife ? '아버지가 쓰던 칼을 아직 간직하고 있다' : '아버지 얘기는 잘 안 한다'],
+        [5, '서랍 속', d.favm_cm_secret ? '처음 만난 날부터 쓴, 보내지 못한 메시지들' : '침대 밑에 상자가 하나 있다'],
+      ];
+      p.append(el('h4', null, '대위에 대해 알게 된 것'), el('div', { class: 'npclist' }, ...FACTS.map(([s, k, v]) => el('div', { class: 'li fact' }, el('small', null, k), el('b', null, r.stage >= s ? v : '🔒 더 가까워지면')))));
+      const mem = S.album.slice(-3).reverse();
+      if (mem.length) p.append(el('h4', null, '최근 추억'), ...mem.map(m => el('p', { class: 'muted' }, `· ${m.title || m.t || ''}${m.text ? ' — ' + m.text : ''}`)));
     },
     msg(p) {
       const S = St.S;
@@ -350,15 +378,7 @@ PX.UI = (() => {
       p.append(el('p', { class: 'muted' }, `소지금 ₢${S.money} · 기력 ${Math.round(S.energy)}/100`));
     },
     quest(p) { PX.CapFavor.pane(p, el); },
-    codex(p) {
-      const S = St.S, c = S.codex || {};
-      const n = PX.CODEX.filter(e => c[e.id]).length;
-      p.append(el('p', { class: 'muted' }, `등록 ${n} / ${PX.CODEX.length} · 연구원은 검역 분류, 수색 소위는 드론 정찰로 많이 채울 수 있어요. 화단·배양조를 살펴보기도 해 보세요.`));
-      for (const e of PX.CODEX) {
-        const got = c[e.id] != null;
-        p.append(el('div', { class: 'ev' }, el('b', null, got ? `${e.n}` : '??? '), el('small', null, got ? e.t : `힌트: ${e.how}`), got ? el('p', null, e.d) : null));
-      }
-    },
+
     album(p) {
       const S = St.S;
       if (!S.album.length) p.append(el('p', { class: 'muted' }, '아직 추억이 없어요. 대위와의 첫 순간들이 자동으로 기록돼요. 📷 버튼으로 직접 찍을 수도 있어요.'));

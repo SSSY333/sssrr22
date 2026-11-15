@@ -334,6 +334,7 @@ PX.Cap = (() => {
     if (g.mapId === w.inside) return;
     if (g.mapId === w.map) {
       mode = 'follow'; waitOut = null; cap.setDirTo(g.player.x, g.player.y);
+      if (/shower/.test(w.inside)) St.S.lastShower = St.absMin();
       const V = PX.DLG_V2 || {};
       const tb = V.showerOutTease && St.S.rel.cap.stage >= 2 && Math.random() < 0.7 ? PX.Dlg.pick('v_showerOT', V.showerOutTease) : null;
       if (V.showerOut) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(tb ? tb.l : U.pickFresh('showerOut', V.showerOut)); PX.Dlg.close(); g.modal--; });

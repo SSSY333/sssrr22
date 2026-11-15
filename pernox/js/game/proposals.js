@@ -13,7 +13,7 @@ PX.Ask = (() => {
     return {
       S, m, st: S.rel.cap.stage, we: St.isWeekend(), w: St.weather(), en: S.energy,
       out: md.kind === 'out', dome: !!md.dome, map: g.mapId,
-      meal: (m >= 11 * 60 + 20 && m < 13 * 60 + 20) || (m >= 17 * 60 + 20 && m < 19 * 60 + 30),
+      meal: ((m >= 11 * 60 + 20 && m < 13 * 60 + 20) || (m >= 17 * 60 + 20 && m < 19 * 60 + 30)) && !(S.lastAte && St.absMin() - S.lastAte < 150), // 방금 먹었으면 밥 제안 안 함
       morning: m >= 6 * 60 && m < 9 * 60, offwork: m >= 17 * 60 && m < 18 * 60 + 30,
       evening: m >= 19 * 60 && m < 22 * 60, night: m >= 22 * 60 || m < 5 * 60,
       after: (() => { const o = S.cap.op; return o && o.phase === 'done' && St.absMin() - o.end < 600; })(),
@@ -158,7 +158,7 @@ PX.Ask = (() => {
     if (id) return P.find(p => p.id === id);
     const c = ctx(), S = St.S;
     S.done.capAskSeen = S.done.capAskSeen || [];
-    const ok = P.filter(p => { try { return p.when(c); } catch (e) { return false; } });
+    const ok = P.filter(p => { try { return p.when(c) && p.q.some(l => PX.Dlg.ctxOk(l)); } catch (e) { return false; } }); // 질문이 지금 상황에 하나도 안 맞으면 그 제안은 빼기
     // 방금 같은 주제(밥·하루·피곤·산책…)를 이미 물었으면 그 주제 제안은 빼기
     const ok2 = ok.filter(p => !PX.Dlg.topicClash(p.q.map(l => l.replace(/^C[*^;!~]?:/, '')))); if (ok2.length) ok.splice(0, ok.length, ...ok2);
     const fresh = ok.filter(p => !S.done.capAskSeen.slice(0, 6).includes(p.id) && p.q.some(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))));
@@ -179,7 +179,8 @@ PX.Ask = (() => {
     if (!skipQ) await capSay(asked);
     const plan = (k, mood, a) => { if (PX.Plan) PX.Plan.offer({ q: asked, a, k, mood }); };
     // 애정 표현은 연애 단계(2+)부터
-    const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
+    let opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
+    { const o2 = opts.filter(o => PX.Dlg.ctxOk(o[tn]) && (!o.re || o.re.some(l => PX.Dlg.ctxOk(l)))); if (o2.length >= 2) opts = o2; } // 지금 상황과 안 맞는 대답은 빼기
     const F = (t) => U.fmt(t, PX.Dlg.ctx());
     const items = opts.map(o => ({ t: F(o[tn]) })).concat([{ t: '✍️ 직접 대답하기' }]);
     const i = await PX.Dlg.choose(items);

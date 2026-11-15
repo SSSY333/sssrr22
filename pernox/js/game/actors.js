@@ -42,7 +42,8 @@ PX.A = (() => {
       }
       if (this.pose === 'sit' || this.pose === 'lie') this.pose = 'idle';
     }
-    doPose(p, sec, face) { this.tempPose = p; this.poseUntil = performance.now() + sec * 1000; if (face) { this.tempFace = face; } }
+    doPose(p, sec, face) { if (p === 'eat' && PX.Game && PX.St.S) { const G = PX.Game, S = PX.St.S; if (this === G.player) S.lastAte = PX.St.absMin(); if (this === G.cap || (this === G.player && G.cap && G.cap.map === G.mapId && PX.U.dist(G.cap.x, G.cap.y, this.x, this.y) < 3)) S.capAte = PX.St.absMin(); }
+      this.tempPose = p; this.poseUntil = performance.now() + sec * 1000; if (face) { this.tempFace = face; } }
     showEmote(icon, sec = 2) { this.emote = icon; this.emoteT = sec; }
     update(dt) {
       this.t += dt;

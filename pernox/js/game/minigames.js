@@ -103,7 +103,7 @@ PX.Mini = (() => {
         if (!blink) { R(d.x - 4, d.y - 1, 8, 2, '#3a3f45'); R(d.x - 1, d.y - 4, 2, 8, '#3a3f45'); R(d.x - 2, d.y - 2, 4, 4, '#8d98a3'); R(d.x - 1, d.y - 1, 2, 2, '#ff9b42'); }
         timerEl.textContent = '⏱ ' + Math.ceil(Math.max(0, time)); scoreEl.textContent = `흔적 ${found}/4 · 드론 ${'■'.repeat(Math.max(0, d.hp))}`;
         if (found === 4 || time <= 0 || d.hp <= 0) {
-          api.lastFound = found >= 3 ? ['lizard', 'trace'] : found >= 1 ? ['lizard'] : [];
+         
           cv.onpointerdown = cv.onpointermove = null;
           const score = U.clamp(found / 4 * (d.hp > 0 ? 1 : 0.7) + (found === 4 ? time / 120 : 0), 0, 1);
           finish(score, `흔적 ${found}개 기록${d.hp <= 0 ? ' · 드론이 손상돼 조기 복귀' : ''}. 보고서 작성 완료.`).then(resolve);
@@ -190,7 +190,7 @@ PX.Mini = (() => {
       const r = U.rng(Date.now());
       const queue = []; for (let i = 0; i < 12; i++) queue.push(KINDS[Math.floor(r() * KINDS.length)]);
       let idx = 0, ok = 0, bad = 0, time = 40, flash = 0, flashC = '';
-      const found = new Set(); api.lastFound = found;
+      const found = new Set();
       const BINS = [['keep', '🟦 보존'], ['quar', '🟥 격리'], ['farm', '🟩 재배']];
       BINS.forEach(([k, t]) => { const b = el('button', { class: 'tool big' }, t); b.onclick = () => { if (idx >= queue.length) return; if (queue[idx].bin === k) { ok++; flashC = '#7fffd4'; PX.Audio && PX.Audio.blip(1.4); } else { bad++; flashC = '#ff4d4d'; PX.Audio && PX.Audio.blip(0.5); } flash = 0.25; idx++; }; tools.append(b); });
       loop(dt => {
@@ -204,7 +204,7 @@ PX.Mini = (() => {
         timerEl.textContent = '⏱ ' + Math.ceil(Math.max(0, time)); scoreEl.textContent = `${idx}/12 · 정답 ${ok}`;
         if (idx >= queue.length || time <= 0) {
           const score = U.clamp(ok / 12 - bad * 0.03, 0, 1);
-          finish(score, `표본 ${idx}개 분류 · 정답 ${ok}개. 생태도감에 기록했다.`).then(resolve);
+          finish(score, `표본 ${idx}개 분류 · 정답 ${ok}개.`).then(resolve);
           return false;
         }
       });
@@ -316,7 +316,7 @@ PX.Mini = (() => {
 
   const api = {};
   function run(type, ctx = {}) {
-    api.lastFound = [];
+
     PX.Game.inMini = true; PX.Game.modal++;
     const p = type === 'treat' ? treat(ctx.patient || '부상병') : type === 'drone' ? drone() : type === 'circuit' ? circuit() : sort();
     return p.then(s => { PX.Game.inMini = false; PX.Game.modal--; return s; });

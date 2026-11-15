@@ -29,7 +29,6 @@
   Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; };
   Game.startNew = (f) => {
     St.newGame(f);
-    St.S.quests = []; St.S.codex = {};
     initWorld();
     const S = St.S;
     const home = PX.JOBS[S.player.job].home;
@@ -184,14 +183,6 @@
     Game.bubbles.push({ actor, el: b, until: performance.now() + sec * 1000 });
   };
   Game.log = (name, text) => { const S = St.S; if (!S) return; S.history.push([S.day, S.time.min, name, text]); if (S.history.length > 80) S.history.splice(0, S.history.length - 80); };
-  Game.codex = (id) => {
-    const S = St.S; S.codex = S.codex || {};
-    if (S.codex[id]) return false;
-    const e = PX.CODEX.find(c => c.id === id); if (!e) return false;
-    S.codex[id] = S.day;
-    UI.toast(`📗 생태도감 등록: ${e.n}`);
-    return true;
-  };
   Game.memory = (title, text, snap) => {
     const S = St.S;
     let img = null;
@@ -348,6 +339,7 @@
       { t: '😴 잠자기 (아침 6시)', k: 6 }, { t: '😴 잠자기 (아침 7시)', k: 7 }, { t: '😪 늦잠 (아침 9시)', k: 9 }, { t: '🛏️ 낮잠 1시간', k: 'nap' }]);
     if (!it) return;
     await Cap.beforeSleep();
+    if (it.k !== 'nap' && PX.InnNight && Cap.mode === 'stay') await PX.InnNight.homeNight();
     if (it.k === 'nap') { fade(); St.advance(60); S.energy = Math.min(100, S.energy + 15); UI.toast('💤 한숨 잤다 (기력 +15)'); return; }
     await sleepUntil(it.k);
   }
@@ -408,8 +400,6 @@
     const capHere = Game.cap.map === Game.mapId && !Game.cap.hidden && PX.CapAct.ctx() === 'med';
     if (job.mini === 'treat') ctx.patient = capHere ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병', '정비병', '통신병']);
     const score = await PX.Mini.run(job.mini, ctx);
-    for (const id of (PX.Mini.lastFound || [])) Game.codex(id);
-    if (job.mini === 'circuit' && score > 0.6) Game.codex('mineral');
     // 시간이 흐르기 전에 (대위가 아직 의무실에 있을 때) 말한다
     if (ctx.patient && ctx.patient.startsWith(S.capName)) { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; Game.trigger(() => Cap.afterTreat()); }
     const pay = Math.round(job.pay * (0.6 + 0.6 * score));
@@ -510,7 +500,7 @@
     } else await Dlg.runLines(['N:혼자 냉삼을 구웠다. 맛있다. …누가 구워 줬으면 더 맛있었을지도.']);
     Dlg.close(); Game.modal--;
     fade(); St.advance(40); S.energy = Math.min(100, S.energy + (it.k === 1 ? 40 : 45));
-    Game.codex('fruit');
+   
   }
   async function claw() {
     const S = St.S;
@@ -556,10 +546,10 @@
   }
   function inspect(o) {
     const S = St.S;
-    if (o.fid === 'glowflower') { Game.codex('glowgrass'); Game.codex('crystaltree'); return UI.toast('✨ 발광초가 은은하게 숨 쉬듯 빛난다.'); }
-    if (o.fid === 'flowerbed') { Game.codex('glassflower'); return UI.toast('🌸 유리꽃 꽃잎이 빛을 받아 무지갯빛으로 반짝인다.'); }
-    if (o.fid === 'specimen') { Game.codex('drifter'); return UI.toast('🧪 배양조 안에서 반투명한 생명체가 천천히 떠오른다.'); }
-    if (o.fid === 'alienbench') Game.codex('chitin');
+    if (o.fid === 'glowflower') { return UI.toast('✨ 발광초가 은은하게 숨 쉬듯 빛난다.'); }
+    if (o.fid === 'flowerbed') { return UI.toast('🌸 유리꽃 꽃잎이 빛을 받아 무지갯빛으로 반짝인다.'); }
+    if (o.fid === 'specimen') { return UI.toast('🧪 배양조 안에서 반투명한 생명체가 천천히 떠오른다.'); }
+
     if (o.fid === 'alienbench') { if (Game.cap.map === Game.mapId) return say1('C^:그거? 외곽에서 주운 잔해로 만드는 중이야. 완성되면 너 줄게.'); return UI.toast('🔮 외계 생명체 잔해가 은은하게 빛난다. 무언가 만드는 중인 것 같다.'); }
     if (o.fid === 'stonedisplay') return UI.toast(`🪨 ${PX.U.josa(S.capName, '이')} 준 돌. 빛을 받으면 줄무늬가 반짝인다.`);
     UI.toast('🧪 배양조 안에서 외계 식물이 천천히 흔들린다.');
@@ -1117,7 +1107,6 @@
         g.fillStyle = ['#7fe3ff', '#ffb36b', '#ff7ac8'][i % 3]; g.globalAlpha = 0.75;
         g.fillRect(sx - 2, sy, 4, 2); g.fillRect(sx - 4, sy - 1, 2, 4); g.globalAlpha = 1;
       }
-      if (!S.codex || !S.codex.holofish) { const p = Game.player; if (p.x > 39 && p.y > 15 && p.y < 35) Game.codex('holofish'); }
     }
     const tg = Game.target;
     if (tg && Game.player.path.length) {

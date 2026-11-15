@@ -98,7 +98,7 @@ PX.Act = (() => {
       draw: (R) => { R(0, 0, 120, 120, sea ? '#2a6f9a' : '#3f8fbf'); R(58, 40 + Math.sin(performance.now() / 180) * 3, 4, 6, '#ff5a5a'); R(59, 10, 1, 32, '#e9eef2'); } });
     const n = Math.round(sc * 3);
     St.advance(30);
-    if (n) { St.addItem('fish', n); PX.UI.toast(`🐟 물고기 ${n}마리! (캠프파이어나 숙소 주방에서 구울 수 있어요)`); G().codex('aquafish'); } else PX.UI.toast('🎣 오늘은 입질이 없다…');
+    if (n) { St.addItem('fish', n); PX.UI.toast(`🐟 물고기 ${n}마리! (캠프파이어나 숙소 주방에서 구울 수 있어요)`); } else PX.UI.toast('🎣 오늘은 입질이 없다…');
     await capSay('fish');
   };
   H.harvest = async (o) => {
@@ -107,7 +107,7 @@ PX.Act = (() => {
     const n = Math.max(1, Math.round(sc * (inSeason ? 6 : 3)));
     St.addItem('rawfruit', n); St.advance(30); S.energy = Math.max(0, S.energy - 5);
     PX.UI.toast(`🍊 향열매 ${n}개 수확${inSeason ? ' (수확철 보너스!)' : ''}`);
-    G().codex('fruit');
+   
     await capSay('harvest');
   };
   H.view = async (o) => {
@@ -173,12 +173,12 @@ PX.Act = (() => {
       PX.UI.toast('⚠️ 잔해 밑에서 모래 갑각충이 튀어나왔다!');
       const sc = await PX.Mini.timing({ title: '⚔️ 모래 갑각충', help: '공격이 오는 순간(초록 구간) 피하기·반격!', rounds: 4, speed: 85, zoneW: 20, btn: '회피 · 반격', bg: '#5a2f25',
         draw: (R, round) => { const t = performance.now() / 150; R(50 + Math.sin(t) * 8, 30, 20, 12, '#8a3b30'); R(48 + Math.sin(t) * 8, 34, 4, 4, '#ffd166'); R(70 + Math.sin(t) * 8, 34, 4, 4, '#ffd166'); } });
-      if (sc >= 0.5) { PX.UI.toast('🛡️ 갑각충을 쫓아냈다!'); St.addItem('chitin'); g.codex('chitin'); }
+      if (sc >= 0.5) { PX.UI.toast('🛡️ 갑각충을 쫓아냈다!'); St.addItem('chitin'); }
       else { S.energy = Math.max(0, S.energy - 15); PX.UI.toast('🤕 살짝 긁혔다 (기력 -15). 무리하지 말자.'); if (withCap()) await lines(['C!:야, 괜찮아?', 'C:보여 줘. …긁힌 거네. 의무동 가자. 다음엔 내 뒤에 있어.']); return; }
     }
     const r = Math.random();
-    if (r < 0.45) { St.addItem('mineral'); g.codex('mineral'); PX.UI.toast('💎 외계 광물 조각을 찾았다'); }
-    else if (r < 0.8) { St.addItem('chitin'); g.codex('chitin'); PX.UI.toast('🦂 외계 갑각 잔해를 회수했다'); }
+    if (r < 0.45) { St.addItem('mineral'); PX.UI.toast('💎 외계 광물 조각을 찾았다'); }
+    else if (r < 0.8) { St.addItem('chitin'); PX.UI.toast('🦂 외계 갑각 잔해를 회수했다'); }
     else PX.UI.toast('🔩 쓸 만한 건 없었다');
     await capSay('salvage');
   };
@@ -192,7 +192,7 @@ PX.Act = (() => {
   };
   H.exhibit = async () => {
     const ex = U.pick(['초기 개척민의 채굴복. 헬멧 유리에 긁힌 자국이 그대로 남아 있다.', '거대 드릴의 축소 모형. 실제는 이보다 서른 배 크다고 한다.', '광물벽 단면. 층마다 다른 색으로 빛난다.', '개척민 생활관 재현: 좁은 침대 두 개와 손때 묻은 주전자.', '안전 점검을 마친 구역만 개방한다는 안내문.']);
-    await lines(['N:' + ex]); St.advance(10); G().codex('mineral');
+    await lines(['N:' + ex]); St.advance(10);
     if (withCap() && Math.random() < 0.5) await lines(['C:드릴 구조 봐. 저렇게 만들면 진동이 안 와.', 'C*:…재미없지? 너 표정이 다 말해 주네.']);
   };
   H.dice = async () => {
@@ -262,7 +262,7 @@ PX.Act = (() => {
   H.observe = async (c) => { // 외계 생물 관찰
     const k = c.app.critter;
     await lines(['N:' + (k === 'lizard' ? '붉은 모래와 같은 색의 작은 도마뱀. 눈이 마주치자 모래 속으로 쏙 들어간다.' : '반투명한 생명체가 공중에 둥실 떠 있다. 가까이 가자 천천히 멀어진다.')]);
-    G().codex(k === 'lizard' ? 'lizard' : 'drifter');
+    
     if (withCap()) await lines([k === 'lizard' ? 'C:저건 무해해. 괜히 건드리지만 마.' : 'C:예쁘지? 근데 손은 대지 마. 독은 없는데 따가워.']);
   };
 

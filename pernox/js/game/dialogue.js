@@ -229,6 +229,14 @@ PX.Dlg = (() => {
     if (/비 온다|비 오네|비 맞|우산 (하나|같이)/.test(t) && w !== 'rain') return false;
     if (/모래바람 (심|분다|이다)|모래 들어가/.test(t) && w !== 'dust' && map !== 'outskirts') return false;
     // 식사 · 하루 일과
+    // 방금 먹었으면: 배고프다 · 밥 먹었어? · 밥 먹으러 가자 같은 말은 안 한다
+    { const now = St.absMin(), pAte = S.lastAte && now - S.lastAte < 150;
+      const cMeal = [7 * 60 + 30, 12 * 60, 18 * 60].some(t0 => m >= t0 + 20 && m < t0 + 150) && !(S.cap.op && S.cap.op.phase === 'away'); // 대위 식사 시간 직후
+      const cAte = (S.capAte && now - S.capAte < 150) || cMeal;
+      if (/배고프|배고파|허기|굶었|굶어|배에서 소리|밥 생각/.test(t) && !/배고프면|배고파 보여|배고프지\?|배고프다고요/.test(t) && (cAte || pAte)) return false;
+      if (/배고프지\?|배고파 보여|밥 (먹었어|은 먹었어|안 먹었|먹었냐)|밥은\?|안 먹었으면|먹고 다녀|식사(는 |했)/.test(t) && pAte) return false;
+      if (/밥 먹으러|먹으러 가자|같이 먹(자|을래|어요)|밥 먹자|식당 가자|밥 같이|저녁 같이 먹|점심 같이|아침 같이|먹으러 갈래/.test(t) && pAte) return false;
+    }
     if (/아침 먹|아침은 먹|아침밥/.test(t) && !(m >= 5 * 60 && m < 11 * 60)) return false;
     if (/저녁 (먹|뭐)|저녁은 먹|저녁밥/.test(t) && !(m >= 15 * 60 && m < 22 * 60)) return false;
     if (/야식/.test(t) && !(m >= 19 * 60 || m < 3 * 60)) return false;
@@ -242,6 +250,27 @@ PX.Dlg = (() => {
     if (/아침부터|아침 공기|이른 아침/.test(t) && !(m >= 5 * 60 && m < 12 * 60)) return false;
     if (/점심 먹고/.test(t) && !(m >= 12 * 60 && m < 16 * 60)) return false;
     if (/한낮|대낮/.test(t) && !(m >= 11 * 60 && m < 16 * 60)) return false;
+    // 시제: 내일 봐는 저녁부터 · 이따 봐는 한밤엔 아님 · 좋은 하루는 오전 · 주말 인사는 금·주말
+    if (/내일 (봐|보자|만나)|내일 아침에 (봐|보자)/.test(t) && !(m >= 16 * 60 || m < 4 * 60)) return false;
+    if (/이따(가)? (봐|보자|만나)/.test(t) && (m >= 22 * 60 + 30 || m < 5 * 60)) return false;
+    if (/좋은 하루|하루 잘 보내|오늘 하루도 힘내/.test(t) && !(m >= 4 * 60 && m < 14 * 60)) return false;
+    if (/주말 잘 보내|좋은 주말/.test(t) && ![5, 6, 0].includes(St.weekday())) return false;
+    // 지금 자세 · 접촉과 맞나 (앉아 있는데 앉자고 · 손잡고 있는데 손 달라고 하지 않는다)
+    { const p = G && G.player, seated = !!(p && p.seat), ct = PX.Mind ? PX.Mind.contact() : 'NONE';
+      if (seated && /여기 앉자|여기 앉아|앉을래\?|옆자리 비워|자리 맡아|앉자[.!]|벤치 가자|앉아서 얘기하자|앉아서 쉬자|좀 앉자/.test(t)) return false;
+      if (!seated && /앉아 있으니까|이렇게 앉아 있|나란히 앉아 있|앉은 채로|기대 앉아 있/.test(t)) return false;
+      if (seated && /걸으니까|걷는 중|걷다 보니|이렇게 걷는/.test(t)) return false;
+      if (/HAND|ARM_LINK|WAIST|SIT_LEAN/.test(ct) && /손 (잡아도|잡을래|잡자|좀 줘|줘[.?!])|손이 (심심|허전|비어)|손 잡고 싶/.test(t)) return false;
+      if (/HUG|EMBRACE|CUDDLE/.test(ct) && /안아 줄까|안아도 돼|안기고 싶|이리 와[.]? 안/.test(t)) return false;
+    }
+    // 방금 한 행동과 정반대 · 같은 걸 또 청하는 말 (15분 안)
+    { const acts = PX.Mind ? (PX.Mind.mem().acts || {}) : {}, nowM = St.absMin(), did = (re) => Object.keys(acts).some(k => re.test(k) && nowM - acts[k] < 15);
+      if (did(/hug|embrace|c_hug|c_backhug|c_liftHug/) && /안아 줄까|안아도 돼|안기고 싶|한 번만 안/.test(t)) return false;
+      if (did(/kiss/) && /뽀뽀해도 돼|키스해도 돼|입 맞춰도 돼/.test(t)) return false;
+      if (S.lastShower && nowM - S.lastShower < 90 && /씻고 와|샤워하고 와|씻어야겠다, 너|땀 냄새 나네/.test(t)) return false;
+    }
+    // 지붕 있는 실내에선 하늘·바람·노을을 '보는' 말을 안 한다 (창 얘기는 괜찮다)
+    if (md.kind === 'in' && !md.dome && !md.stars && !/창|창가|창밖/.test(t) && /바람이 제일|이 시간 바람|바람 좋다|아침 공기|밤공기|밤바람|하늘 (봐|좀 봐|예쁘|맑|좀 보|진짜)|노을이|노을 (봐|좀)|별 (봐|보여|많|좀)|구름 (봐|좀)|해 (지|뜨)는 거|하늘 청소하는 거 보|하늘이 (흐|맑|빛)/.test(t)) return false;
     return true;
   }
   function pick(cat, list, cond = {}) {
