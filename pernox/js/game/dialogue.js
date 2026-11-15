@@ -74,10 +74,12 @@ PX.Dlg = (() => {
     x = x.replace(/자기야|자기|오빠|대위님/g, '').replace(/^[아야이],?/, '').replace(/[\s.,!?…~]/g, '');
     return U.hash(x);
   };
-  function capSaid(t) { const S = St.S; S.capSaid = S.capSaid || {}; return S.capSaid[capKey(t)] != null; }
-  function noteCapSaid(t) { const S = St.S; S.capSaid = S.capSaid || {}; S.capSaid[capKey(t)] = St.absMin(); const ks = Object.keys(S.capSaid); if (ks.length > 6000) { ks.sort((a, b) => S.capSaid[a] - S.capSaid[b]).slice(0, 1000).forEach(k => delete S.capSaid[k]); } }
+  // '…' '!' 같은 짧은 말은 기록하지 않는다 (모든 '…'가 같은 말로 취급돼 후보가 줄던 문제)
+  const tooShort = (t) => String(t).replace(/\{[^}]*\}/g, '').replace(/[\s.,!?…~]/g, '').length < 3;
+  function capSaid(t) { if (tooShort(t)) return false; const S = St.S; S.capSaid = S.capSaid || {}; return S.capSaid[capKey(t)] != null; }
+  function noteCapSaid(t) { if (tooShort(t)) return; const S = St.S; S.capSaid = S.capSaid || {}; S.capSaid[capKey(t)] = St.absMin(); const ks = Object.keys(S.capSaid); if (ks.length > 6000) { ks.sort((a, b) => S.capSaid[a] - S.capSaid[b]).slice(0, 1000).forEach(k => delete S.capSaid[k]); } }
   const capLinesOf = (bd) => [].concat(bd && (bd.l || bd)).flatMap(x => typeof x === 'string' ? (/^C[*^;!~]?:/.test(x) ? [x.replace(/^C[*^;!~]?:/, '')] : []) : x && x.q ? x.q.flatMap(q => (q[2] || []).filter(y => typeof y === 'string' && /^C/.test(y)).map(y => y.replace(/^C[*^;!~]?:/, ''))) : []);
-  const bundleSeen = (bd) => capLinesOf(bd).slice(0, 2).some(capSaid); // 첫 대사들이 이미 나온 묶음
+  const bundleSeen = (bd) => capLinesOf(bd).filter(t => !tooShort(t)).slice(0, 2).some(capSaid); // 첫 대사들이 이미 나온 묶음
   function sayNow(speaker, text, face) {
     if (speaker === 'cap') try { noteCapSaid(text); recentCap.push({ t: text, at: St.absMin() }); if (recentCap.length > 8) recentCap.shift(); } catch (e) { /* 무시 */ }
     if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
@@ -486,7 +488,7 @@ PX.Dlg = (() => {
   }
   function capPick(arr) {
     if (!arr || !arr.length) return undefined;
-    const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
+    const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y) && !tooShort(y.replace(/^C[*^;!~]?:/, ''))) || x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
     const all = (x) => [].concat(x).filter(y => typeof y === 'string').join(' ');
     const fit = arr.filter(x => ctxOk(all(x))), base = fit.length ? fit : arr; // 지금 상황에 맞는 것만 (없으면 그대로)
     const un = base.filter(x => !capSaid(first(x)));
