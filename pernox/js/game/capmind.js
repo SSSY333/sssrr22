@@ -228,6 +228,8 @@ PX.Mind = (() => {
   ];
   async function capAsk() {
     const g = G(), S = St.S, m = mem();
+    // 큐에서 기다리는 사이 장소가 바뀌었거나(문 앞·입장 직후) 대위가 같이 있지 않으면 묻지 않는다
+    if (g.transition || St.absMin() - (g.enteredAt || -1e9) < 5 || !g.cap || g.cap.map !== g.mapId || g.cap.atDoor) return false;
     const list = ASKS.filter(x => { const a = BY[x.id]; return check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6); });
     if (!list.length) return false;
     const ln = (b) => (Array.isArray(b) ? b : [b]).find(y => typeof y === 'string' && /^C/.test(y)) || '';

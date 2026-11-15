@@ -7,7 +7,7 @@
   // 606부대
   set('base', [D('soldier', 7, { from: 6, to: 22 }), D('jogger', 3, { from: 6, to: 20, x0: 20, y0: 26, x1: 44, y1: 44 })]);
   set('px', [D('pxshopper', 3, { from: 8, to: 21 })]);
-  set('mess', [D('messgoer', 4, { from: 7, to: 20, x0: 6, y0: 6, x1: 15, y1: 11 })]);
+  set('mess', [D('messgoer', 4, { from: 7, to: 20, x0: 2, y0: 4, x1: 19, y1: 13 })]);
   set('gym', [D('gymgoer', 3, { from: 6, to: 22 })]);
   set('lounge', [D('offduty', 3, { from: 12, to: 23 })]);
   set('barracks', [D('offduty', 2, { from: 18, to: 23 })]);

@@ -11,16 +11,16 @@
   }
   const playerRoom = [
     ['plant', 0, 0, 0], ['bed', 1, 0, 0, 'home.bed'], ['sidetable', 2, 0, 0], ['terminal', 3, 0, 0], ['chair', 4, 1, 2], ['cooler', 5, 0, 0], ['photo', 6, 0, 0], ['fridge', 7, 0, 0], ['kitchen', 8, 0, 0], ['bigplant', 10, 0, 0],
-    ['mirror', 0, 1, 3], ['wardrobe', 0, 2, 3], ['lamp', 0, 4, 0], ['tv', 0, 5, 3], ['rug', 2, 5, 0], ['sofa', 4, 5, 1, 'home.sofa'],
-    ['table', 7, 3, 0], ['chair', 6, 4, 3], ['chair', 9, 3, 1], ['plant', 10, 8, 0],
+    ['mirror', 0, 1, 3], ['wardrobe', 0, 2, 3], ['lamp', 0, 5, 0], ['tv', 0, 6, 3], ['rug', 2, 6, 0], ['sofa', 4, 6, 1, 'home.sofa'],
+    ['table', 8, 4, 0], ['chair', 7, 5, 3], ['chair', 10, 4, 1], ['plant', 11, 9, 0],
   ];
   const homeWalls = [['B', 2.5, 'window', 1.0], ['B', 6.6, 'poster', 0.7], ['L', 4.2, 'window', 1.0], ['L', 7.6, 'clock', 0.5]];
-  room('q_player', { name: '내 숙소 (간부 숙소동)', w: 11, h: 9, floor: 'wood', wall: '#e9dcc8', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
-  room('apt_player', { name: '내 숙소 (민간 주거구역)', w: 11, h: 9, floor: 'cafe', wall: '#dfe8f0', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
-  room('q_captain', { name: '대위 개인 막사', w: 12, h: 10, floor: 'darkwood', wall: '#5f6b5a', exit: 9, lowDoor: true,
-    furn: [['cooler', 0, 0, 0], ['bigbed', 1, 0, 0, 'cap.bed'], ['sidetable', 3, 0, 0], ['weaponrack', 4, 0, 0], ['alienbench', 6, 0, 0], ['@', 6, 1, 2, 'cap.craft', 'work'], ['stool', 7, 1, 0], ['fridge', 9, 0, 0], ['cooler', 10, 0, 0], ['bigplant', 11, 0, 0],
-      ['kitchen', 0, 3, 3], ['tv', 0, 5, 3], ['rug_blue', 1, 5, 0], ['sofa_green', 4, 5, 1, 'cap.sofa'], ['table', 6, 3, 0], ['chair', 5, 3, 3], ['chair', 8, 4, 1],
-      ['weights', 11, 3, 1], ['@', 10, 4, 1, 'cap.gym', 'workout'], ['benchpress', 9, 6, 0], ['lamp', 11, 6, 0], ['punchbag', 7, 7, 0], ['crates', 10, 9, 0]],
+  room('q_player', { name: '내 숙소 (간부 숙소동)', w: 12, h: 10, floor: 'wood', wall: '#e9dcc8', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('apt_player', { name: '내 숙소 (민간 주거구역)', w: 12, h: 10, floor: 'cafe', wall: '#dfe8f0', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('q_captain', { name: '대위 개인 막사', w: 13, h: 11, floor: 'darkwood', wall: '#5f6b5a', exit: 9, lowDoor: true,
+    furn: [['cooler', 0, 0, 0], ['bigbed', 1, 0, 0, 'cap.bed'], ['sidetable', 3, 0, 0], ['weaponrack', 4, 0, 0], ['alienbench', 6, 0, 0], ['@', 6, 1, 2, 'cap.craft', 'work'], ['stool', 7, 1, 0], ['fridge', 10, 0, 0], ['cooler', 11, 0, 0], ['bigplant', 12, 0, 0],
+      ['kitchen', 0, 4, 3], ['tv', 0, 6, 3], ['rug_blue', 1, 6, 0], ['sofa_green', 4, 6, 1, 'cap.sofa'], ['table', 6, 4, 0], ['chair', 5, 4, 3], ['chair', 8, 5, 1],
+      ['weights', 12, 4, 1], ['@', 11, 5, 1, 'cap.gym', 'workout'], ['benchpress', 10, 7, 0], ['lamp', 12, 7, 0], ['punchbag', 7, 8, 0], ['crates', 11, 10, 0]],
     walls: [['B', 4.2, 'flag', 0.9], ['B', 8.8, 'toolwall', 1.4], ['L', 1.0, 'window', 0.9], ['L', 7.4, 'poster', 0.7]] });
   room('ops', { name: '수색팀 작전동', w: 16, h: 12, floor: 'metal', wall: '#56606b', exit: 13,
     furn: [['opsdesk', 1, 0, 0], ['chair', 2, 1, 2, 'ops.d1'], ['opsdesk', 4, 0, 0], ['chair', 5, 1, 2, 'ops.d2'], ['console', 7, 0, 0], ['server', 9, 0, 0], ['opsdesk', 10, 0, 0], ['chair', 11, 1, 2, 'ops.d3'], ['opsdesk', 13, 0, 0], ['chair', 13, 1, 2, 'ops.cap'], ['flagstand', 15, 0, 0],
@@ -29,11 +29,11 @@
       ['opsdesk', 11, 8, 0], ['chair', 12, 9, 2, 'ops.d4'], ['drone', 3, 9, 0], ['crates', 1, 11, 0], ['bench', 5, 10, 0], ['vending', 15, 4, 1], ['bigplant', 15, 11, 0]],
     walls: [['B', 6.2, 'map', 1.0], ['L', 9.6, 'board', 1.2], ['L', 1.0, 'window', 1.0]] });
   const mess = [['crates', 0, 0, 0], ['stove', 3, 0, 0], ['stove', 5, 0, 0], ['fridge', 7, 0, 0], ['fridge', 8, 0, 0], ['servecounter', 3, 2, 0, 'mess.counter'], ['@', 4, 1, 0, 'mess.cook', 'stand'], ['@', 6, 1, 0, 'mess.cook2', 'stand'],
-    ['vending', 0, 3, 3], ['vending', 0, 4, 3], ['sink', 16, 0, 0], ['bigplant', 15, 0, 0], ['bigplant', 0, 12, 0], ['bigplant', 16, 12, 0]];
-  for (const [ri, ty] of [[0, 6], [1, 10]]) for (const [ci, tx] of [[0, 2], [1, 5], [2, 10], [3, 13]]) {
+    ['vending', 0, 3, 3], ['vending', 0, 4, 3], ['sink', 23, 0, 0], ['bigplant', 22, 0, 0], ['bigplant', 0, 15, 0], ['bigplant', 23, 15, 0]];
+  for (const [ri, ty] of [[0, 6], [1, 12]]) for (const [ci, tx] of [[0, 2], [1, 8], [2, 14], [3, 20]]) {
     mess.push(['bench', tx, ty - 1, 0, `mess.b${ri}${ci}a`], ['messtable', tx, ty, 0], ['bench', tx, ty + 1, 2, `mess.b${ri}${ci}b`]);
   }
-  room('mess', { name: '식당동', w: 17, h: 13, floor: 'lino', wall: '#d9c7a8', exit: 8, furn: mess,
+  room('mess', { name: '식당동', w: 24, h: 16, floor: 'lino', wall: '#d9c7a8', exit: 11, furn: mess,
     walls: [['B', 1.6, 'notice', 0.9], ['B', 10.4, 'window', 1.0], ['B', 12.8, 'window', 1.0], ['L', 6.0, 'window', 1.0], ['L', 9.0, 'clock', 0.5]] });
   room('med', { name: '의무동', w: 15, h: 11, floor: 'medtile', wall: '#dfeceb', exit: 10,
     furn: [['medcab', 0, 0, 0], ['medcab', 1, 0, 0], ['examdesk', 2, 0, 0, 'med.work'], ['chair', 3, 1, 2, 'med.doc'], ['stool', 2, 2, 0, 'med.patient'], ['scanner', 5, 0, 0],
@@ -50,9 +50,9 @@
       ['benchpress', 11, 0, 0, 'gym.bp'], ['benchpress', 13, 0, 0, 'gym.bp2'], ['pullup', 11, 4, 0], ['punchbag', 14, 6, 0], ['@', 13, 6, 1, 'gym.bag', 'workout'],
       ['mat', 2, 4, 0], ['mat', 5, 4, 0], ['@', 3, 5, 0, 'gym.mat', 'workout'], ['locker', 0, 3, 3], ['locker', 0, 4, 3], ['locker', 0, 5, 3], ['vending', 0, 7, 3], ['bench', 1, 9, 0, 'gym.rest'], ['armtable', 9, 8, 0], ['bigplant', 14, 10, 0]],
     walls: [['B', 0.2, 'window', 0.8], ['B', 7.4, 'poster', 0.7], ['L', 7.4, 'mirrorw', 1.6]] });
-  room('px', { name: '보급창고 (PX)', w: 13, h: 10, floor: 'concrete', wall: '#c9c1a8', exit: 6,
-    furn: [['shopcounter', 5, 2, 0, 'px.shop'], ['@', 5, 1, 0, 'px.clerk', 'stand'], ['crates', 0, 0, 0], ['crates', 9, 0, 0], ['crate', 11, 0, 0], ['crate', 12, 0, 0],
-      ['pxshelf', 1, 5, 0], ['pxshelf', 3, 5, 0], ['pxshelf', 8, 5, 0], ['pxshelf', 10, 5, 0], ['pxshelf', 1, 7, 0], ['pxshelf', 3, 7, 0], ['pxshelf', 8, 7, 0], ['pxshelf', 10, 7, 0], ['vending', 0, 3, 3], ['bigplant', 12, 9, 0]],
+  room('px', { name: '보급창고 (PX)', w: 17, h: 13, floor: 'concrete', wall: '#c9c1a8', exit: 8,
+    furn: [['shopcounter', 7, 2, 0, 'px.shop'], ['@', 7, 1, 0, 'px.clerk', 'stand'], ['crates', 0, 0, 0], ['crates', 11, 0, 0], ['crate', 13, 0, 0], ['crate', 14, 0, 0],
+      ['pxshelf', 1, 6, 0], ['pxshelf', 5, 6, 0], ['pxshelf', 10, 6, 0], ['pxshelf', 14, 6, 0], ['pxshelf', 1, 10, 0], ['pxshelf', 5, 10, 0], ['pxshelf', 10, 10, 0], ['pxshelf', 14, 10, 0], ['vending', 0, 3, 3], ['bigplant', 16, 12, 0]],
     walls: [['B', 6.2, 'notice', 0.9], ['L', 6.4, 'window', 1.0]] });
   room('lounge', { name: '휴게실', w: 13, h: 10, floor: 'carpet', wall: '#e2d5f0', exit: 6,
     furn: [['shelf', 0, 0, 0], ['tv', 3, 0, 0, 'lng.tv'], ['rug_blue', 3, 1, 0], ['sofa', 2, 3, 2, 'lng.sofa1'], ['sofa_green', 4, 3, 2, 'lng.sofa2'], ['arcade', 8, 0, 0], ['@', 8, 1, 2, 'lng.arcade', 'stand'], ['arcade', 9, 0, 0], ['arcade', 10, 0, 0], ['vending', 12, 0, 0],
@@ -65,9 +65,9 @@
     furn: [['opsdesk', 1, 0, 0], ['chair', 2, 1, 2, 'adm.c1'], ['opsdesk', 4, 0, 0], ['chair', 5, 1, 2, 'adm.c2'], ['filecab', 6, 0, 0], ['filecab', 7, 0, 0], ['flagstand', 8, 0, 0], ['flagstand', 11, 0, 0], ['chair', 9, 1, 0, 'adm.cmd'], ['opsdesk', 9, 2, 0], ['bigplant', 12, 0, 0],
       ['bench', 0, 4, 3, 'adm.wait'], ['table', 4, 5, 0], ['chair', 3, 5, 3, 'adm.m1'], ['chair', 6, 6, 1, 'adm.m2'], ['plant', 12, 9, 0], ['bigplant', 0, 9, 0]],
     walls: [['B', 9.6, 'flag', 0.9], ['L', 1.8, 'board', 1.2], ['L', 7.6, 'window', 1.0]] });
-  room('comms', { name: '통신실', w: 12, h: 9, floor: 'darktile', wall: '#3d4654', exit: 6,
-    furn: [['console', 1, 0, 0], ['chair', 2, 1, 2, 'com.1'], ['console', 4, 0, 0], ['chair', 5, 1, 2, 'com.2'], ['console', 7, 0, 0], ['chair', 8, 1, 2, 'com.3'], ['server', 10, 0, 0], ['server', 11, 0, 0], ['server', 0, 3, 3], ['server', 0, 4, 3],
-      ['opsdesk', 3, 5, 0], ['chair', 4, 6, 2, 'com.4'], ['bench', 8, 6, 0], ['plant', 0, 8, 0]],
+  room('comms', { name: '통신실', w: 14, h: 10, floor: 'darktile', wall: '#3d4654', exit: 7,
+    furn: [['console', 1, 0, 0], ['chair', 2, 1, 2, 'com.1'], ['console', 4, 0, 0], ['chair', 5, 1, 2, 'com.2'], ['console', 7, 0, 0], ['chair', 8, 1, 2, 'com.3'], ['server', 12, 0, 0], ['server', 13, 0, 0], ['server', 0, 3, 3], ['server', 0, 4, 3],
+      ['opsdesk', 4, 6, 0], ['chair', 5, 7, 2, 'com.4'], ['bench', 9, 7, 0], ['plant', 0, 9, 0]],
     walls: [['L', 5.6, 'map', 1.4], ['B', 9.4, 'screen', 0.9]] });
   const brk = [];
   [1, 3, 5, 9, 11, 13].forEach((x, i) => brk.push(['bunk', x, 0, 0, 'brk.bed' + i]));
@@ -80,10 +80,10 @@
     furn: [['labbench', 1, 0, 0, 'lab.work'], ['stool', 2, 1, 0, 'lab.1'], ['labbench', 4, 0, 0], ['stool', 5, 1, 0, 'lab.2'], ['specimen', 7, 0, 0], ['specimen', 8, 0, 0], ['opsdesk', 10, 0, 0], ['chair', 11, 1, 2, 'lab.boss'], ['shelf', 13, 0, 0],
       ['bigplant', 0, 3, 0], ['plant', 0, 4, 0], ['bigplant', 0, 5, 0], ['labbench', 5, 5, 0], ['stool', 6, 6, 0, 'lab.3'], ['@', 8, 6, 3, 'lab.c', 'work'], ['specimen', 14, 5, 0], ['specimen', 14, 6, 0], ['bench', 10, 9, 0], ['bigplant', 14, 10, 0]],
     walls: [['B', 9.6, 'window', 1.0], ['L', 7.0, 'window', 1.0], ['L', 9.2, 'board', 1.2]] });
-  const cafe = [['cafecounter', 4, 2, 0, 'cafe.shop'], ['@', 5, 1, 0, 'cafe.barista', 'stand'], ['kitchen', 2, 0, 0], ['fridge', 7, 0, 0], ['shelf', 8, 0, 0], ['plant', 0, 0, 0], ['plant', 12, 0, 0],
-    ['bigplant', 0, 9, 0], ['bigplant', 12, 9, 0], ['sofa', 12, 3, 1, 'cafe.sofa'], ['cafetable', 11, 3, 0], ['lamp', 0, 3, 0]];
-  for (const ty of [5, 8]) for (const tx of [2, 9]) cafe.push(['chair', tx - 1, ty, 3, `cafe.c${tx}${ty}a`], ['cafetable', tx, ty, 0], ['chair', tx + 1, ty, 1, `cafe.c${tx}${ty}b`]);
-  room('cafe', { name: '향열매 카페', w: 13, h: 10, floor: 'cafe', wall: '#f4e4c8', exit: 6, furn: cafe, date: true,
+  const cafe = [['cafecounter', 5, 2, 0, 'cafe.shop'], ['@', 6, 1, 0, 'cafe.barista', 'stand'], ['kitchen', 2, 0, 0], ['fridge', 9, 0, 0], ['shelf', 10, 0, 0], ['plant', 0, 0, 0], ['plant', 15, 0, 0],
+    ['bigplant', 0, 11, 0], ['bigplant', 15, 11, 0], ['sofa', 15, 4, 1, 'cafe.sofa'], ['cafetable', 14, 4, 0], ['lamp', 0, 4, 0]];
+  for (const [ty, oy] of [[6, 5], [9, 8]]) for (const [tx, ox] of [[3, 2], [11, 9]]) cafe.push(['chair', tx - 1, ty, 3, `cafe.c${ox}${oy}a`], ['cafetable', tx, ty, 0], ['chair', tx + 1, ty, 1, `cafe.c${ox}${oy}b`]);
+  room('cafe', { name: '향열매 카페', w: 16, h: 12, floor: 'cafe', wall: '#f4e4c8', exit: 8, furn: cafe, date: true,
     walls: [['B', 9.6, 'window', 1.0], ['L', 5.6, 'window', 1.0], ['L', 7.6, 'poster', 0.7], ['B', 0.6, 'menu', 1.2]] });
 
   // ---------------- 606부대 야외 ----------------
@@ -201,20 +201,20 @@
   M.plaza = plaza;
 
   // 실내
-  const sg = [['kitchen', 0, 0, 0], ['stove', 2, 0, 0], ['cafecounter', 4, 1, 0, 'sg.shop'], ['@', 5, 0, 0, 'sg.boss', 'stand'], ['fridge', 8, 0, 0], ['fridge', 9, 0, 0], ['bigplant', 11, 0, 0]];
-  for (const ty of [4, 7]) for (const tx of [2, 8]) { sg.push(['grilltable', tx, ty, 0, `sg.t${tx}${ty}`], ['stool', tx - 1, ty, 0, `sg.s${tx}${ty}a`], ['stool', tx - 1, ty + 1, 0], ['stool', tx + 2, ty, 0], ['stool', tx + 2, ty + 1, 0]); }
-  room('samgyup', { name: '냉삼집', w: 12, h: 9, floor: 'darkwood', wall: '#d9c7a8', exit: 6, furn: sg, date: true,
+  const sg = [['kitchen', 0, 0, 0], ['stove', 2, 0, 0], ['cafecounter', 5, 1, 0, 'sg.shop'], ['@', 6, 0, 0, 'sg.boss', 'stand'], ['fridge', 10, 0, 0], ['fridge', 11, 0, 0], ['bigplant', 14, 0, 0], ['bigplant', 0, 11, 0], ['bigplant', 14, 11, 0]];
+  for (const [ty, oy] of [[4, 4], [9, 7]]) for (const [tx, ox] of [[3, 2], [10, 8]]) { sg.push(['grilltable', tx, ty, 0, `sg.t${ox}${oy}`], ['stool', tx - 1, ty, 0, `sg.s${ox}${oy}a`], ['stool', tx - 1, ty + 1, 0], ['stool', tx + 2, ty, 0], ['stool', tx + 2, ty + 1, 0]); }
+  room('samgyup', { name: '냉삼집', w: 15, h: 12, floor: 'darkwood', wall: '#d9c7a8', exit: 7, furn: sg, date: true,
     walls: [['B', 0.6, 'menu', 1.2], ['B', 6.8, 'notice', 0.9], ['L', 2.2, 'window', 1.0], ['L', 5.6, 'poster', 0.7]] });
-  room('flower', { name: '유리돔 꽃시장', w: 11, h: 9, floor: 'tile', wall: '#e8f4f0', exit: 5, date: true,
-    furn: [['cafecounter', 4, 1, 0, 'fl.shop'], ['@', 5, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 0, 0, 0], ['flowershelf', 8, 0, 0], ['flowershelf', 0, 3, 3], ['flowerbed', 2, 4, 0], ['flowerbed', 7, 4, 0], ['bench', 2, 7, 0], ['glassvase', 10, 0, 0], ['bigplant', 10, 8, 0], ['plant', 0, 8, 0]],
+  room('flower', { name: '유리돔 꽃시장', w: 13, h: 11, floor: 'tile', wall: '#e8f4f0', exit: 6, date: true,
+    furn: [['cafecounter', 5, 1, 0, 'fl.shop'], ['@', 6, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 0, 0, 0], ['flowershelf', 10, 0, 0], ['flowershelf', 0, 4, 3], ['flowerbed', 3, 5, 0], ['flowerbed', 8, 5, 0], ['bench', 4, 9, 0], ['glassvase', 12, 0, 0], ['bigplant', 12, 10, 0], ['plant', 0, 10, 0]],
     walls: [['B', 2.6, 'window', 1.0], ['B', 7.4, 'window', 1.0], ['L', 6.0, 'window', 1.0]] });
   room('arcade', { name: '오락실', w: 13, h: 10, floor: 'darktile', wall: '#2a1f4f', exit: 6, date: true,
     furn: [['arcade', 1, 0, 0], ['arcade', 2, 0, 0], ['arcade', 3, 0, 0], ['arcade', 4, 0, 0], ['@', 2, 1, 2, 'ac.player', 'stand'], ['clawmachine', 8, 0, 0], ['clawmachine', 9, 0, 0], ['clawmachine', 10, 0, 0], ['clawmachine', 11, 0, 0], ['clawmachine', 0, 3, 3], ['clawmachine', 0, 4, 3],
       ['shopcounter', 10, 4, 0], ['@', 11, 3, 0, 'ac.clerk', 'stand'], ['vending', 12, 6, 1], ['gametable', 5, 5, 0], ['stool', 4, 5, 0], ['stool', 7, 5, 0], ['bench', 1, 8, 0], ['bigplant', 12, 9, 0]],
     walls: [['B', 5.4, 'poster', 0.7], ['B', 11.0, 'screen', 1.2], ['L', 6.8, 'poster', 0.7]] });
-  const st = [['projector', 6, 2, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 13, 0, 0]];
-  for (const ty of [6, 8]) for (let tx = 1; tx <= 12; tx++) if (tx !== 6 && tx !== 7) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
-  room('starroom', { name: '별비 투영실', w: 14, h: 10, floor: 'darktile', wall: '#141028', exit: 7, wallH: 60, date: true, stars: true, furn: st,
+  const st = [['projector', 7, 2, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0]];
+  for (const ty of [6, 10]) for (let tx = 1; tx <= 14; tx++) if (tx !== 7 && tx !== 8) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
+  room('starroom', { name: '별비 투영실', w: 16, h: 13, floor: 'darktile', wall: '#141028', exit: 8, wallH: 60, date: true, stars: true, furn: st,
     walls: [['B', 1.4, 'screen', 2.6], ['B', 9.6, 'screen', 2.6], ['L', 3.0, 'screen', 3.4]] });
 
   // 바깥 건물을 줄여 길과 마당이 보이게 (문 쪽 면은 그대로 두고 반대편을 줄임)
