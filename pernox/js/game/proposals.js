@@ -32,7 +32,7 @@ PX.Ask = (() => {
         O('follow', 'pos', '같이 가요. 보고하는 동안 밖에서 기다릴게요.', '같이 가요. 밖에서 기다릴게요.', '같이 가. 밖에서 기다릴게.', ['C^:좋아. 오 분이면 돼.', 'C:가자. 붕대 감은 팔은 네 쪽으로 안 할게.']),
         O('later', 'pos', '여기서 기다릴게요. 끝나면 와요.', '여기서 기다릴게요. 와요.', '여기서 기다릴게. 와.', ['C^:응. 뛰어올게.', 'C:금방 온다. 어디 가지 마.']),
         O('rest', 'neu', '오늘은 보고하고 바로 쉬어요. 다쳤잖아요.', '보고하고 바로 쉬어요. 다쳤잖아요.', '보고하고 바로 쉬어. 다쳤잖아.', ['C;:…긁힌 거야. 그래도 네 말 들을게. 대신 내일 저녁은 내 거다.']),
-        O('follow', 'flirt', '치료비는 제가 정할게요. 오늘 저녁 내내요.', '치료비는 오늘 저녁 내내요.', '치료비는 오늘 저녁 내내야.', ['C~:…비싼 의사네. 좋아. 낼게.']),
+        O('follow', 'flirt', '치료비는 제가 정할게요. 오늘 저녁 사 주세요.', '치료비는 오늘 저녁 사 줘요.', '치료비는 오늘 저녁 사 주는 거야.', ['C~:…비싼 의사네. 좋아. 낼게.']),
       ] },
     { id: 'meal', when: c => c.meal, w: 4,
       q: ['C:밥 먹었어? 안 먹었으면 같이 가자.', 'C^:배고프다. 너도 아직이지? 식당 가자.', 'C:오늘 메뉴 괜찮대. 같이 먹을래?'],
@@ -173,8 +173,11 @@ PX.Ask = (() => {
   async function propose(skipQ, id) {
     const S = St.S, p = pick(id), tn = toneOf();
     S.done.capAskSeen = [p.id, ...(S.done.capAskSeen || []).filter(x => x !== p.id)].slice(0, 8);
+    if (/field/i.test(p.id) && PX.CapAct && PX.CapAct.markField) PX.CapAct.markField(); // 복귀 인사는 하루 한 번
     const un = (arr) => { const f = arr.filter(l => PX.Dlg.ctxOk(l)); const b = f.length ? f : arr; const u = b.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : b; };
-    if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, un(p.q)));
+    const asked = skipQ ? '' : U.pickFresh('ask_' + p.id, un(p.q));
+    if (!skipQ) await capSay(asked);
+    const plan = (k, mood, a) => { if (PX.Plan) PX.Plan.offer({ q: asked, a, k, mood }); };
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
     const F = (t) => U.fmt(t, PX.Dlg.ctx());
@@ -187,6 +190,7 @@ PX.Ask = (() => {
       await PX.Dlg.say('player', text);
       const mood = PX.Reply.readMood(text);
       const k = /밥|먹/.test(text) ? 'meal' : /걷|산책/.test(text) ? 'walk' : /데려다/.test(text) ? 'escort' : /얘기|이야기|말/.test(text) ? 'talk' : /이따|나중|다음/.test(text) ? 'later' : /혼자|쉬|피곤|싫/.test(text) ? 'alone' : mood === 'neg' ? 'alone' : 'follow';
+      plan(k, mood, text);
       if (PX.AI && PX.AI.available()) { const ok = await PX.AI.answer('cap', U.fmt(p.q[0].replace(/^C[*^;!~]?:/, ''), PX.Dlg.ctx()), text); if (ok) return { k, mood }; }
       await PX.Reply.react('cap', 'invite', mood);
       return { k, mood };
@@ -195,6 +199,7 @@ PX.Ask = (() => {
     await PX.Dlg.say('player', items[i].t, o.mood === 'flirt' ? 'blush' : 'normal');
     if (o.re) await capSay(U.pickFresh('re_' + p.id + i, un(o.re)));
     if (o.mood === 'flirt') G().cap.showEmote('heart', 1.4);
+    plan(o.k, o.mood, items[i].t + ' ' + (o.re || []).join(' '));
     return { k: o.k, mood: o.mood };
   }
 

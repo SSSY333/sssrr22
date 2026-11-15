@@ -62,6 +62,7 @@ PX.Situ = (() => {
     const x = U.pick(pool);
     seen['situ' + x.b.id] = St.absMin();
     if (PX.Mind) { PX.Mind.notePhrases(text(x.b)); }
+    if (x.b.af === 'field' && PX.CapAct) PX.CapAct.markField();
     return { l: x.b.l, spec: x.sc, situ: true, tease: !!x.b.tz };
   }
   // 지금 상황에 안 본 구체적인 대사가 있나 (capTalk 이 우선할지 판단)

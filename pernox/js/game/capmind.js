@@ -231,6 +231,7 @@ PX.Mind = (() => {
     St.addAff(capAsked ? 3 : (a.need >= 4 ? 4 : 2));
     const key = 'skin_' + a.id;
     if (!S.done[key] && !['release', 'hugend'].includes(a.id) && (a.need >= 3 || ['hand', 'pat'].includes(a.id))) { S.done[key] = 1; g.memory(a.name, firstText(a), true); }
+    if (PX.Plan) PX.Plan.resume(); // 약속이 있었으면 다시 그쪽으로
     return true;
   }
   const firstText = (a) => ({ hand: '처음 손을 잡았다. 손이 반쯤 사라졌다.', fronthug: '처음 안겼다. 품이 뜨끈했다.', kiss: '처음 입을 맞췄다. 짧았는데 오래 기억날 것 같다.', waist: '허리에 감긴 팔이 묵직했다.', lappillow: '대위 무릎을 베고 잠깐 졸았다.', armpillow: '팔베개는 생각보다 단단했다.' }[a.id] || `처음으로 ${a.name}. 얼굴이 화끈거렸다.`);
@@ -272,6 +273,7 @@ PX.Mind = (() => {
       cap.showEmote('heart', 2); setTimeout(() => p.showEmote('heart', 1.6), 400);
       const k = 'cdo_' + x.id + '_' + S.day; if (!S.done[k]) { S.done[k] = 1; St.addAff(x.need >= 5 ? 4 : 2); }
       if (!S.done['cdom_' + x.id] && (x.heavy || x.need >= 4)) { S.done['cdom_' + x.id] = 1; g.memory(x.name, F(x.n[0]), true); }
+      if (PX.Plan) PX.Plan.resume();
     } else {
       cap.showEmote('heart', 1.4); setTimeout(() => p.showEmote('heart', 1.2), 500);
       PX.UI.toast(`${x.icon} ${F(U.pickFresh('cn_' + x.id, x.n))}`, 2800);

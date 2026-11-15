@@ -39,6 +39,7 @@ PX.Cap = (() => {
     if (mode === 'date') return '약속 장소에서 기다리는 중';
     if (mode === 'waitOut') return '밖에서 기다리는 중';
     if (mode === 'paused') return '그 자리에서 기다리는 중';
+    if (mode === 'follow' && PX.Plan && PX.Plan.label()) return `약속: ${PX.Plan.label()}`;
     if (mode === 'follow') return cap.holding ? '손잡고 동행 중' : '동행 중';
     if (mode === 'visit') return '내 숙소 방문 중';
     if (mode === 'stay') return '내 숙소에서 쉬는 중';
@@ -296,7 +297,8 @@ PX.Cap = (() => {
     if (NO_ENTRY[to]) {
       mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 90 };
       if (M) { M.mem().contact = 'NONE'; M.apply(); }
-      const said = V.shower ? PX.Dlg.pick('v_shower', V.shower) : null;
+      const tease = V.showerTease && S.rel.cap.stage >= 2 && Math.random() < 0.75; // 썸 이후엔 능글맞게
+      const said = tease ? PX.Dlg.pick('v_showerT', V.showerTease) : V.shower ? PX.Dlg.pick('v_shower', V.shower) : null;
       if (said) g.trigger(async () => { g.modal++; cap.atDoor = true; try { await PX.Dlg.runLines(said.l); } finally { cap.atDoor = false; } PX.Dlg.close(); g.modal--; });
       return;
     }
@@ -333,7 +335,8 @@ PX.Cap = (() => {
     if (g.mapId === w.map) {
       mode = 'follow'; waitOut = null; cap.setDirTo(g.player.x, g.player.y);
       const V = PX.DLG_V2 || {};
-      if (V.showerOut) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(U.pick(V.showerOut)); PX.Dlg.close(); g.modal--; });
+      const tb = V.showerOutTease && St.S.rel.cap.stage >= 2 && Math.random() < 0.7 ? PX.Dlg.pick('v_showerOT', V.showerOutTease) : null;
+      if (V.showerOut) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(tb ? tb.l : U.pickFresh('showerOut', V.showerOut)); PX.Dlg.close(); g.modal--; });
       return;
     }
     release(); // 다른 데로 가 버렸다
@@ -404,6 +407,7 @@ PX.Cap = (() => {
     else if (k === 'later') { S.cap.freeWin = { from: now + 20, until: Math.max(end, now + 140) }; mode = 'sched'; PX.UI.toast('⏳ 대위가 보고를 마치고 찾아올 거예요', 2600); }
     else { S.cap.freeWin = null; mode = 'sched'; }
     if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('afterTreat'); }
+    if (PX.CapAct) PX.CapAct.markField(); // 치료하며 이미 만났다: '다녀왔어' 인사 다시 안 함
   }
   // ---------- 저장 · 불러오기: 동행·방문·대기 상태와 위치를 그대로 ----------
   function saveState() {

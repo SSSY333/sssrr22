@@ -17,7 +17,7 @@ PX.CapAct = (() => {
     const mode = PX.Cap.mode, sp = cap.atSpot || '', m = cap.map;
     if (mode === 'follow') return 'walk';
     if (mode === 'visit' || mode === 'stay') return 'home';
-    if (m === 'med' && (sp === 'med.patient' || cap.seat || postField())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
+    if (m === 'med' && (sp === 'med.patient' || cap.seat || fieldWin())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
     if (m === 'gym' || (m === 'base' && sp.startsWith('base.train'))) return 'gym';
     if (m === 'mess') return 'meal';
     if (m === 'ops') return 'ops';
@@ -26,7 +26,11 @@ PX.CapAct = (() => {
     return null;
   }
   // 수색 다녀온 직후 (평일 17~20시): 먼지투성이 · 지쳐 있음
-  const postField = () => { const t = St.S.time.min; return !St.isWeekend() && t >= 17 * 60 && t < 20 * 60; };
+  const fieldWin = () => { const t = St.S.time.min; return !St.isWeekend() && t >= 17 * 60 && t < 20 * 60; };
+  // '다녀왔어' 같은 복귀 인사는 그날 한 번만 (치료받으며 이미 봤으면 다시 안 한다)
+  const fieldGreeted = () => !!St.S.done['fieldGreet_' + St.S.day];
+  const markField = () => { if (fieldWin()) St.S.done['fieldGreet_' + St.S.day] = 1; };
+  const postField = () => fieldWin() && !fieldGreeted();
 
   // ---------- 상황 대사 (말 걸기에서 절반쯤은 여기서 나온다) ----------
   const TALK = {
@@ -112,6 +116,7 @@ PX.CapAct = (() => {
     if (postField() && Math.random() < 0.4 && k !== 'med') k = 'postField';
     if (U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 7 || g.bubbles.some(b => b.actor === g.cap)) return;
     if (St.S.rel.cap.backoffUntil > St.absMin()) return;
+    if (k === 'postField') markField();
     g.bubble(g.cap, U.fmt(U.pickFresh('hint_' + k, HINT[k] || HINT.postField), PX.Dlg.ctx()), 3.2);
   }
 
@@ -274,13 +279,14 @@ PX.CapAct = (() => {
     if (k === 'craft') { add('🔩 만드는 것 구경하기', A.watchCraft); add('💆 어깨 주물러 주기', A.massage); }
     if (k === 'rest' || k === 'home') { add('🛋️ 옆에 앉기', A.sitBy); add('💆 어깨 주물러 주기', A.massage); }
     if (k === 'walk') { add('👔 옷깃 정리해 주기', A.collar); add('🍬 간식 나눠 먹기', A.snack); if (PX.MAPS[G().mapId].kind === 'out') add('🏃 달리기 시합', A.race); }
-    if (postField()) { add('💧 물 건네주기', A.water); add('🧹 모래 털어 주기', A.dust); add('🗺️ 오늘 수색 어땠는지 묻기', A.fieldTalk); }
+    if (fieldWin()) { add('💧 물 건네주기', A.water); add('🧹 모래 털어 주기', A.dust); add('🗺️ 오늘 수색 어땠는지 묻기', A.fieldTalk); }
     return out;
   }
   // 말 걸기용 상황 대사 묶음 (없으면 null)
   function talkBundle() {
     let k = ctx();
     if (postField() && k !== 'med' && Math.random() < 0.45) k = 'postField';
+    if (k === 'postField') markField();
     const pool = k && TALK[k];
     if (!pool) return null;
     const S = St.S, key = 'ctx_' + k, recent = S.recent[key] || [];
@@ -349,5 +355,5 @@ PX.CapAct = (() => {
     }, 500);
   }
 
-  return { A, ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
+  return { A, ctx, list, askTopic, talkBundle, tick, postField, fieldWin, markField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
 })();

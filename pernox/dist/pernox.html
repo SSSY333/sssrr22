@@ -3699,6 +3699,23 @@ PX.NPC_ACT = {
     b(LOVE, ['C*:…같이 가자고는 안 했다. 생각만 했다.']), b(MID, ['C:십오 분? 이십 분? 시간 재고 있을게.']), b(ANY, ['C:나오면 시원한 거 하나 사 둘게.']),
   ];
   V.showerOut = [['C:개운하지? 머리 아직 젖었다.', 'C^:감기 걸려. 이리 와. 털어 줄게.'], ['C*:샴푸 냄새 좋다. …말 안 하려고 했는데 나왔다.'], ['C:생각보다 빨리 나왔네. 이제 밥 먹으러 가자.'], ['C^:기다리는 동안 개미 세 마리 세었어. 지루했다는 뜻이야.']];
+  // 샤워실 앞 · 능글맞은 버전 (썸 이후엔 이쪽이 주로 나온다)
+  V.showerTease = [
+    b(MID, ['C*:들어가. 근데 문 앞에 서 있는 나 생각하면서 씻어.']), b(MID, ['C^:나 여기서 기다리는 거, 꽤 인내심 필요한 일이야. 알지?']),
+    b(MID, ['C*:혼자 씻는 거 심심하면… 아니다. 아무 말도 안 했다.']), b(MID, ['C:등 밀어 줄 사람 필요하면 불러. 농담이야. 반만.']),
+    b(MID, ['C^:물소리 들리면 나 딴생각한다. 빨리 나와.']), b(MID, ['C*:그 표정 뭐야. 나 아직 아무 짓도 안 했는데.', 'C^:아직.']),
+    b(MID, ['C:수건 하나로 나오지 마. 내가 곤란해져.']), b(MID, ['C*:왜 자꾸 돌아봐. 따라오라는 거면 말로 해.']),
+    b(LOVE, ['C*:{ob}가 들어가도 되냐고 물으면, 넌 뭐라고 할 거야?', 'C^:…대답은 나와서 해.']), b(LOVE, ['C^:샴푸 내 거 써. 오늘 밤 같은 냄새 나게.']),
+    b(LOVE, ['C*:문 잠가. 나 못 들어가게. …아니, 잠그지 마. 아니, 잠가.']), b(LOVE, ['C~:머리 말려 주는 건 내 일이야. 젖은 채로 나와도 돼.']),
+    b(LOVE, ['C*:같이 씻으면 물도 아끼고 시간도 아끼는데. 군인은 효율이야.']), b(LOVE, ['C^:십 분 넘으면 들어간다. 진짜로. …아마.']),
+    b(LOVE, ['C:나오면 뺨 만져 봐도 돼? 씻고 나온 뺨이 제일 말랑해.']), b(LOVE, ['C*:목 뒤에 비누 거품 남아 있으면 내가 닦아 줄 거야. 자세히.']),
+  ];
+  V.showerOutTease = [
+    b(MID, ['C*:…생각보다 오래 걸렸네. 나 여기서 무슨 생각 했는지 묻지 마.']), b(MID, ['C^:머리 젖은 거 반칙이야. 그러고 나오면 어떡해.']),
+    b(MID, ['C:물기 아직 있다. 이리 와.', 'N:대위가 수건 끝으로 목덜미의 물기를 닦아 준다. 손이 조금 천천히 움직인다.']),
+    b(LOVE, ['C*:좋은 냄새. 한 번만 맡자.', 'N:대위가 허리를 감아 끌어당겨 젖은 머리에 코끝을 묻는다.']), b(LOVE, ['C^:이 볼 봐. 따끈따끈하다.', 'N:커다란 손이 양 볼을 감싸 쥐고 엄지로 꾹꾹 누른다.']),
+    b(LOVE, ['C~:머리 말려 줄게. 그 대신 내 무릎에 앉아서.']), b(LOVE, ['C*:…지금 너 너무 예뻐서 기다린 보람 있다.', 'C^:다음엔 같이 들어갈 거야. 예약.']),
+  ];
   // 루비웨이 들어설 때
   V.ruby = [
     b(MID, ['C:어? 여기 가려고?', 'P:왜요?', 'C*:아니. 네가 먼저 오자고 할 줄은 몰랐는데.']), b(MID, ['C^:오늘은 네가 나 놀라게 하네.']), b(MID, ['C:나랑 같이 들어갈 거야?']),
@@ -6803,7 +6820,7 @@ PX.Ask = (() => {
         O('follow', 'pos', '같이 가요. 보고하는 동안 밖에서 기다릴게요.', '같이 가요. 밖에서 기다릴게요.', '같이 가. 밖에서 기다릴게.', ['C^:좋아. 오 분이면 돼.', 'C:가자. 붕대 감은 팔은 네 쪽으로 안 할게.']),
         O('later', 'pos', '여기서 기다릴게요. 끝나면 와요.', '여기서 기다릴게요. 와요.', '여기서 기다릴게. 와.', ['C^:응. 뛰어올게.', 'C:금방 온다. 어디 가지 마.']),
         O('rest', 'neu', '오늘은 보고하고 바로 쉬어요. 다쳤잖아요.', '보고하고 바로 쉬어요. 다쳤잖아요.', '보고하고 바로 쉬어. 다쳤잖아.', ['C;:…긁힌 거야. 그래도 네 말 들을게. 대신 내일 저녁은 내 거다.']),
-        O('follow', 'flirt', '치료비는 제가 정할게요. 오늘 저녁 내내요.', '치료비는 오늘 저녁 내내요.', '치료비는 오늘 저녁 내내야.', ['C~:…비싼 의사네. 좋아. 낼게.']),
+        O('follow', 'flirt', '치료비는 제가 정할게요. 오늘 저녁 사 주세요.', '치료비는 오늘 저녁 사 줘요.', '치료비는 오늘 저녁 사 주는 거야.', ['C~:…비싼 의사네. 좋아. 낼게.']),
       ] },
     { id: 'meal', when: c => c.meal, w: 4,
       q: ['C:밥 먹었어? 안 먹었으면 같이 가자.', 'C^:배고프다. 너도 아직이지? 식당 가자.', 'C:오늘 메뉴 괜찮대. 같이 먹을래?'],
@@ -6944,8 +6961,11 @@ PX.Ask = (() => {
   async function propose(skipQ, id) {
     const S = St.S, p = pick(id), tn = toneOf();
     S.done.capAskSeen = [p.id, ...(S.done.capAskSeen || []).filter(x => x !== p.id)].slice(0, 8);
+    if (/field/i.test(p.id) && PX.CapAct && PX.CapAct.markField) PX.CapAct.markField(); // 복귀 인사는 하루 한 번
     const un = (arr) => { const f = arr.filter(l => PX.Dlg.ctxOk(l)); const b = f.length ? f : arr; const u = b.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : b; };
-    if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, un(p.q)));
+    const asked = skipQ ? '' : U.pickFresh('ask_' + p.id, un(p.q));
+    if (!skipQ) await capSay(asked);
+    const plan = (k, mood, a) => { if (PX.Plan) PX.Plan.offer({ q: asked, a, k, mood }); };
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
     const F = (t) => U.fmt(t, PX.Dlg.ctx());
@@ -6958,6 +6978,7 @@ PX.Ask = (() => {
       await PX.Dlg.say('player', text);
       const mood = PX.Reply.readMood(text);
       const k = /밥|먹/.test(text) ? 'meal' : /걷|산책/.test(text) ? 'walk' : /데려다/.test(text) ? 'escort' : /얘기|이야기|말/.test(text) ? 'talk' : /이따|나중|다음/.test(text) ? 'later' : /혼자|쉬|피곤|싫/.test(text) ? 'alone' : mood === 'neg' ? 'alone' : 'follow';
+      plan(k, mood, text);
       if (PX.AI && PX.AI.available()) { const ok = await PX.AI.answer('cap', U.fmt(p.q[0].replace(/^C[*^;!~]?:/, ''), PX.Dlg.ctx()), text); if (ok) return { k, mood }; }
       await PX.Reply.react('cap', 'invite', mood);
       return { k, mood };
@@ -6966,6 +6987,7 @@ PX.Ask = (() => {
     await PX.Dlg.say('player', items[i].t, o.mood === 'flirt' ? 'blush' : 'normal');
     if (o.re) await capSay(U.pickFresh('re_' + p.id + i, un(o.re)));
     if (o.mood === 'flirt') G().cap.showEmote('heart', 1.4);
+    plan(o.k, o.mood, items[i].t + ' ' + (o.re || []).join(' '));
     return { k: o.k, mood: o.mood };
   }
 
@@ -7050,6 +7072,7 @@ PX.Situ = (() => {
     const x = U.pick(pool);
     seen['situ' + x.b.id] = St.absMin();
     if (PX.Mind) { PX.Mind.notePhrases(text(x.b)); }
+    if (x.b.af === 'field' && PX.CapAct) PX.CapAct.markField();
     return { l: x.b.l, spec: x.sc, situ: true, tease: !!x.b.tz };
   }
   // 지금 상황에 안 본 구체적인 대사가 있나 (capTalk 이 우선할지 판단)
@@ -7105,6 +7128,7 @@ PX.Cap = (() => {
     if (mode === 'date') return '약속 장소에서 기다리는 중';
     if (mode === 'waitOut') return '밖에서 기다리는 중';
     if (mode === 'paused') return '그 자리에서 기다리는 중';
+    if (mode === 'follow' && PX.Plan && PX.Plan.label()) return `약속: ${PX.Plan.label()}`;
     if (mode === 'follow') return cap.holding ? '손잡고 동행 중' : '동행 중';
     if (mode === 'visit') return '내 숙소 방문 중';
     if (mode === 'stay') return '내 숙소에서 쉬는 중';
@@ -7362,7 +7386,8 @@ PX.Cap = (() => {
     if (NO_ENTRY[to]) {
       mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 90 };
       if (M) { M.mem().contact = 'NONE'; M.apply(); }
-      const said = V.shower ? PX.Dlg.pick('v_shower', V.shower) : null;
+      const tease = V.showerTease && S.rel.cap.stage >= 2 && Math.random() < 0.75; // 썸 이후엔 능글맞게
+      const said = tease ? PX.Dlg.pick('v_showerT', V.showerTease) : V.shower ? PX.Dlg.pick('v_shower', V.shower) : null;
       if (said) g.trigger(async () => { g.modal++; cap.atDoor = true; try { await PX.Dlg.runLines(said.l); } finally { cap.atDoor = false; } PX.Dlg.close(); g.modal--; });
       return;
     }
@@ -7399,7 +7424,8 @@ PX.Cap = (() => {
     if (g.mapId === w.map) {
       mode = 'follow'; waitOut = null; cap.setDirTo(g.player.x, g.player.y);
       const V = PX.DLG_V2 || {};
-      if (V.showerOut) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(U.pick(V.showerOut)); PX.Dlg.close(); g.modal--; });
+      const tb = V.showerOutTease && St.S.rel.cap.stage >= 2 && Math.random() < 0.7 ? PX.Dlg.pick('v_showerOT', V.showerOutTease) : null;
+      if (V.showerOut) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(tb ? tb.l : U.pickFresh('showerOut', V.showerOut)); PX.Dlg.close(); g.modal--; });
       return;
     }
     release(); // 다른 데로 가 버렸다
@@ -7470,6 +7496,7 @@ PX.Cap = (() => {
     else if (k === 'later') { S.cap.freeWin = { from: now + 20, until: Math.max(end, now + 140) }; mode = 'sched'; PX.UI.toast('⏳ 대위가 보고를 마치고 찾아올 거예요', 2600); }
     else { S.cap.freeWin = null; mode = 'sched'; }
     if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('afterTreat'); }
+    if (PX.CapAct) PX.CapAct.markField(); // 치료하며 이미 만났다: '다녀왔어' 인사 다시 안 함
   }
   // ---------- 저장 · 불러오기: 동행·방문·대기 상태와 위치를 그대로 ----------
   function saveState() {
@@ -9513,7 +9540,7 @@ PX.CapAct = (() => {
     const mode = PX.Cap.mode, sp = cap.atSpot || '', m = cap.map;
     if (mode === 'follow') return 'walk';
     if (mode === 'visit' || mode === 'stay') return 'home';
-    if (m === 'med' && (sp === 'med.patient' || cap.seat || postField())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
+    if (m === 'med' && (sp === 'med.patient' || cap.seat || fieldWin())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
     if (m === 'gym' || (m === 'base' && sp.startsWith('base.train'))) return 'gym';
     if (m === 'mess') return 'meal';
     if (m === 'ops') return 'ops';
@@ -9522,7 +9549,11 @@ PX.CapAct = (() => {
     return null;
   }
   // 수색 다녀온 직후 (평일 17~20시): 먼지투성이 · 지쳐 있음
-  const postField = () => { const t = St.S.time.min; return !St.isWeekend() && t >= 17 * 60 && t < 20 * 60; };
+  const fieldWin = () => { const t = St.S.time.min; return !St.isWeekend() && t >= 17 * 60 && t < 20 * 60; };
+  // '다녀왔어' 같은 복귀 인사는 그날 한 번만 (치료받으며 이미 봤으면 다시 안 한다)
+  const fieldGreeted = () => !!St.S.done['fieldGreet_' + St.S.day];
+  const markField = () => { if (fieldWin()) St.S.done['fieldGreet_' + St.S.day] = 1; };
+  const postField = () => fieldWin() && !fieldGreeted();
 
   // ---------- 상황 대사 (말 걸기에서 절반쯤은 여기서 나온다) ----------
   const TALK = {
@@ -9608,6 +9639,7 @@ PX.CapAct = (() => {
     if (postField() && Math.random() < 0.4 && k !== 'med') k = 'postField';
     if (U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 7 || g.bubbles.some(b => b.actor === g.cap)) return;
     if (St.S.rel.cap.backoffUntil > St.absMin()) return;
+    if (k === 'postField') markField();
     g.bubble(g.cap, U.fmt(U.pickFresh('hint_' + k, HINT[k] || HINT.postField), PX.Dlg.ctx()), 3.2);
   }
 
@@ -9770,13 +9802,14 @@ PX.CapAct = (() => {
     if (k === 'craft') { add('🔩 만드는 것 구경하기', A.watchCraft); add('💆 어깨 주물러 주기', A.massage); }
     if (k === 'rest' || k === 'home') { add('🛋️ 옆에 앉기', A.sitBy); add('💆 어깨 주물러 주기', A.massage); }
     if (k === 'walk') { add('👔 옷깃 정리해 주기', A.collar); add('🍬 간식 나눠 먹기', A.snack); if (PX.MAPS[G().mapId].kind === 'out') add('🏃 달리기 시합', A.race); }
-    if (postField()) { add('💧 물 건네주기', A.water); add('🧹 모래 털어 주기', A.dust); add('🗺️ 오늘 수색 어땠는지 묻기', A.fieldTalk); }
+    if (fieldWin()) { add('💧 물 건네주기', A.water); add('🧹 모래 털어 주기', A.dust); add('🗺️ 오늘 수색 어땠는지 묻기', A.fieldTalk); }
     return out;
   }
   // 말 걸기용 상황 대사 묶음 (없으면 null)
   function talkBundle() {
     let k = ctx();
     if (postField() && k !== 'med' && Math.random() < 0.45) k = 'postField';
+    if (k === 'postField') markField();
     const pool = k && TALK[k];
     if (!pool) return null;
     const S = St.S, key = 'ctx_' + k, recent = S.recent[key] || [];
@@ -9845,7 +9878,7 @@ PX.CapAct = (() => {
     }, 500);
   }
 
-  return { A, ctx, list, askTopic, talkBundle, tick, postField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
+  return { A, ctx, list, askTopic, talkBundle, tick, postField, fieldWin, markField, TALK, TOPICS, FIELD, HINT, join, canJoin, JOIN };
 })();
 
 </script>
@@ -10118,6 +10151,139 @@ PX.Place = (() => {
     return (A[g.mapId] || []).filter(a => st >= (a.s || 0) && (!a.when || a.when())).map(a => ({ t: a.t, sub: (a.sub || '') + (S.done['pa_' + a.id + '_' + S.day] ? (a.sub ? ' · ' : '') + '오늘 함' : ''), run: a.run }));
   }
   return { list, A };
+})();
+
+</script>
+  <script>
+/* js/game/plan.js */
+// 약속: 대위가 "A 하자" 제안 → 내가 수락하면 그 약속을 기억하고 A 를 하러 간다.
+// 가는 길에 스킨십·대화(B)가 끼어도 약속은 사라지지 않고, B 가 끝나면 다시 A 로 돌아온다.
+// 도착하면 그 장소의 "여기서 같이 하기" 행동(A)을 실제로 한다.
+'use strict';
+PX.Plan = (() => {
+  const U = PX.U, St = PX.St;
+  const G = () => PX.Game;
+  const night = () => { const m = St.S.time.min; return m >= 19 * 60 || m < 4 * 60; };
+  const openSky = (id) => { const md = PX.MAPS[id]; return md && md.kind === 'out' && !md.dome; };
+  const mapName = (id) => (PX.MAPS[id] && PX.MAPS[id].name) || '';
+
+  // 약속 종류 · 질문/대답 문장으로 알아본다 (위에서부터)
+  // acts: 도착하면 할 "여기서 같이 하기" 행동 · go: 가야 할 곳(안내용) · here(): 지금 여기서도 할 수 있나
+  const KINDS = [
+    { id: 'stars', re: /별 보|별 보면서|별 보는|하늘이 빛|별비|투영실/, label: '별 보기', acts: ['bs_stars', 'st_find', 'sl_find', 'p6_warm'], go: 'base',
+      here: () => night() && openSky(G().mapId) && !['rain', 'dust'].includes(St.weather()),
+      far: '밖으로 나가자. 별은 하늘 뚫린 데서 봐야지.',
+      sc: [['N:둘이 나란히 서서 고개를 든다. 돔 밖 하늘에 별이 촘촘하다.', 'C:저기. 저 밝은 거 세 개 이어지는 거. 지구에선 안 보이는 별자리야.', 'C*:이름은 아직 없대. 우리가 붙이자.'],
+        ['N:대위가 재킷을 벗어 바닥에 깔고 앉는다. 옆자리를 손바닥으로 툭툭 친다.', 'N:어깨를 맞대고 앉아 한참 하늘만 본다.', 'C^:별 보러 가자고 한 거, 사실 핑계였어. 이러고 있고 싶어서.']] },
+    { id: 'movie', re: /영화/, label: '영화 보기', acts: ['lg_movie'], go: 'lounge',
+      sc: [['N:소파 끝자리에 나란히 앉는다. 화면이 켜진다.', 'C:지구 옛날 영화래. 바다가 나와.', 'N:영화 중간쯤, 대위의 어깨가 슬쩍 기울어 온다.']] },
+    { id: 'samgyup', re: /냉삼/, label: '냉삼 먹기', acts: ['sg_grill', 'sg_ssam'], go: 'samgyup',
+      sc: [['N:불판이 달궈진다. 대위가 집게를 쥐고 진지한 얼굴이 된다.', 'C:가장 잘 익은 건 네 거. 규칙이야.']] },
+    { id: 'cafe', re: /카페|브런치|마실래|창가 자리/, label: '카페 가기', acts: ['cf_swap', 'cf_people'], go: 'cafe',
+      sc: [['N:창가 자리에 마주 앉는다. 얼음이 가득한 컵이 땀을 흘린다.', 'C^:이런 거 데이트 같다. 아니, 데이트야.']] },
+    { id: 'px', re: /PX|아이스크림|간식|사 줄게|뭐 살 거/, label: 'PX 가기', acts: ['px_shop'], go: 'px',
+      sc: [['N:바구니를 든 대위가 진열대 앞에서 오래 고민한다.', 'C:네가 좋아하는 거 다 담아. 오늘은 내가 산다.']] },
+    { id: 'gym', re: /운동|체력 단련|세트|보조해/, label: '같이 운동하기', acts: ['gm_stretch', 'gm_arm', 'gm_plank'], go: 'gym',
+      sc: [['N:대위가 매트를 깔고 손을 내민다.', 'C:스트레칭부터. 내가 잡아 줄게. 아프면 말해.']] },
+    { id: 'flower', re: /꽃/, label: '꽃 고르기', acts: ['fl_pick'], go: 'flower',
+      sc: [['N:유리돔 안에 꽃 냄새가 가득하다. 대위가 꽃 사이를 진지하게 살핀다.', 'C*:…네가 고른 걸로 할게. 내 눈엔 다 너보다 덜 예뻐서.']] },
+    { id: 'arcade', re: /인형 뽑기|펀치|오락실|리듬/, label: '오락실 가기', acts: ['ac_punch', 'ac_rhythm'], go: 'arcade',
+      sc: [['N:오락실 불빛이 번쩍인다. 대위가 소매를 걷는다.', 'C^:보고 있어. 최고 기록 갈아 치울 거야.']] },
+    { id: 'onsen', re: /온천/, label: '온천 가기', acts: ['os_endure'], go: 'onsen',
+      sc: [['N:김이 오르는 탕 앞. 대위가 수건을 어깨에 걸친다.', 'C;:난 덥지만… 네가 좋아하니까.']] },
+    { id: 'fountain', re: /분수대|사진 찍을래/, label: '분수대 구경', acts: ['pz_coin'], go: 'plaza',
+      sc: [['N:분수대 물줄기가 불빛을 받아 반짝인다.', 'C:동전 던지면 소원 이뤄진대. 하나씩 던지자.']] },
+    { id: 'sunset', re: /노을|해 질 때까지/, label: '노을 보기', acts: ['hl_sunset', 'sd_view'],
+      here: () => openSky(G().mapId) && St.S.time.min >= 16 * 60 && St.S.time.min < 20 * 60,
+      sc: [['N:하늘이 주황에서 보라로 천천히 물든다. 대위가 옆에 서서 말없이 본다.', 'C:…예쁘다.', 'N:대위의 시선이 노을이 아니라 내 옆얼굴에 가 있다.']] },
+    { id: 'lake', re: /호수|물 보자/, label: '호숫가 산책', acts: ['lk_feet', 'lk_skip'], go: 'lake',
+      sc: [['N:잔잔한 물 위로 하늘이 비친다.', 'C^:아무 말 안 해도 되는 데라서 좋아.']] },
+    { id: 'camp', re: /모닥불|마시멜로/, label: '모닥불 앞에 앉기', acts: ['cp_marsh'], go: 'camp',
+      sc: [['N:모닥불이 타닥거린다. 대위가 마시멜로를 꼬치에 끼운다.', 'C:탄 거 좋아해, 안 탄 거 좋아해? …둘 다 구워 줄게.']] },
+    { id: 'sea', re: /바다|파도|모래성/, label: '바다 보기', acts: ['p3_sea', 'bc_castle'], go: 'planet3',
+      sc: [['N:파도 소리가 들린다. 대위가 그 자리에 멈춰 선다.', 'C!:…진짜 바다다.', 'N:대위가 손을 꽉 잡는다.']] },
+    { id: 'skylounge', re: /창가 가 보자|라운지/, label: '라운지 가기', acts: ['sl_find', 'sl_toast'], go: 'skylounge',
+      sc: [['N:큰 창 너머로 페르녹스가 한눈에 보인다.', 'C:저기 작은 불빛. 우리 부대야.']] },
+    { id: 'meal', re: /밥|식당|메뉴|반찬|저녁 같이|저녁 먹|먹을래|먹자|같이 먹/, label: '같이 밥 먹기', acts: ['ms_swap', 'sg_grill', 'pz_food'], go: 'mess',
+      sc: [['N:식판을 들고 마주 앉는다. 대위가 자기 반찬을 내 쪽으로 슬쩍 민다.', 'C:이거 너 좋아하잖아. 먹어.'],
+        ['N:대위가 줄을 대신 서 주고 수저까지 놓아 준다.', 'C^:오늘은 내가 다 할게. 너는 먹기만 해.']] },
+    { id: 'walk', re: /산책|걸을래|걷자|걸어|한 바퀴|길 끝까지|발자국|걷기/, label: '같이 산책하기', acts: ['dm_walk', 'rw_walk'], walk: true,
+      sc: [['N:발소리가 나란히 맞춰진다. 대위가 걸음을 내 보폭에 맞춰 줄인다.', 'C:이렇게 걷는 거, 생각보다 좋다.', 'C*:목적지 없이 걷는 거 처음이야. 너랑이라서.'],
+        ['N:한참을 말없이 걷는다. 가끔 손등이 스친다.', 'C^:…오늘 산책 코스, 내가 외워 둘게. 다음에도 이 길로.']] },
+  ];
+  const BYID = {}; KINDS.forEach(k => { BYID[k.id] = k; });
+
+  const cur = () => { const p = St.S.cap.plan; return p && BYID[p.id] ? p : null; };
+  const kindOf = (p) => BYID[p.id];
+  const clear = () => { St.S.cap.plan = null; };
+  const mins = () => St.absMin();
+
+  // 수락한 제안 → 약속으로 (거절·나중에·혼자 있을래 등은 약속 아님)
+  function offer(o) {
+    if (!o || ['alone', 'rest', 'later', 'escort', 'talk'].includes(o.k) || o.mood === 'neg') return null;
+    const txt = (o.q || '') + ' ' + (o.a || '');
+    let k = KINDS.find(x => x.re.test(txt));
+    if (!k && o.k === 'meal') k = BYID.meal;
+    if (!k && o.k === 'walk') k = BYID.walk;
+    if (!k) return null;
+    St.S.cap.plan = { id: k.id, made: mins(), until: mins() + 180, walkT: 0, nagT: 0 };
+    const where = k.go && G().mapId !== k.go && !hereOk(k) ? ` · ${mapName(k.go)}(으)로` : '';
+    PX.UI.toast(`📌 약속: ${k.label}${where}`, 3000);
+    return k;
+  }
+  // 지금 여기에서 그 약속을 할 수 있는 행동
+  function actHere(k) {
+    const S = St.S, list = (PX.Place && PX.Place.A[G().mapId]) || [];
+    return list.find(a => k.acts.includes(a.id) && S.rel.cap.stage >= (a.s || 0) && (!a.when || a.when())) || null;
+  }
+  function hereOk(k) {
+    if (k.walk) return false; // 산책은 같이 걷다 보면
+    if (actHere(k)) return true;
+    if (k.here) return k.here();
+    return k.go && G().mapId === k.go;
+  }
+
+  let arriveT = 0, busy = false, resumeAt = 0;
+  const NAG = ['{L} 하기로 했잖아. 가자.', '잊은 거 아니지? {L}.', '{L} 하러 가는 중이야. 딴 데 새지 마.', '자, {L}. 약속했지?', '이쪽이야. {W}'];
+  const BACK = ['자, 이제 {L} 하러 가자.', '…좋았다. 근데 {L} 하기로 한 거 안 잊었어.', '이제 진짜 {L}. 가자.', '여기서 더 하면 {L} 못 해. 가자.', '{L} 하러 가던 길이었지. 가자.'];
+  function line(pool, k) {
+    const to = k.go && G().mapId !== k.go ? `${mapName(k.go)} 쪽.` : (k.far || '');
+    return U.pickFresh('plan_' + pool.length, pool).replace('{L}', k.label).replace('{W}', to || '거의 다 왔어.');
+  }
+  const capNear = (r = 3.2) => { const g = G(); return g.cap && g.cap.map === g.mapId && !g.cap.hidden && U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < r; };
+
+  function tick(dt) {
+    const p = cur(); if (!p) return;
+    const g = G(), k = kindOf(p), mode = PX.Cap.mode;
+    if (mins() > p.until) { if (capNear(8)) g.bubble(g.cap, `${U.josa(k.label, '은')} 다음에 꼭 하자. 약속.`, 2.6); clear(); return; }
+    if (!['follow', 'visit', 'stay', 'waitOut', 'paused'].includes(mode)) { clear(); return; } // 대위가 일과로 갔다
+    if (busy || g.modal || g.transition || !g.cap) return;
+    // 스킨십·대화가 끝나면: 다시 약속으로
+    if (resumeAt && performance.now() > resumeAt) { resumeAt = 0; if (!hereOk(k) && capNear(5)) { g.bubble(g.cap, U.fmt(line(BACK, k), PX.Dlg.ctx()), 2.8); p.nagT = 0; } }
+    if (k.walk) { // 산책: 같이 바깥을 한참 걸으면
+      if (g.player.moving && capNear(4) && openSky(g.mapId)) p.walkT = (p.walkT || 0) + dt;
+      if (p.walkT > 25 && !g.player.moving) { run(p, k, actHere(k)); return; }
+    } else if (hereOk(k) && capNear()) {
+      arriveT += dt; if (arriveT > 1.4) { arriveT = 0; run(p, k, actHere(k)); return; }
+    } else arriveT = 0;
+    // 한참 딴 데 있으면 대위가 다시 말을 꺼낸다
+    p.nagT = (p.nagT || 0) + dt;
+    if (p.nagT > 55 && !k.walk && capNear(5) && !g.bubbles.some(b => b.actor === g.cap)) { p.nagT = 0; g.bubble(g.cap, U.fmt(line(NAG, k), PX.Dlg.ctx()), 3); }
+  }
+  async function run(p, k, act) {
+    const g = G(); busy = true; clear();
+    try {
+      if (act) await act.run();
+      else { g.modal++; try { await PX.Dlg.runLines(U.pickFresh('plansc_' + k.id, k.sc), { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
+      St.addAff(2);
+      const S = St.S; if (!S.done['planm_' + k.id]) { S.done['planm_' + k.id] = 1; g.memory('약속', `대위와 약속한 ${k.label}, 진짜로 했다.`, false); }
+    } catch (e) { console.error(e); }
+    busy = false;
+  }
+  // 스킨십·대화(B)가 끝났을 때 불러 준다 → 잠시 뒤 약속(A)으로 돌아온다
+  function resume() { if (cur()) resumeAt = performance.now() + 2200; }
+  function label() { const p = cur(); return p ? kindOf(p).label : null; }
+  return { offer, tick, resume, label, cur, clear, KINDS };
 })();
 
 </script>
@@ -10531,6 +10697,7 @@ PX.Mind = (() => {
     St.addAff(capAsked ? 3 : (a.need >= 4 ? 4 : 2));
     const key = 'skin_' + a.id;
     if (!S.done[key] && !['release', 'hugend'].includes(a.id) && (a.need >= 3 || ['hand', 'pat'].includes(a.id))) { S.done[key] = 1; g.memory(a.name, firstText(a), true); }
+    if (PX.Plan) PX.Plan.resume(); // 약속이 있었으면 다시 그쪽으로
     return true;
   }
   const firstText = (a) => ({ hand: '처음 손을 잡았다. 손이 반쯤 사라졌다.', fronthug: '처음 안겼다. 품이 뜨끈했다.', kiss: '처음 입을 맞췄다. 짧았는데 오래 기억날 것 같다.', waist: '허리에 감긴 팔이 묵직했다.', lappillow: '대위 무릎을 베고 잠깐 졸았다.', armpillow: '팔베개는 생각보다 단단했다.' }[a.id] || `처음으로 ${a.name}. 얼굴이 화끈거렸다.`);
@@ -10572,6 +10739,7 @@ PX.Mind = (() => {
       cap.showEmote('heart', 2); setTimeout(() => p.showEmote('heart', 1.6), 400);
       const k = 'cdo_' + x.id + '_' + S.day; if (!S.done[k]) { S.done[k] = 1; St.addAff(x.need >= 5 ? 4 : 2); }
       if (!S.done['cdom_' + x.id] && (x.heavy || x.need >= 4)) { S.done['cdom_' + x.id] = 1; g.memory(x.name, F(x.n[0]), true); }
+      if (PX.Plan) PX.Plan.resume();
     } else {
       cap.showEmote('heart', 1.4); setTimeout(() => p.showEmote('heart', 1.2), 500);
       PX.UI.toast(`${x.icon} ${F(U.pickFresh('cn_' + x.id, x.n))}`, 2800);
@@ -12529,6 +12697,7 @@ ${memLine(S)}`;
     for (const a of Game.actors) a.update(dt);
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
     if (PX.CapAct) PX.CapAct.tick(dt);
+    if (PX.Plan) PX.Plan.tick(dt);
     if (PX.Mind) { PX.Mind.tick(dt); stareTick(dt); }
     capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;

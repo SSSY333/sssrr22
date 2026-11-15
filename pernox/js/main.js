@@ -1072,6 +1072,7 @@
     for (const a of Game.actors) a.update(dt);
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
     if (PX.CapAct) PX.CapAct.tick(dt);
+    if (PX.Plan) PX.Plan.tick(dt);
     if (PX.Mind) { PX.Mind.tick(dt); stareTick(dt); }
     capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;
