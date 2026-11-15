@@ -251,6 +251,12 @@ PX.Place = (() => {
     await lines(['C^:여기가 내 방에서 제일 좋은 자리야. 냉각기 바로 앞.', 'N:대위가 아이스크림 두 개를 꺼낸다. 하나를 내밀며 담요도 같이 준다.', 'C*:너는 춥잖아. 담요 덮고 먹어. 나는 이게 천국이고.']);
     reward('qc_ice', 2); } });
 
+  // ---------- 은밀숙소의 밤 (연인 이상 · 내가 고를 때만) ----------
+  const held = (fn) => async () => { const g = G(); g.modal++; try { await fn(); } finally { PX.Dlg.close(); g.modal--; } };
+  add('rubyway', { id: 'rw_inn', t: '🗝️ 은밀숙소 가자고 하기', sub: '밤 · 연인', s: 4, when: night, run: held(() => PX.InnNight.suggest('street')) });
+  add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, run: held(() => PX.InnNight.suggest('lobby')) });
+  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
+
   // ---------- 지금 할 수 있는 것 ----------
   function list() {
     const g = G(), S = St.S, cap = g.cap;
