@@ -424,7 +424,11 @@ function placeName(k) {
   if (!k) return '';
   if (k.startsWith('in_')) return (INTERIORS[k.slice(3)] || { name: '' }).name;
   if (HIDDEN_DEFS[k]) return HIDDEN_DEFS[k].name;
-  return (PLACE_DEFS[k] || ISLET_PLACES[k] || { name: '' }).name;
+  const n = (PLACE_DEFS[k] || ISLET_PLACES[k] || { name: '' }).name;
+  if (n) return n;
+  if (k === 'islet') return '무인도';
+  if (typeof MAPS !== 'undefined' && MAPS[k] && MAPS[k].name) return MAPS[k].name;
+  return /[가-힣]/.test(k) ? k : '';   // 영어 키는 화면에 내보내지 않음
 }
 
 /* ---------------- 길찾기 (A*, 이진 힙, 8방향) ---------------- */

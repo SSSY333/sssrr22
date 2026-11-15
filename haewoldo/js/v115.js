@@ -180,3 +180,61 @@ computeAction = (function (prev) {
     return a;
   };
 })(computeAction);
+
+/* =====================================================================
+   v1.16 — 섬 · 일터 편집으로 옮긴 물건의 기능이 새 자리로 따라가게
+   · 네컷 부스 · 배 시간표 · 텐트 · 바비큐 그릴 · 모닥불 · 돗자리 · 정자 · 망원경 · 낚시 의자
+     → 위치를 기억하는 지점(POI) · 장소 범위를 물건이 옮긴 만큼 같이 옮김
+   · 일터 근무 자리(카운터 · 칠판 · 진료 책상 · 손질대)와 손님 줄 서는 자리도 가구를 따라감
+   ===================================================================== */
+const OBJ_LINKS = [
+  { kind: 'booth', poi: ['booth'], place: ['booth'] },
+  { kind: 'ticket', poi: ['ticket'] },
+  { kind: 'tent', poi: ['tentA', 'tentB'] },
+  { kind: 'grill', poi: ['grillCook'] },
+  { kind: 'campfire', poi: ['campCenter', 'camp'] },
+  { kind: 'mat', poi: ['picnic', 'picnicB'] },
+  { kind: 'jeongjaBase', poi: ['pavilion'], place: ['pavilion'] },
+  { kind: 'pavilion', poi: ['pavilion'], place: ['pavilion'] },
+  { kind: 'telescope', poi: ['observatory'], place: ['observatory'] },
+  { kind: 'fishChair', poi: ['manbokSeat'] },
+];
+const _poiBase = {}, _placeBase = {}, _poiMoved = new Set();
+function objLinkApply(m) {
+  if (!m || m.id !== 'island') return;
+  const cen = (o, ox, oy) => [ox + (o._ofw || o.fw || 1) / 2, oy + (o._ofh || o.fh || 1) / 2];
+  const nearest = (kind, p) => { let best = null, bd = 3.2; for (const o of m.objects) { if (o.kind !== kind || o._ox == null) continue; const [cx, cy] = cen(o, o._ox, o._oy), d = Math.hypot(cx - p[0], cy - p[1]); if (d < bd) { bd = d; best = o; } } return best; };
+  for (const L of OBJ_LINKS) {
+    for (const k of L.poi || []) {
+      if (!Array.isArray(POI[k])) continue;
+      if (!_poiBase[k] || !_poiMoved.has(k)) _poiBase[k] = POI[k].slice();
+      const base = _poiBase[k], o = nearest(L.kind, base); if (!o) continue;
+      const dx = o.x - o._ox, dy = o.y - o._oy;
+      if (dx || dy) { POI[k] = nearestWalkable(base[0] + dx, base[1] + dy, m); _poiMoved.add(k); }
+      else if (_poiMoved.has(k)) { POI[k] = base.slice(); _poiMoved.delete(k); }
+    }
+    for (const k of L.place || []) {
+      const pl = m.places && m.places[k]; if (!pl || !pl.c) continue;
+      if (!pl._c0) pl._c0 = pl.c.slice();
+      const o = nearest(L.kind, pl._c0); if (!o) continue;
+      pl.c = [pl._c0[0] + o.x - o._ox, pl._c0[1] + o.y - o._oy];
+    }
+  }
+  if (POI.boatSpot) m.boatSpot = POI.boatSpot;
+  // 마을버스: 정류장을 옮기면 내리는 자리도 새 정류장 앞으로
+  if (m.stops) for (const o of m.objects) if (o.kind === 'busstop' && o.stop && o._ox != null && (o.x !== o._ox || o.y !== o._oy)) m.stops[o.stop] = nearestWalkable(o.x + 0.5, o.y + 1.5, m);
+}
+const _devApplyMap116 = devApplyMap;
+devApplyMap = function (m, md) { const r = _devApplyMap116.apply(this, arguments); try { objLinkApply(m); } catch (e) { console.error('[objLink]', e); } return r; };
+
+/* 일터: 근무 자리 · 줄 서는 자리를 근무용 가구(카운터 · 칠판 · 진료 책상 · 손질대) 위치에 맞춤 */
+function workAnchor(W) {
+  const m = MAPS[W.map]; if (!m) return null;
+  return m.objects.find(o => o.kind === 'furn' && ['order', 'work', 'prep'].includes(o.act)) || null;
+}
+for (const W of Object.values(WORKS)) {
+  const st0 = W.station.slice(), q0 = (W.queue || []).map(q => q.slice());
+  const delta = () => { const o = workAnchor(W); return o && o._ox != null ? [o.x - o._ox, o.y - o._oy] : [0, 0]; };
+  Object.defineProperty(W, 'station', { configurable: true, get() { const [dx, dy] = delta(); return [st0[0] + dx, st0[1] + dy]; } });
+  Object.defineProperty(W, 'queue', { configurable: true, get() { const [dx, dy] = delta(), m = MAPS[W.map]; return q0.map(q => { const x = q[0] + dx, y = q[1] + dy; return m && !walkable(Math.floor(x), Math.floor(y), m) ? nearestWalkable(x, y, m) : [x, y]; }); } });
+}

@@ -154,7 +154,7 @@ function memoryLine() {
   if (P.firstMeet && P.firstMeet.place) out.push(c ? `우리 ${P.firstMeet.place}에서 처음 봤던 거 기억나? ${S.job === 'haenyeo' ? '얼굴은 원래 알았지만.' : '그때 너 표정 아직도 생각나.'}` : `${P.firstMeet.place}에서 처음 뵀던 날 기억나요?`);
   if (P.firstDate) out.push(`첫 데이트 ${P.firstDate.place} 갔던 거, 가끔 생각나.`);
   const food = memTop('food'); if (food && ITEMS[food]) out.push(`너 ${ITEMS[food].name} 진짜 좋아하더라. 다음에 내가 사 올게.`);
-  const pl = memTop('place'); if (pl) out.push(`우리 ${placeName(pl) || pl} 자주 가네. 거기 좋아?`);
+  const pl = memTop('place'), pln = pl && placeName(pl); if (pln) out.push(c ? `우리 ${pln}에 자주 가네. 거기 좋아?` : `${pln}에 자주 가시네요. 거기 좋아요?`);
   const lastFest = memLast('festival'); if (lastFest) out.push(`지난번 ${lastFest.text.replace(/에 함께했다$/, '')} 재밌었지.`);
   const lastCase = memLast('case'); if (lastCase) out.push(`${lastCase.text.replace(/을\(를\) 함께 해결했다$/, '')} 사건, 우리 콤비 꽤 괜찮았어.`);
   if (P.firstPhoto) out.push('그 네컷사진 아직 갖고 있지? 나 지갑에 넣고 다녀.');
@@ -663,7 +663,7 @@ mainMenu = function () {
 function memoryMenu() {
   const P = S.mem.perm, L = { firstMeet: '첫 만남', banmal: '말 놓은 날', firstDate: '첫 데이트', confess: '고백', lovers: '연애 시작', propose: '프로포즈', married: '결혼', firstPhoto: '첫 네컷사진', treasure: '보물 발견' };
   const perm = Object.entries(P).filter(([k]) => L[k] || k.startsWith('case_') || k.startsWith('fest_') || k.startsWith('hidden_')).map(([k, v]) => `<li class="ok">💗 ${L[k] || (k.startsWith('case_') ? '사건 해결 · ' + CASES[k.slice(5)].name : k.startsWith('fest_') ? '축제 · ' + v.name : '탐험 · ' + v.name)} — ${v.date || dateLabel(v.day)} ${v.place ? '· ' + esc(v.place) : ''}</li>`).join('');
-  const pref = [['food', '좋아하는 음식', (k) => ITEMS[k] && ITEMS[k].name], ['gift', '자주 준 선물', (k) => ITEMS[k] && ITEMS[k].name], ['place', '자주 가는 곳', (k) => placeName(k) || k], ['outfit', '즐겨 입는 옷', (k) => OUTFITS[k] ? OUTFITS[k].name : '직업복'], ['date', '자주 한 데이트', (k) => DATES[k] && DATES[k].name], ['act', '즐겨 하는 활동', (k) => ({ sit: '함께 앉기' })[k] || k]].map(([c, n, f]) => { const t = memTop(c); return `<li>${n}: ${t ? esc(f(t) || t) : '<span class="muted">아직 몰라요</span>'}</li>`; }).join('');
+  const pref = [['food', '좋아하는 음식', (k) => ITEMS[k] && ITEMS[k].name], ['gift', '자주 준 선물', (k) => ITEMS[k] && ITEMS[k].name], ['place', '자주 가는 곳', (k) => placeName(k)], ['outfit', '즐겨 입는 옷', (k) => OUTFITS[k] ? OUTFITS[k].name : '직업복'], ['date', '자주 한 데이트', (k) => DATES[k] && DATES[k].name], ['act', '즐겨 하는 활동', (k) => ({ sit: '함께 앉기', fish: '낚시', walk: '산책', cook: '요리', bbq: '바비큐', photo: '사진 찍기', swim: '물놀이', dance: '춤' })[k] || (/[가-힣]/.test(k) ? k : '')]].map(([c, n, f]) => { const t = memTop(c), v = t && f(t); return `<li>${n}: ${v ? esc(v) : '<span class="muted">아직 몰라요</span>'}</li>`; }).join('');
   const rec = S.mem.recent.slice(0, 10).map(r => `<li>${dateLabel(r.day)} · ${esc(r.text)}${r.place ? ' · ' + esc(r.place) : ''}</li>`).join('');
   openPanel('💭 형사님의 기억', `<h4>영구 기억</h4><ul class="req">${perm || '<li class="muted">아직 없어요</li>'}</ul><h4>취향 기억</h4><ul class="req">${pref}</ul><h4>최근 기억</h4><ul class="req">${rec || '<li class="muted">아직 없어요</li>'}</ul><p class="psub">형사님은 실제로 함께 겪은 일만 기억하고 이야기해요.</p>`);
 }

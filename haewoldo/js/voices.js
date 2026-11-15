@@ -27,7 +27,7 @@ function rumorSpeak(r, vid) {
   const pool = RUMOR_V[r.topic] && RUMOR_V[r.topic][voiceOf(vid)];
   if (!pool) return r.text;
   const vars = r.vars || {};
-  const t = pick(pool).replace(/\{(\w+)\}/g, (m0, k) => vars[k] != null ? vars[k] : k === 'name' ? S.name : k === 'place' ? '마을' : k === 'job' ? JOBS[S.job].name : k === 'fest' ? '축제' : k === 'case' ? '그' : k === 'truth' ? '뜻밖의 범인' : k === 'fish' ? '대물' : k === 'who' ? '손님' : m0);
+  const t = pick(pool).replace(/\{(\w+)\}/g, (m0, k) => vars[k] != null ? vars[k] : k === 'name' ? S.name : k === 'place' ? '마을' : k === 'job' ? JOBS[S.job].name : k === 'fest' ? '축제' : k === 'case' ? '그' : k === 'truth' ? '뜻밖의 범인' : k === 'fish' ? '대물' : k === 'who' ? '손님' : '');
   return t;
 }
 

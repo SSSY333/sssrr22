@@ -21,7 +21,7 @@ const ERRANDS = [
   { id: 'halmeoniSide', who: 'halmeoni', title: '반찬 심부름', ask: '옥자한테 이 반찬 좀 갖다줄 수 있어? 내가 무릎이 아파서.', thanks: '갖다줬어? 아이고 착해라.', deliver: ['okja'], money: 1500, rep: 2 },
 ];
 const ERR_PLACE = { plaza: '마을 광장', hallFront: '마을회관 앞', superDoor: '슈퍼 앞', playground: '놀이터', beach: '해수욕장', lighthouse: '등대', observatory: '언덕 전망대', storageDoor: '해녀창고 앞', orchardGate: '귤밭 입구', farm: '귤 농장', field: '꽃밭 들판', beachWest: '해변 서쪽', beachEast: '해변 동쪽', forestRest: '숲속 쉼터', rocks: '갯바위', ranch: '목장' };
-const errPlaceName = (p) => ERR_PLACE[p] || placeName(p) || p;
+const errPlaceName = (p) => ERR_PLACE[p] || placeName(p) || '그 근처';
 ITEMS.letter = ITEMS.letter || { name: '맡은 편지 · 반찬', icon: '📨', price: 0, gift: 0, sell: 0 };
 function errState() { if (!S.errand) S.errand = null; return S.errand; }
 QDEF.v_errand = { title: () => { const e = S.errand && ERRANDS.find(x => x.id === S.errand.id); return e ? `🧺 ${e.title}` : '🧺 주민 심부름'; }, kind: 'repeat', view: (q) => {

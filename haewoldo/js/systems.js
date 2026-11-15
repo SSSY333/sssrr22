@@ -85,7 +85,7 @@ function addRumor(topic, vars = {}, opts = {}) {
   const vids = Object.keys(VILLAGERS);
   const know = []; while (know.length < 2) { const v = pick(vids); if (!know.includes(v)) know.push(v); }
   let text = pick(RUMOR_TEXT[topic] || ['요즘 섬이 시끌벅적해.']);
-  text = text.replace(/\{(\w+)\}/g, (m0, k) => vars[k] != null ? vars[k] : (k === 'name' ? S.name : k === 'place' ? (placeName(curPlace()) || '마을') : k === 'job' ? JOBS[S.job].name : m0));
+  text = text.replace(/\{(\w+)\}/g, (m0, k) => vars[k] != null ? vars[k] : (k === 'name' ? S.name : k === 'place' ? (placeName(curPlace()) || '마을') : k === 'job' ? JOBS[S.job].name : ''));
   S.rumors.push({ id: 'r' + Date.now().toString(36) + Math.floor(Math.random() * 99), key, topic, text, day: S.day, exp: S.day + (opts.days || 7), know, told: [], about: opts.about || null });
   if (S.rumors.length > 40) S.rumors = S.rumors.slice(-40);
 }
