@@ -647,7 +647,10 @@
     // 앉았거나 누웠으면 그 자리에서만 할 수 있는 것부터
     const here = (x) => { const a = PX.Mind.BY[x.k]; return a && (a.where === 'bed' || a.where === 'sit') ? 0 : 1; };
     items.sort((a, b) => here(a) - here(b) || groups.findIndex(g => g[0] === a.g) - groups.findIndex(g => g[0] === b.g));
-    const it = await UI.menu(`🤝 스킨십 · 지금: ${M.NAME[M.contact()]}`, items);
+    const nReq = M.capList ? M.capList(true).length : 0;
+    items.unshift({ t: '💕 대위에게 부탁하기', sub: nReq ? `대위가 나에게 해 주는 것 ${nReq}가지` : '같이 있을 때 · 관계가 깊어질수록 늘어나요', k: '__req' });
+    const it = await UI.menu(`🤝 스킨십 (내가 대위에게) · 지금: ${M.NAME[M.contact()]}`, items);
+    if (it && it.k === '__req') return M.requestMenu();
     if (it) await M.perform(it.k);
   }
   // 플레이어의 표정·행동 → 대위의 반응

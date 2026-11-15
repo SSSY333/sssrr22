@@ -237,32 +237,44 @@ PX.Mind = (() => {
 
   if (PX.SKIN_YOU) for (const id in PX.SKIN_YOU) if (PX.SKIN_YOU[id].name && BY[id]) BY[id].name = PX.SKIN_YOU[id].name;
 
-  // ---------- 대위가 먼저 하는 스킨십 (같이 앉아 있거나 같이 있을 때 가끔 · 가벼운 건 그냥 하고, 입맞춤은 묻는다) ----------
-  // w: walk(같이 걷는 중) · stand(같이 서 있음) · sit(같이 앉음) · bed(같이 누움)
-  const CAP_AUTO = [
-    { id: 'a_hand', w: 'walk', need: 2, from: ['NONE'], to: 'HAND_HOLD', n: '🤝 대위가 슬쩍 손을 잡는다.', c: ['손 차갑다. 내가 데워 줄게.', '이러고 걷자.', '놓치면 안 되니까.', '…말없이 잡아도 되지? 이미 잡았지만.'] },
-    { id: 'a_shoulder', w: 'walk', need: 3, from: ['NONE', 'HAND_HOLD'], to: 'SHOULDER_HOLD', n: '🤗 대위가 어깨를 감싸 자기 쪽으로 당긴다.', c: ['사람 많다. 내 쪽으로.', '이렇게 걸으면 바람 덜 맞아.', '…딱 맞네. 내 팔 안.'] },
-    { id: 'a_thumb', w: 'walk', need: 3, from: ['HAND_HOLD'], n: '👍 맞잡은 손등을 대위가 엄지로 천천히 쓴다.', c: ['…그냥. 손이 심심해서.', '손등 부드럽다.', '이러고 있으면 마음이 편해.'] },
-    { id: 'a_pull', w: 'walk', need: 2, n: '🫴 지나가는 사람을 피해 대위가 손목을 잡아 끌어당긴다.', c: ['부딪힐 뻔했어.', '내 쪽으로 걸어. 안쪽.', '…괜찮아? 놀랐지.'] },
-    { id: 'a_pat', w: 'stand', need: 1, n: '✋ 커다란 손이 머리 위에 얹힌다.', c: ['머리 작다. 한 손에 다 들어와.', '잘했어. 그냥 다.', '쓰다듬고 싶었어. 이유 없이.', '헝클어졌다. 내가 정리해 줄게.'] },
-    { id: 'a_bangs', w: 'stand', need: 2, n: '💇 대위가 손끝으로 앞머리를 정리해 준다.', c: ['눈 찔리겠다.', '…이제 얼굴 잘 보인다.', '거울 대신 나 봐.'] },
-    { id: 'a_pinch', w: 'stand', need: 2, n: '🤏 대위가 볼을 살짝 꼬집는다.', c: ['말랑하다.', '…그냥. 귀여워서.', '아팠어? 미안. 안 미안해.'] },
-    { id: 'a_chinhead', w: 'stand', need: 3, n: '🗻 대위가 정수리에 턱을 얹는다.', c: ['딱 맞는 높이.', '여기가 내 자리야.', '…움직이지 마. 편해.'] },
-    { id: 'a_hug', w: 'stand', need: 3, from: ['NONE'], to: 'FRONT_HUG', n: '🫂 대위가 말없이 끌어안는다.', c: ['…잠깐만. 충전.', '그냥. 안고 싶었어.', '…이유는 안아 보고 말할게.'] },
-    { id: 'a_backhug', w: 'stand', need: 4, from: ['NONE'], to: 'BACK_HUG', n: '🫂 대위가 뒤에서 끌어안고 어깨에 턱을 얹는다.', c: ['뭐 보고 있었어?', '…이 자세 좋다.', '도망 못 가게.'] },
-    { id: 'a_foreheadkiss', w: 'stand', need: 4, n: '😚 대위가 고개를 숙여 이마에 짧게 입을 맞춘다.', c: ['…그냥. 하고 싶어서.', '오늘 수고했다는 뜻.', '이마는 안 물어봐도 되지?'] },
-    { id: 'a_sithand', w: 'sit', need: 2, from: ['NONE'], to: 'SIT_HAND', n: '🤝 대위가 무릎 위의 손을 슬그머니 잡는다.', c: ['…가만있어. 이대로.', '앉아서 잡는 손이 좋아.', '손 시렵지? 아니어도.'] },
-    { id: 'a_armback', w: 'sit', need: 3, n: '🫶 대위가 등받이에 팔을 걸쳐 어깨를 감싼다.', c: ['…자리 넓은데 이게 편해.', '기대도 돼.', '이 팔은 원래 여기 있는 거야.'] },
-    { id: 'a_leanhead', w: 'sit', need: 3, n: '😌 대위가 머리를 살짝 기대 온다. 생각보다 무겁다.', c: ['…잠깐만. 이대로.', '무거워? 조금만.', '오늘 좀 피곤했어.'] },
-    { id: 'a_fingers', w: 'sit', need: 3, from: ['SIT_HAND', 'SIT_LEAN'], n: '🫱 대위가 맞잡은 손가락을 하나씩 만지작거린다.', c: ['손가락 작다.', '…반지 사이즈 재는 거 아니야.', '이거 하면 마음이 편해.'] },
-    { id: 'a_hairplay', w: 'sit', need: 3, n: '💇 대위가 머리카락 끝을 손가락에 감았다 푼다.', c: ['…심심해서.', '머리 부드럽다.', '이거 계속 해도 돼?'] },
-    { id: 'a_knee', w: 'sit', need: 4, n: '🦵 대위의 무릎이 슬쩍 닿는다. 일부러인지 아닌지 모르게.', c: ['…좁아서 그래.', '…일부러야.', '닿아 있는 게 좋아서.'] },
-    { id: 'a_pullclose', w: 'sit', need: 3, n: '🫴 대위가 허리를 감아 자기 쪽으로 당겨 앉힌다.', c: ['한 뼘도 멀어.', '…여기. 딱 좋다.', '붙어 있자.'] },
-    { id: 'a_cheekkiss', w: 'sit', need: 4, n: '😚 대위가 고개를 돌려 볼에 짧게 입을 맞춘다.', c: ['…그냥.', '참다가 못 참았어.', '한 번만. 진짜 한 번만.'] },
-    { id: 'a_bedhair', w: 'bed', need: 4, n: '🫳 대위가 머리카락을 천천히 쓸어 넘겨 준다.', c: ['…졸리지? 자.', '머리 부드럽다.', '네가 잠들 때까지 이러고 있을게.'] },
-    { id: 'a_blanket', w: 'bed', need: 4, n: '🛏️ 대위가 이불을 어깨까지 끌어 올려 준다.', c: ['감기 걸려.', '…덥지만 너 덮어 주는 건 좋아.', '이불 속으로 들어와.'] },
-    { id: 'a_armpillow', w: 'bed', need: 4, n: '💪 대위가 팔을 내밀어 머리 밑에 넣어 준다.', c: ['베. 팔 안 저려.', '…이게 제일 좋은 베개야.', '자, 이리 와.'] },
-  ];
+  // ---------- 대위가 나에게 하는 스킨십 (data/skin_cap.js 100가지) ----------
+  // 저절로: 하루 3번까지 · 가벼운 것만(heavy 제외) · 같이 있을 때 · 내가 부탁하면: 지금 상황에 맞는 건 다 (heavy 포함)
+  function situ() {
+    const g = G(), p = g.player, cap = g.cap, w = where();
+    if (!w) return null;
+    const onBed = p.seat && p.seat.obj && (p.seat.obj.use || (p.seat.obj.f && p.seat.obj.f.use)) === 'bed';
+    if (onBed) return w.privateRoom || PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay' ? 'bed' : null;
+    if (p.seat) return 'sit';
+    return p.moving && PX.Cap.mode === 'follow' ? 'walk' : 'stand';
+  }
+  function capList(forRequest) {
+    const S = St.S, st = S.rel.cap.stage, c = contact(), sw = situ();
+    if (!sw) return [];
+    const okW = (w) => w === sw || (forRequest && sw === 'stand' && w === 'walk' && PX.Cap.mode === 'follow') || (!forRequest && false);
+    return (PX.SKIN_CAP || []).filter(x => okW(x.w) && st >= x.need && (!x.from || x.from.includes(c)) && !(x.to && STILL[x.to] && isHug()) && (forRequest || (!x.heavy && !refused(x.id) && !usedRecently(x.id, 120))));
+  }
+  async function capDo(x, requested) {
+    const g = G(), S = St.S, cap = g.cap, p = g.player, F = (t) => U.fmt(t, PX.Dlg.ctx());
+    if (x.to) setContact(x.to);
+    if (/머리|앞머리|볼을|볼 |이마|귀 뒤/.test(x.n.join(' ')) && situ() === 'stand') cap.doPose(/이마|볼에/.test(x.n.join(' ')) ? 'bend' : 'pat', 1.8, 'smile');
+    noteLine(x.id); m_acts(x.id);
+    if (requested) {
+      g.modal++;
+      try {
+        await PX.Dlg.say('player', F(U.pickFresh('cr_' + x.id, x.r)), 'blush');
+        await PX.Dlg.runLines(['N:' + U.pickFresh('cn_' + x.id, x.n), 'C:' + PX.Dlg.capPick(x.c)]);
+      } finally { PX.Dlg.close(); g.modal--; }
+      cap.showEmote('heart', 2); setTimeout(() => p.showEmote('heart', 1.6), 400);
+      const k = 'cdo_' + x.id + '_' + S.day; if (!S.done[k]) { S.done[k] = 1; St.addAff(x.need >= 5 ? 4 : 2); }
+      if (!S.done['cdom_' + x.id] && (x.heavy || x.need >= 4)) { S.done['cdom_' + x.id] = 1; g.memory(x.name, F(x.n[0]), true); }
+    } else {
+      cap.showEmote('heart', 1.4); setTimeout(() => p.showEmote('heart', 1.2), 500);
+      PX.UI.toast(`${x.icon} ${F(U.pickFresh('cn_' + x.id, x.n))}`, 2800);
+      setTimeout(() => g.bubble(cap, F(PX.Dlg.capPick(x.c))), 500);
+      St.addAff(1);
+    }
+  }
+  const m_acts = (id) => { mem().acts[id] = now(); };
   let autoT = 0, stillT = 0, nextAuto = 0;
   function autoTick(dt) {
     if (PX.Mind && PX.Mind.autoOff) return; // (테스트용 끄개)
@@ -271,24 +283,27 @@ PX.Mind = (() => {
     const mode = PX.Cap.mode;
     if (mode !== 'follow' && mode !== 'visit' && mode !== 'stay') return;
     stillT = p.moving ? 0 : stillT + dt;
-    autoT -= dt; if (autoT > 0) return; autoT = 1.5;
-    const t = now(); if (!nextAuto) nextAuto = t + 6;
+    autoT -= dt; if (autoT > 0) return; autoT = 2;
+    const t = now(); if (!nextAuto) nextAuto = t + 20;
     if (t < nextAuto) return;
+    const dayKey = 'capAuto_' + S.day; if ((S.done[dayKey] || 0) >= 3) return; // 하루 세 번까지
     if (U.dist(cap.x, cap.y, p.x, p.y) > 2.4 || S.rel.cap.backoffUntil > t || S.rel.cap.stage < 1) return;
-    const onBed = p.seat && p.seat.obj && (p.seat.obj.use || (p.seat.obj.f && p.seat.obj.f.use)) === 'bed';
-    const w = p.seat ? (onBed ? 'bed' : (cap.seat ? 'sit' : null)) : (p.moving && mode === 'follow' ? 'walk' : (stillT > 3 ? 'stand' : null));
-    if (!w || Math.random() < 0.5) return;
-    const c = contact(), st = S.rel.cap.stage;
-    const list = CAP_AUTO.filter(x => x.w === w && st >= x.need && (!x.from || x.from.includes(c)) && !refused(x.id) && !usedRecently(x.id, 40) && !(x.to && STILL[x.to] && isHug()));
+    if (!p.seat && !p.moving && stillT < 4) return;
+    if (Math.random() < 0.6) return;
+    const list = capList(false);
     if (!list.length) return;
     const x = U.pick(list);
-    nextAuto = t + 15 + Math.floor(Math.random() * 21); // 다음은 15~35분 뒤
-    noteLine(x.id);
-    if (x.to) setContact(x.to);
-    if (/머리 위|앞머리|볼을/.test(x.n)) cap.doPose('pat', 1.6, 'smile');
-    cap.showEmote('heart', 1.4); setTimeout(() => p.showEmote('heart', 1.2), 500);
-    PX.UI.toast(x.n, 2600);
-    setTimeout(() => g.bubble(cap, PX.Dlg.capPick(x.c)), 500);
+    S.done[dayKey] = (S.done[dayKey] || 0) + 1;
+    nextAuto = t + 40 + Math.floor(Math.random() * 80); // 다음은 40분~2시간 뒤
+    capDo(x, false);
+  }
+  // 내가 대위에게 부탁하기
+  async function requestMenu() {
+    const list = capList(true);
+    if (!list.length) { PX.UI.toast('지금 여기선 부탁할 게 없어요. 같이 있을 때 · 관계가 깊어지면 더 생겨요', 2600); return; }
+    const sw = situ(), title = { walk: '걸으며', stand: '같이 서서', sit: '앉은 채로', bed: '누운 채로' }[sw] || '';
+    const it = await PX.UI.menu(`💕 대위에게 부탁하기 · ${title}`, list.map(x => ({ t: `${x.icon} ${x.name}`, sub: x.heavy ? '조금 더 진한' : null, k: x })));
+    if (it) await capDo(it.k, true);
   }
 
   // ---------- 대위가 먼저 원할 때 (먼저 묻고, 거절하면 같은 건 한동안 다시 안 묻는다) ----------
@@ -326,5 +341,5 @@ PX.Mind = (() => {
   }
 
   const isSeat = (c = contact()) => !!SEAT[c];
-  return { isSeat, mem, gap, gapCat, noteTalk, noteMeet, notePart, justParted, noteRefuse, refused, phraseOk, notePhrases, noteLine, usedRecently, textOk, contact, setContact, apply, isWalk, isHug, isRest, tick, ACTS, BY, check, menuItems, perform, capAsk, NAME, ICON, where };
+  return { requestMenu, capList, capDo, isSeat, mem, gap, gapCat, noteTalk, noteMeet, notePart, justParted, noteRefuse, refused, phraseOk, notePhrases, noteLine, usedRecently, textOk, contact, setContact, apply, isWalk, isHug, isRest, tick, ACTS, BY, check, menuItems, perform, capAsk, NAME, ICON, where };
 })();
