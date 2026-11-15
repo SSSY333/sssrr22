@@ -6708,6 +6708,7 @@ PX.Cap = (() => {
     const O = PX.Op && PX.Op.op();
     if (O && O.phase === 'away') return O.joint ? '합동작전 중 (함께)' : '장기작전 중';
     if (O && O.phase === 'return') return { '부대 도착': '부대 도착', '복귀 보고': '작전 복귀 보고 중', '장비 반납': '장비 반납 중', '의료 확인': '복귀 검진 중', '샤워·환복': '씻는 중', '찾아가기': '나를 찾는 중' }[O.retStep] || '작전 복귀 중';
+    if (mode === 'linger') return '가기 전에 아쉬워하는 중';
     if (mode === 'date') return '약속 장소에서 기다리는 중';
     if (mode === 'waitOut') return '밖에서 기다리는 중';
     if (mode === 'paused') return '그 자리에서 기다리는 중';
@@ -6787,6 +6788,7 @@ PX.Cap = (() => {
       if (d > 14 && repathT <= 0) { const t = PX.Path.nearestWalkable(PX.W.maps[cap.map], p.x - 1, p.y - 1); if (t) { cap.x = t[0] + 0.5; cap.y = t[1] + 0.5; } } // 끼임 방지
       if (!cap.path.length && !cap.holding && d < 2.5 && !cap.seat) cap.setDirTo(p.x, p.y);
       // 플레이어가 앉으면 옆자리, 일어나면 같이 일어난다
+      if (cap.toSeat && cap.path.length) { toSeatT += dt; if (toSeatT > 2) { toSeatT = 0; cap.stop(); cap.toSeat = false; sitT = 0; } } else toSeatT = 0; // 자리로 가다 막히면 다시 판단
       if (p.seat && !cap.seat && !cap.path.length && sitT <= 0) { sitT = 2; sitNear(g); }
       if (!p.seat && cap.seat) cap.leaveSeat();
       sitT -= dt;
@@ -6818,17 +6820,19 @@ PX.Cap = (() => {
       return;
     }
     if (mode === 'visit') {
-      if (g.mapId !== homeId() || k === 'duty' || k === 'field') { release(); return; }
+      if (g.mapId !== homeId()) { release(); return; }
+      if (k === 'duty' || k === 'field') { startFarewell(k); return; }
       if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(PX.Dlg.capPick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: '조심히 가요.' }, { t: '조금만 더 있다 가요.' }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
       if (S.cap.cohab && S.time.min >= 22 * 60 && !g.modal) { S.cap.stay = 'bed'; mode = 'stay'; return; } // 같이 사는 사이: 묻지 않고 함께 잔다
       if (S.time.min >= 22 * 60 && !g.modal) g.trigger(nightCheck);
       return;
     }
+    if (mode === 'linger') return; // 작별 인사 중: 그 자리에
     if (mode === 'paused') { if (k === 'duty' || k === 'field' || St.absMin() > pausedUntil) { release(); } return; }
     if (mode === 'waitOut') { if (k === 'duty' || k === 'field' || St.absMin() > (waitOut ? waitOut.until : 0)) { release(); return; } waitOutTick(); return; }
     // 동행 해제 조건: 근무·작전 시간
     if (mode === 'follow') {
-      if (k === 'duty' || k === 'field') { release(); g.trigger(async () => { await PX.Dlg.say('cap', U.pickFresh('capToWork_' + k, k === 'field' ? ['외곽 수색 나간다. 다섯 시쯤 들어올게.', '수색 시간이다. 금방 올게. 기다리지 말고 쉬고 있어.', '나간다. 돌아오면 제일 먼저 너부터 볼게.'] : S.time.min < 9 * 60 + 30 ? ['브리핑 시간이다. 이따 보자. 도망가지 마.', '아침 브리핑 들어간다. 점심때 보자.'] : ['나 근무 들어가야 돼. 끝나고 찾아갈게.', '일하러 간다. 이따 보자.', '근무 시간이다. 너도 힘내.'])); PX.Dlg.close(); }); return; }
+      if (k === 'duty' || k === 'field') { startFarewell(k); return; } // 칼같이 가지 않는다: 아쉬워하다 간다
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30) { release('늦었다. 잘 자, ' + U.josa(U.givenName(S.player.name), '아') + '.'); return; }
       if (cap.map !== g.mapId && !g.transition) followIntoMap();
       // 가끔 스킨십 요청
@@ -6916,7 +6920,7 @@ PX.Cap = (() => {
   }
   // 플레이어 옆 빈자리에 앉기
   // 내 옆에 와서 앉을 때 한마디 (10분에 한 번 이하 · 시간·장소에 맞는 말 · 안 한 말부터)
-  let lastSitLine = -1e9;
+  let lastSitLine = -1e9, toSeatT = 0;
   const SIT_B = ['여기 앉아도 되지? 이미 앉았지만.', '다리 좀 쉬자.', '옆자리 비어 있길래.', '자리 좋다. 너 옆이라.', '조금만 쉬었다 가자.', '앉으니까 살 것 같다.', '여기 앉으면 네 얼굴 잘 보여.', '천천히 쉬어. 급할 거 없어.',
     '나 무거워서 의자가 삐걱거린다. 못 들은 걸로 해.', '여기 경치 괜찮네.', '좁아? 내가 좀 비켜 앉을게.', '이렇게 나란히 앉는 거 좋아.', '오늘 많이 걸었지. 발 아프지 않아?', '밤공기 좋다.', '아침부터 앉아 있으니까 사치 같다.', '점심 먹고 앉으니까 졸리네.'];
   const SIT_BL = ['어깨 빌려줄게.', '손 이리 줘.', '좀 더 붙어 앉아.', '자기 옆이 제일 편해.', '여기 내 지정석이다.', '기대도 돼. 아니, 기대.', '오늘은 여기서 안 움직일 거야.', '한 뼘도 멀다.'];
@@ -6933,10 +6937,11 @@ PX.Cap = (() => {
     let best = null, bd = 9;
     for (const o of m.objs) if (o.seats) for (const s of o.seats) { if (s.by) continue; const d = U.dist(s.x, s.y, p.x, p.y); if (d < bd && d < 2.2) { bd = d; best = s; } }
     if (!best) return false;
+    if (U.dist(cap.x, cap.y, best.x, best.y) < 2.6) { cap.stop(); cap.toSeat = false; cap.sitOn(best); sitLine(g); return true; } // 바로 옆자리면 돌아가지 않고 그대로 앉는다
     const a = PX.W.accessTile(m, best.obj);
     if (!a) return false;
     cap.toSeat = true;
-    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) { cap.sitOn(best); sitLine(g); } })) cap.toSeat = false;
+    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) { cap.sitOn(best); sitLine(g); } })) { cap.toSeat = false; if (U.dist(cap.x, cap.y, best.x, best.y) < 2.6 && !best.by) { cap.stop(); cap.sitOn(best); sitLine(g); } } // 손잡고 있다 바로 옆이면 그냥 앉는다
     return true;
   }
   function exitTo(outMap) { // 현재 실내 → 바깥, 바깥 → 다른 바깥은 travel
@@ -7094,6 +7099,44 @@ PX.Cap = (() => {
     if (st.seat) { const o = m.objs.find(o => o.seats && o.seats.some(x => Math.abs(x.x - st.seat.x) < 0.01 && Math.abs(x.y - st.seat.y) < 0.01)); const seat = o && o.seats.find(x => Math.abs(x.x - st.seat.x) < 0.01 && Math.abs(x.y - st.seat.y) < 0.01); if (seat && !seat.by) { cap.sitOn(seat); if (st.pose) cap.pose = st.pose; } }
     if (PX.Mind) try { PX.Mind.apply(); } catch (e) { /* 무시 */ }
     return true;
+  }
+  // ---------- 근무·수색 시간이 되었을 때의 작별 (아쉬워하고 · 우물쭈물하고 · 꼭 안고 간다) ----------
+  let farewellKey = null;
+  const FW_PRE = [['N:대위가 시계를 보고, 나를 보고, 또 시계를 본다.', 'C*:…시계가 고장 났으면 좋겠다.', 'C:가야 돼. 이따 끝나고 찾아갈게.'], ['C:…벌써 시간이 이렇게 됐네.', 'C;:가야 되는데 발이 안 떨어진다.', 'C:이따 꼭 보자.'],
+    ['C;:가기 싫다. 이 말 해도 되나 모르겠는데.', 'C^:…해 버렸네. 다녀올게.'], ['N:대위가 몇 걸음 가다 말고 돌아온다.', 'C:…아니, 그냥. 인사 제대로 하려고.', 'C^:이따 봐.']];
+  const FW_MID = [['N:대위가 손을 잡았다 놓았다를 몇 번이나 반복한다.', 'C;:…이거 놓으면 진짜 가야 되잖아.', 'C*:이따 다시 잡는다. 예약.'], ['C:근무 끝나면 제일 먼저 너 찾으러 올게.', 'N:그래 놓고 대위는 한참 그 자리에 서 있다.', 'C;:…가라고 등 좀 밀어 줘.'],
+    ['C*:오 분만 더 있으면 안 될까. …안 되겠지.', 'N:대위가 머리를 한 번 쓰다듬고서야 돌아선다.']];
+  const FW_LOV = [['N:대위가 말없이 끌어안는다. 꽤 오래.', 'C;:…충전 중이야. 근무 버티려면 필요해.', 'C:다녀올게, {cv}.'], ['C*:가기 전에 한 번만.', 'N:이마에 짧게 입을 맞추고, 그래도 아쉬운지 한 번 더 꽉 안는다.', 'C;:…진짜 가야 되는데.'],
+    ['N:대위가 뒤에서 껴안고 어깨에 턱을 얹는다.', 'C:…딱 열까지만 세고 갈게. 하나, 둘…', 'C*:…열. 아니, 다시 하나부터 셀까.'], ['C;:오 분만 더 있다 가면 안 될까. 중령님 무섭긴 한데.', 'N:대위가 손을 놓았다가, 다시 잡았다가, 결국 품에 한 번 끌어안고서야 놓는다.'],
+    ['N:대위가 정수리에 볼을 대고 한참 숨을 쉰다.', 'C:…네 냄새 기억해 두는 중. 근무 중에 꺼내 쓰게.'], ['C^:갔다 올게. 뽀뽀는 이따 두 배로.', 'N:말은 그렇게 해 놓고 대위가 볼에 하나를 먼저 남긴다.', 'C*:…선불이야.']];
+  const FW_FIELD = [['C:외곽 나간다. 다섯 시쯤 올 거야.', 'N:대위가 꼭 끌어안는다. 군복에서 기름 냄새가 난다.', 'C:…무사히 갔다 올게. 약속.'], ['C;:수색 나갈 때가 제일 싫어. 너 두고 가니까.', 'C^:모래 잔뜩 묻혀 올 테니까 털어 줘.']];
+  function startFarewell(k) {
+    const g = G(), S = St.S, key = S.day + ':' + k + ':' + Math.floor(S.time.min / 120);
+    if (farewellKey === key || g.modal) { if (farewellKey === key && mode !== 'linger') release(); return; }
+    farewellKey = key; mode = 'linger'; cap.stop();
+    g.trigger(async () => {
+      const r = S.rel.cap, st = r.stage, M = PX.Mind;
+      g.modal++;
+      try {
+        cap.setDirTo(g.player.x, g.player.y); g.player.setDirTo(cap.x, cap.y);
+        const pool = (k === 'field' && st >= 3 ? FW_FIELD : []).concat(st >= 4 ? FW_LOV : st >= 3 ? FW_MID.concat(FW_LOV.slice(0, 2)) : st >= 2 ? FW_MID.concat(FW_PRE) : FW_PRE);
+        // 연인 이상이면 껴안고 (앉아 있으면 앉은 채로)
+        if (st >= 3 && M && !M.refused('fronthug') && !g.player.seat) { M.setContact('FRONT_HUG'); }
+        await PX.Dlg.runLines(PX.Dlg.capPick(pool));
+        if (st >= 2) {
+          const i = await PX.Dlg.choose([{ t: st >= 4 ? '조금만 더 있다 가.' : '조금만 더 있다 가요.' }, { t: st >= 4 ? '얼른 가. 늦어.' : '얼른 가세요. 늦어요.' }]);
+          await PX.Dlg.say('player', i === 0 ? (st >= 4 ? '조금만 더 있다 가.' : '조금만 더 있다 가요.') : (st >= 4 ? '얼른 가. 늦어.' : '얼른 가세요. 늦어요.'), i === 0 ? 'blush' : 'normal');
+          if (i === 0) { await PX.Dlg.runLines(PX.Dlg.capPick([['C^:…응. 오 분만. 진짜 오 분.', 'N:오 분이 십 분이 된다. 결국 대위의 단말이 울린다.', 'C;:…혼나러 간다. 근데 하나도 후회 안 해.'], ['C~:그 말 기다렸어.', 'N:대위가 다시 꼭 끌어안는다. 이번엔 더 오래.', 'C:…됐다. 이제 진짜 간다.'], ['N:대위가 그 자리에 다시 앉는다. 시계는 일부러 안 본다.', 'C*:지각 사유: 애인이 붙잡음. 이거면 통과될까.']])); St.advance(10); St.addAff(2); }
+          else await PX.Dlg.runLines(PX.Dlg.capPick([['C:…응. 너 말 들을게.', 'C*:대신 이따 마중 나와.'], ['C^:알았어. 걱정해 주는 거지? 그거면 됐어.'], ['C;:…쫓겨났다. 서운한데 맞는 말이라 할 말이 없네.']]));
+        }
+      } finally {
+        if (PX.Mind && PX.Mind.contact() !== 'NONE') PX.Mind.setContact('NONE');
+        cap.tempPose = null; g.player.tempPose = null;
+        PX.Dlg.close(); g.modal--;
+        mode = 'follow'; release(null, 30);
+        setTimeout(() => G().bubble(cap, PX.Dlg.capPick(['…진짜 간다.', '이따 봐!', '뒤돌아보면 못 갈 것 같아서 안 돌아본다.', '…한 번만 더 볼게.', '도망가지 마. 이따 찾으러 온다.', '다녀올게!'])), 1800);
+      }
+    });
   }
   function startFollow() { mode = 'follow'; St.S.cap.follow = true; waitOut = null; }
   // 동행 잠시 멈추기: 그 자리에서 기다린다 (한 시간 지나거나 근무 시간이면 자기 일정으로)
@@ -9906,8 +9949,9 @@ PX.Mind = (() => {
   const WALK = { HAND_HOLD: 'hand', ARM_LINK: 'arm', WAIST_HOLD: 'waist', SHOULDER_HOLD: 'shoulder' };
   const STILL = { SIDE_HUG: 1, FRONT_HUG: 1, BACK_HUG: 1, EMBRACE: 1 };
   const REST = { LAP_REST: 1, CUDDLE: 1, SLEEP_CUDDLE: 1 };
-  const NAME = { NONE: '접촉 없음', HAND_HOLD: '손잡기', ARM_LINK: '팔짱', WAIST_HOLD: '허리 감싸기', SHOULDER_HOLD: '어깨 감싸기', SIDE_HUG: '옆에서 안기', FRONT_HUG: '포옹', BACK_HUG: '백허그', EMBRACE: '품에 안기', LAP_REST: '무릎베개', CUDDLE: '누워서 껴안기', SLEEP_CUDDLE: '함께 잠들기' };
-  const ICON = { NONE: '🚶', HAND_HOLD: '🤝', ARM_LINK: '💞', WAIST_HOLD: '🫶', SHOULDER_HOLD: '🤗', SIDE_HUG: '🤗', FRONT_HUG: '🫂', BACK_HUG: '🫂', EMBRACE: '🫂', LAP_REST: '😌', CUDDLE: '🛌', SLEEP_CUDDLE: '💤' };
+  const SEAT = { SIT_HAND: 1, SIT_LEAN: 1 }; // 앉은 채 손잡기 · 기대어 손잡기 (걷는 손잡기와 따로)
+  const NAME = { NONE: '접촉 없음', HAND_HOLD: '손잡기', ARM_LINK: '팔짱', WAIST_HOLD: '허리 감싸기', SHOULDER_HOLD: '어깨 감싸기', SIDE_HUG: '옆에서 안기', FRONT_HUG: '포옹', BACK_HUG: '백허그', EMBRACE: '품에 안기', LAP_REST: '무릎베개', SIT_HAND: '앉은 채 손잡기', SIT_LEAN: '기대어 손잡기', CUDDLE: '누워서 껴안기', SLEEP_CUDDLE: '함께 잠들기' };
+  const ICON = { NONE: '🚶', HAND_HOLD: '🤝', ARM_LINK: '💞', WAIST_HOLD: '🫶', SHOULDER_HOLD: '🤗', SIDE_HUG: '🤗', FRONT_HUG: '🫂', BACK_HUG: '🫂', EMBRACE: '🫂', LAP_REST: '😌', SIT_HAND: '🤝', SIT_LEAN: '😌', CUDDLE: '🛌', SLEEP_CUDDLE: '💤' };
   const contact = () => mem().contact;
   const isWalk = (c = contact()) => !!WALK[c], isHug = (c = contact()) => !!STILL[c], isRest = (c = contact()) => !!REST[c];
   // 상태를 바꾸면 이전 자세를 먼저 끝내고 새 자세를 건다 (두 접촉이 동시에 유지되지 않게)
@@ -9918,6 +9962,7 @@ PX.Mind = (() => {
     m.contact = st;
     apply();
     if (STILL[st]) { cap.doPose(st === 'BACK_HUG' ? 'hug' : 'hug', 9999, 'smile'); p.doPose('hug', 9999, 'blush'); }
+    if (SEAT[st] && !SEAT[prev]) { cap.showEmote('heart', 1.6); }
     return prev;
   }
   function apply() {
@@ -9937,6 +9982,8 @@ PX.Mind = (() => {
     if (STILL[st] && g.player.moving) { moveT += dt; if (moveT > 0.25) { moveT = 0; setContact('NONE'); g.cap.tempPose = null; g.player.tempPose = null; if (Math.random() < 0.5) g.bubble(g.cap, U.pickFresh('hugEnd', ['벌써 가?', '…응, 가자.', '아쉽다.', '다음엔 더 길게.']), 1.8); } }
     else moveT = 0;
     if (REST[st] && !g.player.seat) setContact('NONE');
+    if (WALK[st] && g.player.seat && g.player.seat.obj && (g.player.seat.obj.use || (g.player.seat.obj.f && g.player.seat.obj.f.use)) !== 'bed') setContact('SIT_HAND'); // 손잡고 걷다 앉으면 앉은 채로 손잡기
+    if (SEAT[st] && !g.player.seat) setContact(PX.Cap.mode === 'follow' ? 'HAND_HOLD' : 'NONE'); // 일어나면 다시 손잡고 걷기
   }
 
   // ---------- 3. 스킨십 카탈로그 ----------
@@ -10000,6 +10047,16 @@ PX.Mind = (() => {
     A('lappillow', { name: '무릎베개 해 주기', icon: '😌', need: 4, where: 'sit', to: 'LAP_REST', cd: 20, anim: 'none', lines: [['N:대위가 무릎을 툭툭 친다. 누우라는 뜻이다.', 'C:허벅지 단단해서 베개로는 별로일 거야.', 'C^:대신 머리는 계속 쓰다듬어 줄게.'], ['N:대위 무릎에 머리를 누인다. 커다란 손이 머리카락을 천천히 빗어 넘긴다.', 'C:자도 돼. 깨울 일 없어.']] }),
     A('backstroke', { name: '등을 천천히 쓰다듬기', icon: '🫳', need: 3, where: 'sit', cd: 10, anim: 'none', lines: [['N:커다란 손이 등을 위아래로 천천히 쓸어내린다.', 'C:긴장 풀어. 여긴 안전해.']] }),
     A('fingers', { name: '손가락 만지작거리기', icon: '🫱', need: 3, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위가 내 손가락을 하나씩 접었다 폈다 한다.', 'C*:손가락 하나가 내 손가락 반이야.'], ['C:가만있어. 반지 사이즈 재는 거 아니야. …아마.']] }),
+    A('sithand', { name: '앉은 채 손잡기', icon: '🤝', need: 2, where: 'sit', forbid: ['SIT_HAND', 'SIT_LEAN'], to: 'SIT_HAND', cd: 0, anim: 'none', lines: [['N:무릎 위로 손을 내밀자 대위가 기다렸다는 듯 잡는다.', 'C*:앉아서 잡는 손이 더 좋다. 안 놓아도 되니까.'], ['N:대위가 손을 잡아 자기 무릎 위에 올려 둔다.', 'C:여기가 제자리야.'], ['C^:손 차갑다. 내 손이 데워 줄게.', 'N:큰 손이 손을 통째로 감싼다.'], ['N:손가락 사이로 대위의 손가락이 하나씩 들어온다.', 'C:…깍지. 이게 제일 좋아.']] }),
+    A('sitlean', { name: '손잡고 어깨에 기대기', icon: '😌', need: 3, where: 'sit', req: ['SIT_HAND'], to: 'SIT_LEAN', cd: 5, anim: 'none', lines: [['N:손을 잡은 채 어깨에 머리를 기댄다. 대위가 움직이지 않으려고 숨까지 조심한다.', 'C:…이대로 한 시간 있어도 돼.'], ['C^:기대. 손은 계속 잡고.', 'N:대위가 엄지로 손등을 천천히 쓴다.']] }),
+    A('sitpalm', { name: '손바닥에 글씨 쓰기', icon: '✍️', need: 3, where: 'sit', req: ['SIT_HAND', 'SIT_LEAN'], cd: 10, anim: 'none', lines: [['N:대위의 손바닥에 손가락으로 글자를 하나씩 쓴다.', 'C*:…ㅅ, ㄹ… 잠깐. 다시 써 봐. 천천히.', 'C~:…알아들었어. 나도. 백 배로.'], ['N:대위가 내 손바닥에 뭔가를 쓴다. 간지러워서 웃음이 난다.', 'C^:맞혀 봐. …틀렸어. 정답은 “예뻐”.']] }),
+    A('sitcompare', { name: '손 크기 대 보기', icon: '🖐️', need: 2, where: 'sit', cd: 15, anim: 'none', lines: [['N:손바닥을 맞대 본다. 대위 손가락이 한 마디 넘게 길다.', 'C*:이 손으로 너 지키라고 큰 거야.'], ['C:손 대 봐. …와, 진짜 작다. 귀엽다.', 'N:대위가 맞댄 손가락을 그대로 접어 깍지를 낀다.']] }),
+    A('sitthigh', { name: '무릎 위에 손 올리기', icon: '🫳', need: 4, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위 무릎 위에 손을 올린다. 대위가 그 위에 자기 손을 덮는다.', 'C*:…일부러 그러는 거지. 알고 있어.'], ['C~:거기 손 올리면 나 집중 못 한다.', 'C^:…치우라는 말은 아니야.']] }),
+    A('sitnuzzle', { name: '팔에 얼굴 비비며 치대기', icon: '🥰', need: 4, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위 팔에 얼굴을 비빈다. 대위가 웃음을 참는다.', 'C*:고양이야? 오늘 왜 이렇게 붙어.', 'C^:…좋다는 얘기야. 계속해.'], ['N:팔을 끌어안고 볼을 비비자 대위가 고개를 숙여 정수리에 턱을 얹는다.', 'C:…이러다 일어날 수가 없겠다.']] }),
+    A('sitlap', { name: '대위 무릎에 다리 올리기', icon: '🦵', need: 4, where: 'sit', cd: 15, anim: 'none', lines: [['N:대위 무릎 위에 다리를 걸친다. 대위가 자연스럽게 발목을 잡아 고정한다.', 'C*:편해? 그럼 그대로 있어. 나 의자야.'], ['C^:다리 아프지? 주물러 줄게.', 'N:큰 손이 종아리를 천천히 주무른다.']] }),
+    A('sitear', { name: '귓가에 속삭이기', icon: '🗣️', need: 4, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위 귀에 대고 작게 이름을 부른다.', 'C!:…', 'C~:반칙이야. 귀 빨개진 거 보지 마.'], ['N:“좋아해”라고 속삭이자 대위가 고개를 돌려 이마를 맞댄다.', 'C:…나도. 귀로 말고 눈으로 말할게.']] }),
+    A('sitkisshand', { name: '맞잡은 손에 입맞춤', icon: '💋', need: 4, where: 'sit', req: ['SIT_HAND', 'SIT_LEAN'], cat: 'kiss', cd: 15, anim: 'none', lines: [['N:대위가 맞잡은 손을 들어 손등에 입을 맞춘다. 눈은 떼지 않는다.', 'C:…이 손 평생 내 거.'], ['N:맞잡은 손등에 입을 맞추자 대위가 잠깐 굳는다.', 'C*:…선수 치는 거야? 그럼 나도.', 'N:손가락 마디마디에 짧은 입맞춤이 이어진다.']] }),
+    A('sitrelease', { name: '손 놓기', icon: '✋', need: 0, where: 'sit', req: ['SIT_HAND', 'SIT_LEAN'], to: 'NONE', cd: 0, anim: 'none', lines: [['C;:…벌써? 알았어.', 'N:대위가 아쉬운 듯 손가락 끝까지 천천히 놓는다.'], ['C:응. 대신 일어날 때 다시 잡자.']] }),
     A('cheekpoke', { name: '장난스럽게 뺨 누르기', icon: '👉', need: 2, where: 'sit', cd: 10, anim: 'none', lines: [['N:손가락이 볼을 꾹 누른다.', 'C^:들어간다. 신기하다.']] }),
     // 침대 · 휴식 공간 (연인 이상, 같은 방에 있을 때)
     A('liebeside', { name: '침대에 나란히 눕기', icon: '🛏️', need: 4, where: 'bed', cd: 10, anim: 'none', lines: [['N:침대가 대위 무게에 한쪽으로 기운다. 자연스럽게 그쪽으로 굴러간다.', 'C*:중력이야. 내 탓 아니야.'], ['C:천장 보는 거 좋다. 옆에 네가 있으니까.']] }),
@@ -10081,6 +10138,7 @@ PX.Mind = (() => {
 
   // ---------- 대위가 먼저 원할 때 (먼저 묻고, 거절하면 같은 건 한동안 다시 안 묻는다) ----------
   const ASKS = [
+    { id: 'sithand', ask: [['C:…손.', 'N:대위가 무릎 위에 손바닥을 펼쳐 놓는다.'], ['C*:앉아서 할 일이 없네. 손이나 잡을까.'], ['C^:손 이리 줘. 그냥 잡고만 있을게.']] },
     { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?'], ['C*:손이 심심하다. 네 손도 심심해 보이고.'], ['C:잃어버리면 안 되니까. 손.'], ['C^:손 시렵지? 아니어도 잡자.'], ['C:…손 잡고 걸어도 돼?']] },
     { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?'], ['C*:팔짱 껴 볼래? 내 팔 튼튼해.'], ['C:여기 걸어. 내 팔에. 안 넘어지게.']] },
     { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.'], ['C*:이쪽으로 붙어. 허리 잡을게. 괜찮지?'], ['C:…허리에 손 올려도 돼?']] },
@@ -10112,7 +10170,8 @@ PX.Mind = (() => {
     return true;
   }
 
-  return { mem, gap, gapCat, noteTalk, noteMeet, notePart, justParted, noteRefuse, refused, phraseOk, notePhrases, noteLine, usedRecently, textOk, contact, setContact, apply, isWalk, isHug, isRest, tick, ACTS, BY, check, menuItems, perform, capAsk, NAME, ICON, where };
+  const isSeat = (c = contact()) => !!SEAT[c];
+  return { isSeat, mem, gap, gapCat, noteTalk, noteMeet, notePart, justParted, noteRefuse, refused, phraseOk, notePhrases, noteLine, usedRecently, textOk, contact, setContact, apply, isWalk, isHug, isRest, tick, ACTS, BY, check, menuItems, perform, capAsk, NAME, ICON, where };
 })();
 
 </script>

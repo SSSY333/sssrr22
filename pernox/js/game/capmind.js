@@ -42,8 +42,9 @@ PX.Mind = (() => {
   const WALK = { HAND_HOLD: 'hand', ARM_LINK: 'arm', WAIST_HOLD: 'waist', SHOULDER_HOLD: 'shoulder' };
   const STILL = { SIDE_HUG: 1, FRONT_HUG: 1, BACK_HUG: 1, EMBRACE: 1 };
   const REST = { LAP_REST: 1, CUDDLE: 1, SLEEP_CUDDLE: 1 };
-  const NAME = { NONE: '접촉 없음', HAND_HOLD: '손잡기', ARM_LINK: '팔짱', WAIST_HOLD: '허리 감싸기', SHOULDER_HOLD: '어깨 감싸기', SIDE_HUG: '옆에서 안기', FRONT_HUG: '포옹', BACK_HUG: '백허그', EMBRACE: '품에 안기', LAP_REST: '무릎베개', CUDDLE: '누워서 껴안기', SLEEP_CUDDLE: '함께 잠들기' };
-  const ICON = { NONE: '🚶', HAND_HOLD: '🤝', ARM_LINK: '💞', WAIST_HOLD: '🫶', SHOULDER_HOLD: '🤗', SIDE_HUG: '🤗', FRONT_HUG: '🫂', BACK_HUG: '🫂', EMBRACE: '🫂', LAP_REST: '😌', CUDDLE: '🛌', SLEEP_CUDDLE: '💤' };
+  const SEAT = { SIT_HAND: 1, SIT_LEAN: 1 }; // 앉은 채 손잡기 · 기대어 손잡기 (걷는 손잡기와 따로)
+  const NAME = { NONE: '접촉 없음', HAND_HOLD: '손잡기', ARM_LINK: '팔짱', WAIST_HOLD: '허리 감싸기', SHOULDER_HOLD: '어깨 감싸기', SIDE_HUG: '옆에서 안기', FRONT_HUG: '포옹', BACK_HUG: '백허그', EMBRACE: '품에 안기', LAP_REST: '무릎베개', SIT_HAND: '앉은 채 손잡기', SIT_LEAN: '기대어 손잡기', CUDDLE: '누워서 껴안기', SLEEP_CUDDLE: '함께 잠들기' };
+  const ICON = { NONE: '🚶', HAND_HOLD: '🤝', ARM_LINK: '💞', WAIST_HOLD: '🫶', SHOULDER_HOLD: '🤗', SIDE_HUG: '🤗', FRONT_HUG: '🫂', BACK_HUG: '🫂', EMBRACE: '🫂', LAP_REST: '😌', SIT_HAND: '🤝', SIT_LEAN: '😌', CUDDLE: '🛌', SLEEP_CUDDLE: '💤' };
   const contact = () => mem().contact;
   const isWalk = (c = contact()) => !!WALK[c], isHug = (c = contact()) => !!STILL[c], isRest = (c = contact()) => !!REST[c];
   // 상태를 바꾸면 이전 자세를 먼저 끝내고 새 자세를 건다 (두 접촉이 동시에 유지되지 않게)
@@ -54,6 +55,7 @@ PX.Mind = (() => {
     m.contact = st;
     apply();
     if (STILL[st]) { cap.doPose(st === 'BACK_HUG' ? 'hug' : 'hug', 9999, 'smile'); p.doPose('hug', 9999, 'blush'); }
+    if (SEAT[st] && !SEAT[prev]) { cap.showEmote('heart', 1.6); }
     return prev;
   }
   function apply() {
@@ -73,6 +75,8 @@ PX.Mind = (() => {
     if (STILL[st] && g.player.moving) { moveT += dt; if (moveT > 0.25) { moveT = 0; setContact('NONE'); g.cap.tempPose = null; g.player.tempPose = null; if (Math.random() < 0.5) g.bubble(g.cap, U.pickFresh('hugEnd', ['벌써 가?', '…응, 가자.', '아쉽다.', '다음엔 더 길게.']), 1.8); } }
     else moveT = 0;
     if (REST[st] && !g.player.seat) setContact('NONE');
+    if (WALK[st] && g.player.seat && g.player.seat.obj && (g.player.seat.obj.use || (g.player.seat.obj.f && g.player.seat.obj.f.use)) !== 'bed') setContact('SIT_HAND'); // 손잡고 걷다 앉으면 앉은 채로 손잡기
+    if (SEAT[st] && !g.player.seat) setContact(PX.Cap.mode === 'follow' ? 'HAND_HOLD' : 'NONE'); // 일어나면 다시 손잡고 걷기
   }
 
   // ---------- 3. 스킨십 카탈로그 ----------
@@ -136,6 +140,16 @@ PX.Mind = (() => {
     A('lappillow', { name: '무릎베개 해 주기', icon: '😌', need: 4, where: 'sit', to: 'LAP_REST', cd: 20, anim: 'none', lines: [['N:대위가 무릎을 툭툭 친다. 누우라는 뜻이다.', 'C:허벅지 단단해서 베개로는 별로일 거야.', 'C^:대신 머리는 계속 쓰다듬어 줄게.'], ['N:대위 무릎에 머리를 누인다. 커다란 손이 머리카락을 천천히 빗어 넘긴다.', 'C:자도 돼. 깨울 일 없어.']] }),
     A('backstroke', { name: '등을 천천히 쓰다듬기', icon: '🫳', need: 3, where: 'sit', cd: 10, anim: 'none', lines: [['N:커다란 손이 등을 위아래로 천천히 쓸어내린다.', 'C:긴장 풀어. 여긴 안전해.']] }),
     A('fingers', { name: '손가락 만지작거리기', icon: '🫱', need: 3, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위가 내 손가락을 하나씩 접었다 폈다 한다.', 'C*:손가락 하나가 내 손가락 반이야.'], ['C:가만있어. 반지 사이즈 재는 거 아니야. …아마.']] }),
+    A('sithand', { name: '앉은 채 손잡기', icon: '🤝', need: 2, where: 'sit', forbid: ['SIT_HAND', 'SIT_LEAN'], to: 'SIT_HAND', cd: 0, anim: 'none', lines: [['N:무릎 위로 손을 내밀자 대위가 기다렸다는 듯 잡는다.', 'C*:앉아서 잡는 손이 더 좋다. 안 놓아도 되니까.'], ['N:대위가 손을 잡아 자기 무릎 위에 올려 둔다.', 'C:여기가 제자리야.'], ['C^:손 차갑다. 내 손이 데워 줄게.', 'N:큰 손이 손을 통째로 감싼다.'], ['N:손가락 사이로 대위의 손가락이 하나씩 들어온다.', 'C:…깍지. 이게 제일 좋아.']] }),
+    A('sitlean', { name: '손잡고 어깨에 기대기', icon: '😌', need: 3, where: 'sit', req: ['SIT_HAND'], to: 'SIT_LEAN', cd: 5, anim: 'none', lines: [['N:손을 잡은 채 어깨에 머리를 기댄다. 대위가 움직이지 않으려고 숨까지 조심한다.', 'C:…이대로 한 시간 있어도 돼.'], ['C^:기대. 손은 계속 잡고.', 'N:대위가 엄지로 손등을 천천히 쓴다.']] }),
+    A('sitpalm', { name: '손바닥에 글씨 쓰기', icon: '✍️', need: 3, where: 'sit', req: ['SIT_HAND', 'SIT_LEAN'], cd: 10, anim: 'none', lines: [['N:대위의 손바닥에 손가락으로 글자를 하나씩 쓴다.', 'C*:…ㅅ, ㄹ… 잠깐. 다시 써 봐. 천천히.', 'C~:…알아들었어. 나도. 백 배로.'], ['N:대위가 내 손바닥에 뭔가를 쓴다. 간지러워서 웃음이 난다.', 'C^:맞혀 봐. …틀렸어. 정답은 “예뻐”.']] }),
+    A('sitcompare', { name: '손 크기 대 보기', icon: '🖐️', need: 2, where: 'sit', cd: 15, anim: 'none', lines: [['N:손바닥을 맞대 본다. 대위 손가락이 한 마디 넘게 길다.', 'C*:이 손으로 너 지키라고 큰 거야.'], ['C:손 대 봐. …와, 진짜 작다. 귀엽다.', 'N:대위가 맞댄 손가락을 그대로 접어 깍지를 낀다.']] }),
+    A('sitthigh', { name: '무릎 위에 손 올리기', icon: '🫳', need: 4, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위 무릎 위에 손을 올린다. 대위가 그 위에 자기 손을 덮는다.', 'C*:…일부러 그러는 거지. 알고 있어.'], ['C~:거기 손 올리면 나 집중 못 한다.', 'C^:…치우라는 말은 아니야.']] }),
+    A('sitnuzzle', { name: '팔에 얼굴 비비며 치대기', icon: '🥰', need: 4, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위 팔에 얼굴을 비빈다. 대위가 웃음을 참는다.', 'C*:고양이야? 오늘 왜 이렇게 붙어.', 'C^:…좋다는 얘기야. 계속해.'], ['N:팔을 끌어안고 볼을 비비자 대위가 고개를 숙여 정수리에 턱을 얹는다.', 'C:…이러다 일어날 수가 없겠다.']] }),
+    A('sitlap', { name: '대위 무릎에 다리 올리기', icon: '🦵', need: 4, where: 'sit', cd: 15, anim: 'none', lines: [['N:대위 무릎 위에 다리를 걸친다. 대위가 자연스럽게 발목을 잡아 고정한다.', 'C*:편해? 그럼 그대로 있어. 나 의자야.'], ['C^:다리 아프지? 주물러 줄게.', 'N:큰 손이 종아리를 천천히 주무른다.']] }),
+    A('sitear', { name: '귓가에 속삭이기', icon: '🗣️', need: 4, where: 'sit', cd: 10, anim: 'none', lines: [['N:대위 귀에 대고 작게 이름을 부른다.', 'C!:…', 'C~:반칙이야. 귀 빨개진 거 보지 마.'], ['N:“좋아해”라고 속삭이자 대위가 고개를 돌려 이마를 맞댄다.', 'C:…나도. 귀로 말고 눈으로 말할게.']] }),
+    A('sitkisshand', { name: '맞잡은 손에 입맞춤', icon: '💋', need: 4, where: 'sit', req: ['SIT_HAND', 'SIT_LEAN'], cat: 'kiss', cd: 15, anim: 'none', lines: [['N:대위가 맞잡은 손을 들어 손등에 입을 맞춘다. 눈은 떼지 않는다.', 'C:…이 손 평생 내 거.'], ['N:맞잡은 손등에 입을 맞추자 대위가 잠깐 굳는다.', 'C*:…선수 치는 거야? 그럼 나도.', 'N:손가락 마디마디에 짧은 입맞춤이 이어진다.']] }),
+    A('sitrelease', { name: '손 놓기', icon: '✋', need: 0, where: 'sit', req: ['SIT_HAND', 'SIT_LEAN'], to: 'NONE', cd: 0, anim: 'none', lines: [['C;:…벌써? 알았어.', 'N:대위가 아쉬운 듯 손가락 끝까지 천천히 놓는다.'], ['C:응. 대신 일어날 때 다시 잡자.']] }),
     A('cheekpoke', { name: '장난스럽게 뺨 누르기', icon: '👉', need: 2, where: 'sit', cd: 10, anim: 'none', lines: [['N:손가락이 볼을 꾹 누른다.', 'C^:들어간다. 신기하다.']] }),
     // 침대 · 휴식 공간 (연인 이상, 같은 방에 있을 때)
     A('liebeside', { name: '침대에 나란히 눕기', icon: '🛏️', need: 4, where: 'bed', cd: 10, anim: 'none', lines: [['N:침대가 대위 무게에 한쪽으로 기운다. 자연스럽게 그쪽으로 굴러간다.', 'C*:중력이야. 내 탓 아니야.'], ['C:천장 보는 거 좋다. 옆에 네가 있으니까.']] }),
@@ -217,6 +231,7 @@ PX.Mind = (() => {
 
   // ---------- 대위가 먼저 원할 때 (먼저 묻고, 거절하면 같은 건 한동안 다시 안 묻는다) ----------
   const ASKS = [
+    { id: 'sithand', ask: [['C:…손.', 'N:대위가 무릎 위에 손바닥을 펼쳐 놓는다.'], ['C*:앉아서 할 일이 없네. 손이나 잡을까.'], ['C^:손 이리 줘. 그냥 잡고만 있을게.']] },
     { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?'], ['C*:손이 심심하다. 네 손도 심심해 보이고.'], ['C:잃어버리면 안 되니까. 손.'], ['C^:손 시렵지? 아니어도 잡자.'], ['C:…손 잡고 걸어도 돼?']] },
     { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?'], ['C*:팔짱 껴 볼래? 내 팔 튼튼해.'], ['C:여기 걸어. 내 팔에. 안 넘어지게.']] },
     { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.'], ['C*:이쪽으로 붙어. 허리 잡을게. 괜찮지?'], ['C:…허리에 손 올려도 돼?']] },
@@ -248,5 +263,6 @@ PX.Mind = (() => {
     return true;
   }
 
-  return { mem, gap, gapCat, noteTalk, noteMeet, notePart, justParted, noteRefuse, refused, phraseOk, notePhrases, noteLine, usedRecently, textOk, contact, setContact, apply, isWalk, isHug, isRest, tick, ACTS, BY, check, menuItems, perform, capAsk, NAME, ICON, where };
+  const isSeat = (c = contact()) => !!SEAT[c];
+  return { isSeat, mem, gap, gapCat, noteTalk, noteMeet, notePart, justParted, noteRefuse, refused, phraseOk, notePhrases, noteLine, usedRecently, textOk, contact, setContact, apply, isWalk, isHug, isRest, tick, ACTS, BY, check, menuItems, perform, capAsk, NAME, ICON, where };
 })();
