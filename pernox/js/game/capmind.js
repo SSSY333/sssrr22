@@ -262,7 +262,12 @@ PX.Mind = (() => {
       g.modal++;
       try {
         await PX.Dlg.say('player', F(U.pickFresh('cr_' + x.id, x.r)), 'blush');
-        await PX.Dlg.runLines(['N:' + U.pickFresh('cn_' + x.id, x.n), 'C:' + PX.Dlg.capPick(x.c)]);
+        const sc = PX.SKIN_CAP_SCENE && PX.SKIN_CAP_SCENE[x.id];
+        if (sc) { // 수위 높은 것: 분위기·눈빛·손의 위치까지 자세한 장면
+          const lines = U.pickFresh('cs_' + x.id, sc).slice();
+          if (!/^C:/.test(lines[lines.length - 1])) lines.push('C:' + PX.Dlg.capPick(x.c));
+          await PX.Dlg.runLines(lines);
+        } else await PX.Dlg.runLines(['N:' + U.pickFresh('cn_' + x.id, x.n), 'C:' + PX.Dlg.capPick(x.c)]);
       } finally { PX.Dlg.close(); g.modal--; }
       cap.showEmote('heart', 2); setTimeout(() => p.showEmote('heart', 1.6), 400);
       const k = 'cdo_' + x.id + '_' + S.day; if (!S.done[k]) { S.done[k] = 1; St.addAff(x.need >= 5 ? 4 : 2); }
