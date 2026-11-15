@@ -123,11 +123,19 @@ PX.UI = (() => {
     g.drawImage(f1.c, 66, 222); g.drawImage(f2.c, 96, 234);
   }
 
+  // 생일 고르기 (월 · 일) · onChange({m,d})
+  function bdayPick(v, onChange) {
+    const mI = el('input', { type: 'number', min: '1', max: '12', value: v ? String(v.m) : '', placeholder: '월', class: 'num' });
+    const dI = el('input', { type: 'number', min: '1', max: '31', value: v ? String(v.d) : '', placeholder: '일', class: 'num' });
+    const ch = () => { const m = +mI.value, d = +dI.value; onChange(m >= 1 && m <= 12 && d >= 1 && d <= Cal.daysInMonth(2028, m) ? { m, d } : null); };
+    mI.oninput = ch; dI.oninput = ch;
+    return el('div', { class: 'date' }, mI, '월', dI, '일');
+  }
   // ---------- 캐릭터 생성 ----------
   function create(slot) {
     $('title').classList.add('hidden');
     const C = $('create'); C.classList.remove('hidden');
-    const f = { name: '', gender: '여성', skin: 0, hair: 'pony', hairColor: '흑발', eye: '갈색', outfit: 'hoodie', job: 'medic', capName: '서무진', mode: 'normal', start: { y: 2027, m: 1, d: 1 } };
+    const f = { name: '', gender: '여성', skin: 0, hair: 'pony', hairColor: '흑발', eye: '갈색', outfit: 'hoodie', job: 'medic', capName: '서무진', mode: 'normal', start: { y: 2027, m: 1, d: 1 }, bday: null, capBday: { m: 8, d: 14 } };
     const body = $('createBody'); body.innerHTML = '';
     const row = (label, ...kids) => el('div', { class: 'row' }, el('label', null, label), el('div', { class: 'ctl' }, ...kids));
     const swatches = (list, key, colorOf) => { const w = el('div', { class: 'sw' }); list.forEach((v, i) => { const b = el('button', { class: 'swb', style: `background:${colorOf(v, i)}`, title: typeof v === 'string' ? v : '' }); b.onclick = () => { f[key] = typeof v === 'string' ? v : i; [...w.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); preview(); }; if ((typeof v === 'string' ? v : i) === f[key]) b.classList.add('on'); w.append(b); }); return w; };
@@ -157,7 +165,9 @@ PX.UI = (() => {
       row('눈 색', swatches(Object.keys(PX.S.EYEC), 'eye', v => PX.S.EYEC[v])),
       row('기본 복장', chips(Object.entries(PX.S.OUTFITS).map(([k, o]) => [k, o.ko]), 'outfit')),
       el('div', { class: 'row col' }, el('label', null, '직업'), jobBox),
+      row('내 생일', bdayPick(null, v => { f.bday = v; })),
       row('대위 이름', capIn),
+      row('대위 생일', bdayPick(f.capBday, v => { f.capBday = v || { m: 8, d: 14 }; })),
       row('관계 진행', chips([['normal', '보통'], ['fast', '빠르게 (호감 2배)'], ['lovers', '이미 연인으로 시작']], 'mode')),
       row('시작 날짜', el('div', { class: 'date' }, yIn, '년', mIn, '월', dIn, '일'), dateNote),
     );
@@ -179,7 +189,7 @@ PX.UI = (() => {
   }
 
   // ---------- 개인 단말 ----------
-  const TABS = [['map', '🗺️ 지도'], ['cal', '📅 일정표'], ['duty', '🗓️ 근무표'], ['rel', '💞 관계도'], ['msg', '📱 메시지'], ['contacts', '👥 연락처'], ['inv', '🎒 소지품'], ['quest', '📋 부탁'], ['codex', '📗 생태도감'], ['album', '📷 사진첩'], ['lore', '📚 로어북'], ['set', '⚙️ 설정·저장']];
+  const TABS = [['map', '🗺️ 지도'], ['cal', '📅 일정표'], ['duty', '🗓️ 근무표'], ['rel', '💞 관계도'], ['msg', '📱 메시지'], ['inv', '🎒 소지품'], ['quest', '📋 대위 부탁'], ['codex', '📗 생태도감'], ['album', '📷 사진첩'], ['lore', '📚 로어북'], ['set', '⚙️ 설정·저장']];
   let termTab = 'cal';
   function terminal(tab) {
     if (tab) termTab = tab;
@@ -242,7 +252,9 @@ PX.UI = (() => {
         const ev = Cal.eventsOn(date);
         detail.innerHTML = '';
         detail.append(el('b', null, Cal.fmtDate(date) + ' · ' + Cal.SEASON_KO[Cal.season(date.m)] + ' · 날씨 예보 ' + Cal.WEATHER[Cal.weatherOf(date)].ko));
-        if (!ev.length) detail.append(el('p', { class: 'muted' }, '등록된 행사가 없어요.'));
+        if (PX.Bday && PX.Bday.isMine(date)) detail.append(el('div', { class: 'ev' }, el('b', null, '🎂 내 생일')));
+        if (PX.Bday && PX.Bday.isCap(date)) detail.append(el('div', { class: 'ev' }, el('b', null, `🎂 ${S.capName}의 생일`)));
+        if (!ev.length && !(PX.Bday && (PX.Bday.isMine(date) || PX.Bday.isCap(date)))) detail.append(el('p', { class: 'muted' }, '등록된 행사가 없어요.'));
         for (const e of ev) detail.append(el('div', { class: 'ev' }, el('b', null, `${e.id} ${e.originalTitle}`), el('small', null, `${e.location}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''}`), el('p', null, e.description), e.captainReaction ? el('p', { class: 'cap' }, '대위: ' + e.captainReaction) : null));
       };
       for (let d = 1; d <= Cal.daysInMonth(calView.y, calView.m); d++) {
@@ -252,6 +264,7 @@ PX.UI = (() => {
         const wd = Cal.weekday(date.y, date.m, d);
         const cell = el('button', { class: 'cd' + (today ? ' today' : '') + (wd === 0 ? ' sun' : wd === 6 ? ' sat' : '') }, String(d));
         if (ev.length) cell.append(el('i', { class: 'evdot' + (ev.some(e => e.eventType === 'base') ? ' base' : '') }));
+        if (PX.Bday && (PX.Bday.isMine(date) || PX.Bday.isCap(date))) cell.append(el('span', { class: 'bdmark' }, '🎂'));
         cell.onclick = () => { [...grid.querySelectorAll('.cd')].forEach(c => c.classList.remove('sel')); cell.classList.add('sel'); showDay(d); };
         grid.append(cell);
       }
@@ -323,15 +336,6 @@ PX.UI = (() => {
       }
       badge();
     },
-    contacts(p) {
-      const S = St.S;
-      for (const n of PX.NPCS) {
-        const name = n.id === 'cap' ? S.capName : n.name;
-        const where = n.id === 'cap' ? (PX.Game.cap.map === PX.Game.mapId ? '가까이 있음' : '알 수 없음') : (() => { const npc = PX.Game.npcs.find(x => x.id === n.id); return npc && npc.map ? PX.MAPS[npc.map].name : '지도 밖 (개인 공간)'; })();
-        p.append(el('details', { class: 'contact' }, el('summary', null, el('b', null, name), el('small', null, ` ${n.job} · 지금: ${where}`)),
-          el('p', null, `${n.age}세 · ${n.personality}`), el('p', { class: 'muted' }, `근무지: ${n.work} · 거주: ${n.home} · 좋아하는 음식: ${n.likesFood} · 좋아하는 선물: ${n.likesGift}`)));
-      }
-    },
     inv(p) {
       const S = St.S;
       const ids = Object.keys(S.inv).filter(k => S.inv[k] > 0);
@@ -345,18 +349,7 @@ PX.UI = (() => {
       }
       p.append(el('p', { class: 'muted' }, `소지금 ₢${S.money} · 기력 ${Math.round(S.energy)}/100`));
     },
-    quest(p) {
-      const S = St.S;
-      const qs = (S.quests || []);
-      if (!qs.length) p.append(el('p', { class: 'muted' }, '오늘 들어온 부탁이 없어요.'));
-      for (const q of qs) {
-        const n = PX.NPC_BY_ID[q.npc], it = PX.ITEMS[q.item];
-        const npc = PX.Game.npcs.find(x => x.id === q.npc);
-        const where = npc && npc.map ? PX.MAPS[npc.map].name : '지금은 자리에 없음';
-        p.append(el('div', { class: 'ev' + (q.done ? ' done' : '') }, el('b', null, `${q.done ? '✅' : '📌'} ${n.name}: ${it.icon} ${it.name} 구해 주기`), el('small', null, `사례 ₢${q.reward} · ${q.hint} · ${n.name} 위치: ${where}${St.has(q.item) && !q.done ? ' · 가지고 있음!' : ''}`), el('p', null, q.done ? '전달 완료' : `남은 기한 ${Math.max(1, 3 - (S.day - q.day))}일 · 물건을 들고 ${n.name}에게 말을 거세요.`)));
-      }
-      p.append(el('p', { class: 'muted' }, `지금까지 들어준 부탁 ${S.stats.quests || 0}건. 매일 아침 새 부탁이 와요.`));
-    },
+    quest(p) { PX.CapFavor.pane(p, el); },
     codex(p) {
       const S = St.S, c = S.codex || {};
       const n = PX.CODEX.filter(e => c[e.id]).length;
@@ -400,6 +393,8 @@ PX.UI = (() => {
       snd.onclick = () => { S.settings.sound = !S.settings.sound; snd.textContent = S.settings.sound ? '🔊 효과음 켬' : '🔇 효과음 끔'; snd.classList.toggle('on', S.settings.sound); };
       const qa = el('div', { class: 'chips' });
       for (const [k, t] of [['auto', '자동'], ['high', '고화질'], ['low', '절전']]) { const b = el('button', { class: 'chip' + ((S.settings.quality || 'auto') === k ? ' on' : '') }, t); b.onclick = () => { S.settings.quality = k; PX.Game.lowPerf = k === 'low'; [...qa.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); }; qa.append(b); }
+      const bdNote = el('small', { class: 'note' }, S.player.bday ? '' : '내 생일을 정하면 그날 대위가 챙겨 줘요.');
+      p.append(el('h4', null, '🎂 생일'), el('div', { class: 'row' }, el('label', null, '내 생일'), bdayPick(S.player.bday, v => { if (v) { S.player.bday = v; bdNote.textContent = `${v.m}월 ${v.d}일로 정했어요`; } })), el('div', { class: 'row' }, el('label', null, `${S.capName} 생일`), bdayPick(S.capBday, v => { if (v) { S.capBday = v; bdNote.textContent = `대위 생일: ${v.m}월 ${v.d}일`; } })), bdNote);
       p.append(el('h4', null, '시간 흐름'), sp, el('h4', null, '소리'), snd, el('h4', null, '화질 (폰이 버벅이면 절전)'), qa, el('small', null, PX.Game.lowPerf ? '지금 절전 모드로 돌아가는 중' : ''), el('h4', null, '저장'));
       for (const n of [1, 2]) {
         const pk = St.peek(n);

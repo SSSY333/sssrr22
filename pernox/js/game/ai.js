@@ -81,12 +81,11 @@ ${p}(${PX.JOBS[S.player.job].ko})에게 첫눈에 반했고, 처음 만난 지 1
     const G = PX.Game, m = PX.MAPS[G.mapId], r = S.rel.npc[npc.id] || {};
     const ev = Cal.eventsOn(S.time).map(e => `${e.originalTitle}(${e.location})`);
     const w = m.dome ? '돔 안 인공 기후(맑음)' : Cal.WEATHER[St.weather()].ko;
-    const q = (S.quests || []).find(q => q.npc === npc.id && !q.done);
     return `[지금 상황]
 날짜: ${Cal.fmtDate(S.time)} ${Cal.fmtTime(S.time.min)} · ${Cal.SEASON_KO[St.season()]} · 날씨: ${w}
 장소: ${m.name} · ${npc.def.name} 지금 하는 일: ${ACT_KO[npc.activity()] || '쉬는 중'}
 플레이어와의 친밀도: ${r.f || 0}/100 (${(r.f || 0) >= 60 ? '꽤 친함' : (r.f || 0) >= 25 ? '얼굴 아는 사이' : '아직 서먹함'}) · 지금까지 대화 ${r.talks || 0}번
-${q ? `부탁해 둔 것: ${PX.ITEMS[q.item].name}을 구해 달라고 했다.\n` : ''}오늘 행사: ${ev.join(', ') || '없음'}`;
+오늘 행사: ${ev.join(', ') || '없음'}`;
   }
   const FORMAT_N = `[답 형식] 아래 JSON 하나로만 답한다.
 {"lines":[{"face":"normal|smile|sad|surprise","text":"대사"}],"aff":정수}

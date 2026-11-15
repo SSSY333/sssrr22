@@ -29,7 +29,7 @@
   Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; };
   Game.startNew = (f) => {
     St.newGame(f);
-    St.S.quests = []; St.S.codex = {}; St.makeQuests();
+    St.S.quests = []; St.S.codex = {};
     initWorld();
     const S = St.S;
     const home = PX.JOBS[S.player.job].home;
@@ -1073,6 +1073,8 @@
     if (Game.critters) { for (const c of Game.critters) c.update(dt); PX.Act.critterThink(); }
     if (PX.CapAct) PX.CapAct.tick(dt);
     if (PX.Plan) PX.Plan.tick(dt);
+    if (PX.CapFavor) PX.CapFavor.tick(dt);
+    if (PX.Bday) PX.Bday.tick(dt);
     if (PX.Mind) { PX.Mind.tick(dt); stareTick(dt); }
     capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
     npcT -= dt;
@@ -1237,7 +1239,7 @@
   St.on('newDay', () => {
     const S = St.S;
     PX.Op.maybeSchedule();
-    St.makeQuests();
+    if (PX.Bday) PX.Bday.newDay();
     S.rel.cap.talksToday = 0;
     // 계절이 바뀌면 옷 갱신
     Game.player.app = PX.S.playerApp(S.player, St.season()); Game.capOutfit();

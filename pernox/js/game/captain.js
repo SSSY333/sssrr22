@@ -350,6 +350,7 @@ PX.Cap = (() => {
     cap.showEmote('heart', 1.5);
     // 장기작전에서 돌아와 찾아온 경우: 특별한 재회
     const M = PX.Mind, reu = M && M.mem().reunion;
+    if (PX.Bday && await PX.Bday.meet()) { /* 생일: 축하가 인사를 대신한다 */ } else
     if (reu && PX.DLG_V2) {
       const bd = PX.Dlg.pick('v_reunion', PX.DLG_V2.reunion);
       await PX.Dlg.runLines(bd ? bd.l : ['C:나 왔어.'], { reply: true });

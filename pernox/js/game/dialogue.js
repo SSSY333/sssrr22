@@ -431,24 +431,6 @@ PX.Dlg = (() => {
     S.recent[key] = [line, ...recent].slice(0, Math.max(1, pool.length - 2));
     const G = PX.Game; G.modal++;
     npc.setDirTo(G.player.x, G.player.y); G.player.setDirTo(npc.x, npc.y);
-    // 부탁(퀘스트) 전달
-    const q = (S.quests || []).find(q => q.npc === npc.id && !q.done);
-    if (q && St.has(q.item)) {
-      const it = PX.ITEMS[q.item];
-      const i = await choose([{ t: `${it.icon} 부탁하신 ${it.name} 여기요.` }, { t: '그냥 얘기하러 왔어요.' }]);
-      if (i === 0) {
-        await say('player', `부탁하신 ${it.name} 여기요.`);
-        St.addItem(q.item, -1); q.done = true; S.money += q.reward; St.addNpcF(npc.id, 8); S.stats.quests = (S.stats.quests || 0) + 1;
-        await say(npc.id, U.pick(d.banmal ? ['오, 구해 왔네. 고맙다. 이건 사례야.', '덕분에 살았다. 받아 둬.'] : ['와, 진짜 고마워요! 이건 사례예요.', '구해 주셨네요! 덕분에 살았어요.', '역시 믿을 만해요. 받아 주세요.']), 'smile');
-        PX.UI.toast(`✅ 부탁 완료 · ₢${q.reward} · ${d.name}와(과) 친해졌다`.replace('와(과)', U.hasBatchim(d.name) ? '과' : '와'));
-        close(); G.modal--; return;
-      }
-    } else if (q && q.asked != null) { // 부탁은 한 번만 하고, 다른 날에 가끔 짧게 상기만
-      if (q.asked !== S.day && q.reminded !== S.day && Math.random() < 0.3) { q.reminded = S.day; const nm = PX.ITEMS[q.item].name; line = d.banmal ? U.pick([`그 ${nm}, 생각나면 부탁해.`, `${nm}은 급한 거 아니야. 천천히.`]) : U.pick([`아, 그 ${nm}… 혹시 보이면요. 급한 건 아니에요.`, `전에 말씀드린 ${nm}, 천천히 하셔도 돼요.`]); }
-    } else if (q) {
-      q.asked = S.day;
-      line = d.banmal ? `아, ${PX.ITEMS[q.item].name} 구하면 나 좀 줘. ${q.hint.replace(/에요\.$/, '야.').replace(/있어요\.$/, '있어.').replace(/팔아요\.$/, '팔아.').replace(/거예요\.$/, '거야.').replace(/더라고요\.$/, '더라.')}` : `아, 혹시 ${PX.ITEMS[q.item].name} 구하면 저 좀 주실래요? ${q.hint}`;
-    }
     { const f = r.f || 0, busy = ['workout', 'cook', 'grill', 'work_hangar', 'work_med', 'guard', 'sleep', 'eat'].includes(act);
       if (!busy && !npc.seat && (r.lastTalkDay !== S.day)) npc.doPose('wave', 1.2);
       if (f >= 70 && Math.random() < 0.4) npc.showEmote('heart', 1.6); else if (/[!]$/.test(line) && Math.random() < 0.5) npc.showEmote('note', 1.4); }
