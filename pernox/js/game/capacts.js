@@ -204,7 +204,14 @@ PX.CapAct = (() => {
     await lines(['N:대위 어깨에 손을 올린다. 돌덩이 같다.', 'C!:…어.', PX.Dlg.capPick(['C;:거기. 거기 좀 더.', 'C:…아. 거기 뭉쳤구나. 몰랐어.']), 'C^:너 손 작은데 힘 좋다. 다음엔 내가 해 줄게. 살살.']);
     St.advance(10); gain('massage', 4);
   };
-  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines([PX.Dlg.capPick(['C:응. 여기 있어. 아무 말 안 해도 돼.', 'C*:조금 더 붙어. 냉각기 바람 막아 줄게.'])]); gain('sitBy', 2); };
+  // 옆에 앉기: 시간·장소·관계에 맞는 말을 돌려 가며 (안 한 말부터)
+  const SIT_PRE = [['C:응. 여기 있어. 아무 말 안 해도 돼.'], ['C*:자리 넓은데 굳이 내 옆이네. 좋아.'], ['C:앉으니까 다리 쉬는 게 느껴진다. 오늘 많이 걸었어.'], ['C^:같이 앉아 있으니까 시간이 천천히 가.'],
+    ['C:불편하면 말해. 내가 덩치가 커서 자리를 많이 차지해.'], ['C*:옆에 앉아 있으면 이상하게 조용해져. 좋은 쪽으로.'], ['C:잠깐 쉬었다 가자. 급할 거 없어.'], ['C^:여기 앉으니까 네 얼굴이 딱 내 눈높이네. 서 있을 땐 정수리만 보였는데.'],
+    ['C:…그냥 이렇게 있는 것도 좋다.'], ['C*:무슨 생각 해? 아니, 말 안 해도 돼. 표정 보고 맞혀 볼게.'], ['C;:나 여기서 졸면 깨워 줘. 아니, 그냥 둬.'], ['C:오늘 있었던 일 하나만 말해 줘. 아무거나.'],
+    ['C*:조금 더 붙어. 냉각기 바람 막아 줄게.'], ['C^:밤공기 좋다. 이렇게 앉아 있으니까 하루가 끝나는 느낌이야.'], ['C:점심 먹고 앉아 있으니까 졸리다. 너도 눈 감기지?'], ['C^:아침부터 같이 앉아 있으니까 오늘 하루 잘될 것 같아.']];
+  const SIT_LOV = [['N:대위가 팔을 등받이에 걸쳐 어깨를 감싼다.', 'C:…자리 이거 맞지? 내 자리.'], ['C*:기대. 어깨는 원래 너 쓰라고 있는 거야.'], ['C^:{cv}, 손.', 'N:무릎 위에서 손가락이 하나씩 얽힌다.'], ['C:이렇게 앉아 있으면 작전 생각이 하나도 안 나.'],
+    ['C*:한 뼘 떨어져 앉았네. 너무 멀어. 이리 와.'], ['N:대위가 머리를 살짝 기대 온다. 생각보다 무겁다.', 'C;:…잠깐만. 이대로.'], ['C:오늘 수고했어. 여기선 아무것도 안 해도 돼.'], ['C^:같이 앉아 있는 게 제일 좋아. 어디든.']];
+  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines(PX.Dlg.capPick(St.S.rel.cap.stage >= 4 ? SIT_LOV.concat(SIT_PRE) : SIT_PRE)); gain('sitBy', 2); };
   A.collar = async () => { await lines(['N:대위의 구겨진 옷깃을 펴 준다. 대위가 숨을 멈춘다.', PX.Dlg.capPick(['C*:…가까이 오면 미리 말해. 심장 준비하게.', 'C^:매일 구기고 다녀야겠다.'])]); gain('collar', 3); };
   A.snack = async () => {
     const id = ['earthSnack', 'iceDessert', 'fruitTea', 'hotchoco'].find(has);

@@ -173,7 +173,7 @@ PX.Ask = (() => {
   async function propose(skipQ, id) {
     const S = St.S, p = pick(id), tn = toneOf();
     S.done.capAskSeen = [p.id, ...(S.done.capAskSeen || []).filter(x => x !== p.id)].slice(0, 8);
-    const un = (arr) => { const u = arr.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : arr; };
+    const un = (arr) => { const f = arr.filter(l => PX.Dlg.ctxOk(l)); const b = f.length ? f : arr; const u = b.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : b; };
     if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, un(p.q)));
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);

@@ -242,6 +242,19 @@ PX.Cap = (() => {
     }
   }
   // 플레이어 옆 빈자리에 앉기
+  // 내 옆에 와서 앉을 때 한마디 (10분에 한 번 이하 · 시간·장소에 맞는 말 · 안 한 말부터)
+  let lastSitLine = -1e9;
+  const SIT_B = ['여기 앉아도 되지? 이미 앉았지만.', '다리 좀 쉬자.', '옆자리 비어 있길래.', '자리 좋다. 너 옆이라.', '조금만 쉬었다 가자.', '앉으니까 살 것 같다.', '여기 앉으면 네 얼굴 잘 보여.', '천천히 쉬어. 급할 거 없어.',
+    '나 무거워서 의자가 삐걱거린다. 못 들은 걸로 해.', '여기 경치 괜찮네.', '좁아? 내가 좀 비켜 앉을게.', '이렇게 나란히 앉는 거 좋아.', '오늘 많이 걸었지. 발 아프지 않아?', '밤공기 좋다.', '아침부터 앉아 있으니까 사치 같다.', '점심 먹고 앉으니까 졸리네.'];
+  const SIT_BL = ['어깨 빌려줄게.', '손 이리 줘.', '좀 더 붙어 앉아.', '자기 옆이 제일 편해.', '여기 내 지정석이다.', '기대도 돼. 아니, 기대.', '오늘은 여기서 안 움직일 거야.', '한 뼘도 멀다.'];
+  function sitLine(g) {
+    const now = St.absMin(), p = g.player;
+    if (now - lastSitLine < 10 || !p.seat || U.dist(cap.x, cap.y, p.x, p.y) > 2.2 || g.modal || !(mode === 'follow' || mode === 'visit' || mode === 'stay')) return;
+    if (Math.random() < 0.35) return; // 매번은 아니고
+    lastSitLine = now;
+    const pool = St.S.rel.cap.stage >= 4 ? SIT_BL.concat(SIT_B) : SIT_B;
+    setTimeout(() => g.bubble(cap, PX.Dlg.capPick(pool)), 400);
+  }
   function sitNear(g) {
     const m = PX.W.maps[cap.map], p = g.player;
     let best = null, bd = 9;
@@ -250,7 +263,7 @@ PX.Cap = (() => {
     const a = PX.W.accessTile(m, best.obj);
     if (!a) return false;
     cap.toSeat = true;
-    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) cap.sitOn(best); })) cap.toSeat = false;
+    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) { cap.sitOn(best); sitLine(g); } })) cap.toSeat = false;
     return true;
   }
   function exitTo(outMap) { // 현재 실내 → 바깥, 바깥 → 다른 바깥은 travel

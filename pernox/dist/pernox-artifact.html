@@ -5821,15 +5821,51 @@ PX.Dlg = (() => {
 
   // 조건에 맞는 묶음 고르기 (최근 사용 제외)
   // 대사 내용이 지금 상황과 맞는지 (오늘 수색을 다녀왔다는 말은 평일 오후 다섯 시 이후에만 등)
+  // 대사 내용이 지금 시각 · 계절 · 날씨 · 장소와 맞는지 (밤에 '그늘로 가자', 겨울에 '덥다' 같은 말 막기)
+  const HOT = { onsen: 1, inn_bath: 1, gym: 1, samgyup: 1, beach: 1, mess: 1 };
+  const COLD = { planet6: 1, aurora: 1, q_captain: 1 };
+  const FLIRT_HEAT = /너 때문|네가|너 보|붙어|안아|안고|가까이|부끄|얼굴|심장|설레/;
   function ctxOk(t) {
-    const S = St.S, m = S.time.min, wkd = !St.isWeekend() && !(PX.Rom && PX.Rom.onLeave && PX.Rom.onLeave('cap', S.day)) && !(S.cap.op && S.cap.op.phase === 'away');
+    if (!t) return true;
+    t = String(t);
+    const S = St.S, m = S.time.min, se = St.season(), G = PX.Game, map = G && G.mapId, md = (PX.MAPS && PX.MAPS[map]) || {};
+    const w = md.dome || md.kind === 'in' ? 'clear' : St.weather();
+    const wkd = !St.isWeekend() && !(PX.Rom && PX.Rom.onLeave && PX.Rom.onLeave('cap', S.day)) && !(S.cap.op && S.cap.op.phase === 'away');
+    const day = m >= 7 * 60 && m < 18 * 60, night = m >= 19 * 60 || m < 5 * 60;
     if (/외곽 [^.]*(갔다 왔|다녀왔|별일 없었|조용했)|수색 (다녀|끝나고)|복귀 보고 끝|흙먼지만 잔뜩|검진은요/.test(t) && !(wkd && m >= 17 * 60)) return false;
     if (/오후에 [^.]*외곽 나가|외곽 코스 바뀌었|다섯 시쯤 들어오/.test(t) && !(wkd && m < 13 * 60)) return false;
     if (/좋은 아침|잘 잤어|일어났어\?|모닝/.test(t) && !(m >= 5 * 60 && m < 11 * 60 + 30)) return false;
-    if (/잘 자[.,!]|잘 자$|꿈에서 보자|좋은 꿈/.test(t) && !(m >= 20 * 60 || m < 4 * 60)) return false;
-    if (/점심/.test(t) && !(m >= 10 * 60 && m < 15 * 60)) return false;
+    if (/잘 자[.,!]|잘 자$|꿈에서 보자|좋은 꿈|좋은 밤|굿나잇/.test(t) && !(m >= 20 * 60 || m < 4 * 60)) return false;
+    if (/점심/.test(t) && !(m >= 6 * 60 && m < 15 * 60)) return false; // 아침의 '점심때 보자'는 괜찮다
     if (/노을/.test(t) && !(m >= 16 * 60 && m < 20 * 60 + 30)) return false;
-    if (/별이 |별 (많|보러|봐)/.test(t) && !(m >= 19 * 60 || m < 5 * 60)) return false;
+    if (/별이 |별 (많|보러|봐|보여)|별빛 아래|별 좀/.test(t) && !night && !md.stars) return false;
+    // 햇볕 · 그늘: 낮에만, 겨울엔 '덥다' 그늘은 아니다
+    if (/그늘|햇볕|햇빛이|땡볕|해 (진짜 )?세|해가 세|자외선|선크림|탄다\.|타겠다/.test(t) && !(day && se !== 'winter')) return false;
+    // 더위: 여름 낮·저녁, 봄가을 한낮, 원래 더운 곳, 설렘 때문에 덥다는 말만
+    if (/덥다|더워|더위|땀 (난|나|흘)|녹는다|녹겠다/.test(t) && !(HOT[map] || FLIRT_HEAT.test(t) || (se === 'summer' && m >= 8 * 60 && m < 23 * 60) || ((se === 'spring' || se === 'autumn') && m >= 11 * 60 && m < 17 * 60))) return false;
+    // 추위: 겨울, 봄가을 밤, 원래 추운 곳(냉각기 막사 · 제6행성), 냉방 얘기만
+    if (/춥다|추워|추운|덜덜|목도리|코트 안으로|핫팩|손 시려|손이 시려/.test(t) && !(COLD[map] || se === 'winter' || (se !== 'summer' && night) || /냉각기|냉방|에어컨|얼음/.test(t))) return false;
+    // 눈 · 꽃 · 낙엽
+    if (/눈사람|눈 (와|온|오는|내리)|첫눈|은빛 눈/.test(t) && !(se === 'winter' || w === 'snow')) return false;
+    if (/꽃 피|봄바람|벚꽃/.test(t) && se !== 'spring') return false;
+    if (/낙엽|단풍/.test(t) && se !== 'autumn') return false;
+    // 비 · 모래바람 (실외에서 지금 그 날씨일 때만)
+    if (/비 온다|비 오네|비 맞|우산 (하나|같이)/.test(t) && w !== 'rain') return false;
+    if (/모래바람 (심|분다|이다)|모래 들어가/.test(t) && w !== 'dust' && map !== 'outskirts') return false;
+    // 식사 · 하루 일과
+    if (/아침 먹|아침은 먹|아침밥/.test(t) && !(m >= 5 * 60 && m < 11 * 60)) return false;
+    if (/저녁 (먹|뭐)|저녁은 먹|저녁밥/.test(t) && !(m >= 15 * 60 && m < 22 * 60)) return false;
+    if (/야식/.test(t) && !(m >= 19 * 60 || m < 3 * 60)) return false;
+    if (/출근(하기|길| 전)/.test(t) && !(wkd && m >= 5 * 60 && m < 10 * 60)) return false;
+    if (/퇴근(했|하고|이다|길)/.test(t) && !(m >= 15 * 60 && m < 22 * 60)) return false;
+    if (/하루 종일[^.?!]*(있을|붙어 있|같이 있|놀|비워|네 거)|오늘 하루 (비워|네 거|전부)|일정 다 비웠/.test(t)) { if (!(m >= 5 * 60 && m < 12 * 60)) return false; } // 앞으로의 하루 계획은 오전에만
+    else if (/오늘 하루 (어땠|고생|종일)|하루 종일/.test(t) && !(m >= 13 * 60 || m < 3 * 60)) return false; // 지나간 하루 얘기는 오후부터
+    if (/자고 가|잘 시간|불 끌까/.test(t) && !(m >= 19 * 60 || m < 5 * 60)) return false;
+    if (/해 뜨|일출|동트/.test(t) && !(m >= 4 * 60 && m < 9 * 60)) return false;
+    if (/밤공기|밤바람|밤하늘|오늘 밤은|이 밤에/.test(t) && !night) return false;
+    if (/아침부터|아침 공기|이른 아침/.test(t) && !(m >= 5 * 60 && m < 12 * 60)) return false;
+    if (/점심 먹고/.test(t) && !(m >= 12 * 60 && m < 16 * 60)) return false;
+    if (/한낮|대낮/.test(t) && !(m >= 11 * 60 && m < 16 * 60)) return false;
     return true;
   }
   function pick(cat, list, cond = {}) {
@@ -6012,6 +6048,7 @@ PX.Dlg = (() => {
     if (evLine && act !== 'sleep' && !(S.recent['npc_' + npc.id] || []).includes(evLine) && Math.random() < 0.25) pool = [evLine];
     const key = 'npc_' + npc.id;
     const recent = S.recent[key] || [];
+    { const fit = pool.filter(t => ctxOk(t)); if (fit.length) pool = fit; }
     let cand = pool.filter(t => !recent.includes(t));
     if (!cand.length) cand = pool;
     let line = U.pick(cand).replace(/\{cs\}/g, PX.Cap.status());
@@ -6076,8 +6113,10 @@ PX.Dlg = (() => {
   function capPick(arr) {
     if (!arr || !arr.length) return undefined;
     const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
-    const un = arr.filter(x => !capSaid(first(x)));
-    return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : arr);
+    const all = (x) => [].concat(x).filter(y => typeof y === 'string').join(' ');
+    const fit = arr.filter(x => ctxOk(all(x))), base = fit.length ? fit : arr; // 지금 상황에 맞는 것만 (없으면 그대로)
+    const un = base.filter(x => !capSaid(first(x)));
+    return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : base);
   }
   return { topicClash, recentCapText, capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();
@@ -6253,7 +6292,7 @@ PX.Reply = (() => {
   async function react(who, cat, mood) {
     if (who === 'cap') {
       const pool = (CAP_RE_CAT[cat] && CAP_RE_CAT[cat][mood]) || CAP_RE[mood];
-      const unsaid = pool.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); const ln = U.pickFresh('re_' + cat + mood, unsaid.length ? unsaid : pool);
+      const fit = pool.filter(l => PX.Dlg.ctxOk(l)), base = fit.length ? fit : pool; const unsaid = base.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); const ln = U.pickFresh('re_' + cat + mood, unsaid.length ? unsaid : base);
       const m = /^C([*^;!~]?):(.*)$/.exec(ln);
       await PX.Dlg.say('cap', U.fmt(m[2], PX.Dlg.ctx()), { '*': 'smirk', '^': 'smile', ';': 'sad', '!': 'surprise', '~': 'blush' }[m[1]] || 'normal');
       if (mood === 'flirt') G().cap.showEmote('heart', 1.4);
@@ -6505,7 +6544,7 @@ PX.Ask = (() => {
   async function propose(skipQ, id) {
     const S = St.S, p = pick(id), tn = toneOf();
     S.done.capAskSeen = [p.id, ...(S.done.capAskSeen || []).filter(x => x !== p.id)].slice(0, 8);
-    const un = (arr) => { const u = arr.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : arr; };
+    const un = (arr) => { const f = arr.filter(l => PX.Dlg.ctxOk(l)); const b = f.length ? f : arr; const u = b.filter(l => !PX.Dlg.capSaid(l.replace(/^C[*^;!~]?:/, ''))); return u.length ? u : b; };
     if (!skipQ) await capSay(U.pickFresh('ask_' + p.id, un(p.q)));
     // 애정 표현은 연애 단계(2+)부터
     const opts = p.opts.filter(o => o.mood !== 'flirt' || S.rel.cap.stage >= 2);
@@ -6869,6 +6908,19 @@ PX.Cap = (() => {
     }
   }
   // 플레이어 옆 빈자리에 앉기
+  // 내 옆에 와서 앉을 때 한마디 (10분에 한 번 이하 · 시간·장소에 맞는 말 · 안 한 말부터)
+  let lastSitLine = -1e9;
+  const SIT_B = ['여기 앉아도 되지? 이미 앉았지만.', '다리 좀 쉬자.', '옆자리 비어 있길래.', '자리 좋다. 너 옆이라.', '조금만 쉬었다 가자.', '앉으니까 살 것 같다.', '여기 앉으면 네 얼굴 잘 보여.', '천천히 쉬어. 급할 거 없어.',
+    '나 무거워서 의자가 삐걱거린다. 못 들은 걸로 해.', '여기 경치 괜찮네.', '좁아? 내가 좀 비켜 앉을게.', '이렇게 나란히 앉는 거 좋아.', '오늘 많이 걸었지. 발 아프지 않아?', '밤공기 좋다.', '아침부터 앉아 있으니까 사치 같다.', '점심 먹고 앉으니까 졸리네.'];
+  const SIT_BL = ['어깨 빌려줄게.', '손 이리 줘.', '좀 더 붙어 앉아.', '자기 옆이 제일 편해.', '여기 내 지정석이다.', '기대도 돼. 아니, 기대.', '오늘은 여기서 안 움직일 거야.', '한 뼘도 멀다.'];
+  function sitLine(g) {
+    const now = St.absMin(), p = g.player;
+    if (now - lastSitLine < 10 || !p.seat || U.dist(cap.x, cap.y, p.x, p.y) > 2.2 || g.modal || !(mode === 'follow' || mode === 'visit' || mode === 'stay')) return;
+    if (Math.random() < 0.35) return; // 매번은 아니고
+    lastSitLine = now;
+    const pool = St.S.rel.cap.stage >= 4 ? SIT_BL.concat(SIT_B) : SIT_B;
+    setTimeout(() => g.bubble(cap, PX.Dlg.capPick(pool)), 400);
+  }
   function sitNear(g) {
     const m = PX.W.maps[cap.map], p = g.player;
     let best = null, bd = 9;
@@ -6877,7 +6929,7 @@ PX.Cap = (() => {
     const a = PX.W.accessTile(m, best.obj);
     if (!a) return false;
     cap.toSeat = true;
-    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) cap.sitOn(best); })) cap.toSeat = false;
+    if (!cap.goTo(m, a.x, a.y, () => { cap.toSeat = false; if (!best.by) { cap.sitOn(best); sitLine(g); } })) cap.toSeat = false;
     return true;
   }
   function exitTo(outMap) { // 현재 실내 → 바깥, 바깥 → 다른 바깥은 travel
@@ -9205,7 +9257,14 @@ PX.CapAct = (() => {
     await lines(['N:대위 어깨에 손을 올린다. 돌덩이 같다.', 'C!:…어.', PX.Dlg.capPick(['C;:거기. 거기 좀 더.', 'C:…아. 거기 뭉쳤구나. 몰랐어.']), 'C^:너 손 작은데 힘 좋다. 다음엔 내가 해 줄게. 살살.']);
     St.advance(10); gain('massage', 4);
   };
-  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines([PX.Dlg.capPick(['C:응. 여기 있어. 아무 말 안 해도 돼.', 'C*:조금 더 붙어. 냉각기 바람 막아 줄게.'])]); gain('sitBy', 2); };
+  // 옆에 앉기: 시간·장소·관계에 맞는 말을 돌려 가며 (안 한 말부터)
+  const SIT_PRE = [['C:응. 여기 있어. 아무 말 안 해도 돼.'], ['C*:자리 넓은데 굳이 내 옆이네. 좋아.'], ['C:앉으니까 다리 쉬는 게 느껴진다. 오늘 많이 걸었어.'], ['C^:같이 앉아 있으니까 시간이 천천히 가.'],
+    ['C:불편하면 말해. 내가 덩치가 커서 자리를 많이 차지해.'], ['C*:옆에 앉아 있으면 이상하게 조용해져. 좋은 쪽으로.'], ['C:잠깐 쉬었다 가자. 급할 거 없어.'], ['C^:여기 앉으니까 네 얼굴이 딱 내 눈높이네. 서 있을 땐 정수리만 보였는데.'],
+    ['C:…그냥 이렇게 있는 것도 좋다.'], ['C*:무슨 생각 해? 아니, 말 안 해도 돼. 표정 보고 맞혀 볼게.'], ['C;:나 여기서 졸면 깨워 줘. 아니, 그냥 둬.'], ['C:오늘 있었던 일 하나만 말해 줘. 아무거나.'],
+    ['C*:조금 더 붙어. 냉각기 바람 막아 줄게.'], ['C^:밤공기 좋다. 이렇게 앉아 있으니까 하루가 끝나는 느낌이야.'], ['C:점심 먹고 앉아 있으니까 졸리다. 너도 눈 감기지?'], ['C^:아침부터 같이 앉아 있으니까 오늘 하루 잘될 것 같아.']];
+  const SIT_LOV = [['N:대위가 팔을 등받이에 걸쳐 어깨를 감싼다.', 'C:…자리 이거 맞지? 내 자리.'], ['C*:기대. 어깨는 원래 너 쓰라고 있는 거야.'], ['C^:{cv}, 손.', 'N:무릎 위에서 손가락이 하나씩 얽힌다.'], ['C:이렇게 앉아 있으면 작전 생각이 하나도 안 나.'],
+    ['C*:한 뼘 떨어져 앉았네. 너무 멀어. 이리 와.'], ['N:대위가 머리를 살짝 기대 온다. 생각보다 무겁다.', 'C;:…잠깐만. 이대로.'], ['C:오늘 수고했어. 여기선 아무것도 안 해도 돼.'], ['C^:같이 앉아 있는 게 제일 좋아. 어디든.']];
+  A.sitBy = async () => { const g = G(); PX.Cap.sitNear(g); if (g.cap.seat) { const s = (g.cap.seat.obj.seats || []).find(s => !s.by); if (s) g.player.sitOn(s); } await lines(PX.Dlg.capPick(St.S.rel.cap.stage >= 4 ? SIT_LOV.concat(SIT_PRE) : SIT_PRE)); gain('sitBy', 2); };
   A.collar = async () => { await lines(['N:대위의 구겨진 옷깃을 펴 준다. 대위가 숨을 멈춘다.', PX.Dlg.capPick(['C*:…가까이 오면 미리 말해. 심장 준비하게.', 'C^:매일 구기고 다녀야겠다.'])]); gain('collar', 3); };
   A.snack = async () => {
     const id = ['earthSnack', 'iceDessert', 'fruitTea', 'hotchoco'].find(has);
@@ -11033,6 +11092,7 @@ ${memLine(S)}`;
 
   // ---------- 말풍선 · 기록 · 사진 ----------
   Game.bubble = (actor, text, sec = 3) => {
+    if (text && PX.Dlg && PX.Dlg.ctxOk && !PX.Dlg.ctxOk(text)) return; // 밤에 '그늘', 겨울에 '덥다' 같은 말은 하지 않는다
     // 대위 말풍선: 사흘 안에 했던 말이면 그냥 조용히 (반복보다 침묵)
     if (actor === Game.cap && text && PX.Dlg && PX.Dlg.capSaid) { const S = St.S, k = String(text); S.capBub = S.capBub || {}; const h = U.hash(k); if (S.capBub[h] && St.absMin() - S.capBub[h] < 3 * 1440) return; S.capBub[h] = St.absMin(); }
     const b = U.el('div', { class: 'bubble' }, text);

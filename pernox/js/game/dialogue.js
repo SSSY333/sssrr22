@@ -195,15 +195,51 @@ PX.Dlg = (() => {
 
   // 조건에 맞는 묶음 고르기 (최근 사용 제외)
   // 대사 내용이 지금 상황과 맞는지 (오늘 수색을 다녀왔다는 말은 평일 오후 다섯 시 이후에만 등)
+  // 대사 내용이 지금 시각 · 계절 · 날씨 · 장소와 맞는지 (밤에 '그늘로 가자', 겨울에 '덥다' 같은 말 막기)
+  const HOT = { onsen: 1, inn_bath: 1, gym: 1, samgyup: 1, beach: 1, mess: 1 };
+  const COLD = { planet6: 1, aurora: 1, q_captain: 1 };
+  const FLIRT_HEAT = /너 때문|네가|너 보|붙어|안아|안고|가까이|부끄|얼굴|심장|설레/;
   function ctxOk(t) {
-    const S = St.S, m = S.time.min, wkd = !St.isWeekend() && !(PX.Rom && PX.Rom.onLeave && PX.Rom.onLeave('cap', S.day)) && !(S.cap.op && S.cap.op.phase === 'away');
+    if (!t) return true;
+    t = String(t);
+    const S = St.S, m = S.time.min, se = St.season(), G = PX.Game, map = G && G.mapId, md = (PX.MAPS && PX.MAPS[map]) || {};
+    const w = md.dome || md.kind === 'in' ? 'clear' : St.weather();
+    const wkd = !St.isWeekend() && !(PX.Rom && PX.Rom.onLeave && PX.Rom.onLeave('cap', S.day)) && !(S.cap.op && S.cap.op.phase === 'away');
+    const day = m >= 7 * 60 && m < 18 * 60, night = m >= 19 * 60 || m < 5 * 60;
     if (/외곽 [^.]*(갔다 왔|다녀왔|별일 없었|조용했)|수색 (다녀|끝나고)|복귀 보고 끝|흙먼지만 잔뜩|검진은요/.test(t) && !(wkd && m >= 17 * 60)) return false;
     if (/오후에 [^.]*외곽 나가|외곽 코스 바뀌었|다섯 시쯤 들어오/.test(t) && !(wkd && m < 13 * 60)) return false;
     if (/좋은 아침|잘 잤어|일어났어\?|모닝/.test(t) && !(m >= 5 * 60 && m < 11 * 60 + 30)) return false;
-    if (/잘 자[.,!]|잘 자$|꿈에서 보자|좋은 꿈/.test(t) && !(m >= 20 * 60 || m < 4 * 60)) return false;
-    if (/점심/.test(t) && !(m >= 10 * 60 && m < 15 * 60)) return false;
+    if (/잘 자[.,!]|잘 자$|꿈에서 보자|좋은 꿈|좋은 밤|굿나잇/.test(t) && !(m >= 20 * 60 || m < 4 * 60)) return false;
+    if (/점심/.test(t) && !(m >= 6 * 60 && m < 15 * 60)) return false; // 아침의 '점심때 보자'는 괜찮다
     if (/노을/.test(t) && !(m >= 16 * 60 && m < 20 * 60 + 30)) return false;
-    if (/별이 |별 (많|보러|봐)/.test(t) && !(m >= 19 * 60 || m < 5 * 60)) return false;
+    if (/별이 |별 (많|보러|봐|보여)|별빛 아래|별 좀/.test(t) && !night && !md.stars) return false;
+    // 햇볕 · 그늘: 낮에만, 겨울엔 '덥다' 그늘은 아니다
+    if (/그늘|햇볕|햇빛이|땡볕|해 (진짜 )?세|해가 세|자외선|선크림|탄다\.|타겠다/.test(t) && !(day && se !== 'winter')) return false;
+    // 더위: 여름 낮·저녁, 봄가을 한낮, 원래 더운 곳, 설렘 때문에 덥다는 말만
+    if (/덥다|더워|더위|땀 (난|나|흘)|녹는다|녹겠다/.test(t) && !(HOT[map] || FLIRT_HEAT.test(t) || (se === 'summer' && m >= 8 * 60 && m < 23 * 60) || ((se === 'spring' || se === 'autumn') && m >= 11 * 60 && m < 17 * 60))) return false;
+    // 추위: 겨울, 봄가을 밤, 원래 추운 곳(냉각기 막사 · 제6행성), 냉방 얘기만
+    if (/춥다|추워|추운|덜덜|목도리|코트 안으로|핫팩|손 시려|손이 시려/.test(t) && !(COLD[map] || se === 'winter' || (se !== 'summer' && night) || /냉각기|냉방|에어컨|얼음/.test(t))) return false;
+    // 눈 · 꽃 · 낙엽
+    if (/눈사람|눈 (와|온|오는|내리)|첫눈|은빛 눈/.test(t) && !(se === 'winter' || w === 'snow')) return false;
+    if (/꽃 피|봄바람|벚꽃/.test(t) && se !== 'spring') return false;
+    if (/낙엽|단풍/.test(t) && se !== 'autumn') return false;
+    // 비 · 모래바람 (실외에서 지금 그 날씨일 때만)
+    if (/비 온다|비 오네|비 맞|우산 (하나|같이)/.test(t) && w !== 'rain') return false;
+    if (/모래바람 (심|분다|이다)|모래 들어가/.test(t) && w !== 'dust' && map !== 'outskirts') return false;
+    // 식사 · 하루 일과
+    if (/아침 먹|아침은 먹|아침밥/.test(t) && !(m >= 5 * 60 && m < 11 * 60)) return false;
+    if (/저녁 (먹|뭐)|저녁은 먹|저녁밥/.test(t) && !(m >= 15 * 60 && m < 22 * 60)) return false;
+    if (/야식/.test(t) && !(m >= 19 * 60 || m < 3 * 60)) return false;
+    if (/출근(하기|길| 전)/.test(t) && !(wkd && m >= 5 * 60 && m < 10 * 60)) return false;
+    if (/퇴근(했|하고|이다|길)/.test(t) && !(m >= 15 * 60 && m < 22 * 60)) return false;
+    if (/하루 종일[^.?!]*(있을|붙어 있|같이 있|놀|비워|네 거)|오늘 하루 (비워|네 거|전부)|일정 다 비웠/.test(t)) { if (!(m >= 5 * 60 && m < 12 * 60)) return false; } // 앞으로의 하루 계획은 오전에만
+    else if (/오늘 하루 (어땠|고생|종일)|하루 종일/.test(t) && !(m >= 13 * 60 || m < 3 * 60)) return false; // 지나간 하루 얘기는 오후부터
+    if (/자고 가|잘 시간|불 끌까/.test(t) && !(m >= 19 * 60 || m < 5 * 60)) return false;
+    if (/해 뜨|일출|동트/.test(t) && !(m >= 4 * 60 && m < 9 * 60)) return false;
+    if (/밤공기|밤바람|밤하늘|오늘 밤은|이 밤에/.test(t) && !night) return false;
+    if (/아침부터|아침 공기|이른 아침/.test(t) && !(m >= 5 * 60 && m < 12 * 60)) return false;
+    if (/점심 먹고/.test(t) && !(m >= 12 * 60 && m < 16 * 60)) return false;
+    if (/한낮|대낮/.test(t) && !(m >= 11 * 60 && m < 16 * 60)) return false;
     return true;
   }
   function pick(cat, list, cond = {}) {
@@ -386,6 +422,7 @@ PX.Dlg = (() => {
     if (evLine && act !== 'sleep' && !(S.recent['npc_' + npc.id] || []).includes(evLine) && Math.random() < 0.25) pool = [evLine];
     const key = 'npc_' + npc.id;
     const recent = S.recent[key] || [];
+    { const fit = pool.filter(t => ctxOk(t)); if (fit.length) pool = fit; }
     let cand = pool.filter(t => !recent.includes(t));
     if (!cand.length) cand = pool;
     let line = U.pick(cand).replace(/\{cs\}/g, PX.Cap.status());
@@ -450,8 +487,10 @@ PX.Dlg = (() => {
   function capPick(arr) {
     if (!arr || !arr.length) return undefined;
     const first = (x) => String(Array.isArray(x) ? (x.find(y => typeof y === 'string' && /^C/.test(y)) || x[0]) : x).replace(/^C[*^;!~]?:/, '');
-    const un = arr.filter(x => !capSaid(first(x)));
-    return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : arr);
+    const all = (x) => [].concat(x).filter(y => typeof y === 'string').join(' ');
+    const fit = arr.filter(x => ctxOk(all(x))), base = fit.length ? fit : arr; // 지금 상황에 맞는 것만 (없으면 그대로)
+    const un = base.filter(x => !capSaid(first(x)));
+    return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : base);
   }
   return { topicClash, recentCapText, capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();

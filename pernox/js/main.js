@@ -176,6 +176,7 @@
 
   // ---------- 말풍선 · 기록 · 사진 ----------
   Game.bubble = (actor, text, sec = 3) => {
+    if (text && PX.Dlg && PX.Dlg.ctxOk && !PX.Dlg.ctxOk(text)) return; // 밤에 '그늘', 겨울에 '덥다' 같은 말은 하지 않는다
     // 대위 말풍선: 사흘 안에 했던 말이면 그냥 조용히 (반복보다 침묵)
     if (actor === Game.cap && text && PX.Dlg && PX.Dlg.capSaid) { const S = St.S, k = String(text); S.capBub = S.capBub || {}; const h = U.hash(k); if (S.capBub[h] && St.absMin() - S.capBub[h] < 3 * 1440) return; S.capBub[h] = St.absMin(); }
     const b = U.el('div', { class: 'bubble' }, text);
