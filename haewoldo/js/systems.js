@@ -487,8 +487,8 @@ function festRolePick(key) {
 async function festDonate(a) {
   const fe = Object.values(S.fest).find(st => st.joined && st.step === 1 && !st.done);
   if (!fe || fe.donors.includes(a.vid)) return false;
-  await say('me', 'smile', `${FESTS[fe.fid].name} 준비 중인데, 조금 보태 주실 수 있을까요?`);
-  await say(a.id, 'laugh', pick(['아이고, 그런 일이면 당연하지! 옜다.', '축제? 좋지~ 이거 보태.', '마을 일인데 빠질 수 있나.']));
+  await say('me', 'smile', voiceOf && voiceOf(a.vid) === 'kid' ? `${FESTS[fe.fid].name} 준비 중인데, 조금 도와줄 수 있어?` : `${FESTS[fe.fid].name} 준비 중인데, 조금 보태 주실 수 있을까요?`);
+  await say(a.id, 'laugh', pick(({ elder: ['아이고, 그런 일이면 당연하지! 옜다.', '마을 일인데 빠질 수 있나. 이거 보태.'], adult: ['축제? 좋지~ 이거 보태.', '마을 일인데 당연히 거들어야지.'], polite: ['축제 준비요? 좋아요, 조금이지만 보탤게요!', '저도 축제 기대하고 있었어요. 이거 받으세요.'], kid: ['저 용돈 모은 거 있어요! 이거 축제에 써 주세요!', '축제 해요? 우와! 저도 보탤래요!'] })[typeof voiceOf === 'function' ? voiceOf(a.vid) : 'polite'] || ['좋아요, 보탤게요!']));
   fe.donors.push(a.vid); fe.budget += 2000; fe.part += 1; toast(`💰 후원 +2,000원 (예산 ${fmtMoney(fe.budget)})`);
   if (fe.donors.length >= 3) { fe.step = 2; toast('예산이 모였어요! 이제 재료를 모아요'); }
   updateQuestBtn(); return true;

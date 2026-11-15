@@ -206,7 +206,7 @@ villagerUpdate = function (a, dt) {
       a._goSeat = null;
       if (Math.hypot(a.x - s.stand[0] - 0.5, a.y - s.stand[1] - 0.5) < 0.8 && !spotBusy(s, a)) {
         if (s.desk) { a.stop(); a._deskSit = s; a.x = s.x + 0.5; a.y = s.y + 0.45; a.pose = 'sit'; a.face = 'b'; a._sitUntil = G.t + rand(40, 90); }
-        else { sitOnFurn(a, s); a._sitUntil = G.t + rand(14, 30); if (Math.random() < 0.3 && dist(a, G.player) < 6) a.say(pick(['[[아이고, 다리야. 좀 앉았다 가야지.||아이고 다리야.]]', '[[여기 앉아도 되죠?||여기 앉는다~]]', '[[잠깐 쉬었다 갈게요.||잠깐 쉬었다 갈게.]]']), 2.6); }
+        else { sitOnFurn(a, s); a._sitUntil = G.t + rand(14, 30); if (Math.random() < 0.3 && dist(a, G.player) < 6) a.say(pick(({ elder: ['아이고, 다리야. 좀 앉았다 가야지.', '어이구, 앉으니 살겠다.'], adult: ['어휴, 좀 앉았다 가자.', '여기 자리 비었네.'], kid: ['다리 아파요~ 쉬었다 갈래요!', '여기 앉을래요!'], polite: ['여기 앉아도 되죠?', '잠깐 쉬었다 갈게요.'] })[typeof voiceOf === 'function' ? voiceOf(a.vid || a.id) : 'polite'] || ['잠깐 쉬었다 갈게요.']), 2.6); }
       }
     }
   }

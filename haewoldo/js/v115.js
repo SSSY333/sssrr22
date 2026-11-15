@@ -238,3 +238,66 @@ for (const W of Object.values(WORKS)) {
   Object.defineProperty(W, 'station', { configurable: true, get() { const [dx, dy] = delta(); return [st0[0] + dx, st0[1] + dy]; } });
   Object.defineProperty(W, 'queue', { configurable: true, get() { const [dx, dy] = delta(), m = MAPS[W.map]; return q0.map(q => { const x = q[0] + dx, y = q[1] + dy; return m && !walkable(Math.floor(x), Math.floor(y), m) ? nearestWalkable(x, y, m) : [x, y]; }); } });
 }
+
+/* =====================================================================
+   v1.17 — 형사님은 「나」에게만 반말: 동네 어른 · 주민에게 하는 말은 존댓말 그대로
+   · 말 상대가 어른인 장면(바로 앞에 주민이 말함 · 「할머니,」처럼 부르는 말 · 엿보기 장면)에서는
+     반말 변환기를 쓰지 않음
+   · 대사를 [[존댓말||반말]] 두 가지로 직접 써 둔 건 변환하지 않음
+   · 말풍선: 높임말(-시- · -세요 · 드릴게요 …)이 들어 있거나 주민과 수다 중이면 그대로
+   ===================================================================== */
+const DET_VOC = /(^|[\s…,.!?"「])(순덕 |옥자 |귤밭 |슈퍼 |등대지기 |박 씨 |만복 |목장 |농장 |횟집 |우체부 )?(할머니|할머님|할아버지|할아버님|어르신|이장님|아저씨|아주머니|이모님|이모|사장님|삼촌|아버님|어머님|선배님)(,|!|~|\?|…| 진정| 오늘| 다음| 이거| 제가| 저| 걱정| 고맙| 감사| 죄송| 괜찮| 안녕| 천천히| 조심| 들어| 여기| 그건| 혹시| 너무| 어디| 무거)/;
+const DET_HON = /(으?시[는면고던지네죠겠잖]|으?셨|으?세요|드릴게요|드릴까요|드려요|드렸어요|드세요|습니다|십시오|진지|께서|여쭤)/;
+const voiceOfActor = (id) => { const a = G.actors && G.actors.find(x => x.id === id); const vid = a ? (a.vid || a.id) : id; if ((a && a.look && a.look.kid) || (NPC_LOOKS[vid] && NPC_LOOKS[vid].kid)) return 'kid'; return typeof voiceOf === 'function' ? voiceOf(vid) : 'polite'; };
+function detToOthers(text) {
+  if (typeof text !== 'string') return false;
+  if (text.indexOf('[[') >= 0) return true;                          // 두 말투를 직접 써 둔 대사
+  if (G._peeking) return true;                                        // 엿보기: 형사님이 다른 사람과 있는 장면
+  const t = speechPick(text);
+  if (DET_VOC.test(t)) return true;                                   // 「할머니,」 「아저씨!」처럼 어른을 부름
+  if (G._ctxOther && voiceOfActor(G._ctxOther) !== 'kid') return true;  // 바로 앞에 어른 주민이 말함
+  return false;
+}
+const _say117 = say;
+say = function (who, expr, text) {
+  if (who !== 'narr' && who !== 'det' && who !== 'me') G._ctxOther = who;
+  else if (who === 'me') G._ctxOther = null;
+  if (who === 'det' && !G.rawSpeech && detToOthers(text)) { G.rawSpeech = true; try { return _say117(who, expr, text); } finally { G.rawSpeech = false; } }
+  return _say117(who, expr, text);
+};
+const _runEvent117 = runEvent;
+runEvent = async function () { try { return await _runEvent117.apply(this, arguments); } finally { if (!G.busy) G._ctxOther = null; } };
+const _closeDialog117 = closeDialog;
+closeDialog = function () { const r = _closeDialog117.apply(this, arguments); if (!G.busy) G._ctxOther = null; return r; };
+/* 엿보기 장면 */
+if (typeof doPeek === 'function') { const _doPeek117 = doPeek; doPeek = async function () { G._peeking = true; try { return await _doPeek117.apply(this, arguments); } finally { G._peeking = false; } }; }
+/* 말풍선 */
+const _actorSay117 = Actor.prototype.say;
+Actor.prototype.say = function (text, t) {
+  if (this.id === 'det' && typeof text === 'string' && casualOn()) {
+    const s = speechPick(text), chat = G.detAuto && G.detAuto.kind === 'chat';
+    if (text.indexOf('[[') >= 0 || chat || G._peeking || DET_VOC.test(s) || DET_HON.test(s)) { const c = casualOn; casualOn = () => false; try { return _actorSay117.call(this, s, t); } finally { casualOn = c; } }
+  }
+  return _actorSay117.call(this, text, t);
+};
+
+/* 일터 손님: 동네 주민이 손님으로 오면 그 사람 말투로 (어르신 · 아저씨 · 젊은 어른) */
+const CUST_V = {
+  elder: { thanks: ['아이고, 맛있다. 또 올게~', '이 집 커피가 할미 입에도 맞네. 호호.', '잘 마셨어. 장사 잘 되거라~'], wrong: ['어? 이거 시킨 거 아닌데… 뭐, 아무거나 괜찮아.', '아이고, 바꿔 줬네. 괜찮아, 마시지 뭐.'], leave: ['아이고, 오래 걸리네. 다음에 올게.', '바쁜가 보네. 이따 또 올게~'], chat: ['여기 앉아 있으니 좋다~', '젊은 사람이 장사를 참 잘하네.', '오늘 바람이 좋아.'], buyer: ['물 좋은 걸로 골라 줘~', '요즘 바다는 어때? 많이 나와?'], buyLeave: '없으면 할 수 없지. 다음에 올게.', buyOk: ['아이고, 싱싱하다. 고마워~', '이거면 저녁 반찬 걱정 없다.'] },
+  adult: { thanks: ['오, 맛있네. 또 올게.', '여기 커피 괜찮네. 자주 와야겠다.', '잘 마셨어. 수고해~'], wrong: ['어? 이거 내가 시킨 거 아닌데… 뭐, 마시지.', '이것도 맛있겠지, 뭐.'], leave: ['너무 오래 걸리네. 다음에 올게.', '바쁜가 보네. 이따 다시 올게.'], chat: ['여기 분위기 좋네.', '오늘 날씨 좋지?'], buyer: ['물 좋은 걸로 골라 줘.', '요즘 바다 어때?'], buyLeave: '없으면 할 수 없지. 다음에 올게.', buyOk: ['역시 싱싱하네. 고마워!', '값 넉넉히 쳐 줬어. 또 부탁해.'] },
+  polite: { buyer: ['싱싱한 걸로 골라 주세요.', '요즘 바다는 어때요?'], buyLeave: '없으면 할 수 없죠. 다음에 올게요.', buyOk: ['와, 정말 싱싱해요. 감사합니다!', '이거면 오늘 저녁 걱정 없겠어요.'] },
+  kid: { thanks: ['우와, 맛있어요! 또 올게요!'], chat: ['저 이거 처음 먹어 봐요!'], buyer: ['엄마가 조개 사 오래요!'], buyLeave: '없어요? 그럼 다음에 올게요!', buyOk: ['감사합니다! 엄마가 좋아하겠다!'] },
+};
+const _custActorSay117 = Actor.prototype.say;
+Actor.prototype.say = function (text, t) {
+  if (this.isCustomer && this.vSrc && typeof text === 'string' && typeof voiceOf === 'function') {
+    const V = CUST_V[voiceOf(this.vSrc.vid || this.vSrc.id)];
+    if (V) {
+      const swap = (arr, key) => (arr && arr.includes(text) && V[key] ? pick(V[key]) : null);
+      const r = swap(CAFE_THANKS, 'thanks') || swap(CAFE_WRONG, 'wrong') || swap(CAFE_LEAVE, 'leave') || swap(CUST_CHAT.cafe, 'chat') || swap(CUST_CHAT.buyer, 'buyer')
+        || (text === '다음에 또 올게.' || text === '없으면 할 수 없지. 다음에 올게.' ? V.buyLeave : null) || (['역시 싱싱하네. 고마워!', '이거면 오늘 저녁 반찬 걱정 없다.', '값 넉넉히 쳐 줬어. 또 부탁해.'].includes(text) && V.buyOk ? pick(V.buyOk) : null);
+      if (r) text = r;
+    }
+  }
+  return _custActorSay117.call(this, text, t);
+};

@@ -89,7 +89,8 @@ villagerFavorTalk = async function (a) {
   if (!(S.errand && S.errand.day === S.day) && Math.random() < 0.3 && ERRANDS.some(E => E.who === a.vid)) return errOffer(a);
   if (q.day !== S.day && Math.random() < 0.3) {
     const pool = [...FAVOR_ITEMS.base, ...(FAVOR_ITEMS[season()] || [])].filter(k => ITEMS[k] && (typeof itemSeasonOk !== 'function' || itemSeasonOk(k)));
-    const item = pick(pool);
+    const KIDOK = ['snack', 'candy', 'bananamilk', 'cookie', 'postcard', 'icecream', 'tangerine', 'onigiri', 'flower', 'orangejuice', 'sweetpotato'];
+    const pool2 = v === 'kid' ? pool.filter(k => KIDOK.includes(k)) : pool, item = pick(pool2.length ? pool2 : pool);
     await say(a.id, 'smile', (FAVOR_ASK[v] || FAVOR_ASK.polite)(ITEMS[item].name));
     const c = await choose(['네, 구해 올게요', '오늘은 어려워요']);
     if (c === 0) { Object.assign(q, { day: S.day, who: a.id, item }); qSet('v_favor', { state: 'ACTIVE' }); }
