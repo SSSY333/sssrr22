@@ -71,8 +71,8 @@ yardApply = function () {
   if (!S) return;
   for (const m of Object.values(MAPS)) {
     if (!m.objects.some(o => o.kind === 'yd') && !yardState().placed.some(p => yardMapOf(p) === m.id)) continue;
-    for (const o of m.objects) if (o.kind === 'yd' && o.solid) for (const [x, y] of yFoot(o)) m.block[y * m.W + x] = 0;
-    m.objects = m.objects.filter(o => o.kind !== 'yd');
+    for (const o of m.objects) if (o.kind === 'yd' && !o.aid && o.solid) for (const [x, y] of yFoot(o)) m.block[y * m.W + x] = 0;   // 섬 편집으로 놓은 장식(aid)은 건드리지 않음
+    m.objects = m.objects.filter(o => o.kind !== 'yd' || o.aid);
     for (const p of yardState().placed) {
       if (yardMapOf(p) !== m.id) continue;
       const F = YARD[p.k]; if (!F) continue; const [fw, fh] = yardFoot(p.k, p.rot || 0);

@@ -2,7 +2,18 @@
    v1.15 — 저장 · 물리 · 놀이터 · 침대
    ===================================================================== */
 /* ---------- 섬 · 일터 편집: 바꿀 때마다 자동 저장 (앱을 그냥 꺼도 남게) ---------- */
-function devAutoSave() { try { DEVDATA.savedAt = Date.now(); localStorage.setItem(DEV_KEY, JSON.stringify(DEVDATA)); return true; } catch (e) { return false; } }
+function devAutoSave() {
+  DEVDATA.savedAt = Date.now(); const txt = JSON.stringify(DEVDATA);
+  try { localStorage.setItem(DEV_KEY, txt); return true; } catch (e) { }
+  // 저장 공간이 꽉 찼으면: 편집 백업부터 비우고, 그래도 안 되면 앨범 사진 몇 장을 줄여 자리 만들기 (게임 저장과 같은 방식)
+  try { localStorage.removeItem(DEV_BAK); localStorage.setItem(DEV_KEY, txt); return true; } catch (e) { }
+  if (S && S.album) for (let i = 0; i < 12; i++) {
+    const k = S.album.findIndex(a => a.img && !a.fav), k2 = k >= 0 ? k : S.album.findIndex(a => a.img); if (k2 < 0) break;
+    S.album[k2].img = null; S.album[k2].lost = true; try { save(); localStorage.setItem(DEV_KEY, txt); toast('📦 저장 공간이 부족해 오래된 사진 일부를 정리했어요'); return true; } catch (e) { }
+  }
+  if (!G._devSaveWarn) { G._devSaveWarn = true; toast('⚠ 저장 공간이 부족해 꾸민 내용을 저장하지 못했어요'); }
+  return false;
+}
 const _devRebuild115 = devRebuild;
 devRebuild = function () { const r = _devRebuild115.apply(this, arguments); if (G.dev) devAutoSave(); return r; };
 const _appPause115 = appPause;
@@ -301,3 +312,4 @@ Actor.prototype.say = function (text, t) {
   }
   return _custActorSay117.call(this, text, t);
 };
+devSave = function () { const ok = devAutoSave(); if (ok && G.dev) { G.dev.dirty = false; G.dev.start = JSON.stringify(DEVDATA); } return ok; };
