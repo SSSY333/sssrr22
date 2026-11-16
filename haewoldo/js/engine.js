@@ -360,9 +360,9 @@ function render(dt) {
     const [sx, sy] = iso(a.x, a.y); if (!inView(sx, sy)) continue;
     let d = a.x + a.y;
     if (a.seat) { const s = m.benches[a.seat.bench].seats[a.seat.idx]; const sd = typeof seatDepth === 'function' ? seatDepth(a, m) : null; d = sd != null ? sd : s[0] + s[1] + 2.05; }
-    else if (a.seatFurn) d = (a.seatFurn._key || a.seatFurn.x + a.seatFurn.y + 2) + (a._bedLie ? 0.3 : a.seatFurn.front ? 0.05 : -0.05);
+    else if (a.seatFurn && !(a.seatFurn._key < -500)) d = (a.seatFurn._seatD != null ? a.seatFurn._seatD : (a.seatFurn._key || a.seatFurn.x + a.seatFurn.y + 2) + (a._bedLie ? 0.3 : a.seatFurn.front ? 0.05 : -0.05));
     else if (a.carried) d = G.det.x + G.det.y + 0.05;
-    else if (!a.seatFurn) for (const s of solids) {
+    else for (const s of solids) {   // 방석 같은 바닥 자리에 앉은 사람도 보통 사람처럼 앞뒤 가림
       if (sx + 8 < s.sx0 || sx - 8 > s.sx1) continue;
       if (Math.abs(a.x - (s.x + s.w / 2)) > 6 || Math.abs(a.y - (s.y + s.h / 2)) > 6) continue;
       if (a.x >= s.x + s.w || a.y >= s.y + s.h) d = Math.max(d, s.key + 0.01);

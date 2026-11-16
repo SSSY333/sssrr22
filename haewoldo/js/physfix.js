@@ -6,7 +6,10 @@
    · 가구 위 · 벽 속에 서 있는 사람, 막힌 방문 지점 정리
    ===================================================================== */
 const FACE_V = [[0, 1], [1, 0], [0, -1], [-1, 0]];
-const isSeatFurn = (o) => o && o.kind === 'furn' && FURN[o.k] && FURN[o.k].seat;
+/* 앉을 수 있는 가구: 의자 · 소파 + 방석 · 쿠션 같은 좌식 자리(러그 제외) + 섬 편집 꾸미기 의자 */
+const YD_SEATS = { benchWood: 1, campChairY: 1, swingChair: 1, outdoorSofa: 1, swing: 1, inStool: 1, beachChairs: 1, terraceSet: 1 };
+const isSeatFurn = (o) => !!o && ((o.kind === 'furn' && FURN[o.k] && (FURN[o.k].seat || (FURN[o.k].act === 'sit' && !/^rug/.test(o.k) && !['catBed', 'mosquitoTent', 'giantBear', 'kotatsu'].includes(o.k)))) || (o.kind === 'yd' && YD_SEATS[o.k]));
+const isFloorSeat = (o) => !!o && o.kind === 'furn' && FURN[o.k] && FURN[o.k].flat;
 /* 의자 앞 빈 칸 (앞쪽 우선) */
 function seatStand(o, m, sx = o.x, sy = o.y) {
   const r = (o.rot || 0) & 3, fv = FACE_V[r], cands = [[sx + fv[0], sy + fv[1]], [sx, sy + 1], [sx + 1, sy], [sx - 1, sy], [sx, sy - 1]];
@@ -32,6 +35,14 @@ function seatList(m) {
 function sitOnFurn(a, s) {
   a.stop(); a.seatFurn = s.o; s.o.front = ((s.o.rot || 0) & 3) < 2; a.pose = 'sit'; a.x = s.x + 0.5; a.y = s.y + 0.5;
   const fv = FACE_V[(s.o.rot || 0) & 3]; a.faceTo(fv[0], fv[1]);
+  floorSeatFace(a, s.o, s.x, s.y);
+}
+/* 방석 · 좌식 자리: 옆에 있는 상을 바라보고, 조금 낮게 앉음 */
+const LOW_TABLES = ['dining', 'diningT', 'table', 'tableR', 'kotatsu', 'campTable', 'inTable'];
+function floorSeatFace(a, o, sx = Math.floor(a.x), sy = Math.floor(a.y)) {
+  if (!isFloorSeat(o)) return;
+  const m = MAPS[a.map]; if (!m) return;
+  for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) { const tx = sx + dx, ty = sy + dy; if (m.objects.some(q => q.kind === 'furn' && LOW_TABLES.includes(q.k) && tx >= q.x && tx < q.x + (q.fw || 1) && ty >= q.y && ty < q.y + (q.fh || 1))) { a.faceTo(dx, dy); return; } }
 }
 function standFromFurn(a) {
   const o = a.seatFurn, m = MAPS[a.map]; a.seatFurn = null; a.pose = 'stand';

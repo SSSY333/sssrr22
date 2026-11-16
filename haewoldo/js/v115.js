@@ -317,3 +317,78 @@ devSave = function () { const ok = devAutoSave(); if (ok && G.dev) { G.dev.dirty
 /* v1.19 — 말풍선은 글자 수만큼 오래 (긴 말이 다 읽기 전에 사라지지 않게) */
 const _bubbleSay119 = Actor.prototype.say;
 Actor.prototype.say = function (text, t = 3.2) { const r = _bubbleSay119.call(this, text, t); if (this.bubble && this.bubble.text) this.bubble.t = Math.max(this.bubble.t, 1.6 + [...String(this.bubble.text)].length * 0.11); return r; };
+
+/* =====================================================================
+   v1.20 — 앉는 자리 물리 점검 2
+   · 섬 편집 꾸미기 의자 · 벤치: 돌린 방향을 바라보고, 앞쪽 칸에서 일어나고, 벤치에 가려지지 않게(2칸 벤치 왼쪽 자리)
+   · 실내(카페 · 식당 등)에 놓은 꾸미기 의자에도 자리 생성
+   · 방석 · 좌식 자리: 손님 · 주민도 앉고, 상을 바라보며 바닥 높이로 앉음
+   · 문 앞에 사람이 있어도 「들어가기」가 먼저
+   ===================================================================== */
+Object.assign(SEAT_KINDS, {
+  yd_outdoorSofa: { n: 2, name: '야외 소파' }, yd_swing: { n: 2, name: '나무 그네' }, yd_inStool: { n: 1, name: '바 의자' },
+  yd_beachChairs: { n: 2, name: '선베드' }, yd_terraceSet: { n: 2, name: '테라스 테이블', front: true },
+});
+const objDrawKey = (o) => o.x + o.y + (o.fw || 1) - 1 + (o.fh || 1) - 1 + 2;
+autoSeats = function (m) {
+  if (!m) { for (const mm of Object.values(MAPS)) if (mm && mm.benches && mm.objects && (mm.id === 'island' || mm.objects.some(o => o.kind === 'yd'))) autoSeats(mm); return; }
+  if (!m.benches) m.benches = {};
+  for (const k of Object.keys(m.benches)) if (m.benches[k].auto) delete m.benches[k];
+  const W = m.W, taken = new Set(); for (const bk of Object.values(m.benches)) for (const s of [...bk.seats, ...bk.stand]) taken.add(s[0] + ',' + s[1]);
+  const free = (x, y) => inMap(x, y, m) && !m.block[y * W + x] && tileAt(x, y, m) !== T.WATER && !taken.has(x + ',' + y) && !(m.exit && x === m.exit[0] && y === m.exit[1]);
+  let i = 0;
+  for (const o of m.objects) {
+    const K = SEAT_KINDS[seatKindOf(o)]; if (!K) continue;
+    const fw = o.fw || 1, fh = o.fh || 1, r = (o.rot || 0) & 3, fv = FACE_V[r], seats = [], stand = [], face = [], dd = [];
+    const own = (x, y) => x >= o.x && x < o.x + fw && y >= o.y && y < o.y + fh;
+    const cand = K.side ? [[o.x, o.y], [o.x + 1, o.y]] : (() => { const c = []; for (let yy = o.y; yy < o.y + fh; yy++) for (let xx = o.x; xx < o.x + fw; xx++) c.push([xx, yy]); return c; })();
+    for (const [sx, sy] of cand) {
+      if (seats.length >= K.n) break;
+      if (taken.has(sx + ',' + sy)) continue;
+      if (K.side && !(sx === o.x && sy === o.y) && !free(sx, sy)) continue;
+      // 앞쪽(바라보는 쪽) 칸에서 일어나고, 없으면 옆 → 뒤
+      const order = K.side ? [[sx, sy + 1], [sx + 1, sy], [sx - 1, sy], [sx, sy - 1]] : [[sx + fv[0], sy + fv[1]], [sx + fv[1], sy + fv[0]], [sx - fv[1], sy - fv[0]], [sx - fv[0], sy - fv[1]]];
+      const st = order.find(([a, b]) => free(a, b) && !own(a, b) && !(a === o.x && b === o.y));
+      if (!st) continue;
+      seats.push([sx, sy]); stand.push(st); taken.add(sx + ',' + sy); taken.add(st[0] + ',' + st[1]);
+      face.push(K.side ? 0 : r);
+      // 그리는 순서: 앞을 보는 의자면 의자 바로 위, 뒤를 보는 의자면 등받이 뒤
+      dd.push(K.ground ? sx + sy + 0.6 : K.side ? sx + sy + 2.3 : objDrawKey(o) + (r < 2 ? 0.05 : -0.05));
+    }
+    if (!seats.length) continue;
+    const key = 'auto' + (i++);
+    m.benches[key] = { name: K.name, place: m.id === 'island' ? placeAt(o.x, o.y, m) : null, seats, stand, face, d: dd, pairs: seats.length > 1 ? [[0, 1]] : [], auto: true, obj: o };
+    if (K.leisure) m.benches[key].leisure = K.leisure;
+    if (K.ground) m.benches[key].ground = true;
+    for (const [a, b] of stand) m.block[b * W + a] = 0;
+  }
+  // 섬 편집으로 좌우를 뒤집은 기본 벤치: 바라보는 방향도 뒤집기
+  for (const bk of Object.values(m.benches)) { if (bk.auto) continue; bk.seats.forEach(([sx, sy], idx) => { const ob = m.objects.find(q => q.kind === 'bench' && q.x === sx && q.y === sy); if (ob && bk.face) bk.face[idx] = ob.mirror ? 1 : 0; }); }
+};
+/* 방석 · 좌식 자리는 바닥 높이로 */
+function floorSitTick() {
+  for (const a of G.actors) {
+    const fl = a.seatFurn && typeof isFloorSeat === 'function' && isFloorSeat(a.seatFurn) && !a._bedLie;
+    if (fl && !a._floorOy) { a._floorOy = true; a.oy = 4; floorSeatFace(a, a.seatFurn); }
+    else if (!fl && a._floorOy) { a._floorOy = false; if (!a._bedLie) a.oy = 0; }
+  }
+}
+const _loop120 = loop;
+loop = function (ts) { if (G.started && S) { try { floorSitTick(); } catch (e) { } } return _loop120(ts); };
+
+/* 문 앞: 근처에 사람이 있어도 「들어가기」를 먼저 (말 걸기는 옆 선택지로) */
+computeAction = (function (prev) {
+  return function () {
+    const a = prev.apply(this, arguments), P = G.player;
+    if (!a || !M || M.interior || P.seat || P.seatFurn || P.carried) return a;
+    const first = a.cands ? a.cands[0] : a;
+    if (!first || /들어가기|방문/.test(first.label)) return a;
+    const b = M.buildings.find(b => b.doorTile && Math.hypot(P.x - b.doorTile[0] - 0.5, P.y - b.doorTile[1] - 0.5) < 1.1); if (!b) return a;
+    // 사람을 잠깐 없는 셈 치고 문 행동을 구함 (이웃집 「방문」 같은 이름도 그대로)
+    const hid = G.actors.filter(x => x !== P && x.visible && x.map === P.map && dist(x, P) < 2.2); hid.forEach(x => { x._hidTmp = true; x.visible = false; });
+    let door = null; try { door = prev.apply(this, arguments); } finally { hid.forEach(x => { x.visible = true; delete x._hidTmp; }); }
+    const d0 = door && (door.cands ? door.cands[0] : door); if (!d0 || d0.fn === first.fn || !/들어가기|방문|🚪/.test(d0.label + d0.icon)) return a;
+    const rest = (a.cands || [a]).filter(c => c.label !== d0.label);
+    return Object.assign({}, d0, { cands: [d0, ...rest].slice(0, 4) });
+  };
+})(computeAction);
