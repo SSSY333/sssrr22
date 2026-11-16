@@ -356,7 +356,7 @@ function devBindInput() {
     const dn = d.down; d.down = null;
     if (d.bdrag) { const bd = d.bdrag; d.bdrag = null; d.pan = null; if (dn.moved && (bd.dx || bd.dy) && typeof bmDrop === 'function') bmDrop(bd.b, bd.dx, bd.dy); else devBarSel(); return; }
     if (d.drag) { const dr = d.drag; d.drag = null; d.hover = null; if (dn.moved) { const o = dr.o, nx = o.x, ny = o.y; for (const g of dr.grp) { g[0].x = g[1]; g[0].y = g[2]; } devMove(o, nx, ny); return; } }
-    if (d.painting) { d.painting = false; if (painted) { d.undo.push(d.paintBefore); d.redo = []; d.dirty = true; devRebuild(); devInfo(`🖌 ${DEV_TILES.find(t => t[0] === d.brush)[1]}으로 칠했어요`); devCheck(); } painted = false; return; }
+    if (d.painting) { d.painting = false; if (painted) { d.undo.push(d.paintBefore); d.redo = []; d.dirty = true; devRebuild(); devInfo(`🖌 ${josaRo(DEV_TILES.find(t => t[0] === d.brush)[1])} 칠했어요`); devCheck(); } painted = false; return; }
     d.pan = null;
     if (dn.moved || G.sheet) return;
     const w = W(e), x = Math.floor(w.tx), y = Math.floor(w.ty);

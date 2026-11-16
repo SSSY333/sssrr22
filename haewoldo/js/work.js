@@ -386,7 +386,7 @@ function seaSellAll() {
 }
 function seaSellTo(b) {
   const k = b.want; runEvent(async () => {
-    if (!(S.inv[k] > 0)) { await say('narr', '', `${ITEMS[k].icon} ${ITEMS[k].name}이(가) 없다.`); b.say('없으면 할 수 없지. 다음에 올게.', 2.5); custLeave(b); return; }
+    if (!(S.inv[k] > 0)) { await say('narr', '', `${ITEMS[k].icon} ${josa(ITEMS[k].name, "이", "가")} 없다.`); b.say('없으면 할 수 없지. 다음에 올게.', 2.5); custLeave(b); return; }
     S.inv[k]--; const p = Math.round((ITEMS[k].sell || 1000) * 2 / 100) * 100;
     b.say(pick(['역시 싱싱하네. 고마워!', '이거면 오늘 저녁 반찬 걱정 없다.', '값 넉넉히 쳐 줬어. 또 부탁해.']), 3); b.emo('😊', 2);
     workPaid(p, 0, `🤝 ${ITEMS[k].name} 넘김`); custLeave(b);

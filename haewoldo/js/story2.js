@@ -58,7 +58,7 @@ async function firstMeeting() {
     await say('narr', '', '그물망에서 소라 하나를 꺼내 건네자, 형사님이 젖은 신발 한 짝을 들고 멋쩍게 웃었다.');
   }
   await say('det', 'normal', S.detName ? `인사가 늦었네요. 해월도 파출소 형사 ${S.detName}입니다. 다들 그냥 "형사님"이라고 불러요.` : '인사가 늦었네요. 해월도 파출소 형사예요. 다들 그냥 "형사님"이라고 불러요.');
-  const nm = await choose([`저는 ${S.name}이에요`, '잘 부탁드려요, 형사님']);
+  const nm = await choose([`저는 ${josa(S.name, '이에요', '예요')}`, '잘 부탁드려요, 형사님']);
   await say('det', 'tease', nm === 0 ? `${S.name} 씨. 좋은 이름이다. 수첩에 적어 둘게요. 중요 인물로.` : '저야말로요. 앞으로 자주 보겠네요. 이 섬, 좁거든요.');
   S.rel.flags.met = true; S.rel.metDay = S.day; S.rel.daily.met = true; addAff(5, { event: true });
   await addAlbum('첫 만남', 'meet');

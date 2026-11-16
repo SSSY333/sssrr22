@@ -13,7 +13,7 @@ function speakerOf(who) {
   return null;
 }
 const EXPR_EMOTE = { blush: '💗', surprise: '❗', laugh: '♪', sad: '💧', tease: '😏' };
-let _dlgResolve = null, _dlgTyping = null;
+let _dlgResolve = null, _dlgTyping = null, _dlgFull = '';
 function say(who, expr, text) {
   return new Promise((res) => {
     G.dialog = true;
@@ -26,7 +26,7 @@ function say(who, expr, text) {
     if (sp) fg.drawImage(drawPortrait(sp.look, sp.outfit, expr || 'normal'), 0, 0);
     if (who === 'det' && EXPR_EMOTE[expr]) G.det.emo(EXPR_EMOTE[expr]);
     if (who === 'det' && expr === 'blush') burst(G.det, 'heart', 3);
-    const el = $('#dlgText'); el.textContent = ''; const full = fillNames(text);
+    const el = $('#dlgText'); el.textContent = ''; const full = fillNames(text); _dlgFull = full;
     let i = 0; clearInterval(_dlgTyping);
     _dlgTyping = setInterval(() => { i++; el.textContent = full.slice(0, i); if (i >= full.length) { clearInterval(_dlgTyping); _dlgTyping = null; } }, 24);
     _dlgResolve = () => {
@@ -39,7 +39,7 @@ function choose(options) {
   return new Promise((res) => {
     const wrap = $('#dlgChoices'); wrap.innerHTML = '';
     $('#dlg').classList.add('choosing');
-    if (_dlgTyping) { clearInterval(_dlgTyping); _dlgTyping = null; }
+    if (_dlgTyping) { clearInterval(_dlgTyping); _dlgTyping = null; $('#dlgText').textContent = _dlgFull; }   // 선택지가 떠도 대사는 끝까지
     options.forEach((o, i) => {
       const b = document.createElement('button'); b.className = 'choice'; b.textContent = choiceText(o);
       b.onclick = (e) => { e.stopPropagation(); wrap.innerHTML = ''; $('#dlg').classList.remove('choosing'); Sound.sfx('tap'); res(i); };
@@ -51,7 +51,7 @@ function askText(placeholder, def = '', max = 8) {
   return new Promise((res) => {
     const wrap = $('#dlgChoices'); wrap.innerHTML = '';
     $('#dlg').classList.add('choosing');
-    if (_dlgTyping) { clearInterval(_dlgTyping); _dlgTyping = null; }
+    if (_dlgTyping) { clearInterval(_dlgTyping); _dlgTyping = null; $('#dlgText').textContent = _dlgFull; }   // 선택지가 떠도 대사는 끝까지
     const row = document.createElement('div'); row.className = 'askrow';
     row.innerHTML = `<input id="askIn" maxlength="${max}" autocomplete="off" placeholder="${placeholder}"><button class="choice ok">확인</button>`;
     wrap.appendChild(row);

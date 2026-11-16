@@ -268,7 +268,7 @@ function leisureMenu(k) {
   add('📸', '사진 찍기', () => leisureAct(k, 'photo'));
   if (kind === 'fish') add('🎣', '낚시하기', () => { if (!P.seat) leisureSit(k); setTimeout(() => soloFish('rocks'), 150); });
   const npc = G.actors.find(a => a !== P && a !== G.det && a.seat && a.seat.bench === k && a.map === M.id && !a.pet);
-  if (npc) add('💬', `${npc.look.name.split(' ').pop()}와 이야기`, () => interactWith(npc));
+  if (npc) add('💬', `${josa(npc.look.name.split(' ').pop(), '과', '와')} 이야기`, () => interactWith(npc));
   openSheet({ title: bk.name, sub: `<div class="relneed">${leisureSub(kind)}</div>`, items, cols: 3 });
 }
 function leisureSub(kind) { const n = isNight(), ev = S.min >= 17.5 * 60; return { camp: n ? '랜턴과 화로가 은은하게 밝혀요.' : ev ? '랜턴에 불이 들어왔어요.' : '햇살 좋은 작은 캠핑존.', mat: '바다가 보이는 체크무늬 돗자리.', pavilion: '바람이 시원한 오래된 목조 정자.', fish: '낚싯대 거치대와 의자가 놓인 갯바위.' }[kind]; }
@@ -352,7 +352,7 @@ function coupleMenu(k) {
   const st = S.rel.stage;
   const items = COUPLE_ACTS.filter(a => st >= Math.min(a[3], 8) || a[3] <= st + 1).map(([id, icon, label, need]) => ({ icon, label, locked: st < need, note: st < need ? STAGES[need - 1].name : '', why: `「${STAGES[need - 1].name}」 단계에서 할 수 있어요`, onClick: () => coupleAct(k, id) }));
   items.push({ icon: '😌', label: '쉬기', onClick: () => leisureAct(k, 'rest') }, { icon: '🧍', label: '일어나기', onClick: () => standUpPlayer() });
-  openSheet({ title: `${M.benches[k].name} · ${himCall()}와 함께`, items, cols: 4 });
+  openSheet({ title: `${M.benches[k].name} · ${josa(himCall(), '과', '와')} 함께`, items, cols: 4 });
 }
 const COUPLE_LINES = {
   chat: ['오늘 뭐 했어? 천천히 얘기해 봐.', '하하, 너 진짜 별걸 다 알고 있네.'], snack: ['하나만 줘. 아니, 두 개.'], sea: ['파도 소리 좋다. 이대로 한참 있고 싶다.'], tease: ['너 머리에 뭐 묻었다. …거짓말이지롱. 하하.', '잠깐만. 머리에 뭐 묻었어. 가만있어 봐.'],

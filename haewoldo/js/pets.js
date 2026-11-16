@@ -73,7 +73,7 @@ function petDetTick(dt) {
   _petDetT = rand(40, 90);
   const b = S.rel.stage >= 5 ? 'high' : S.rel.stage >= 3 ? 'mid' : 'low';
   const line = fixJosa(pick(PET_DET[b]).replace(/\{p\}/g, S.pet.name));
-  d.say(line.length > 26 ? line.slice(0, 26) + '…' : line, 3); burst(a, 'heart', 2);
+  d.say(line, 3.5); burst(a, 'heart', 2);
   a.say(petCat() ? '(골골)' : '(꼬리 붕붕)', 2);
 }
 

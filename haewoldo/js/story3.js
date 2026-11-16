@@ -75,7 +75,7 @@ firstMeeting = async function () {
       const c = await choose(['형사님도 순찰 수고하세요', '(웃으며 고개를 끄덕인다)']);
       await say('det', 'smile', c === 0 ? '하하, 네. 오늘도 물 조심하시고요.' : '하하. 그럼 또 부두에서 봬요.');
     } else {
-      const c = await choose([`저는 ${S.name}이에요. 잘 부탁드려요`, '네, 잘 부탁드려요']);
+      const c = await choose([`저는 ${josa(S.name, '이에요', '예요')}. 잘 부탁드려요`, '네, 잘 부탁드려요']);
       await say('det', 'smile', c === 0 ? `${S.name} 씨. 기억해 두겠습니다.` : '네. 섬이 좁아서 자주 뵙게 될 거예요.');
     }
   } finally { G.rawSpeech = false; }
@@ -189,7 +189,7 @@ function apptPos(a) { const P = APPT_PLACES[a.place]; if (P.fest) { const fe = O
 function activeAppt(min) { return S.appts.find(a => a.day === S.day && a.status === 'set' && min >= a.min - 50 && min < a.min + 90) || null; }
 function apptQuestDef(id) {
   const a = S.appts.find(x => 'appt_' + x.id === id); if (!a) return null;
-  return { title: `💌 형사님과 ${APPT_PLACES[a.place].name}에서 만나기`, view: () => { if (a.status !== 'set') return { hidden: true }; const p = apptPos(a); return { desc: a.day === S.day ? '오늘 약속이 있어요!' : `${dateLabel(a.day)} 약속`, goal: `${fmtTime(a.min)}까지 ${APPT_PLACES[a.place].name}로 이동`, target: { map: 'island', x: p[0], y: p[1] }, place: APPT_PLACES[a.place].name, reward: '호감도 · 추억 기록', time: `${dateLabel(a.day)} ${fmtTime(a.min)}` }; } };
+  return { title: `💌 형사님과 ${APPT_PLACES[a.place].name}에서 만나기`, view: () => { if (a.status !== 'set') return { hidden: true }; const p = apptPos(a); return { desc: a.day === S.day ? '오늘 약속이 있어요!' : `${dateLabel(a.day)} 약속`, goal: `${fmtTime(a.min)}까지 ${josaRo(APPT_PLACES[a.place].name)} 이동`, target: { map: 'island', x: p[0], y: p[1] }, place: APPT_PLACES[a.place].name, reward: '호감도 · 추억 기록', time: `${dateLabel(a.day)} ${fmtTime(a.min)}` }; } };
 }
 async function apptMenu() {
   const c = casualOn();

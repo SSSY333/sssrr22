@@ -313,3 +313,7 @@ Actor.prototype.say = function (text, t) {
   return _custActorSay117.call(this, text, t);
 };
 devSave = function () { const ok = devAutoSave(); if (ok && G.dev) { G.dev.dirty = false; G.dev.start = JSON.stringify(DEVDATA); } return ok; };
+
+/* v1.19 — 말풍선은 글자 수만큼 오래 (긴 말이 다 읽기 전에 사라지지 않게) */
+const _bubbleSay119 = Actor.prototype.say;
+Actor.prototype.say = function (text, t = 3.2) { const r = _bubbleSay119.call(this, text, t); if (this.bubble && this.bubble.text) this.bubble.t = Math.max(this.bubble.t, 1.6 + [...String(this.bubble.text)].length * 0.11); return r; };

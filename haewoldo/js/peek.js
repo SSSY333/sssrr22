@@ -52,7 +52,7 @@ async function doPeek() {
   P.stop(); if (!P.seat) P.pose = 'stand'; P.lookAt(d);
   G.camFocus = { x: d.x, y: d.y };
   await say('narr', '', '👀 (나무 뒤에 숨어서 슬쩍…)');
-  for (const l of sc.s) { const txt = (l.length === 2 ? l[1] : l[2]).replace(/\{n\}/g, n); const tx2 = typeof fixJosa === 'function' ? fixJosa(txt) : txt; if (l[0] === 'narr') await say('narr', '', tx2); else { if (Math.random() < 0.6) d.say(tx2.slice(0, 22) + (tx2.length > 22 ? '…' : ''), 2.2); await say('det', l[1], tx2); } }
+  for (const l of sc.s) { const txt = (l.length === 2 ? l[1] : l[2]).replace(/\{n\}/g, n); const tx2 = typeof fixJosa === 'function' ? fixJosa(txt) : txt; if (l[0] === 'narr') await say('narr', '', tx2); else { if (Math.random() < 0.6) d.say(tx2, 3.2); await say('det', l[1], tx2); } }
   const caught = Math.random() < (S.rel.stage >= 5 ? 0.45 : 0.3);
   if (caught) {
     d.lookAt(P); burst(d, S.rel.stage >= 3 ? 'heart' : 'spark', 3);

@@ -184,7 +184,7 @@ leisureMenu = function (k) {
   if (bk.leisure === 'seesaw' && seated) { const other = G.actors.find(a => a !== P && a.seat && a.seat.bench === 'seesaw' && a.map === M.id); if (!other) add('🤷', '반대편이 비었어요', () => toast('형사님이나 아이들이 반대편에 앉으면 시소가 움직여요'), true); }
   if (bk.leisure === 'park') { add('😌', '쉬기', () => leisureAct(k, 'rest')); add('👀', '아이들 구경', () => watchKids()); }
   const npc = G.actors.find(a => a !== P && a !== G.det && a.seat && a.seat.bench === k && a.map === M.id && !a.pet);
-  if (npc) add('💬', `${npc.look.name.split(' ').pop()}와 이야기`, () => interactWith(npc));
+  if (npc) add('💬', `${josa(npc.look.name.split(' ').pop(), '과', '와')} 이야기`, () => interactWith(npc));
   openSheet({ title: `해월 놀이터 · ${bk.name}`, sub: '<div class="relneed">아이들이 좋아하는 놀이터. 할머니들은 벤치에서 손주 구경을 하세요.</div>', items, cols: 3 });
 };
 async function playTogether(k) {
