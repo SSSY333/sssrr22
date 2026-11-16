@@ -228,7 +228,7 @@ PX.Act = (() => {
   H.dance = async () => {
     const sc = await PX.Mini.timing({ title: '💃 실버마스크 · 춤', help: '박자(초록 구간)에 맞춰 누르세요!', rounds: 6, speed: 80, btn: '스텝!', bg: '#2a1f4f' });
     St.advance(20);
-    if (withCap()) await lines(sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
+    if (withCap()) await PX.Dance.withLines(sc > 0.6 ? [{ k: 'hand', d: 2.5 }, { k: 'spin', d: 2.5 }, { k: 'waist', d: 3 }] : [{ k: 'waist', d: 5 }], sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'N:대위가 손을 높이 들어 한 바퀴 돌려 준다.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
     if (withCap() && once('dance')) G().memory('가면 아래에서', '실버마스크에서 대위와 춤을 췄다.', true);
   };
   H.perform = async (o) => {

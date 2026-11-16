@@ -270,3 +270,6 @@ button { touch-action: manipulation; }
 .msgsend { border: 2px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 12px; background: var(--panel2); display: flex; flex-direction: column; gap: 6px; }
 .msgsend small { color: var(--muted); font-size: 12px; }
 .msgsend .msgch { justify-content: flex-start; }
+
+.evdot.place { margin-left: 3px; background: #9fd6ff; }
+.ev.cap b { color: var(--pink); } .ev.me b { color: var(--mint); } .ev.place { opacity: .9; }

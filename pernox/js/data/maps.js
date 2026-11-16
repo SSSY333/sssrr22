@@ -176,8 +176,8 @@
     { id: 'p_samgyup', name: '냉삼집 (문성호네)', to: 'samgyup', x: 4, y: 13, w: 8, d: 8, h: 44, wall: '#d9c7a8', roof: '#8a5a3c', stripe: '#d0563b', icon: 'fork', door: { f: 'R', u: 3 }, roofDeco: ['vents', 'ac'], awning: '#d0563b' },
     { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 26, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
     { id: 'p_flower', name: '유리돔 꽃시장', to: 'flower', x: 15, y: 39, w: 8, d: 7, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
-    { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목 — 성인 콘텐츠는 이후 버전에서 플레이어가 직접 선택할 때만 열려요' },
-    { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구 · 행성 간 여행은 Beta 0.6에서 열려요' },
+    { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목은 루비웨이 쪽에서 들어가요' },
+    { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구는 돔시티 외곽 항구구역에서 가요' },
   ];
   const PD = plaza.decor;
   PD.push(['fountain', 18, 18, 0], ['benchout', 16, 22, 2], ['benchout', 20, 22, 2], ['benchout', 16, 15, 0], ['kiosk', 23, 27, 0], ['arch', 24, 50, 0]);

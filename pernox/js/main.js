@@ -565,7 +565,7 @@
       b.append(U.el('h4', null, '지금 운영 중인 명소'));
       if (!places.length) b.append(U.el('p', { class: 'muted' }, '지금 시간대에 특별히 운영 중인 곳은 없어요.'));
       for (const e of places) b.append(U.el('div', { class: 'ev' }, U.el('b', null, e.originalTitle), U.el('small', null, `${e.location} · ${e.startTime}~${e.endTime}`)));
-      b.append(U.el('p', { class: 'muted' }, '돔시티 관광지 맵은 Alpha 0.2~Beta 0.5에서 차례로 열려요. 전체 정보는 단말 → 로어북.'));
+      b.append(U.el('p', { class: 'muted' }, '전체 정보는 단말 → 로어북에서 볼 수 있어요.'));
     });
   }
 

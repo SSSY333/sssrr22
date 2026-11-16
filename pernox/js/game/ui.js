@@ -201,6 +201,37 @@ PX.UI = (() => {
     }, { wide: true });
   }
   let calView = null;
+  // 달력에 같이 보여 줄 것: 대위 일정 · 약속 · 휴가 · 부탁 · 장소 특별 운영 (로어북)
+  function calItems(date) {
+    const S = St.S, n = Cal.dayNumber(date.y, date.m, date.d), wd = Cal.weekday(date.y, date.m, date.d), out = [];
+    const add = (mk, title, sub, cls) => out.push({ mk, title, sub: sub || '', cls: cls || '' });
+    if (PX.Bday && PX.Bday.isMine(date)) add('🎂', '내 생일', '', 'me');
+    if (PX.Bday && PX.Bday.isCap(date)) add('🎂', `${S.capName}의 생일`, '', 'cap');
+    const o = S.cap.op;
+    let opDay = false;
+    if (o && o.phase !== 'done' && n >= o.startDay && n <= o.startDay + o.days) {
+      opDay = true; const k = n - o.startDay + 1;
+      add('🛰️', o.joint ? '장기작전 (함께 출동)' : `${S.capName} 장기작전`, n === o.startDay ? `06:00 출발 · ${o.days}일 일정` : n === o.startDay + o.days ? '복귀하는 날 · 오후 도착 예정' : `${k}일째 · ${o.comms && o.comms[k] === false ? '통신 불안정 예보' : '통신 가능'}`, 'cap');
+    }
+    for (const d of (S.dates || [])) if (d.day === n && d.state !== 'missed') add('💕', `데이트 약속 · ${d.name || ''}`, `${Cal.fmtTime(d.min)}${d.state === 'done' ? ' · 다녀옴' : ''}`, 'me');
+    if (S.leave && n >= S.leave.from && n <= S.leave.to) add('🏖️', '내 휴가', '', 'me');
+    if (S.capLeave && n >= S.capLeave.from && n <= S.capLeave.to) add('🏖️', `${S.capName} 휴가`, '', 'cap');
+    const fv = PX.CapFavor && PX.CapFavor.pending();
+    if (fv && Math.floor(fv.until / 1440) === n) add('📋', '대위 부탁 마감', '', 'cap');
+    if (!opDay && !(S.capLeave && n >= S.capLeave.from && n <= S.capLeave.to)) {
+      if (wd >= 1 && wd <= 5) add('', `${S.capName} 일과`, '08:00 브리핑 · 13:00~17:00 외곽 수색 · 17:00 복귀 검진 · 19:00부터 자유', 'routine');
+      else add('', `${S.capName} 비번`, '주말 · 오전엔 막사에서 광물 깎기, 오후부터 자유', 'routine');
+    }
+    // 장소 특별 운영 (매주 · 정해진 날 · 계절): 로어북
+    for (const e of PX.LORE) {
+      if (!e.repeatRule || ['festival', 'base', 'special', 'adult', 'world'].includes(e.eventType)) continue;
+      const t = e.repeatRule.type; if (t === 'always' || (t === 'daily' && !e.repeatRule.months)) continue;
+      if (Cal.ruleMatches && !Cal.ruleMatches(e.repeatRule, date)) continue;
+      if (t === 'daily') { if (date.d !== 1 && !(e.repeatRule.months[0] === date.m && date.d === 1)) continue; add('🌸', `이번 달 제철 · ${e.originalTitle}`, `${e.location}${e.description ? ' · ' + e.description.slice(0, 40) : ''}`, 'place'); continue; } // 계절 명소는 그달 1일에 한 번만
+      add('✨', e.originalTitle, `${e.location}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''}${e.description ? ' · ' + e.description.slice(0, 40) : ''}`, 'place');
+    }
+    return out;
+  }
   const PANES = {
     map(p) {
       const G = PX.Game, S = St.S;
@@ -252,10 +283,12 @@ PX.UI = (() => {
         const ev = Cal.eventsOn(date);
         detail.innerHTML = '';
         detail.append(el('b', null, Cal.fmtDate(date) + ' · ' + Cal.SEASON_KO[Cal.season(date.m)] + ' · 날씨 예보 ' + Cal.WEATHER[Cal.weatherOf(date)].ko));
-        if (PX.Bday && PX.Bday.isMine(date)) detail.append(el('div', { class: 'ev' }, el('b', null, '🎂 내 생일')));
-        if (PX.Bday && PX.Bday.isCap(date)) detail.append(el('div', { class: 'ev' }, el('b', null, `🎂 ${S.capName}의 생일`)));
-        if (!ev.length && !(PX.Bday && (PX.Bday.isMine(date) || PX.Bday.isCap(date)))) detail.append(el('p', { class: 'muted' }, '등록된 행사가 없어요.'));
+        const its = calItems(date);
+        for (const x of its.filter(x => x.cls !== 'place' && x.cls !== 'routine')) detail.append(el('div', { class: 'ev ' + x.cls }, el('b', null, `${x.mk} ${x.title}`), x.sub ? el('small', null, x.sub) : ''));
+        if (!ev.length) detail.append(el('p', { class: 'muted' }, '부대·돔시티 행사는 없어요.'));
         for (const e of ev) detail.append(el('div', { class: 'ev' }, el('b', null, `${e.id} ${e.originalTitle}`), el('small', null, `${e.location}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''}`), el('p', null, e.description), e.captainReaction ? el('p', { class: 'cap' }, '대위: ' + e.captainReaction) : null));
+        for (const x of its.filter(x => x.cls === 'place')) detail.append(el('div', { class: 'ev place' }, el('b', null, `${x.mk} ${x.title}`), el('small', null, x.sub)));
+        for (const x of its.filter(x => x.cls === 'routine')) detail.append(el('p', { class: 'muted' }, `🪖 ${x.title}: ${x.sub}`));
       };
       for (let d = 1; d <= Cal.daysInMonth(calView.y, calView.m); d++) {
         const date = { y: calView.y, m: calView.m, d };
@@ -264,7 +297,7 @@ PX.UI = (() => {
         const wd = Cal.weekday(date.y, date.m, d);
         const cell = el('button', { class: 'cd' + (today ? ' today' : '') + (wd === 0 ? ' sun' : wd === 6 ? ' sat' : '') }, String(d));
         if (ev.length) cell.append(el('i', { class: 'evdot' + (ev.some(e => e.eventType === 'base') ? ' base' : '') }));
-        if (PX.Bday && (PX.Bday.isMine(date) || PX.Bday.isCap(date))) cell.append(el('span', { class: 'bdmark' }, '🎂'));
+        { const its = calItems(date), mks = [...new Set(its.filter(x => x.mk && x.cls !== 'place').map(x => x.mk))].slice(0, 2).join(''); if (mks) cell.append(el('span', { class: 'bdmark' }, mks)); if (its.some(x => x.cls === 'place')) cell.append(el('i', { class: 'evdot place' })); }
         cell.onclick = () => { [...grid.querySelectorAll('.cd')].forEach(c => c.classList.remove('sel')); cell.classList.add('sel'); showDay(d); };
         grid.append(cell);
       }

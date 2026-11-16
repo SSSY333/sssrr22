@@ -280,6 +280,9 @@ button { touch-action: manipulation; }
 .msgsend small { color: var(--muted); font-size: 12px; }
 .msgsend .msgch { justify-content: flex-start; }
 
+.evdot.place { margin-left: 3px; background: #9fd6ff; }
+.ev.cap b { color: var(--pink); } .ev.me b { color: var(--mint); } .ev.place { opacity: .9; }
+
 </style>
 </head>
 <body>
@@ -2107,8 +2110,8 @@ PX.S = (() => {
     { id: 'p_samgyup', name: '냉삼집 (문성호네)', to: 'samgyup', x: 4, y: 13, w: 8, d: 8, h: 44, wall: '#d9c7a8', roof: '#8a5a3c', stripe: '#d0563b', icon: 'fork', door: { f: 'R', u: 3 }, roofDeco: ['vents', 'ac'], awning: '#d0563b' },
     { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 26, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
     { id: 'p_flower', name: '유리돔 꽃시장', to: 'flower', x: 15, y: 39, w: 8, d: 7, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
-    { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목 — 성인 콘텐츠는 이후 버전에서 플레이어가 직접 선택할 때만 열려요' },
-    { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구 · 행성 간 여행은 Beta 0.6에서 열려요' },
+    { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목은 루비웨이 쪽에서 들어가요' },
+    { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구는 돔시티 외곽 항구구역에서 가요' },
   ];
   const PD = plaza.decor;
   PD.push(['fountain', 18, 18, 0], ['benchout', 16, 22, 2], ['benchout', 20, 22, 2], ['benchout', 16, 15, 0], ['kiosk', 23, 27, 0], ['arch', 24, 50, 0]);
@@ -8131,6 +8134,37 @@ PX.UI = (() => {
     }, { wide: true });
   }
   let calView = null;
+  // 달력에 같이 보여 줄 것: 대위 일정 · 약속 · 휴가 · 부탁 · 장소 특별 운영 (로어북)
+  function calItems(date) {
+    const S = St.S, n = Cal.dayNumber(date.y, date.m, date.d), wd = Cal.weekday(date.y, date.m, date.d), out = [];
+    const add = (mk, title, sub, cls) => out.push({ mk, title, sub: sub || '', cls: cls || '' });
+    if (PX.Bday && PX.Bday.isMine(date)) add('🎂', '내 생일', '', 'me');
+    if (PX.Bday && PX.Bday.isCap(date)) add('🎂', `${S.capName}의 생일`, '', 'cap');
+    const o = S.cap.op;
+    let opDay = false;
+    if (o && o.phase !== 'done' && n >= o.startDay && n <= o.startDay + o.days) {
+      opDay = true; const k = n - o.startDay + 1;
+      add('🛰️', o.joint ? '장기작전 (함께 출동)' : `${S.capName} 장기작전`, n === o.startDay ? `06:00 출발 · ${o.days}일 일정` : n === o.startDay + o.days ? '복귀하는 날 · 오후 도착 예정' : `${k}일째 · ${o.comms && o.comms[k] === false ? '통신 불안정 예보' : '통신 가능'}`, 'cap');
+    }
+    for (const d of (S.dates || [])) if (d.day === n && d.state !== 'missed') add('💕', `데이트 약속 · ${d.name || ''}`, `${Cal.fmtTime(d.min)}${d.state === 'done' ? ' · 다녀옴' : ''}`, 'me');
+    if (S.leave && n >= S.leave.from && n <= S.leave.to) add('🏖️', '내 휴가', '', 'me');
+    if (S.capLeave && n >= S.capLeave.from && n <= S.capLeave.to) add('🏖️', `${S.capName} 휴가`, '', 'cap');
+    const fv = PX.CapFavor && PX.CapFavor.pending();
+    if (fv && Math.floor(fv.until / 1440) === n) add('📋', '대위 부탁 마감', '', 'cap');
+    if (!opDay && !(S.capLeave && n >= S.capLeave.from && n <= S.capLeave.to)) {
+      if (wd >= 1 && wd <= 5) add('', `${S.capName} 일과`, '08:00 브리핑 · 13:00~17:00 외곽 수색 · 17:00 복귀 검진 · 19:00부터 자유', 'routine');
+      else add('', `${S.capName} 비번`, '주말 · 오전엔 막사에서 광물 깎기, 오후부터 자유', 'routine');
+    }
+    // 장소 특별 운영 (매주 · 정해진 날 · 계절): 로어북
+    for (const e of PX.LORE) {
+      if (!e.repeatRule || ['festival', 'base', 'special', 'adult', 'world'].includes(e.eventType)) continue;
+      const t = e.repeatRule.type; if (t === 'always' || (t === 'daily' && !e.repeatRule.months)) continue;
+      if (Cal.ruleMatches && !Cal.ruleMatches(e.repeatRule, date)) continue;
+      if (t === 'daily') { if (date.d !== 1 && !(e.repeatRule.months[0] === date.m && date.d === 1)) continue; add('🌸', `이번 달 제철 · ${e.originalTitle}`, `${e.location}${e.description ? ' · ' + e.description.slice(0, 40) : ''}`, 'place'); continue; } // 계절 명소는 그달 1일에 한 번만
+      add('✨', e.originalTitle, `${e.location}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''}${e.description ? ' · ' + e.description.slice(0, 40) : ''}`, 'place');
+    }
+    return out;
+  }
   const PANES = {
     map(p) {
       const G = PX.Game, S = St.S;
@@ -8182,10 +8216,12 @@ PX.UI = (() => {
         const ev = Cal.eventsOn(date);
         detail.innerHTML = '';
         detail.append(el('b', null, Cal.fmtDate(date) + ' · ' + Cal.SEASON_KO[Cal.season(date.m)] + ' · 날씨 예보 ' + Cal.WEATHER[Cal.weatherOf(date)].ko));
-        if (PX.Bday && PX.Bday.isMine(date)) detail.append(el('div', { class: 'ev' }, el('b', null, '🎂 내 생일')));
-        if (PX.Bday && PX.Bday.isCap(date)) detail.append(el('div', { class: 'ev' }, el('b', null, `🎂 ${S.capName}의 생일`)));
-        if (!ev.length && !(PX.Bday && (PX.Bday.isMine(date) || PX.Bday.isCap(date)))) detail.append(el('p', { class: 'muted' }, '등록된 행사가 없어요.'));
+        const its = calItems(date);
+        for (const x of its.filter(x => x.cls !== 'place' && x.cls !== 'routine')) detail.append(el('div', { class: 'ev ' + x.cls }, el('b', null, `${x.mk} ${x.title}`), x.sub ? el('small', null, x.sub) : ''));
+        if (!ev.length) detail.append(el('p', { class: 'muted' }, '부대·돔시티 행사는 없어요.'));
         for (const e of ev) detail.append(el('div', { class: 'ev' }, el('b', null, `${e.id} ${e.originalTitle}`), el('small', null, `${e.location}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''}`), el('p', null, e.description), e.captainReaction ? el('p', { class: 'cap' }, '대위: ' + e.captainReaction) : null));
+        for (const x of its.filter(x => x.cls === 'place')) detail.append(el('div', { class: 'ev place' }, el('b', null, `${x.mk} ${x.title}`), el('small', null, x.sub)));
+        for (const x of its.filter(x => x.cls === 'routine')) detail.append(el('p', { class: 'muted' }, `🪖 ${x.title}: ${x.sub}`));
       };
       for (let d = 1; d <= Cal.daysInMonth(calView.y, calView.m); d++) {
         const date = { y: calView.y, m: calView.m, d };
@@ -8194,7 +8230,7 @@ PX.UI = (() => {
         const wd = Cal.weekday(date.y, date.m, d);
         const cell = el('button', { class: 'cd' + (today ? ' today' : '') + (wd === 0 ? ' sun' : wd === 6 ? ' sat' : '') }, String(d));
         if (ev.length) cell.append(el('i', { class: 'evdot' + (ev.some(e => e.eventType === 'base') ? ' base' : '') }));
-        if (PX.Bday && (PX.Bday.isMine(date) || PX.Bday.isCap(date))) cell.append(el('span', { class: 'bdmark' }, '🎂'));
+        { const its = calItems(date), mks = [...new Set(its.filter(x => x.mk && x.cls !== 'place').map(x => x.mk))].slice(0, 2).join(''); if (mks) cell.append(el('span', { class: 'bdmark' }, mks)); if (its.some(x => x.cls === 'place')) cell.append(el('i', { class: 'evdot place' })); }
         cell.onclick = () => { [...grid.querySelectorAll('.cd')].forEach(c => c.classList.remove('sel')); cell.classList.add('sel'); showDay(d); };
         grid.append(cell);
       }
@@ -9141,7 +9177,7 @@ PX.Act = (() => {
   H.dance = async () => {
     const sc = await PX.Mini.timing({ title: '💃 실버마스크 · 춤', help: '박자(초록 구간)에 맞춰 누르세요!', rounds: 6, speed: 80, btn: '스텝!', bg: '#2a1f4f' });
     St.advance(20);
-    if (withCap()) await lines(sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
+    if (withCap()) await PX.Dance.withLines(sc > 0.6 ? [{ k: 'hand', d: 2.5 }, { k: 'spin', d: 2.5 }, { k: 'waist', d: 3 }] : [{ k: 'waist', d: 5 }], sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'N:대위가 손을 높이 들어 한 바퀴 돌려 준다.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
     if (withCap() && once('dance')) G().memory('가면 아래에서', '실버마스크에서 대위와 춤을 췄다.', true);
   };
   H.perform = async (o) => {
@@ -10146,6 +10182,75 @@ PX.CapAct = (() => {
 
 </script>
   <script>
+/* js/game/dance.js */
+// 춤: 대위와 마주 보고 무대에서 실제로 움직인다 (돌기 · 흔들기 · 허리 감싸기 · 손 들어 한 바퀴 · 들어 올리기 · 꼭 안고 흔들기)
+// 대사는 춤추는 동안 함께 흐른다.
+'use strict';
+PX.Dance = (() => {
+  const G = () => PX.Game;
+  // 스텝: hand 손잡고 · waist 허리 감싸고 돌기 · spin 손 들어 나를 한 바퀴 · lift 들어 올려 돌기 · hug 꼭 안고 흔들기 · bounce 신나게 들썩
+  const SPEED = { hand: 0.55, waist: 0.95, spin: 0.35, lift: 1.7, hug: 0.22, bounce: 0.7 };
+  const RAD = { hand: 0.5, waist: 0.3, spin: 0.55, lift: 0.26, hug: 0.27, bounce: 0.72 };
+  function center() {
+    const g = G(), m = PX.W.maps[g.mapId];
+    const fl = m && m.objs.find(o => o.fid === 'dancefloor') || m && m.objs.find(o => /^rug/.test(o.fid || ''));
+    if (fl) return { x: fl.x + (fl.fw || 3) / 2, y: fl.y + (fl.fd || 3) / 2 };
+    return { x: (g.player.x + g.cap.x) / 2, y: (g.player.y + g.cap.y) / 2 };
+  }
+  function run(steps) {
+    const g = G(), p = g.player, c = g.cap, ctr = center();
+    p.leaveSeat(); c.leaveSeat(); if (c.stop) c.stop(); if (p.stop) p.stop();
+    if (PX.Mind) PX.Mind.setContact('NONE');
+    const total = steps.reduce((a, s) => a + s.d, 0);
+    let ang = Math.atan2(c.y - ctr.y, c.x - ctr.x) || 0, t0 = performance.now(), last = t0, rr = 0.5;
+    return new Promise((res) => {
+      const f = (now) => {
+        const t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
+        if (t >= total || g.mapId !== c.map) { end(); res(); return; }
+        let acc = 0, s = steps[steps.length - 1];
+        for (const x of steps) { if (t < acc + x.d) { s = x; break; } acc += x.d; }
+        const lt = t - acc;
+        ang += dt * (SPEED[s.k] || 0.5);
+        rr += (RAD[s.k] - rr) * Math.min(1, dt * 3); // 거리는 부드럽게 좁혀지고 벌어진다
+        const sway = Math.sin(t * 2.2) * 0.05, beat = Math.abs(Math.sin(t * Math.PI * 1.6));
+        c.x = ctr.x + Math.cos(ang) * rr + sway; c.y = ctr.y + Math.sin(ang) * rr;
+        p.x = ctr.x - Math.cos(ang) * rr + sway; p.y = ctr.y - Math.sin(ang) * rr;
+        c.path = []; p.path = []; c.moving = false; p.moving = false;
+        c.setDirTo(p.x, p.y); p.setDirTo(c.x, c.y);
+        c.z = 0; p.z = 0;
+        switch (s.k) {
+          case 'hand': c.tempPose = 'hold'; p.tempPose = 'holdL'; p.z = beat * 0.05; break;
+          case 'waist': c.tempPose = 'hug'; p.tempPose = 'hug'; p.z = beat * 0.03; break;
+          case 'spin': c.tempPose = 'wave'; p.tempPose = 'wave'; p.dir = Math.floor(lt * 7) % 4; p.z = beat * 0.08; break;
+          case 'lift': c.tempPose = 'carry'; p.tempPose = 'hug'; p.z = 0.28 + Math.sin(lt * 3) * 0.05; break;
+          case 'hug': c.tempPose = 'hug'; p.tempPose = 'hug'; break;
+          case 'bounce': c.tempPose = Math.floor(t * 2) % 2 ? 'wave' : null; p.tempPose = Math.floor(t * 2 + 1) % 2 ? 'wave' : null; c.z = beat * 0.1; p.z = beat * 0.12; break;
+        }
+        c.poseUntil = p.poseUntil = performance.now() + 250;
+        if (Math.random() < dt * 0.7) (Math.random() < 0.5 ? c : p).showEmote(s.k === 'bounce' ? 'note' : 'heart', 0.9);
+        requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
+    });
+    function end() {
+      p.tempPose = c.tempPose = null; p.z = c.z = 0;
+      if (PX.Mind) { PX.Mind.mem().danceAt = PX.St.absMin(); PX.Mind.noteMeet && PX.Mind.noteMeet(); }
+      const m = PX.W.maps[g.mapId];
+      for (const a of [p, c]) if (m && !PX.W.walkable(m, Math.floor(a.x), Math.floor(a.y))) { const w = PX.Path.nearestWalkable(m, a.x, a.y); if (w) { a.x = w[0] + 0.5; a.y = w[1] + 0.5; } }
+      c.setDirTo(p.x, p.y); p.setDirTo(c.x, c.y);
+    }
+  }
+  // 춤추면서 대사 (대사가 먼저 끝나도 춤은 끝까지, 춤이 먼저 끝나도 대사는 끝까지)
+  async function withLines(steps, lines) {
+    const g = G(); g.modal++;
+    try { await Promise.all([run(steps), PX.Dlg.runLines(lines, { reply: true })]); }
+    finally { PX.Dlg.close(); g.modal--; }
+  }
+  return { run, withLines, center };
+})();
+
+</script>
+  <script>
 /* js/game/placeacts.js */
 // 장소별로 대위와 같이 할 수 있는 것 (대위 메뉴 → "📍 여기서 같이 하기")
 // 장소마다 그곳에서만 할 수 있는 행동 · 대사 · 작은 게임 · 선물. 관계 단계에 따라 대사가 달라진다 (연인부터 서로 반말)
@@ -10217,8 +10322,31 @@ PX.Place = (() => {
     await say([['C*:처음 뵙겠습니다. 여기 자주 오세요?', 'P:아뇨, 처음이에요.', 'C:그럼 제가 안내해 드려도 될까요? 저 덩치에 비해 친절합니다.', 'C;:…못 하겠다. 웃음 나.']],
       [['C*:처음 뵙겠습니다. 혹시 애인 있으세요?', 'P:있어요. 엄청 큰 사람.', 'C:…그 사람 부럽네요. 근데 제가 더 클걸요.', 'C^:역할극 끝. 나야. 질투했어, 방금.']]);
     reward('mk_strangers', 3); } });
+  // ---- 실버마스크: 가면 쓰고 무대에서 진짜로 춤추기 ----
+  const dance = (steps, pre, love) => PX.Dance.withLines(steps, PX.Dlg.capPick(lov() && love ? love : pre));
+  add('mask', { id: 'mk_waltz', t: '🎭 가면 쓰고 왈츠', sub: '손잡고 → 허리 → 한 바퀴', s: 2, run: async () => {
+    await dance([{ k: 'hand', d: 3.5 }, { k: 'waist', d: 4.5 }, { k: 'spin', d: 2.5 }, { k: 'hand', d: 3 }],
+      [['N:가면 너머로 대위의 눈이 웃는다. 커다란 손이 내 손을 잡고, 다른 손이 조심스럽게 등에 얹힌다.', 'C:하나, 둘, 셋. 하나, 둘, 셋.', 'P:대위님 춤 출 줄 알아요?', 'C*:아니. 지금 배우는 중이야. 너한테서.', 'N:대위가 손을 높이 들자 그 아래로 한 바퀴 돈다.', 'C^:…잘한다. 가면 써도 네가 제일 눈에 띄어.'],
+        ['N:음악이 바뀐다. 대위가 고개를 숙여 정중하게 손을 내민다.', 'C:한 곡, 허락해 주시겠습니까.', 'P:…네.', 'N:발이 두 번 꼬이고, 세 번째엔 맞는다. 대위가 웃음을 참는다.', 'C*:박자 놓쳐도 돼. 내가 맞출게.']],
+      [['N:가면을 쓴 대위가 손을 내민다. 잡자마자 허리를 끌어당긴다.', 'C*:가면 쓰니까 대담해진다. 너도 그렇지?', 'P:{ob}만 그래.', 'N:허리를 감은 손이 이끄는 대로 천천히 돈다. 대위가 손을 들어 한 바퀴 돌려 준다.', 'C^:돌 때마다 머리카락이 날려. 그거 보려고 계속 돌릴 거야.']]);
+    St.advance(15); reward('mk_waltz', 4, ['가면 왈츠', '실버마스크 무대에서 가면을 쓰고 대위와 왈츠를 췄다.']); } });
+  add('mask', { id: 'mk_waist', t: '💃 허리 감싸고 빙글빙글', sub: '허리 → 한 바퀴 → 들어 올리기 → 꼭 안기', s: 4, run: async () => {
+    await dance([{ k: 'waist', d: 4 }, { k: 'spin', d: 2.5 }, { k: 'lift', d: 2.5 }, { k: 'hug', d: 3.5 }],
+      [['N:대위가 허리를 단단히 감싸 안고 무대 한가운데로 이끈다. 가면 아래 입꼬리가 올라가 있다.', 'C*:오늘은 내가 리드한다.', 'N:빙글, 빙글. 손을 높이 들어 나를 한 바퀴 돌리더니, 그대로 허리를 잡아 번쩍 들어 올린다.', 'P:{ob}! 사람들 봐!', 'C^:보라고 하는 거야.', 'N:내려놓자마자 대위가 꼭 끌어안는다. 음악이 끝날 때까지 놓지 않는다.'],
+        ['N:허리를 감은 팔에 힘이 들어간다. 몸이 대위 쪽으로 바짝 붙는다.', 'C:…이 곡 끝나면 한 곡 더. 그다음에 또 한 곡.', 'N:대위가 들어 올려 한 바퀴 돌고, 내려놓으며 이마를 콩 맞댄다.', 'C*:가면 벗으면 지금 얼굴 엄청 빨갈 거야. 나.']]);
+    St.advance(15); reward('mk_waist', 5, ['가면 아래에서', '실버마스크에서 대위가 허리를 감싸고 들어 올려 빙글 돌았다.']); } });
+  add('mask', { id: 'mk_party', t: '🕺 신나는 곡에 같이 들썩이기', sub: '막춤 대환영', s: 1, run: async () => {
+    await dance([{ k: 'bounce', d: 5 }, { k: 'spin', d: 2 }, { k: 'bounce', d: 4 }],
+      [['N:빠른 곡이 쏟아진다. 대위가 어색하게 어깨를 들썩인다. 193센티미터가 들썩인다.', 'C;:…나 이런 거 진짜 못해.', 'P:잘하는데요?', 'C^:거짓말인 거 아는데 기분 좋다. 한 번 더 해 줘.', 'N:대위가 손을 들어 나를 한 바퀴 돌리고는 혼자 박수를 친다.'],
+        ['N:가면 쓴 사람들 사이에서 대위가 제일 크게 들썩인다. 박자는 하나도 안 맞는다.', 'C*:박자는 안 중요해. 너 웃는 게 중요해.', 'N:눈이 마주치자 둘 다 웃음이 터진다.']]);
+    St.advance(10); reward('mk_party', 3); } });
+  add('mask', { id: 'mk_slow', t: '🫂 느린 곡에 꼭 안고 흔들기', sub: '조명이 낮아지면', s: 4, run: async () => {
+    await dance([{ k: 'hand', d: 2 }, { k: 'hug', d: 9 }],
+      [['N:조명이 낮아지고 느린 곡이 흐른다. 대위가 가면을 살짝 올리고 나를 품에 끌어안는다.', 'C:…춤이라기보다 그냥 안고 흔들리는 거네.', 'P:그게 좋아.', 'N:대위의 턱이 정수리에 닿는다. 커다란 손이 허리 뒤에서 천천히 박자를 맞춘다.', 'C*:이 곡이 안 끝났으면 좋겠다.'],
+        ['N:느린 곡. 대위가 두 팔로 허리를 감싸 안고, 나는 대위의 목에 팔을 두른다.', 'C;:발 밟아도 돼. 안 아파.', 'P:벌써 두 번 밟았어.', 'C^:세 번째도 괜찮아. 대신 안 떨어지기.']]);
+    St.advance(15); reward('mk_slow', 5, ['느린 곡', '실버마스크의 느린 곡에 대위와 꼭 안고 흔들렸다.']); } });
   add('midnight', { id: 'mn_slow', t: '💃 느린 곡에 맞춰 춤', s: 4, run: async () => {
-    await say(null, [['N:낮은 조명, 느린 음악. 대위가 이마를 맞대고 흔들린다.', 'C:…춤이라기보다 그냥 안고 있는 거네.', 'P:그게 좋아.', 'C^:응. 나도.'], ['C*:발 밟았지?', 'P:세 번.', 'C:그럼 세 번 업어 줄게. 집에 갈 때.']]);
+    await PX.Dance.withLines([{ k: 'hand', d: 2 }, { k: 'hug', d: 6 }, { k: 'waist', d: 3 }], PX.Dlg.capPick([['N:낮은 조명, 느린 음악. 대위가 이마를 맞대고 흔들린다.', 'C:…춤이라기보다 그냥 안고 있는 거네.', 'P:그게 좋아.', 'C^:응. 나도.'], ['C*:발 밟았지?', 'P:세 번.', 'C:그럼 세 번 업어 줄게. 집에 갈 때.']]));
     St.advance(15); reward('mn_slow', 5, ['미드나잇 룸', '느린 곡에 맞춰 대위와 이마를 맞대고 흔들렸다.']); } });
   add('showroom', { id: 'sr_watch', t: '🎭 쇼 같이 보기', s: 2, run: async () => {
     await say([['N:무대 위로 홀로그램 무용수들이 떠오른다. 대위는 무대보다 내 쪽을 더 본다.', 'C;:…무대 봤어. 진짜야.', 'C*:두 번 봤어. 너 한 번 볼 때.']],
@@ -11357,6 +11485,7 @@ PX.Mind = (() => {
     const g = G(), S = St.S, m = mem();
     // 큐에서 기다리는 사이 장소가 바뀌었거나(문 앞·입장 직후) 대위가 같이 있지 않으면 묻지 않는다
     if (g.transition || St.absMin() - (g.enteredAt || -1e9) < 5 || !g.cap || g.cap.map !== g.mapId || g.cap.atDoor) return false;
+    if (St.absMin() - (m.danceAt || -1e9) < 30) return false; // 방금 같이 춤췄으면 따로 안 묻는다
     const list = ASKS.filter(x => { const a = BY[x.id]; return check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6); });
     if (!list.length) return false;
     const ln = (b) => (Array.isArray(b) ? b : [b]).find(y => typeof y === 'string' && /^C/.test(y)) || '';
@@ -12195,6 +12324,7 @@ ${memLine(S)}`;
     const input = bar.querySelector('input'), send = bar.querySelector('.send'), end = bar.querySelector('.end'), chips = bar.querySelector('.chips2'), last = bar.querySelector('.last');
     last.textContent = '';
     chips.innerHTML = '';
+    input.placeholder = npc ? `${npc.def.name}에게 하고 싶은 말` : `${St.S.capName}에게 하고 싶은 말`; // 대화 상대에 맞게
     // 예시 문구 없이 바로 입력
     let total = 0;
     for (;;) {
@@ -12837,7 +12967,7 @@ ${memLine(S)}`;
       b.append(U.el('h4', null, '지금 운영 중인 명소'));
       if (!places.length) b.append(U.el('p', { class: 'muted' }, '지금 시간대에 특별히 운영 중인 곳은 없어요.'));
       for (const e of places) b.append(U.el('div', { class: 'ev' }, U.el('b', null, e.originalTitle), U.el('small', null, `${e.location} · ${e.startTime}~${e.endTime}`)));
-      b.append(U.el('p', { class: 'muted' }, '돔시티 관광지 맵은 Alpha 0.2~Beta 0.5에서 차례로 열려요. 전체 정보는 단말 → 로어북.'));
+      b.append(U.el('p', { class: 'muted' }, '전체 정보는 단말 → 로어북에서 볼 수 있어요.'));
     });
   }
 
