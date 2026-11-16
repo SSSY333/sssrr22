@@ -449,6 +449,7 @@ PX.Cap = (() => {
     farewellKey = key; mode = 'linger'; cap.stop();
     g.trigger(async () => {
       const r = S.rel.cap, st = r.stage, M = PX.Mind;
+      if (cap.map !== g.mapId || cap.hidden) { mode = 'follow'; release(null, 30); return; } // 그사이 떨어졌으면 조용히 간다
       g.modal++;
       try {
         cap.setDirTo(g.player.x, g.player.y); g.player.setDirTo(cap.x, cap.y);

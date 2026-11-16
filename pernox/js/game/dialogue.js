@@ -156,6 +156,8 @@ PX.Dlg = (() => {
     const c = ctx();
     let replied = false, skipQ = false;
     const capHere = () => { const G = PX.Game; return !!(G.cap && (G.cap.atDoor || (G.cap.map === G.mapId && !G.cap.hidden))); };
+    // 대위가 나오는 장면인데 지금 대위가 없으면: 반쪽짜리 대화가 되지 않게 장면 전체를 건너뛴다
+    { const isCapLn = (ln) => typeof ln === 'string' && (/^C[*^;!~]?:/.test(ln) && !opt.speaker); if (lines.some(isCapLn) && !capHere()) { console.warn('대위 부재로 생략: (장면 전체)', lines.find(isCapLn)); return res; } }
     for (let li = 0; li < lines.length; li++) {
       const ln = lines[li], last = li === lines.length - 1;
       if (typeof ln === 'object' && ln.q && skipQ) continue; // 대위가 없어서 못 한 말에 딸린 선택지
