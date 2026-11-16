@@ -444,7 +444,7 @@ PX.UI = (() => {
           list.append(el('details', { class: 'contact' }, el('summary', null, el('b', null, `${e.id} ${e.originalTitle}`), el('small', null, ` ${typeKo[e.eventType]} · ${e.location}`)),
             el('p', null, e.description), el('p', { class: 'muted' }, `시기: ${e.months.length === 12 ? '연중' : e.months.join('·') + '월'}${e.peakMonths ? ' (성수기 ' + e.peakMonths.join('·') + '월)' : ''}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''} · 조건: ${e.accessCondition}`),
             e.captainReaction ? el('p', { class: 'cap' }, '대위: ' + e.captainReaction) : null,
-            el('p', { class: 'muted' }, e.implemented === 'map' ? '✅ 게임 안에 구현됨' : '🗓️ 일정·정보 등록됨 (장소 맵은 이후 버전)')));
+            el('p', { class: 'muted' }, e.implemented === 'map' ? '✅ 게임 안에 구현됨' : '🗓️ 일정·정보')));
         }
       };
       q.oninput = render; p.append(q, list); render();
