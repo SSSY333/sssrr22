@@ -588,7 +588,8 @@ PX.Cap = (() => {
     if (r.noFollowUntil > now && S.time.min > 21 * 60) return;
     S.cap.lastMsgMin = now;
     let msg;
-    if (spotKind() === 'field') msg = { t: U.pick(['여긴 별일 없어. 너는?', '외곽 모래 장난 아니다. 너는 실내지?', '지금 잠깐 쉬는 중. 너 생각나서.']), r: [['저도 별일 없어요.', 2, '다행이다. 다섯 시에 봐.'], ['조심하세요.', 3, '응. 너 보러 꼭 무사히 갈게.']] };
+    if (PX.Op && PX.Op.isAway && PX.Op.isAway('cap')) return; /* 장기작전 중엔 작전 메시지만 */
+    if (spotKind() === 'field') msg = { t: U.pickFresh('fieldMsg', ['여긴 별일 없어. 너는?', '외곽 모래 장난 아니다. 너는 실내지?', '지금 잠깐 쉬는 중. 너 생각나서.', '오늘 수색 구역은 바위가 많아. 등산하는 기분이야.', '드론이 은빛 이끼 군락 찍었어. 이따 보여 줄게.', '물 마시는 중. 네가 물 많이 마시라고 해서.', '바람 방향 바뀌었다. 오늘은 일찍 들어갈 수도 있어.', '정시우가 또 도마뱀 보고 놀랐어. 귀엽지.', '외곽인데 단말 잘 터진다. 그래서 보내는 거야.', '다섯 시까지 두 시간. 버틴다. 너 보러 간다.']), r: [['저도 별일 없어요.', 2, '다행이다. 다섯 시에 봐.'], ['조심하세요.', 3, '응. 너 보러 꼭 무사히 갈게.']] };
     else msg = PX.Dlg.pick('msg', PX.DLG_CAP.msg);
     if (!msg) return;
     S.messages.unshift({ id: now, t: msg.t, r: msg.r, day: S.day, min: S.time.min, reply: null });
