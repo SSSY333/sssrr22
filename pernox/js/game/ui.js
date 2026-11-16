@@ -84,7 +84,7 @@ PX.UI = (() => {
     if (lp && !lp.broken) box.append(el('button', { class: 'big', onclick: () => PX.Game.loadSlot(last) }, '이어하기', el('small', null, `${lp.name} · ${lp.date}`)));
     box.append(el('button', { class: 'big', onclick: () => pickSlot('new') }, '새로 시작'));
     box.append(el('button', { class: 'big ghost', onclick: () => pickSlot('load') }, '불러오기'));
-    drawTitleArt();
+    drawTitleArt(lp && !lp.broken && lp.player ? PX.S.playerApp(lp.player, 'winter') : null);
   }
   function pickSlot(kind) {
     sheet(kind === 'new' ? '새 게임 — 저장 칸 고르기' : '불러오기', (b, close) => {
@@ -101,27 +101,81 @@ PX.UI = (() => {
       }
     });
   }
-  function drawTitleArt() {
+  // ---------- 표지: 은빛 사막 언덕 위, 붉은 고리 행성을 올려다보는 두 사람 (움직이는 별·유성·발광초) ----------
+  let titleRaf = 0;
+  function drawTitleArt(look) {
     const c = $('titleArt'), g = c.getContext('2d');
-    c.width = 180; c.height = 320; g.imageSmoothingEnabled = false;
-    const r = U.rng('title');
-    const grd = g.createLinearGradient(0, 0, 0, 320); grd.addColorStop(0, '#120c24'); grd.addColorStop(0.6, '#3a1f4a'); grd.addColorStop(1, '#a8483a');
-    g.fillStyle = grd; g.fillRect(0, 0, 180, 320);
-    for (let i = 0; i < 90; i++) { g.fillStyle = r() < 0.2 ? '#ffd9f0' : '#ffffff'; g.globalAlpha = 0.4 + r() * 0.6; g.fillRect(r() * 180 | 0, r() * 220 | 0, 1, 1); }
-    g.globalAlpha = 1;
-    // 붉은 행성
-    for (let y = -40; y <= 40; y++) for (let x = -40; x <= 40; x++) { const d = Math.hypot(x, y); if (d > 40) continue; const lit = (x * -0.6 + y * -0.5) / 40; g.fillStyle = d > 37 ? '#ff9a7a' : lit > 0.25 ? '#e0704f' : lit > -0.2 ? '#c4523a' : '#8a3328'; if ((x * 7 + y * 13) % 11 === 0 && d < 34) g.fillStyle = '#b04a35'; g.fillRect(130 + x, 70 + y, 1, 1); }
-    g.fillStyle = '#e8c0ff'; g.fillRect(40, 40, 3, 3);
-    // 돔과 지평선
-    g.fillStyle = '#5a2a30'; g.fillRect(0, 250, 180, 70);
-    g.fillStyle = '#7a3a36'; for (let x = 0; x < 180; x++) g.fillRect(x, 246 + Math.round(Math.sin(x / 13) * 3), 1, 6);
-    for (let y = 0; y <= 34; y++) { const w = Math.round(Math.sqrt(34 * 34 - y * y) * 1.6); g.fillStyle = 'rgba(160,220,255,0.18)'; g.fillRect(40 - w + 50, 250 - y, w * 2, 1); }
-    g.fillStyle = '#ffe2a0'; for (let i = 0; i < 14; i++) g.fillRect(56 + (r() * 70 | 0), 236 + (r() * 12 | 0), 1, 2);
-    // 두 사람 실루엣
-    const cap = PX.NPC_BY_ID.cap.look;
-    const f1 = PX.S.get(cap, 'hold', 0, 'B', 'normal'), f2 = PX.S.get({ skin: PX.S.SKINS[0], hair: 'pony', hairColor: '#2a2433', eye: '#6b3d22', top: '#e6e2ea', bottom: '#8a8794', sleeve: 'long', hood: 1 }, 'holdL', 0, 'B', 'normal');
-    g.drawImage(f1.c, 66, 222); g.drawImage(f2.c, 96, 234);
+    const W = 240, H = 480; c.width = W; c.height = H; g.imageSmoothingEnabled = false;
+    const r = U.rng('cover');
+    const base = PX.G.canvas(W, H), b = base.getContext('2d'); b.imageSmoothingEnabled = false;
+    const px = (x, y, w, h, col) => { b.fillStyle = col; b.fillRect(x | 0, y | 0, w | 0, h | 0); };
+    // 하늘: 남색 → 보라 → 장밋빛 지평선 (띠로 끊어 도트 느낌)
+    const sky = ['#0b0820', '#110b2c', '#180e38', '#211245', '#2c1650', '#3a1a58', '#4b1f5c', '#5f255e', '#77305e', '#913c5c', '#ab4c58', '#c46154', '#d87a52'];
+    const hz = 262;
+    for (let i = 0; i < sky.length; i++) px(0, Math.floor(i * hz / sky.length), W, Math.ceil(hz / sky.length) + 1, sky[i]);
+    // 성운 (디더링 점)
+    for (let i = 0; i < 1600; i++) { const x = r() * W, y = r() * 210, n = Math.sin(x / 31 + y / 47) + Math.cos(x / 19 - y / 29); if (n > 0.9 && r() < 0.55) px(x, y, 1, 1, n > 1.4 ? '#c77dd8' : '#7a4aa8'); }
+    for (let i = 0; i < 500; i++) { const x = r() * W, y = 110 + r() * 130, n = Math.sin(x / 23 - y / 41) * Math.cos(y / 17); if (n > 0.55 && r() < 0.5) px(x, y, 1, 1, '#ff9fc0'); }
+    // 고정 별
+    for (let i = 0; i < 120; i++) { const y = r() * 225; px(r() * W, y, 1, 1, r() < 0.15 ? '#ffd9f0' : r() < 0.2 ? '#bfe3ff' : '#fff'); }
+    // 붉은 고리 행성 (뒤 고리 → 행성 → 앞 고리)
+    const cx = 150, cy = 108, R = 44;
+    const ring = (front) => { for (let a = 0; a < Math.PI * 2; a += 0.004) { const rx = Math.cos(a) * 82, ry = Math.sin(a) * 15; const isFront = ry > 0; if (isFront !== front) continue; const x = cx + rx * 0.97 - ry * 0.5, y = cy + ry + rx * 0.18; if (!front && Math.hypot(x - cx, y - cy) < R) continue; px(x, y, 1, 1, Math.abs(Math.cos(a * 3)) > 0.2 ? '#f3c79a' : '#d79a7a'); px(x, y + 2, 1, 1, '#9a5a6a'); } };
+    ring(false);
+    for (let y = -R; y <= R; y++) for (let x = -R; x <= R; x++) { const d = Math.hypot(x, y); if (d > R) continue; const lit = (x * -0.62 + y * -0.55) / R, band = Math.sin((y + x * 0.35) / 4.2); let col = lit > 0.35 ? '#f08a64' : lit > 0.05 ? '#d86a4c' : lit > -0.3 ? '#b14e3c' : '#7c3030'; if (band > 0.75 && lit > -0.3) col = lit > 0.2 ? '#f6a47a' : '#c45c44'; if (d > R - 2) col = lit > 0 ? '#ffb48c' : '#a04a44'; if (((x + y) & 1) && lit < -0.55) col = '#5e2430'; px(cx + x, cy + y, 1, 1, col); }
+    ring(true);
+    // 작은 달
+    for (let y = -6; y <= 6; y++) for (let x = -6; x <= 6; x++) if (Math.hypot(x, y) <= 6) px(46 + x, 70 + y, 1, 1, x + y < -3 ? '#e8e0ff' : '#a99ad0');
+    // 먼 산맥 · 은사막 사구
+    for (let x = 0; x < W; x++) { const h = 18 + Math.sin(x / 17) * 6 + Math.sin(x / 7.3) * 2; px(x, hz - h, 1, h + 2, '#5a2d55'); }
+    for (let x = 0; x < W; x++) { const h = 8 + Math.sin(x / 29 + 1) * 5; px(x, hz - h + 6, 1, 40, '#7d4a72'); }
+    for (let y = hz + 4; y < hz + 60; y++) { const t = (y - hz) / 60; px(0, y, W, 1, t < 0.3 ? '#9a6f9a' : t < 0.6 ? '#86608c' : '#6e4e7c'); }
+    for (let i = 0; i < 260; i++) px(r() * W, hz + 6 + r() * 50, 1, 1, r() < 0.5 ? '#d9c8f0' : '#b9a3d8'); // 은빛 모래 반짝임
+    // 돔시티 (왼쪽 멀리): 유리 돔 + 탑 + 창문 불빛 + 루비웨이 네온
+    const dx0 = 18, dy0 = hz + 2;
+    for (let x = 0; x < 64; x++) { const t = (x - 32) / 32, h = Math.sqrt(Math.max(0, 1 - t * t)) * 30; px(dx0 + x, dy0 - h, 1, h, 'rgba(150,210,255,0.16)'); px(dx0 + x, dy0 - h, 1, 1, 'rgba(200,235,255,0.55)'); }
+    const towers = [[24, 18], [31, 26], [38, 14], [45, 22], [52, 16], [58, 11], [28, 9], [49, 9]];
+    for (const [x, h] of towers) { px(dx0 + x - 2, dy0 - h, 5, h, '#2c1c3e'); for (let k = 0; k < h - 3; k += 3) if (r() < 0.6) px(dx0 + x - 1 + (r() * 3 | 0), dy0 - h + 2 + k, 1, 1, r() < 0.3 ? '#ff7ac8' : '#ffe2a0'); }
+    px(dx0 + 31, dy0 - 32, 1, 6, '#ff7ac8');
+    // 606부대 통신탑 (오른쪽 멀리)
+    px(214, hz - 40, 2, 36, '#2a1830'); px(209, hz - 30, 12, 1, '#2a1830'); px(211, hz - 20, 8, 1, '#2a1830');
+    // 앞 언덕 (두 사람이 서 있는 곳)
+    for (let x = 0; x < W; x++) { const top = 322 - Math.round(Math.cos((x - 120) / 70) * 26) + Math.round(Math.sin(x / 9) * 1.5); px(x, top, 1, H - top, '#2a1638'); px(x, top, 1, 2, '#4a2a5a'); }
+    for (let y = 360; y < H; y++) for (let x = 0; x < W; x++) if (((x * 7 + y * 13) % 11) === 0) px(x, y, 1, 1, '#21122e');
+    // 발광초 (언덕 위 청록빛 풀)
+    const glows = [];
+    for (let i = 0; i < 46; i++) { const x = 8 + r() * (W - 16), top = 322 - Math.round(Math.cos((x - 120) / 70) * 26), y = top + 2 + r() * 40; const h = 2 + (r() * 4 | 0); px(x, y - h, 1, h, '#2f8f86'); glows.push([x | 0, (y - h) | 0, r() * 6.28]); }
+    // 두 사람 (뒷모습 · 손잡고 행성을 올려다본다)
+    const capLook = PX.NPC_BY_ID.cap.look;
+    const me = look || { skin: PX.S.SKINS[0], hair: 'pony', hairColor: '#2a2433', eye: '#6b3d22', top: '#e6e2ea', bottom: '#8a8794', sleeve: 'long', hood: 1 };
+    const f1 = PX.S.get(capLook, 'hold', 0, 'B', 'normal'), f2 = PX.S.get(me, 'holdL', 0, 'B', 'normal');
+    const feet = 300, sx = 104;
+    // 발밑 빛
+    for (let y = -6; y <= 6; y++) for (let x = -30; x <= 30; x++) { const d = (x * x) / 900 + (y * y) / 36; if (d < 1 && ((x + y) & 1)) px(sx + 14 + x, feet + y, 1, 1, 'rgba(255,170,210,0.18)'); }
+    b.drawImage(f1.c, sx - (f1.c.width >> 1) + 2, feet - f1.c.height); b.drawImage(f2.c, sx + 22 - (f2.c.width >> 1), feet - f2.c.height);
+    // 매 프레임: 반짝이는 별 · 유성 · 숨 쉬는 발광초 · 떠오르는 빛가루
+    const tw = Array.from({ length: 34 }, () => [r() * W | 0, r() * 230 | 0, r() * 6.28, 0.8 + r() * 1.8]);
+    const motes = Array.from({ length: 18 }, () => [r() * W, 270 + r() * 200, 0.1 + r() * 0.25, r() * 6.28]);
+    let shoot = null, nextShoot = 1.2, last = performance.now(), t = 0;
+    cancelAnimationFrame(titleRaf);
+    const frame = (now) => {
+      if ($('title').classList.contains('hidden')) { titleRaf = 0; return; }
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+      g.drawImage(base, 0, 0);
+      for (const [x, y, ph, sp] of tw) { const a = 0.5 + 0.5 * Math.sin(t * sp + ph); g.globalAlpha = a; g.fillStyle = '#fff'; g.fillRect(x, y, 1, 1); if (a > 0.92) { g.fillRect(x - 1, y, 3, 1); g.fillRect(x, y - 1, 1, 3); } }
+      g.globalAlpha = 1;
+      nextShoot -= dt;
+      if (!shoot && nextShoot <= 0) { shoot = { x: 30 + Math.random() * 150, y: 10 + Math.random() * 60, life: 0 }; nextShoot = 2.5 + Math.random() * 4; }
+      if (shoot) { shoot.life += dt; const k = shoot.life * 120; for (let i = 0; i < 14; i++) { g.globalAlpha = Math.max(0, (1 - i / 14) * (1 - shoot.life / 0.9)); g.fillStyle = i < 2 ? '#fff' : '#ffd9f0'; g.fillRect((shoot.x + k - i * 2) | 0, (shoot.y + k * 0.45 - i) | 0, 1, 1); } g.globalAlpha = 1; if (shoot.life > 0.9) shoot = null; }
+      for (const [x, y, ph] of glows) { g.globalAlpha = 0.45 + 0.45 * Math.sin(t * 1.6 + ph); g.fillStyle = '#7fffe8'; g.fillRect(x, y, 1, 1); g.globalAlpha *= 0.35; g.fillRect(x - 1, y - 1, 3, 3); }
+      g.globalAlpha = 1;
+      for (const m of motes) { m[1] -= m[2] * dt * 30; m[0] += Math.sin(t + m[3]) * 0.08; if (m[1] < 240) { m[1] = 470; m[0] = Math.random() * W; } g.globalAlpha = 0.35 + 0.3 * Math.sin(t * 2 + m[3]); g.fillStyle = '#ffc6e6'; g.fillRect(m[0] | 0, m[1] | 0, 1, 1); }
+      g.globalAlpha = 1;
+      titleRaf = requestAnimationFrame(frame);
+    };
+    titleRaf = requestAnimationFrame(frame);
   }
+
 
   // 생일 고르기 (월 · 일) · onChange({m,d})
   function bdayPick(v, onChange) {
@@ -286,7 +340,7 @@ PX.UI = (() => {
         const its = calItems(date);
         for (const x of its.filter(x => x.cls !== 'place' && x.cls !== 'routine')) detail.append(el('div', { class: 'ev ' + x.cls }, el('b', null, `${x.mk} ${x.title}`), x.sub ? el('small', null, x.sub) : ''));
         if (!ev.length) detail.append(el('p', { class: 'muted' }, '부대·돔시티 행사는 없어요.'));
-        for (const e of ev) detail.append(el('div', { class: 'ev' }, el('b', null, `${e.id} ${e.originalTitle}`), el('small', null, `${e.location}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''}`), el('p', null, e.description), e.captainReaction ? el('p', { class: 'cap' }, '대위: ' + e.captainReaction) : null));
+        for (const e of ev) detail.append(el('div', { class: 'ev' }, el('b', null, e.originalTitle), el('small', null, `${e.location}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''}`), el('p', null, e.description), e.captainReaction ? el('p', { class: 'cap' }, '대위: ' + e.captainReaction) : null));
         for (const x of its.filter(x => x.cls === 'place')) detail.append(el('div', { class: 'ev place' }, el('b', null, `${x.mk} ${x.title}`), el('small', null, x.sub)));
         for (const x of its.filter(x => x.cls === 'routine')) detail.append(el('p', { class: 'muted' }, `🪖 ${x.title}: ${x.sub}`));
       };
@@ -441,10 +495,10 @@ PX.UI = (() => {
         for (const e of PX.LORE) {
           const hay = e.id + e.originalTitle + e.description + e.keywords.join() + e.location + (e.months.join('월 ') + '월') + typeKo[e.eventType] + e.captainReaction;
           if (k && !hay.includes(k)) continue;
-          list.append(el('details', { class: 'contact' }, el('summary', null, el('b', null, `${e.id} ${e.originalTitle}`), el('small', null, ` ${typeKo[e.eventType]} · ${e.location}`)),
+          list.append(el('details', { class: 'contact' }, el('summary', null, el('b', null, e.originalTitle), el('small', null, ` ${typeKo[e.eventType]} · ${e.location}`)),
             el('p', null, e.description), el('p', { class: 'muted' }, `시기: ${e.months.length === 12 ? '연중' : e.months.join('·') + '월'}${e.peakMonths ? ' (성수기 ' + e.peakMonths.join('·') + '월)' : ''}${e.startTime ? ' · ' + e.startTime + '~' + e.endTime : ''} · 조건: ${e.accessCondition}`),
             e.captainReaction ? el('p', { class: 'cap' }, '대위: ' + e.captainReaction) : null,
-            el('p', { class: 'muted' }, e.implemented === 'map' ? '✅ 게임 안에 구현됨' : '🗓️ 일정·정보')));
+            el('p', { class: 'muted' }, e.implemented === 'map' ? '📍 직접 가 볼 수 있어요' : '🗓️ 일정·정보')));
         }
       };
       q.oninput = render; p.append(q, list); render();

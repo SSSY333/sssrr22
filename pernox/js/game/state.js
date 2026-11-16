@@ -132,7 +132,7 @@ PX.St = (() => {
   function peek(slot) {
     const raw = store.get(KEY(slot));
     if (!raw) return null;
-    try { const d = JSON.parse(raw); return { name: d.player.name, job: PX.JOBS[d.player.job].short, date: Cal.fmtDate(d.time) + ' ' + Cal.fmtTime(d.time.min), stage: STAGES[d.rel.cap.stage], cap: d.capName, savedAt: d.savedAt, v: d.v }; } catch (e) { return { broken: true }; }
+    try { const d = JSON.parse(raw); return { player: d.player, name: d.player.name, job: PX.JOBS[d.player.job].short, date: Cal.fmtDate(d.time) + ' ' + Cal.fmtTime(d.time.min), stage: STAGES[d.rel.cap.stage], cap: d.capName, savedAt: d.savedAt, v: d.v }; } catch (e) { return { broken: true }; }
   }
   function lastSlot() { try { return JSON.parse(store.get('pernox.meta') || '{}').last || null; } catch (e) { return null; } }
   function wipe(slot) { store.del(KEY(slot)); }

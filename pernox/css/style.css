@@ -273,3 +273,14 @@ button { touch-action: manipulation; }
 
 .evdot.place { margin-left: 3px; background: #9fd6ff; }
 .ev.cap b { color: var(--pink); } .ev.me b { color: var(--mint); } .ev.place { opacity: .9; }
+
+/* ---------- 표지 ---------- */
+#title { background: #0b0820; }
+#titleArt { object-position: 50% 30%; }
+#title .tcard { padding-top: 26px; background: linear-gradient(rgba(14,8,28,0), rgba(14,8,28,.72) 30%, rgba(14,8,28,.94) 70%); text-align: center; }
+#title .eyebrow { display: inline-block; padding: 3px 12px; border: 2px solid rgba(255,209,102,.45); border-radius: 99px; background: rgba(20,12,36,.6); font-size: 12px; letter-spacing: 1px; }
+#title h1 { margin: 12px 0 18px; font-size: 32px; line-height: 1.3; color: #fff4fb; text-shadow: 0 0 14px rgba(255,122,200,.55), 0 3px 0 #2a1238; }
+#title h1 .l2 { display: block; font-size: 26px; color: #ffd6ec; }
+#title .big { border-radius: 99px; }
+#title .big:first-child { background: linear-gradient(#ff9fcf, #ee7fa8); }
+#title .big.ghost { background: rgba(40,26,70,.85); }
