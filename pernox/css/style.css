@@ -266,3 +266,7 @@ button { touch-action: manipulation; }
 .npclist .li.fact { display: block; }
 .npclist .li.fact small { display: block; opacity: .75; }
 .npclist .li.fact b { display: block; width: auto; text-align: left; font-weight: normal; }
+
+.msgsend { border: 2px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 12px; background: var(--panel2); display: flex; flex-direction: column; gap: 6px; }
+.msgsend small { color: var(--muted); font-size: 12px; }
+.msgsend .msgch { justify-content: flex-start; }

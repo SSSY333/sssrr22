@@ -333,8 +333,20 @@ PX.UI = (() => {
     },
     msg(p) {
       const S = St.S;
+      // 장기작전 중인 대위에게 보내기
+      if (PX.Op.canMsg && PX.Op.canMsg()) {
+        const o = PX.Op.op(), d = Math.floor((St.absMin() - o.start) / 1440) + 1, off = o.comms[d] === false;
+        const box = el('div', { class: 'msgsend' }, el('b', null, `📡 ${S.capName}에게 보내기`), el('small', null, off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.'));
+        const ch = el('div', { class: 'msgch' });
+        const go = (t) => { if (PX.Op.sendToCap(t)) { toast('📤 보냈어요'); p.innerHTML = ''; PANES.msg(p); } };
+        for (const t of PX.Op.quick()) { const b = el('button', null, t); b.onclick = () => go(t); ch.append(b); }
+        const row = el('div', { class: 'msgfree' }), inp = el('input', { type: 'text', maxlength: '120', placeholder: '직접 써서 보내기' }), sb = el('button', null, '보내기');
+        sb.onclick = () => go(inp.value); inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(inp.value); };
+        row.append(inp, sb); box.append(ch, row); p.append(box);
+      }
       if (!S.messages.length) p.append(el('p', { class: 'muted' }, `${S.capName}에게 온 메시지가 없어요. 떨어져 있으면 가끔 연락이 와요.`));
       for (const m of S.messages) {
+        if (m.out) { const ST = { sent: '전송됨', read: '읽음', answered: '읽음' }; p.append(el('div', { class: 'msg' }, el('small', { style: 'display:block;text-align:right' }, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)} · ${ST[m.st] || ''}`), el('div', { class: 'bub me' }, m.mine))); continue; }
         const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t), ...(m.photo ? [el('img', { class: 'msgph', src: m.photo, alt: '사진' })] : []));
         if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
         else if (m.reply === 'none') { /* 답장 필요 없는 메시지 */ }
