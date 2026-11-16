@@ -10566,7 +10566,10 @@ PX.CapFavor = (() => {
     return never.length ? never : all;
   }
   function lastOf(kind) { const L = log(); const x = L.find(e => byId(e.id) && byId(e.id).kind === kind); return x ? x.day : -99; }
-  function note(f) { const L = log(); L.unshift({ id: f.id, day: St.S.day }); L.splice(40); }
+  function note(f) { const L = log(); const e = { id: f.id, day: St.S.day, st: 'asked' }; L.unshift(e); L.splice(40); return e; }
+  // 기록 상태: done 들어줌 · no 거절 · wait 진행 중 · cancel 작전으로 취소 · expired 지나감
+  function mark(id, st) { const e = log().find(x => x.id === id && (x.st === 'wait' || x.st === 'asked')); if (e) e.st = st; }
+  const opBusy = () => { const o = St.S.cap.op; return !!(o && ['planned', 'away', 'return'].includes(o.phase)); };
 
   // ---------- 실행 ----------
   async function lines(ls) { await PX.Dlg.runLines(ls, { reply: true }); }
@@ -10585,17 +10588,18 @@ PX.CapFavor = (() => {
   const LATER = [['C:응. 급한 거 아니야. 생각나면.'], ['C^:기다릴게. 오래 걸려도.']];
 
   async function offer(f) {
-    const g = G(); g.modal++; note(f);
+    const g = G(); g.modal++; const e = note(f);
     try {
-      if (f.kind === 'act') { await scene(f); reward(f, 1); return; }
+      if (f.kind === 'act') { e.st = 'done'; await scene(f); reward(f, 1); return; }
       await lines(U.pickFresh('favask_' + f.id, f.ask));
       const opts = [{ t: f.yes }, { t: f.no }]; if (f.kind === 'deep') opts.splice(1, 0, { t: '지금은 좀… 나중에 해도 돼요?' });
       const i = await PX.Dlg.choose(opts);
       await PX.Dlg.say('player', opts[i].t);
-      if (i === opts.length - 1) { await lines(U.pickFresh('favno', NO)); return; }
-      if (f.kind === 'easy') { await scene(f); reward(f, 2); return; }
+      if (i === opts.length - 1) { e.st = 'no'; await lines(U.pickFresh('favno', NO)); return; }
+      if (f.kind === 'easy') { e.st = 'done'; await scene(f); reward(f, 2); return; }
       // deep: 지금 바로 할 수 있으면 바로, 아니면 기억해 두고 같이 간다
-      if (i === 0 && ready(f)) { await scene(f); reward(f, 5); return; }
+      if (i === 0 && ready(f)) { e.st = 'done'; await scene(f); reward(f, 5); return; }
+      e.st = 'wait';
       St.S.cap.favor = { id: f.id, made: mins(), until: mins() + 2 * 1440, nag: 0 };
       if (i === 1) await lines(U.pickFresh('favlater', LATER));
       PX.UI.toast(`📋 대위 부탁: ${todo(f)}`, 3200);
@@ -10603,7 +10607,7 @@ PX.CapFavor = (() => {
     } finally { PX.Dlg.close(); g.modal--; }
   }
   async function finish(p) {
-    const g = G(), f = byId(p.id); g.modal++; St.S.cap.favor = null;
+    const g = G(), f = byId(p.id); g.modal++; St.S.cap.favor = null; mark(p.id, 'done');
     try {
       if (f.item) { St.addItem(f.item, -1); await PX.Dlg.say('player', `${PX.ITEMS[f.item].icon} 부탁한 거 가져왔어요.`); }
       await scene(f); reward(f, 5);
@@ -10617,7 +10621,8 @@ PX.CapFavor = (() => {
     const g = G(), S = St.S;
     if (!g.cap || busy() || !S.done.intro) return;
     const p = pending();
-    if (p && mins() > p.until) { S.cap.favor = null; if (near(6)) g.bubble(g.cap, U.pickFresh('favexp', ['그 부탁, 신경 쓰지 마. 괜찮아.', '부탁한 거 잊어도 돼. 진짜로.']), 2.6); return; }
+    if (p && opBusy()) { S.cap.favor = null; mark(p.id, 'cancel'); if (near(6)) g.bubble(g.cap, U.pickFresh('favop', ['작전 잡혔다. 그 부탁은 잊어. 다녀와서 다른 거 부탁할게.', '부탁한 거, 작전 때문에 못 하겠다. 신경 쓰지 마.']), 3); return; }
+    if (p && mins() > p.until) { S.cap.favor = null; mark(p.id, 'expired'); if (near(6)) g.bubble(g.cap, U.pickFresh('favexp', ['그 부탁, 신경 쓰지 마. 괜찮아.', '부탁한 거 잊어도 돼. 진짜로.']), 2.6); return; }
     const mode = PX.Cap.mode, withMe = ['follow', 'visit', 'stay'].includes(mode);
     if (p) {
       const f = byId(p.id);
@@ -10632,7 +10637,7 @@ PX.CapFavor = (() => {
     // 내 일터에 같이 있을 때: 대위가 먼저 해 주는 것 (하루 한 번)
     if (atWork && lastOf('act') !== S.day && Math.random() < 0.5) pick = U.pick(cands('act'));
     if (!pick && withMe && lastOf('easy') !== S.day && Math.random() < 0.35) pick = U.pick(cands('easy'));
-    if (!pick && withMe && !p && S.day - lastOf('deep') >= 2 && st() >= 2 && Math.random() < 0.25) pick = U.pick(cands('deep'));
+    if (!pick && withMe && !p && !opBusy() && S.day - lastOf('deep') >= 2 && st() >= 2 && Math.random() < 0.25) pick = U.pick(cands('deep'));
     S.cap.favorNext = mins() + 40 + Math.floor(Math.random() * 60);
     if (pick) offer(pick);
   }
@@ -10646,7 +10651,8 @@ PX.CapFavor = (() => {
     } else p.append(el('p', { class: 'muted' }, '지금 대위가 부탁해 둔 건 없어요. 같이 있다 보면 직업에 맞는 부탁을 하거나, 일터로 찾아와 뭔가 해 줘요.'));
     const L = log().slice(0, 10);
     if (L.length) p.append(el('p', { class: 'muted' }, '최근'));
-    for (const x of L) { const f = byId(x.id); if (!f) continue; const k = { easy: '부탁', deep: '깊은 부탁', act: '대위가 해 준 것' }[f.kind]; p.append(el('div', { class: 'ev done' }, el('b', null, `${f.kind === 'act' ? '💝' : '✅'} ${(f.kind === 'act' ? f.sc[0][0].replace(/^N:/, '') : f.ask[0][0].replace(/^C[*^;!~]?:/, '')).slice(0, 32)}…`), el('small', null, `${k} · ${S.day - x.day === 0 ? '오늘' : S.day - x.day + '일 전'}`))); }
+    const ICON = { done: '✅', no: '🙅', cancel: '🚫', expired: '⌛', asked: '✅' }, WHY = { no: '거절함', cancel: '장기작전으로 취소', expired: '시간이 지남' };
+    for (const x of L) { const f = byId(x.id); if (!f || x.st === 'wait') continue; const k = { easy: '부탁', deep: '깊은 부탁', act: '대위가 해 준 것' }[f.kind]; const st = x.st || 'done'; p.append(el('div', { class: 'ev' + (st === 'done' || st === 'asked' ? ' done' : '') }, el('b', null, `${f.kind === 'act' ? '💝' : ICON[st]} ${(f.kind === 'act' ? f.sc[0][0].replace(/^N:/, '') : f.ask[0][0].replace(/^C[*^;!~]?:/, '')).slice(0, 32)}…`), el('small', null, `${k}${WHY[st] ? ' · ' + WHY[st] : ''} · ${S.day - x.day === 0 ? '오늘' : S.day - x.day + '일 전'}`))); }
     p.append(el('p', { class: 'muted' }, `지금까지 들어준 대위 부탁 ${S.stats.favors || 0}건`));
   }
   return { tick, offer, pending, label, pane, cands, finish };
