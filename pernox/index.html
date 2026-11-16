@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#1b1430" />
   <title>사랑해, 이 행성이 멸망할 때까지.</title>
   <meta name="description" content="제5행성 페르녹스 · 지구군 606부대 — 쿼터뷰 SD 도트 생활 · 연애 시뮬레이션" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap&text=%EC%82%AC%EB%9E%91%ED%95%B4%2C%20%EC%9D%B4%ED%96%89%EC%84%B1%EB%A9%B8%EB%A7%9D%ED%95%A0%EB%95%8C%EA%B9%8C%EC%A7%80." />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -19,7 +22,8 @@
   <!-- 타이틀 -->
   <section id="title" class="screen hidden">
     <canvas id="titleArt"></canvas>
-    <div class="tcard">
+    <div class="tcard" id="tcard">
+      <button class="tfold" id="tfold" aria-label="메뉴 접기">접기 ▾</button>
       <p class="eyebrow">제5행성 페르녹스 · 지구군 606부대</p>
       <h1>사랑해,<span class="l2">이 행성이 멸망할 때까지.</span></h1>
       <div id="titleBtns"></div>

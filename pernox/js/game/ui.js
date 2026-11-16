@@ -85,6 +85,10 @@ PX.UI = (() => {
     box.append(el('button', { class: 'big', onclick: () => pickSlot('new') }, '새로 시작'));
     box.append(el('button', { class: 'big ghost', onclick: () => pickSlot('load') }, '불러오기'));
     drawTitleArt(lp && !lp.broken && lp.player ? PX.S.playerApp(lp.player, 'winter') : null);
+    // 메뉴 접기 · 펴기 (표지 그림을 다 보고 싶을 때)
+    const card = $('tcard'), fold = $('tfold');
+    const set = (f) => { card.classList.toggle('folded', f); fold.textContent = f ? '▴ 메뉴 펼치기' : '접기 ▾'; fold.setAttribute('aria-label', f ? '메뉴 펼치기' : '메뉴 접기'); };
+    set(false); fold.onclick = () => set(!card.classList.contains('folded'));
   }
   function pickSlot(kind) {
     sheet(kind === 'new' ? '새 게임 — 저장 칸 고르기' : '불러오기', (b, close) => {
