@@ -93,8 +93,31 @@ PX.Op = (() => {
     if (comms && o.queue.length) { send({ t: `통신 복구됐다. 밀린 거 보낸다. (${o.queue.length}개)`, r: [] }); for (const m of o.queue.splice(0)) send(m, true); }
   }
   function pickFresh(pool, key) { const S = St.S; S.done[key] = S.done[key] || []; const c = pool.filter(m => !S.done[key].includes(m.t)); const m = U.pick(c.length ? c : pool); S.done[key] = [m.t, ...S.done[key]].slice(0, 30); return m; }
+  // 대위가 바로 옆에 있으면 단말 대신 직접 말한다
+  function together() {
+    const g = G(), o = op();
+    if (!g || !g.cap || g.cap.hidden || g.cap.map !== g.mapId || (o && o.phase === 'away' && !o.joint)) return false;
+    return ['follow', 'visit', 'stay'].includes(PX.Cap.mode) || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < 6;
+  }
+  function sayInPerson(m) {
+    const g = G();
+    g.trigger(async () => {
+      g.modal++;
+      try {
+        g.cap.setDirTo(g.player.x, g.player.y);
+        await PX.Dlg.say('cap', U.fmt(m.t, PX.Dlg.ctx()), 'normal');
+        if (m.r && m.r.length) {
+          const i = await PX.Dlg.choose(m.r.map(r => ({ t: r[0] })));
+          await PX.Dlg.say('player', m.r[i][0]);
+          St.addAff(m.r[i][1] || 0);
+          if (m.r[i][2]) await PX.Dlg.say('cap', U.fmt(m.r[i][2], PX.Dlg.ctx()), 'smile');
+        }
+      } finally { PX.Dlg.close(); g.modal--; }
+    });
+  }
   function send(m, quiet) {
     const S = St.S;
+    if (!quiet && !m.photo && together()) return sayInPerson(m);
     const msg = { id: now() + Math.random(), t: m.t, r: m.r || [], day: S.day, min: S.time.min, reply: m.r && m.r.length ? null : 'none', photo: m.photo ? photo(m.photo) : null };
     S.messages.unshift(msg); S.messages = S.messages.slice(0, 40);
     if (msg.photo && !quiet) { S.capPhotos = S.capPhotos || []; S.capPhotos.unshift({ day: S.day, kind: m.photo, img: msg.photo, t: m.t }); S.capPhotos = S.capPhotos.slice(0, 24); }
@@ -210,5 +233,5 @@ PX.Op = (() => {
     g.memory('함께 귀환', `${o.days}일간의 ${o.area} 작전을 마치고 함께 돌아왔다.`, true);
   }
 
-  return { maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
+  return { together, maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
 })();

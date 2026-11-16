@@ -10759,8 +10759,9 @@ PX.Bday = (() => {
   function newDay() {
     const s = S(), name = s.capName;
     if (mine()) {
-      s.messages.unshift({ id: St.absMin(), t: U.pickFresh('bdaymsg' + lv(), MSG[lv()]), r: [['고마워요!', 3, '오늘 얼굴 보자. 꼭.'], ['벌써 일어나 있었어요?', 2, '너 생일인데 자고 있을 수가 없지.']], day: s.day, min: 0, reply: null }); s.messages = s.messages.slice(0, 40); PX.UI.badge();
-      setTimeout(() => PX.UI.toast('🎂 오늘은 내 생일! 대위에게서 메시지가 왔어요', 3200), 800);
+      const tg0 = PX.Op.together && PX.Op.together();
+      PX.Op.send({ t: U.pickFresh('bdaymsg' + lv(), MSG[lv()]), r: [['고마워요!', 3, '오늘 얼굴 보자. 꼭.'], ['벌써 일어나 있었어요?', 2, '너 생일인데 자고 있을 수가 없지.']] }); // 같이 있으면 직접 말한다
+      setTimeout(() => PX.UI.toast(tg0 ? '🎂 오늘은 내 생일!' : '🎂 오늘은 내 생일! 대위에게서 메시지가 왔어요', 3200), 800);
     }
     if (caps()) setTimeout(() => PX.UI.toast(`🎂 오늘은 ${name}의 생일이에요`, 3200), 1400);
     const tm = PX.Cal.addDays(s.time, 1);
@@ -11444,8 +11445,31 @@ PX.Op = (() => {
     if (comms && o.queue.length) { send({ t: `통신 복구됐다. 밀린 거 보낸다. (${o.queue.length}개)`, r: [] }); for (const m of o.queue.splice(0)) send(m, true); }
   }
   function pickFresh(pool, key) { const S = St.S; S.done[key] = S.done[key] || []; const c = pool.filter(m => !S.done[key].includes(m.t)); const m = U.pick(c.length ? c : pool); S.done[key] = [m.t, ...S.done[key]].slice(0, 30); return m; }
+  // 대위가 바로 옆에 있으면 단말 대신 직접 말한다
+  function together() {
+    const g = G(), o = op();
+    if (!g || !g.cap || g.cap.hidden || g.cap.map !== g.mapId || (o && o.phase === 'away' && !o.joint)) return false;
+    return ['follow', 'visit', 'stay'].includes(PX.Cap.mode) || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < 6;
+  }
+  function sayInPerson(m) {
+    const g = G();
+    g.trigger(async () => {
+      g.modal++;
+      try {
+        g.cap.setDirTo(g.player.x, g.player.y);
+        await PX.Dlg.say('cap', U.fmt(m.t, PX.Dlg.ctx()), 'normal');
+        if (m.r && m.r.length) {
+          const i = await PX.Dlg.choose(m.r.map(r => ({ t: r[0] })));
+          await PX.Dlg.say('player', m.r[i][0]);
+          St.addAff(m.r[i][1] || 0);
+          if (m.r[i][2]) await PX.Dlg.say('cap', U.fmt(m.r[i][2], PX.Dlg.ctx()), 'smile');
+        }
+      } finally { PX.Dlg.close(); g.modal--; }
+    });
+  }
   function send(m, quiet) {
     const S = St.S;
+    if (!quiet && !m.photo && together()) return sayInPerson(m);
     const msg = { id: now() + Math.random(), t: m.t, r: m.r || [], day: S.day, min: S.time.min, reply: m.r && m.r.length ? null : 'none', photo: m.photo ? photo(m.photo) : null };
     S.messages.unshift(msg); S.messages = S.messages.slice(0, 40);
     if (msg.photo && !quiet) { S.capPhotos = S.capPhotos || []; S.capPhotos.unshift({ day: S.day, kind: m.photo, img: msg.photo, t: m.t }); S.capPhotos = S.capPhotos.slice(0, 24); }
@@ -11561,7 +11585,7 @@ PX.Op = (() => {
     g.memory('함께 귀환', `${o.days}일간의 ${o.area} 작전을 마치고 함께 돌아왔다.`, true);
   }
 
-  return { maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
+  return { together, maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
 })();
 
 </script>
@@ -11637,7 +11661,7 @@ PX.Rom = (() => {
     if (!d) return;
     const at = d.day * DAY + d.min, t = now();
     if (d.state === 'planned') {
-      if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
+      if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; if (PX.Op.together && PX.Op.together()) sendMsg(U.pick([`두 시간 뒤에 ${d.name} 가기로 한 거, 잊은 거 아니지?`, `이따 ${Cal.fmtTime(d.min)}에 ${d.name}. 이렇게 같이 있으니까 그냥 같이 가면 되겠다.`]), [['응, 같이 가요.', 2, '좋아. 시간 되면 내가 손 잡고 간다.'], ['설레요.', 3, '…나도. 옆에 있는데도 설레.']]); else sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
       if (t >= at - 15 && t < at + 60 && !d.capThere) { // 대위가 먼저 가서 기다린다 (보이지 않는 이동)
         if (PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay' && PX.Cap.mode !== 'op') { d.capThere = true; PX.Cap.mode = 'date'; if (g.cap.map !== d.map) { PX.Cap.moveTo(d.map); const m = W.maps[d.map]; const a = m.def.arrive ? [m.def.arrive[0] + 1.5, m.def.arrive[1] - 1.5] : m.exit ? [m.exit.x + 0.5, m.exit.y - 2.5] : null; const tt = a && PX.Path.nearestWalkable(m, a[0], a[1], 4); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; } } }
       }

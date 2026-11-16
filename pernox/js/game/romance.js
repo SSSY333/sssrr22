@@ -68,7 +68,7 @@ PX.Rom = (() => {
     if (!d) return;
     const at = d.day * DAY + d.min, t = now();
     if (d.state === 'planned') {
-      if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
+      if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; if (PX.Op.together && PX.Op.together()) sendMsg(U.pick([`두 시간 뒤에 ${d.name} 가기로 한 거, 잊은 거 아니지?`, `이따 ${Cal.fmtTime(d.min)}에 ${d.name}. 이렇게 같이 있으니까 그냥 같이 가면 되겠다.`]), [['응, 같이 가요.', 2, '좋아. 시간 되면 내가 손 잡고 간다.'], ['설레요.', 3, '…나도. 옆에 있는데도 설레.']]); else sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
       if (t >= at - 15 && t < at + 60 && !d.capThere) { // 대위가 먼저 가서 기다린다 (보이지 않는 이동)
         if (PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay' && PX.Cap.mode !== 'op') { d.capThere = true; PX.Cap.mode = 'date'; if (g.cap.map !== d.map) { PX.Cap.moveTo(d.map); const m = W.maps[d.map]; const a = m.def.arrive ? [m.def.arrive[0] + 1.5, m.def.arrive[1] - 1.5] : m.exit ? [m.exit.x + 0.5, m.exit.y - 2.5] : null; const tt = a && PX.Path.nearestWalkable(m, a[0], a[1], 4); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; } } }
       }

@@ -109,8 +109,9 @@ PX.Bday = (() => {
   function newDay() {
     const s = S(), name = s.capName;
     if (mine()) {
-      s.messages.unshift({ id: St.absMin(), t: U.pickFresh('bdaymsg' + lv(), MSG[lv()]), r: [['고마워요!', 3, '오늘 얼굴 보자. 꼭.'], ['벌써 일어나 있었어요?', 2, '너 생일인데 자고 있을 수가 없지.']], day: s.day, min: 0, reply: null }); s.messages = s.messages.slice(0, 40); PX.UI.badge();
-      setTimeout(() => PX.UI.toast('🎂 오늘은 내 생일! 대위에게서 메시지가 왔어요', 3200), 800);
+      const tg0 = PX.Op.together && PX.Op.together();
+      PX.Op.send({ t: U.pickFresh('bdaymsg' + lv(), MSG[lv()]), r: [['고마워요!', 3, '오늘 얼굴 보자. 꼭.'], ['벌써 일어나 있었어요?', 2, '너 생일인데 자고 있을 수가 없지.']] }); // 같이 있으면 직접 말한다
+      setTimeout(() => PX.UI.toast(tg0 ? '🎂 오늘은 내 생일!' : '🎂 오늘은 내 생일! 대위에게서 메시지가 왔어요', 3200), 800);
     }
     if (caps()) setTimeout(() => PX.UI.toast(`🎂 오늘은 ${name}의 생일이에요`, 3200), 1400);
     const tm = PX.Cal.addDays(s.time, 1);
