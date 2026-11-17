@@ -72,7 +72,7 @@ PX.St = (() => {
     // 자동 승급 (0~3), 연인은 고백 이벤트로
     let up = false;
     while (r.stage < 3 && r.aff >= THRESH[r.stage + 1]) { r.stage++; up = true; }
-    if (r.stage === 4 && r.aff >= THRESH[5] && r.loverSince != null && S.day - r.loverSince >= 14) { r.stage = 5; up = true; }
+    if (r.stage === 4 && r.aff >= THRESH[5] && r.loverSince != null && S.day - r.loverSince >= 30) { r.stage = 5; up = true; } // 깊어진 사랑: 연인 30일
     if (up && PX.UI) PX.UI.toast(`💞 관계가 깊어졌다: ${STAGES[r.stage]}`);
     return n;
   }

@@ -6421,7 +6421,7 @@ PX.St = (() => {
     // 자동 승급 (0~3), 연인은 고백 이벤트로
     let up = false;
     while (r.stage < 3 && r.aff >= THRESH[r.stage + 1]) { r.stage++; up = true; }
-    if (r.stage === 4 && r.aff >= THRESH[5] && r.loverSince != null && S.day - r.loverSince >= 14) { r.stage = 5; up = true; }
+    if (r.stage === 4 && r.aff >= THRESH[5] && r.loverSince != null && S.day - r.loverSince >= 30) { r.stage = 5; up = true; } // 깊어진 사랑: 연인 30일
     if (up && PX.UI) PX.UI.toast(`💞 관계가 깊어졌다: ${STAGES[r.stage]}`);
     return n;
   }
@@ -8879,9 +8879,9 @@ PX.UI = (() => {
         const days = r.loverSince != null ? S.day - r.loverSince : 0, ok = (b) => b ? '✅' : '⬜';
         if (r.stage < 3) return need(T[r.stage + 1]) ? `▶ ${St.STAGES[r.stage + 1]}까지 호감 ${need(T[r.stage + 1])}` : `▶ 곧 ${St.STAGES[r.stage + 1]}`;
         if (r.stage === 3) return need(T[4]) ? `▶ 연인: 호감 ${T[4]} 이상이 되면 대위가 고백해요 (호감 ${need(T[4])} 더)` : '💌 연인: 조건 충족 · 대위와 함께 있으면 대위가 고백해요';
-        if (r.stage === 4) return `▶ 깊어진 사랑: ${ok(r.aff >= T[5])} 호감 ${T[5]} 이상 · ${ok(days >= 14)} 연인 14일 (${days >= 14 ? '충족' : `${14 - days}일 남음`})`;
-        if (r.stage === 5) return `▶ 약혼: ${ok(r.aff >= T[6])} 호감 ${T[6]} 이상 · ${ok(days >= 30)} 연인 30일 (${days >= 30 ? '충족' : `${30 - days}일 남음`}) → 대위가 특별한 저녁 약속을 잡아요. 반지를 선물해 먼저 청혼해도 돼요.`;
-        if (r.stage === 6) { const e = S.day - (S.engagedDay || S.day); return `▶ 부부: ${ok(e >= 10)} 약혼 10일 (${e >= 10 ? '충족' : `${10 - e}일 남음`}) → 대위 메뉴 '결혼식 날짜 잡기' · 다음 토요일 11시 연병장`; }
+        if (r.stage === 4) return `▶ 깊어진 사랑: ${ok(r.aff >= T[5])} 호감 ${T[5]} 이상 · ${ok(days >= 30)} 연인 30일 (${days >= 30 ? '충족' : `${30 - days}일 남음`})`;
+        if (r.stage === 5) return `▶ 약혼: ${ok(r.aff >= T[6])} 호감 ${T[6]} 이상 · ${ok(days >= 90)} 연인 3달 (${days >= 90 ? '충족' : `${90 - days}일 남음`}) → 대위가 특별한 저녁 약속을 잡아요. 3달이 지나면 반지를 선물해 먼저 청혼해도 돼요.`;
+        if (r.stage === 6) return S.wedding && S.wedding.state === 'planned' ? `💒 결혼식: ${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, S.wedding.day))} ${Cal.fmtTime(S.wedding.min)} · 606부대 연병장 (그 시간에 부대에 있으면 시작해요)` : "▶ 부부: 대위 메뉴 '결혼식 날짜 잡기'에서 날짜와 시간을 직접 골라요";
         return '💒 부부예요.';
       };
       const S = St.S, r = S.rel.cap, d = S.done, M = PX.Mind;
@@ -13663,10 +13663,10 @@ PX.Rom = (() => {
   }
 
   // ---------- 프러포즈 · 약혼 · 결혼 · 동거 ----------
-  // 깊어진 사랑 + 호감 950 + 연인 30일 이상 → 대위가 특별한 저녁 약속을 잡는다
+  // 깊어진 사랑 + 호감 950 + 연인 3달(90일) 이상 → 대위가 특별한 저녁 약속을 잡는다
   function proposalCheck() {
     const S = St.S, r = S.rel.cap;
-    if (r.stage !== 5 || r.aff < 950 || r.loverSince == null || S.day - r.loverSince < 30) return;
+    if (r.stage !== 5 || r.aff < 950 || r.loverSince == null || S.day - r.loverSince < 90) return;
     if (S.propose && (S.propose.state === 'planned' || S.day < (S.propose.retryDay || 0))) return;
     if (nextDate()) return;
     const o = S.cap.op; if (o && o.phase !== 'done') return;
@@ -13708,19 +13708,32 @@ PX.Rom = (() => {
   async function planWedding() {
     const S = St.S;
     if (st() !== 6) return;
-    if (S.wedding) { PX.UI.toast(`💒 결혼식: ${dayKo(S.wedding.day)} 11:00 · 연병장`); return; }
-    if (S.day - (S.engagedDay || S.day) < 10) { PX.UI.toast('💒 약혼하고 열흘은 지나야 날짜를 잡을 수 있대요'); return; }
-    const wd = St.weekday(), toSat = ((6 - wd) + 7) % 7 || 7;
-    S.wedding = { day: S.day + toSat, min: 11 * 60, state: 'planned' };
-    PX.UI.toast(`💒 결혼식 날짜: ${dayKo(S.wedding.day)} 11:00 · 606부대 연병장`, 4500);
-    sendMsg('배 하사가 결혼식 날 잡아 줬대. …나 지금 손 떨려. 작전 때도 안 떨렸는데.', [['저도요.', 4, '같이 떨자. 그날까지.']]);
+    // 결혼식 날짜 · 시간은 직접 고른다 (대위 작전 일정과 겹치는 날은 못 고름) · 잡은 뒤에도 바꿀 수 있다
+    const full = (d) => Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, d)) + (d - S.day <= 2 ? ` (${dayKo(d)})` : '');
+    if (S.wedding && S.wedding.state === 'planned') {
+      const it = await PX.UI.menu('💒 결혼식', [{ t: `📅 ${full(S.wedding.day)} ${Cal.fmtTime(S.wedding.min)}`, sub: '606부대 연병장 · 지금 잡힌 날', k: 'keep' }, { t: '🔁 날짜 바꾸기', k: 'change' }]);
+      if (!it || it.k !== 'change') return;
+    }
+    const wdOf = (d) => ((St.weekday() + (d - S.day)) % 7 + 7) % 7;
+    const days = []; for (let d = S.day + 1; d <= S.day + 120 && days.length < 30; d++) days.push(d);
+    const dy = await PX.UI.menu('💒 결혼식 날짜 고르기', days.map(d => { const o = S.cap.op, free = !(o && o.phase !== 'done' && (d + 1) * DAY >= o.start - 60 && d * DAY <= o.end + 240); /* 장기작전과 겹치는 날만 막는다 (평일은 둘 다 휴가) */ const we = wdOf(d) === 0 || wdOf(d) === 6; return { t: (we ? '🌸 ' : '') + full(d), sub: !free ? '대위 장기작전과 겹쳐요' : we ? '주말' : '평일 · 둘 다 휴가를 내요', k: d, off: !free, offMsg: '그날은 대위가 장기작전 중이에요' }; }));
+    if (!dy) return;
+    const tm = await PX.UI.menu('⏰ 몇 시에?', [{ t: '11:00 · 오전', sub: '햇빛 조명 아래', k: 11 * 60 }, { t: '15:00 · 오후', k: 15 * 60 }, { t: '17:30 · 노을 무렵', sub: '돔 노을빛 연출 시간', k: 17 * 60 + 30 }]);
+    if (!tm) return;
+    const was = !!S.wedding;
+    S.wedding = { day: dy.k, min: tm.k, state: 'planned' };
+    const we = wdOf(dy.k) === 0 || wdOf(dy.k) === 6;
+    if (!we) { S.leave = { from: dy.k, to: dy.k }; S.capLeave = { from: dy.k, to: dy.k }; } // 평일이면 둘 다 그날 휴가
+    PX.UI.toast(`💒 결혼식: ${full(dy.k)} ${Cal.fmtTime(tm.k)} · 606부대 연병장`, 4500);
+    sendMsg(was ? `날짜 바꿨다며. ${full(dy.k)} ${Cal.fmtTime(tm.k)}. 이번엔 진짜 그날이다.` : `${full(dy.k)} ${Cal.fmtTime(tm.k)}. 배 하사한테 연병장 잡아 달라고 했어. …나 지금 손 떨려. 작전 때도 안 떨렸는데.`, [['저도요.', 4, '같이 떨자. 그날까지.']]);
   }
   function weddingTick() {
     const S = St.S, g = G(), w = S.wedding;
     if (!w || w.state !== 'planned') return;
     const at = w.day * DAY + w.min, t = now();
+    if (!w.reminded && t >= at - 180 && t < at) { w.reminded = true; sendMsg(`세 시간 뒤 ${Cal.fmtTime(w.min)}, 연병장. …오늘이다.`, [['연병장에서 봐.', 3, '응. 제일 먼저 가 있을게.']]); }
     if (t >= at && t < at + 180 && g.mapId === 'base' && !g.modal) { w.state = 'on'; g.trigger(wedding); }
-    else if (t >= at + 180 && w.state === 'planned') { w.day += 7; sendMsg('결혼식은 다음 주 토요일로 옮겼어. 괜찮아. 천천히 하자.', []); }
+    else if (t >= at + 180 && w.state === 'planned') { S.wedding = null; sendMsg('오늘 결혼식 못 했네. 괜찮아. 무슨 일 있었으면 그게 먼저야. 날짜는 다시 같이 잡자.', [['미안해. 다시 잡자.', 2, '응. 이번엔 네가 제일 좋은 날로.']]); }
   }
   async function wedding() {
     const S = St.S, g = G(), r = S.rel.cap, p = g.player;
@@ -14684,7 +14697,7 @@ ${memLine(S)}`;
     const dt = PX.Rom.nextDate();
     if (dt && dt.state === 'on') items.push({ t: '🌇 데이트 마치기', k: 'dateEnd' });
     else if (st >= 2 && !dt) items.push({ t: '📅 데이트 약속 잡기', k: 'date', sub: '장소와 시간을 정해요' });
-    if (st === 6) items.push({ t: '💒 결혼식 날짜 잡기', k: 'wed', sub: S.wedding ? `${PX.Rom.dayKo(S.wedding.day)} 11:00 · 연병장` : '약혼 열흘 뒤부터' });
+    if (st === 6) items.push({ t: S.wedding ? '💒 결혼식 날짜 보기 · 바꾸기' : '💒 결혼식 날짜 잡기', k: 'wed', sub: S.wedding ? `${PX.Rom.dayKo(S.wedding.day)} ${PX.Cal.fmtTime(S.wedding.min)} · 연병장` : '날짜 · 시간을 직접 골라요' });
     items.push({ t: '❓ 물어보기', k: 'topic', sub: '대위에 대해 궁금한 것' });
     items.push({ t: '🎁 선물하기', k: 'gift' });
     items.push({ t: '😮‍💨 고민 털어놓기', k: 'comfort' });
@@ -14772,7 +14785,7 @@ ${memLine(S)}`;
     const S = St.S, r = S.rel.cap;
     const id = await UI.pickGift();
     if (!id) return;
-    if (id === 'ring' && r.stage === 5) { St.addItem(id, -1); return PX.Rom.playerProposes(); }
+    if (id === 'ring' && r.stage === 5) { if (r.loverSince != null && S.day - r.loverSince < 90) { UI.toast(`💍 반지는 연인이 된 지 3달이 지나면 건넬 수 있어요 (${90 - (S.day - r.loverSince)}일 남음)`); return; } St.addItem(id, -1); return PX.Rom.playerProposes(); }
     const it = PX.ITEMS[id];
     St.addItem(id, -1);
     const like = it.capLike;

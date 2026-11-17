@@ -589,7 +589,7 @@
     const dt = PX.Rom.nextDate();
     if (dt && dt.state === 'on') items.push({ t: '🌇 데이트 마치기', k: 'dateEnd' });
     else if (st >= 2 && !dt) items.push({ t: '📅 데이트 약속 잡기', k: 'date', sub: '장소와 시간을 정해요' });
-    if (st === 6) items.push({ t: '💒 결혼식 날짜 잡기', k: 'wed', sub: S.wedding ? `${PX.Rom.dayKo(S.wedding.day)} 11:00 · 연병장` : '약혼 열흘 뒤부터' });
+    if (st === 6) items.push({ t: S.wedding ? '💒 결혼식 날짜 보기 · 바꾸기' : '💒 결혼식 날짜 잡기', k: 'wed', sub: S.wedding ? `${PX.Rom.dayKo(S.wedding.day)} ${PX.Cal.fmtTime(S.wedding.min)} · 연병장` : '날짜 · 시간을 직접 골라요' });
     items.push({ t: '❓ 물어보기', k: 'topic', sub: '대위에 대해 궁금한 것' });
     items.push({ t: '🎁 선물하기', k: 'gift' });
     items.push({ t: '😮‍💨 고민 털어놓기', k: 'comfort' });
@@ -677,7 +677,7 @@
     const S = St.S, r = S.rel.cap;
     const id = await UI.pickGift();
     if (!id) return;
-    if (id === 'ring' && r.stage === 5) { St.addItem(id, -1); return PX.Rom.playerProposes(); }
+    if (id === 'ring' && r.stage === 5) { if (r.loverSince != null && S.day - r.loverSince < 90) { UI.toast(`💍 반지는 연인이 된 지 3달이 지나면 건넬 수 있어요 (${90 - (S.day - r.loverSince)}일 남음)`); return; } St.addItem(id, -1); return PX.Rom.playerProposes(); }
     const it = PX.ITEMS[id];
     St.addItem(id, -1);
     const like = it.capLike;

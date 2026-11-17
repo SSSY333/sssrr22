@@ -394,9 +394,9 @@ PX.UI = (() => {
         const days = r.loverSince != null ? S.day - r.loverSince : 0, ok = (b) => b ? '✅' : '⬜';
         if (r.stage < 3) return need(T[r.stage + 1]) ? `▶ ${St.STAGES[r.stage + 1]}까지 호감 ${need(T[r.stage + 1])}` : `▶ 곧 ${St.STAGES[r.stage + 1]}`;
         if (r.stage === 3) return need(T[4]) ? `▶ 연인: 호감 ${T[4]} 이상이 되면 대위가 고백해요 (호감 ${need(T[4])} 더)` : '💌 연인: 조건 충족 · 대위와 함께 있으면 대위가 고백해요';
-        if (r.stage === 4) return `▶ 깊어진 사랑: ${ok(r.aff >= T[5])} 호감 ${T[5]} 이상 · ${ok(days >= 14)} 연인 14일 (${days >= 14 ? '충족' : `${14 - days}일 남음`})`;
-        if (r.stage === 5) return `▶ 약혼: ${ok(r.aff >= T[6])} 호감 ${T[6]} 이상 · ${ok(days >= 30)} 연인 30일 (${days >= 30 ? '충족' : `${30 - days}일 남음`}) → 대위가 특별한 저녁 약속을 잡아요. 반지를 선물해 먼저 청혼해도 돼요.`;
-        if (r.stage === 6) { const e = S.day - (S.engagedDay || S.day); return `▶ 부부: ${ok(e >= 10)} 약혼 10일 (${e >= 10 ? '충족' : `${10 - e}일 남음`}) → 대위 메뉴 '결혼식 날짜 잡기' · 다음 토요일 11시 연병장`; }
+        if (r.stage === 4) return `▶ 깊어진 사랑: ${ok(r.aff >= T[5])} 호감 ${T[5]} 이상 · ${ok(days >= 30)} 연인 30일 (${days >= 30 ? '충족' : `${30 - days}일 남음`})`;
+        if (r.stage === 5) return `▶ 약혼: ${ok(r.aff >= T[6])} 호감 ${T[6]} 이상 · ${ok(days >= 90)} 연인 3달 (${days >= 90 ? '충족' : `${90 - days}일 남음`}) → 대위가 특별한 저녁 약속을 잡아요. 3달이 지나면 반지를 선물해 먼저 청혼해도 돼요.`;
+        if (r.stage === 6) return S.wedding && S.wedding.state === 'planned' ? `💒 결혼식: ${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, S.wedding.day))} ${Cal.fmtTime(S.wedding.min)} · 606부대 연병장 (그 시간에 부대에 있으면 시작해요)` : "▶ 부부: 대위 메뉴 '결혼식 날짜 잡기'에서 날짜와 시간을 직접 골라요";
         return '💒 부부예요.';
       };
       const S = St.S, r = S.rel.cap, d = S.done, M = PX.Mind;

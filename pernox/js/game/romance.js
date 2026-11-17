@@ -211,10 +211,10 @@ PX.Rom = (() => {
   }
 
   // ---------- 프러포즈 · 약혼 · 결혼 · 동거 ----------
-  // 깊어진 사랑 + 호감 950 + 연인 30일 이상 → 대위가 특별한 저녁 약속을 잡는다
+  // 깊어진 사랑 + 호감 950 + 연인 3달(90일) 이상 → 대위가 특별한 저녁 약속을 잡는다
   function proposalCheck() {
     const S = St.S, r = S.rel.cap;
-    if (r.stage !== 5 || r.aff < 950 || r.loverSince == null || S.day - r.loverSince < 30) return;
+    if (r.stage !== 5 || r.aff < 950 || r.loverSince == null || S.day - r.loverSince < 90) return;
     if (S.propose && (S.propose.state === 'planned' || S.day < (S.propose.retryDay || 0))) return;
     if (nextDate()) return;
     const o = S.cap.op; if (o && o.phase !== 'done') return;
@@ -256,19 +256,32 @@ PX.Rom = (() => {
   async function planWedding() {
     const S = St.S;
     if (st() !== 6) return;
-    if (S.wedding) { PX.UI.toast(`💒 결혼식: ${dayKo(S.wedding.day)} 11:00 · 연병장`); return; }
-    if (S.day - (S.engagedDay || S.day) < 10) { PX.UI.toast('💒 약혼하고 열흘은 지나야 날짜를 잡을 수 있대요'); return; }
-    const wd = St.weekday(), toSat = ((6 - wd) + 7) % 7 || 7;
-    S.wedding = { day: S.day + toSat, min: 11 * 60, state: 'planned' };
-    PX.UI.toast(`💒 결혼식 날짜: ${dayKo(S.wedding.day)} 11:00 · 606부대 연병장`, 4500);
-    sendMsg('배 하사가 결혼식 날 잡아 줬대. …나 지금 손 떨려. 작전 때도 안 떨렸는데.', [['저도요.', 4, '같이 떨자. 그날까지.']]);
+    // 결혼식 날짜 · 시간은 직접 고른다 (대위 작전 일정과 겹치는 날은 못 고름) · 잡은 뒤에도 바꿀 수 있다
+    const full = (d) => Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, d)) + (d - S.day <= 2 ? ` (${dayKo(d)})` : '');
+    if (S.wedding && S.wedding.state === 'planned') {
+      const it = await PX.UI.menu('💒 결혼식', [{ t: `📅 ${full(S.wedding.day)} ${Cal.fmtTime(S.wedding.min)}`, sub: '606부대 연병장 · 지금 잡힌 날', k: 'keep' }, { t: '🔁 날짜 바꾸기', k: 'change' }]);
+      if (!it || it.k !== 'change') return;
+    }
+    const wdOf = (d) => ((St.weekday() + (d - S.day)) % 7 + 7) % 7;
+    const days = []; for (let d = S.day + 1; d <= S.day + 120 && days.length < 30; d++) days.push(d);
+    const dy = await PX.UI.menu('💒 결혼식 날짜 고르기', days.map(d => { const o = S.cap.op, free = !(o && o.phase !== 'done' && (d + 1) * DAY >= o.start - 60 && d * DAY <= o.end + 240); /* 장기작전과 겹치는 날만 막는다 (평일은 둘 다 휴가) */ const we = wdOf(d) === 0 || wdOf(d) === 6; return { t: (we ? '🌸 ' : '') + full(d), sub: !free ? '대위 장기작전과 겹쳐요' : we ? '주말' : '평일 · 둘 다 휴가를 내요', k: d, off: !free, offMsg: '그날은 대위가 장기작전 중이에요' }; }));
+    if (!dy) return;
+    const tm = await PX.UI.menu('⏰ 몇 시에?', [{ t: '11:00 · 오전', sub: '햇빛 조명 아래', k: 11 * 60 }, { t: '15:00 · 오후', k: 15 * 60 }, { t: '17:30 · 노을 무렵', sub: '돔 노을빛 연출 시간', k: 17 * 60 + 30 }]);
+    if (!tm) return;
+    const was = !!S.wedding;
+    S.wedding = { day: dy.k, min: tm.k, state: 'planned' };
+    const we = wdOf(dy.k) === 0 || wdOf(dy.k) === 6;
+    if (!we) { S.leave = { from: dy.k, to: dy.k }; S.capLeave = { from: dy.k, to: dy.k }; } // 평일이면 둘 다 그날 휴가
+    PX.UI.toast(`💒 결혼식: ${full(dy.k)} ${Cal.fmtTime(tm.k)} · 606부대 연병장`, 4500);
+    sendMsg(was ? `날짜 바꿨다며. ${full(dy.k)} ${Cal.fmtTime(tm.k)}. 이번엔 진짜 그날이다.` : `${full(dy.k)} ${Cal.fmtTime(tm.k)}. 배 하사한테 연병장 잡아 달라고 했어. …나 지금 손 떨려. 작전 때도 안 떨렸는데.`, [['저도요.', 4, '같이 떨자. 그날까지.']]);
   }
   function weddingTick() {
     const S = St.S, g = G(), w = S.wedding;
     if (!w || w.state !== 'planned') return;
     const at = w.day * DAY + w.min, t = now();
+    if (!w.reminded && t >= at - 180 && t < at) { w.reminded = true; sendMsg(`세 시간 뒤 ${Cal.fmtTime(w.min)}, 연병장. …오늘이다.`, [['연병장에서 봐.', 3, '응. 제일 먼저 가 있을게.']]); }
     if (t >= at && t < at + 180 && g.mapId === 'base' && !g.modal) { w.state = 'on'; g.trigger(wedding); }
-    else if (t >= at + 180 && w.state === 'planned') { w.day += 7; sendMsg('결혼식은 다음 주 토요일로 옮겼어. 괜찮아. 천천히 하자.', []); }
+    else if (t >= at + 180 && w.state === 'planned') { S.wedding = null; sendMsg('오늘 결혼식 못 했네. 괜찮아. 무슨 일 있었으면 그게 먼저야. 날짜는 다시 같이 잡자.', [['미안해. 다시 잡자.', 2, '응. 이번엔 네가 제일 좋은 날로.']]); }
   }
   async function wedding() {
     const S = St.S, g = G(), r = S.rel.cap, p = g.player;
