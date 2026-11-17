@@ -15,9 +15,24 @@ PX.Bed = (() => {
     const s = bed && bed.seats.find(x => !x.by); if (!s) return false;
     p.x = s.x; p.y = s.y; p.sitOn(s); return true;
   }
-  function roll(sec = 2.4) {
-    const p = G().player, t0 = performance.now();
-    return new Promise(res => { const f = (now) => { const t = (now - t0) / 1000; if (t > sec) { p.z = p.seat ? p.seat.z || 0 : 0; res(); return; } p.dir = Math.floor(t * 3) % 4; p.z = (p.seat ? p.seat.z || 0 : 0) + Math.abs(Math.sin(t * 6)) * 0.05; requestAnimationFrame(f); }; requestAnimationFrame(f); });
+  // 대위도 같은 침대에: 큰 침대면 옆자리, 1인용이면 베개 위에 머리 둘이 나란히 (좁게)
+  function capOnBed() {
+    const g = G(), p = g.player, cap = g.cap, s = p.seat; if (!s || !cap) return false;
+    const bed = s.obj, other = (bed.seats || []).find(x => x !== s && (!x.by || x.by === cap.id));
+    cap.stop(); cap.leaveSeat && cap.leaveSeat();
+    if (other) { cap.sitOn(other); }
+    else { // 1인용: 침대 폭 방향으로 반씩 나눠 눕기
+      const wide = (bed.fw || 1) <= (bed.fd || 1) ? 'x' : 'y', off = 0.24;
+      const v = { x: s.x + (wide === 'x' ? off : 0), y: s.y + (wide === 'y' ? off : 0), z: s.z, dir: s.dir, obj: bed, virt: true };
+      p.x = s.x - (wide === 'x' ? off : 0); p.y = s.y - (wide === 'y' ? off : 0);
+      cap.seat = v; cap.x = v.x; cap.y = v.y; cap.z = v.z; cap.dir = v.dir; cap.pose = 'lie';
+    }
+    cap.busy = true;
+    return true;
+  }
+  function roll(sec = 2.4, both) {
+    const g = G(), list = [g.player].concat(both && g.cap ? [g.cap] : []), t0 = performance.now();
+    return new Promise(res => { const f = (now) => { const t = (now - t0) / 1000; for (const [i, a] of list.entries()) { const bz = a.seat ? a.seat.z || 0 : 0; if (t > sec) { a.z = bz; continue; } a.dir = (Math.floor(t * 3) + i * 2) % 4; a.z = bz + Math.abs(Math.sin(t * 6 + i)) * 0.05; } if (t > sec) { res(); return; } requestAnimationFrame(f); }; requestAnimationFrame(f); });
   }
 
   // 혼자 하는 것
@@ -73,7 +88,10 @@ PX.Bed = (() => {
     if (!lieDown()) { PX.UI.toast('침대에 빈자리가 없어요'); return; }
     g.modal++;
     try {
-      if (a.roll) await roll();
+      const two = a.k.startsWith('t_') && capHere();
+      if (two) { capOnBed(); if (a.k === 't_cuddle' && PX.Mind) PX.Mind.setContact('CUDDLE'); G().cap.setDirTo(G().player.x, G().player.y); await U.sleep(250); }
+      if (a.roll) await roll(2.4, two);
+      if (two && a.k === 't_cuddle') { G().cap.showEmote('heart', 2); setTimeout(() => G().player.showEmote('heart', 1.6), 500); }
       await lines(U.pickFresh('bed_' + a.k, a.ls));
       St.advance(a.mins);
       S.energy = Math.min(100, (S.energy || 50) + (a.en || 0));

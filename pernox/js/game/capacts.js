@@ -15,7 +15,13 @@ PX.CapAct = (() => {
     const g = G(), cap = g.cap, S = St.S;
     if (!cap || cap.map !== g.mapId) return null;
     const mode = PX.Cap.mode, sp = cap.atSpot || '', m = cap.map;
-    if (mode === 'follow') return 'walk';
+    if (mode === 'follow') { // 같이 다녀도 방 안이면 방에 맞게
+      const md = PX.MAPS[m] || {};
+      if (md.innRoom) return 'inn';
+      if (md.home) return 'home';
+      if (m === 'q_captain') return 'rest';
+      return md.kind === 'in' ? 'indoor' : 'walk';
+    }
     if (mode === 'visit' || mode === 'stay') return 'home';
     if (m === 'med' && (sp === 'med.patient' || cap.seat || fieldWin())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
     if (m === 'gym' || (m === 'base' && sp.startsWith('base.train'))) return 'gym';
@@ -83,6 +89,19 @@ PX.CapAct = (() => {
       ['C:여기 오면 무전 소리가 안 들려. 꺼 놓은 것도 아닌데.'],
       ['C:소파 작다. 다리가 남아.', 'C^:불평 아니야. 네 쪽으로 붙을 핑계야.'],
     ],
+    inn: [
+      ['C:이 방 조명, 네 얼굴에 제일 잘 어울린다.'],
+      ['C*:아무것도 안 해도 돼. 이렇게 같이 있는 게 좋아.'],
+      ['C:물 마실래? 냉장고에 차가운 거 있어.', 'C^:…너 마시는 거 보는 것도 좋다.'],
+      ['C;:여기 오면 시간이 너무 빨리 가.', 'C*:벌써 아침 생각하기 싫다.'],
+      ['N:대위가 소파에 기대 앉아 옆자리를 손바닥으로 툭툭 친다.', 'C^:여기. 네 자리.'],
+    ],
+    indoor: [
+      ['C:여기 좀 앉을까? 오래 서 있었지.'],
+      ['C:천천히 둘러봐. 난 여기 있을게.'],
+      ['C*:실내라 덥다. …아니, 너 때문인가.'],
+      ['C:여기 조용해서 좋다. 네 목소리 잘 들려.'],
+    ],
     walk: [
       ['C:어디 가고 싶은 데 있어? 없으면 그냥 걷자.', 'C:난 목적지 없는 게 더 좋아. 오래 걸리니까.'],
       ['C:보폭 맞추는 중이야. 내가 너무 빨랐지.', 'C*:이제 네 속도 외웠어.'],
@@ -112,7 +131,7 @@ PX.CapAct = (() => {
     hintT -= dt; if (hintT > 0) return;
     hintT = 22 + Math.random() * 20;
     const g = G(); if (g.modal || !g.cap) return;
-    let k = ctx(); if (!k || k === 'walk' || k === 'home' || k === 'rest') { if (!(k && postField())) return; }
+    let k = ctx(); if (!k || ['walk', 'home', 'rest', 'inn', 'indoor'].includes(k)) { if (!(k && postField())) return; }
     if (postField() && Math.random() < 0.4 && k !== 'med') k = 'postField';
     if (U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 7 || g.bubbles.some(b => b.actor === g.cap)) return;
     if (St.S.rel.cap.backoffUntil > St.absMin()) return;
@@ -277,7 +296,7 @@ PX.CapAct = (() => {
     if (k === 'ops') { add('☕ 커피 가져다주기', A.coffee, has('coffee') ? null : '커피가 필요해요'); add('📋 서류 정리 도와주기', A.papers); add('📣 조용히 응원하기', A.cheer); }
     if (k === 'hangar') { add('🔧 공구 건네주기', A.tool); add('📣 조용히 응원하기', A.cheer); }
     if (k === 'craft') { add('🔩 만드는 것 구경하기', A.watchCraft); add('💆 어깨 주물러 주기', A.massage); }
-    if (k === 'rest' || k === 'home') { add('🛋️ 옆에 앉기', A.sitBy); add('💆 어깨 주물러 주기', A.massage); }
+    if (k === 'rest' || k === 'home' || k === 'inn') { add('🛋️ 옆에 앉기', A.sitBy); add('💆 어깨 주물러 주기', A.massage); }
     if (k === 'walk') { add('👔 옷깃 정리해 주기', A.collar); add('🍬 간식 나눠 먹기', A.snack); if (PX.MAPS[G().mapId].kind === 'out') add('🏃 달리기 시합', A.race); }
     if (fieldWin()) { add('💧 물 건네주기', A.water); add('🧹 모래 털어 주기', A.dust); add('🗺️ 오늘 수색 어땠는지 묻기', A.fieldTalk); }
     return out;

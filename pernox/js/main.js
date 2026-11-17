@@ -253,6 +253,7 @@
   function standUp() {
     Game.player.leaveSeat();
     if (Game.cap.seat && (Cap.mode === 'follow' || Cap.mode === 'visit')) { if (Cap.mode === 'follow') Game.cap.leaveSeat(); }
+    if (Game.cap.seat && Game.cap.seat.virt) { Game.cap.leaveSeat(); Game.cap.busy = false; } // 1인용 침대에 같이 누워 있었으면 같이 일어난다
   }
   // 앉아서(누워서) 할 수 있는 일: 자리·장소·대위가 옆에 있는지에 따라
   const FOODPLACE = { cafe: 'cafe', samgyup: 'samgyup', mess: 'meal', pub: 'drink', skylounge: 'cafe', arcade: 'vending', terminal: 'vending', lounge: 'vending', plaza: 'streetfood', noodle: 'noodle' };

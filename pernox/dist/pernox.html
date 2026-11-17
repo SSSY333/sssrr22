@@ -3522,6 +3522,15 @@ PX.S = (() => {
   // 동행 중 말풍선 (장소별)
   X.placeAmb = {
     _: ['여기 좋다. 너랑 오니까.', '다리 안 아파? 아프면 말해.', '사람 많으면 내 쪽으로 붙어.', '배고프면 말해. 뭐든 사 줄게.', '{p아}, 이리 와. 길 이쪽이야.', '천천히 가. 시간 많아.'],
+    // 장소별 대사가 없을 때: 바깥(_) · 실내 · 둘만의 방
+    _in: ['여기 좋다. 너랑 오니까.', '천천히 둘러봐. 기다릴게.', '배고프면 말해. 뭐든 사 줄게.', '앉을래? 오래 서 있었잖아.', '여기 조용해서 좋다.'],
+    _room: ['…조용하다. 좋다.', '이리 와. 옆자리 비었어.', '오늘 하루 어땠어? 다 말해 줘.', '아무것도 안 해도 좋다. 그냥 있자.', '물 마실래? 가져다줄게.'],
+    q_player: ['네 방은 늘 정돈돼 있네. 나랑 다르다.', '이 방 오면 긴장이 풀려.', '창문 열까? 바람 좀 들어오게.', '네 침대 작다. 귀엽다.', '이리 와. 옆자리 비었어.'],
+    apt_player: ['돔시티 집은 창이 커서 좋다.', '이 방 오면 긴장이 풀려.', '네 침대 작다. 귀엽다.', '이리 와. 옆자리 비었어.'],
+    q_captain: ['냉각기 소리 시끄럽지? 꺼 줄까.', '내 방 구경 그만해. 볼 거 없어.', '…여기 너 있으니까 좀 방 같다.', '그 돌들 만지지 마. …아니, 만져도 돼. 너는.'],
+    inn_mirror: ['거울이 너무 많다. 어딜 봐도 너야.', '조명 하나 더 낮출까?', '거울 속 너도 예쁘다. 진짜가 더.'],
+    inn_bath: ['욕조에 물 받아 둘까?', '캔들 냄새 좋다. 네가 고른 방다워.', '수건 따뜻하게 데워져 있대.'],
+    inn_water: ['앉을 때마다 출렁인다. 아직 적응 중.', '천장 별빛 봐. 우주 같다.', '물침대 위에선 내가 중심을 못 잡겠어.'],
     base: ['부대 안에서 데이트라니. 다들 쳐다본다.', '저기 헌병 중사가 째려본다. 신경 쓰지 마.', '훈련장 저 끝, 별 잘 보여.', '식당 냄새 난다. 오늘 김치찌개다.'],
     dome: ['돔 안은 공기가 달라. 덜 덥다. 그래도 덥다.', '연구소 근처 오면 꽃냄새 나네.', '여기 사는 거 괜찮아? 불편한 거 있으면 말해.'],
     plaza: ['광장 분수 앞, 사진 찍기 좋다.', '냉삼집 들를래? 아니다, 너 먹고 싶은 거.', '사람 많다. 손 줘.', '저기 꽃시장. 네가 좋아하는 거 있으면 골라.'],
@@ -7927,7 +7936,7 @@ PX.Cap = (() => {
     const now = St.absMin();
     if (now - lastBump > 240 && Math.random() < (m.def.lowDoor ? 0.5 : 0.18)) { // 문틀 박치기는 가끔만 (네 시간에 한 번 이하)
       lastBump = now;
-      setTimeout(() => { cap.doPose('bump', 1.1, 'surprise'); cap.showEmote('stars', 1.6); G().bubble(cap, U.pickFresh('capBump', ['아야.', '…또 박았네.', '이 문틀 누가 이렇게 낮게 만들었어.', '부대 문은 다 내 키 싫어하는 사람이 설계했어.', '괜찮아. 문이 더 아플 거야.', '…못 본 걸로 해.', '이마에 문틀 자국 생기겠다.', '오늘은 안 박으려고 했는데.'])); }, 250);
+      setTimeout(() => { if (cap.seat || cap.map !== G().mapId) return; cap.doPose('bump', 1.1, 'surprise'); cap.showEmote('stars', 1.6); G().bubble(cap, U.pickFresh('capBump', ['아야.', '…또 박았네.', '이 문틀 누가 이렇게 낮게 만들었어.', '부대 문은 다 내 키 싫어하는 사람이 설계했어.', '괜찮아. 문이 더 아플 거야.', '…못 본 걸로 해.', '이마에 문틀 자국 생기겠다.', '오늘은 안 박으려고 했는데.'])); }, 250);
     }
   }
   function release(line, partMins = 30) { const was = mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'waitOut'; if (mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'seek' || mode === 'wait_door' || mode === 'waitOut') mode = 'sched'; if (PX.Mind) { PX.Mind.mem().contact = 'NONE'; PX.Mind.apply(); if (was) PX.Mind.notePart(partMins); } cap.holding = false; G().player.holding = false; St.S.cap.follow = false; waitOut = null; if (line) G().bubble(cap, line); }
@@ -9689,7 +9698,8 @@ PX.Act = (() => {
   function placeComment(force) {
     const g = G();
     if (!withCap() || g.modal) return;
-    const pool = PX.DLG_CAP2.placeAmb[g.mapId] || PX.DLG_CAP2.placeAmb._;
+    const A2 = PX.DLG_CAP2.placeAmb, md = PX.MAPS[g.mapId] || {};
+    const pool = A2[g.mapId] || (md.innRoom || md.home || g.mapId === 'q_captain' ? A2._room : md.kind === 'in' ? A2._in : A2._); // 장소별 대사가 없으면 바깥 · 실내 · 둘만의 방에 맞게
     if (!force && Math.random() < 0.4) return;
     g.bubble(g.cap, U.fmt(U.pickFresh('pamb_' + g.mapId, pool), PX.Dlg.ctx()), 3.2);
   }
@@ -10607,7 +10617,13 @@ PX.CapAct = (() => {
     const g = G(), cap = g.cap, S = St.S;
     if (!cap || cap.map !== g.mapId) return null;
     const mode = PX.Cap.mode, sp = cap.atSpot || '', m = cap.map;
-    if (mode === 'follow') return 'walk';
+    if (mode === 'follow') { // 같이 다녀도 방 안이면 방에 맞게
+      const md = PX.MAPS[m] || {};
+      if (md.innRoom) return 'inn';
+      if (md.home) return 'home';
+      if (m === 'q_captain') return 'rest';
+      return md.kind === 'in' ? 'indoor' : 'walk';
+    }
     if (mode === 'visit' || mode === 'stay') return 'home';
     if (m === 'med' && (sp === 'med.patient' || cap.seat || fieldWin())) return 'med'; // 의무실에 있고 수색 복귀 시간대면 (침대로 걸어가는 중이어도)
     if (m === 'gym' || (m === 'base' && sp.startsWith('base.train'))) return 'gym';
@@ -10675,6 +10691,19 @@ PX.CapAct = (() => {
       ['C:여기 오면 무전 소리가 안 들려. 꺼 놓은 것도 아닌데.'],
       ['C:소파 작다. 다리가 남아.', 'C^:불평 아니야. 네 쪽으로 붙을 핑계야.'],
     ],
+    inn: [
+      ['C:이 방 조명, 네 얼굴에 제일 잘 어울린다.'],
+      ['C*:아무것도 안 해도 돼. 이렇게 같이 있는 게 좋아.'],
+      ['C:물 마실래? 냉장고에 차가운 거 있어.', 'C^:…너 마시는 거 보는 것도 좋다.'],
+      ['C;:여기 오면 시간이 너무 빨리 가.', 'C*:벌써 아침 생각하기 싫다.'],
+      ['N:대위가 소파에 기대 앉아 옆자리를 손바닥으로 툭툭 친다.', 'C^:여기. 네 자리.'],
+    ],
+    indoor: [
+      ['C:여기 좀 앉을까? 오래 서 있었지.'],
+      ['C:천천히 둘러봐. 난 여기 있을게.'],
+      ['C*:실내라 덥다. …아니, 너 때문인가.'],
+      ['C:여기 조용해서 좋다. 네 목소리 잘 들려.'],
+    ],
     walk: [
       ['C:어디 가고 싶은 데 있어? 없으면 그냥 걷자.', 'C:난 목적지 없는 게 더 좋아. 오래 걸리니까.'],
       ['C:보폭 맞추는 중이야. 내가 너무 빨랐지.', 'C*:이제 네 속도 외웠어.'],
@@ -10704,7 +10733,7 @@ PX.CapAct = (() => {
     hintT -= dt; if (hintT > 0) return;
     hintT = 22 + Math.random() * 20;
     const g = G(); if (g.modal || !g.cap) return;
-    let k = ctx(); if (!k || k === 'walk' || k === 'home' || k === 'rest') { if (!(k && postField())) return; }
+    let k = ctx(); if (!k || ['walk', 'home', 'rest', 'inn', 'indoor'].includes(k)) { if (!(k && postField())) return; }
     if (postField() && Math.random() < 0.4 && k !== 'med') k = 'postField';
     if (U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 7 || g.bubbles.some(b => b.actor === g.cap)) return;
     if (St.S.rel.cap.backoffUntil > St.absMin()) return;
@@ -10869,7 +10898,7 @@ PX.CapAct = (() => {
     if (k === 'ops') { add('☕ 커피 가져다주기', A.coffee, has('coffee') ? null : '커피가 필요해요'); add('📋 서류 정리 도와주기', A.papers); add('📣 조용히 응원하기', A.cheer); }
     if (k === 'hangar') { add('🔧 공구 건네주기', A.tool); add('📣 조용히 응원하기', A.cheer); }
     if (k === 'craft') { add('🔩 만드는 것 구경하기', A.watchCraft); add('💆 어깨 주물러 주기', A.massage); }
-    if (k === 'rest' || k === 'home') { add('🛋️ 옆에 앉기', A.sitBy); add('💆 어깨 주물러 주기', A.massage); }
+    if (k === 'rest' || k === 'home' || k === 'inn') { add('🛋️ 옆에 앉기', A.sitBy); add('💆 어깨 주물러 주기', A.massage); }
     if (k === 'walk') { add('👔 옷깃 정리해 주기', A.collar); add('🍬 간식 나눠 먹기', A.snack); if (PX.MAPS[G().mapId].kind === 'out') add('🏃 달리기 시합', A.race); }
     if (fieldWin()) { add('💧 물 건네주기', A.water); add('🧹 모래 털어 주기', A.dust); add('🗺️ 오늘 수색 어땠는지 묻기', A.fieldTalk); }
     return out;
@@ -12169,9 +12198,24 @@ PX.Bed = (() => {
     const s = bed && bed.seats.find(x => !x.by); if (!s) return false;
     p.x = s.x; p.y = s.y; p.sitOn(s); return true;
   }
-  function roll(sec = 2.4) {
-    const p = G().player, t0 = performance.now();
-    return new Promise(res => { const f = (now) => { const t = (now - t0) / 1000; if (t > sec) { p.z = p.seat ? p.seat.z || 0 : 0; res(); return; } p.dir = Math.floor(t * 3) % 4; p.z = (p.seat ? p.seat.z || 0 : 0) + Math.abs(Math.sin(t * 6)) * 0.05; requestAnimationFrame(f); }; requestAnimationFrame(f); });
+  // 대위도 같은 침대에: 큰 침대면 옆자리, 1인용이면 베개 위에 머리 둘이 나란히 (좁게)
+  function capOnBed() {
+    const g = G(), p = g.player, cap = g.cap, s = p.seat; if (!s || !cap) return false;
+    const bed = s.obj, other = (bed.seats || []).find(x => x !== s && (!x.by || x.by === cap.id));
+    cap.stop(); cap.leaveSeat && cap.leaveSeat();
+    if (other) { cap.sitOn(other); }
+    else { // 1인용: 침대 폭 방향으로 반씩 나눠 눕기
+      const wide = (bed.fw || 1) <= (bed.fd || 1) ? 'x' : 'y', off = 0.24;
+      const v = { x: s.x + (wide === 'x' ? off : 0), y: s.y + (wide === 'y' ? off : 0), z: s.z, dir: s.dir, obj: bed, virt: true };
+      p.x = s.x - (wide === 'x' ? off : 0); p.y = s.y - (wide === 'y' ? off : 0);
+      cap.seat = v; cap.x = v.x; cap.y = v.y; cap.z = v.z; cap.dir = v.dir; cap.pose = 'lie';
+    }
+    cap.busy = true;
+    return true;
+  }
+  function roll(sec = 2.4, both) {
+    const g = G(), list = [g.player].concat(both && g.cap ? [g.cap] : []), t0 = performance.now();
+    return new Promise(res => { const f = (now) => { const t = (now - t0) / 1000; for (const [i, a] of list.entries()) { const bz = a.seat ? a.seat.z || 0 : 0; if (t > sec) { a.z = bz; continue; } a.dir = (Math.floor(t * 3) + i * 2) % 4; a.z = bz + Math.abs(Math.sin(t * 6 + i)) * 0.05; } if (t > sec) { res(); return; } requestAnimationFrame(f); }; requestAnimationFrame(f); });
   }
 
   // 혼자 하는 것
@@ -12227,7 +12271,10 @@ PX.Bed = (() => {
     if (!lieDown()) { PX.UI.toast('침대에 빈자리가 없어요'); return; }
     g.modal++;
     try {
-      if (a.roll) await roll();
+      const two = a.k.startsWith('t_') && capHere();
+      if (two) { capOnBed(); if (a.k === 't_cuddle' && PX.Mind) PX.Mind.setContact('CUDDLE'); G().cap.setDirTo(G().player.x, G().player.y); await U.sleep(250); }
+      if (a.roll) await roll(2.4, two);
+      if (two && a.k === 't_cuddle') { G().cap.showEmote('heart', 2); setTimeout(() => G().player.showEmote('heart', 1.6), 500); }
       await lines(U.pickFresh('bed_' + a.k, a.ls));
       St.advance(a.mins);
       S.energy = Math.min(100, (S.energy || 50) + (a.en || 0));
@@ -14267,6 +14314,7 @@ ${memLine(S)}`;
   function standUp() {
     Game.player.leaveSeat();
     if (Game.cap.seat && (Cap.mode === 'follow' || Cap.mode === 'visit')) { if (Cap.mode === 'follow') Game.cap.leaveSeat(); }
+    if (Game.cap.seat && Game.cap.seat.virt) { Game.cap.leaveSeat(); Game.cap.busy = false; } // 1인용 침대에 같이 누워 있었으면 같이 일어난다
   }
   // 앉아서(누워서) 할 수 있는 일: 자리·장소·대위가 옆에 있는지에 따라
   const FOODPLACE = { cafe: 'cafe', samgyup: 'samgyup', mess: 'meal', pub: 'drink', skylounge: 'cafe', arcade: 'vending', terminal: 'vending', lounge: 'vending', plaza: 'streetfood', noodle: 'noodle' };

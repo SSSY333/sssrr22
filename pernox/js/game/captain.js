@@ -89,7 +89,7 @@ PX.Cap = (() => {
     const now = St.absMin();
     if (now - lastBump > 240 && Math.random() < (m.def.lowDoor ? 0.5 : 0.18)) { // 문틀 박치기는 가끔만 (네 시간에 한 번 이하)
       lastBump = now;
-      setTimeout(() => { cap.doPose('bump', 1.1, 'surprise'); cap.showEmote('stars', 1.6); G().bubble(cap, U.pickFresh('capBump', ['아야.', '…또 박았네.', '이 문틀 누가 이렇게 낮게 만들었어.', '부대 문은 다 내 키 싫어하는 사람이 설계했어.', '괜찮아. 문이 더 아플 거야.', '…못 본 걸로 해.', '이마에 문틀 자국 생기겠다.', '오늘은 안 박으려고 했는데.'])); }, 250);
+      setTimeout(() => { if (cap.seat || cap.map !== G().mapId) return; cap.doPose('bump', 1.1, 'surprise'); cap.showEmote('stars', 1.6); G().bubble(cap, U.pickFresh('capBump', ['아야.', '…또 박았네.', '이 문틀 누가 이렇게 낮게 만들었어.', '부대 문은 다 내 키 싫어하는 사람이 설계했어.', '괜찮아. 문이 더 아플 거야.', '…못 본 걸로 해.', '이마에 문틀 자국 생기겠다.', '오늘은 안 박으려고 했는데.'])); }, 250);
     }
   }
   function release(line, partMins = 30) { const was = mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'waitOut'; if (mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'seek' || mode === 'wait_door' || mode === 'waitOut') mode = 'sched'; if (PX.Mind) { PX.Mind.mem().contact = 'NONE'; PX.Mind.apply(); if (was) PX.Mind.notePart(partMins); } cap.holding = false; G().player.holding = false; St.S.cap.follow = false; waitOut = null; if (line) G().bubble(cap, line); }

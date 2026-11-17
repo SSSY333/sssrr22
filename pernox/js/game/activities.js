@@ -85,7 +85,8 @@ PX.Act = (() => {
   function placeComment(force) {
     const g = G();
     if (!withCap() || g.modal) return;
-    const pool = PX.DLG_CAP2.placeAmb[g.mapId] || PX.DLG_CAP2.placeAmb._;
+    const A2 = PX.DLG_CAP2.placeAmb, md = PX.MAPS[g.mapId] || {};
+    const pool = A2[g.mapId] || (md.innRoom || md.home || g.mapId === 'q_captain' ? A2._room : md.kind === 'in' ? A2._in : A2._); // 장소별 대사가 없으면 바깥 · 실내 · 둘만의 방에 맞게
     if (!force && Math.random() < 0.4) return;
     g.bubble(g.cap, U.fmt(U.pickFresh('pamb_' + g.mapId, pool), PX.Dlg.ctx()), 3.2);
   }
