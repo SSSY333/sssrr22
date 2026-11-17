@@ -27,22 +27,24 @@ PX.Dance = (() => {
         const lt = t - acc;
         ang += dt * (SPEED[s.k] || 0.5);
         rr += (RAD[s.k] - rr) * Math.min(1, dt * 3); // 거리는 부드럽게 좁혀지고 벌어진다
-        const sway = Math.sin(t * 2.2) * 0.05, beat = Math.abs(Math.sin(t * Math.PI * 1.6));
-        c.x = ctr.x + Math.cos(ang) * rr + sway; c.y = ctr.y + Math.sin(ang) * rr;
-        p.x = ctr.x - Math.cos(ang) * rr + sway; p.y = ctr.y - Math.sin(ang) * rr;
+        const sway = Math.sin(t * 2.6) * 0.11, beat = Math.abs(Math.sin(t * Math.PI * 1.8)); // 통통 튀고 좌우로 살랑
+        const rock = Math.sin(t * 2.6) * 0.07; // 둘이 같이 흔들흔들
+        c.x = ctr.x + Math.cos(ang) * rr + sway; c.y = ctr.y + Math.sin(ang) * rr - rock;
+        p.x = ctr.x - Math.cos(ang) * rr + sway; p.y = ctr.y - Math.sin(ang) * rr - rock;
         c.path = []; p.path = []; c.moving = false; p.moving = false;
         c.setDirTo(p.x, p.y); p.setDirTo(c.x, c.y);
-        c.z = 0; p.z = 0;
+        c.z = beat * 0.07; p.z = beat * 0.1; // 박자마다 통통
+        if (s.k !== 'hug' && Math.sin(t * 5.2) > 0.85) p.dir = (p.dir + 1) % 4; // 가끔 고개 갸웃
         switch (s.k) {
-          case 'hand': c.tempPose = 'hold'; p.tempPose = 'holdL'; p.z = beat * 0.05; break;
-          case 'waist': c.tempPose = 'hug'; p.tempPose = 'hug'; p.z = beat * 0.03; break;
-          case 'spin': c.tempPose = 'wave'; p.tempPose = 'wave'; p.dir = Math.floor(lt * 7) % 4; p.z = beat * 0.08; break;
+          case 'hand': c.tempPose = 'hold'; p.tempPose = 'holdL'; break;
+          case 'waist': c.tempPose = 'hug'; p.tempPose = 'hug'; break;
+          case 'spin': c.tempPose = 'wave'; p.tempPose = 'wave'; p.dir = Math.floor(lt * 7) % 4; p.z = beat * 0.16; break;
           case 'lift': c.tempPose = 'carry'; p.tempPose = 'hug'; p.z = 0.28 + Math.sin(lt * 3) * 0.05; break;
-          case 'hug': c.tempPose = 'hug'; p.tempPose = 'hug'; break;
-          case 'bounce': c.tempPose = Math.floor(t * 2) % 2 ? 'wave' : null; p.tempPose = Math.floor(t * 2 + 1) % 2 ? 'wave' : null; c.z = beat * 0.1; p.z = beat * 0.12; break;
+          case 'hug': c.tempPose = 'hug'; p.tempPose = 'hug'; c.z = p.z = beat * 0.03; break;
+          case 'bounce': c.tempPose = Math.floor(t * 2) % 2 ? 'wave' : null; p.tempPose = Math.floor(t * 2 + 1) % 2 ? 'wave' : null; c.z = beat * 0.16; p.z = beat * 0.2; break;
         }
         c.poseUntil = p.poseUntil = performance.now() + 250;
-        if (Math.random() < dt * 0.7) (Math.random() < 0.5 ? c : p).showEmote(s.k === 'bounce' ? 'note' : 'heart', 0.9);
+        if (Math.random() < dt * 1.1) (Math.random() < 0.5 ? c : p).showEmote(Math.random() < 0.5 ? 'note' : 'heart', 0.9);
         requestAnimationFrame(f);
       };
       requestAnimationFrame(f);

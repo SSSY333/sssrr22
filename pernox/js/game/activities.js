@@ -226,7 +226,16 @@ PX.Act = (() => {
     if (withCap() && once('perfume')) G().memory('나만의 향', `「${name}」. 대위가 이 향을 기억하겠다고 했다.`, true);
   };
   H.dance = async () => {
-    const sc = await PX.Mini.timing({ title: '💃 실버마스크 · 춤', help: '박자(초록 구간)에 맞춰 누르세요!', rounds: 6, speed: 80, btn: '스텝!', bg: '#2a1f4f' });
+    const sc = await PX.Mini.timing({ title: '💃 실버마스크 · 춤', help: '박자(초록 구간)에 맞춰 누르세요!', rounds: 6, speed: 80, btn: '스텝!', bg: '#1d1238',
+      draw: (R, round, hits) => { // 네온 무대 · 통통 튀는 두 사람
+        const t = performance.now() / 1000, C = ['#ff7ac8', '#7fe3ff', '#ffd166', '#9b7bff'];
+        for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) R(14 + i * 16, 48 + j * 10, 15, 9, (Math.floor(t * 3) + i + j) % 4 === 0 ? C[(i + j) % 4] : '#2c1d52');
+        for (let i = 0; i < 5; i++) { const x = (i * 29 + t * 20) % 120; R(x, 6 + (i % 2) * 6, 2, 2, C[i % 4]); }
+        const b1 = Math.abs(Math.sin(t * 5.6)) * 4, b2 = Math.abs(Math.sin(t * 5.6 + 1)) * 4;
+        R(44, 24 - b1, 9, 9, '#3a2a2a'); R(43, 33 - b1, 11, 14, '#56603f'); R(45, 47 - b1, 3, 4, '#2a2a30'); R(50, 47 - b1, 3, 4, '#2a2a30'); // 대위
+        R(66, 30 - b2, 8, 8, '#4a2f2a'); R(65, 38 - b2, 10, 10, '#e6e2ea'); R(67, 48 - b2, 2, 3, '#8a8794'); R(71, 48 - b2, 2, 3, '#8a8794'); // 나
+        if (hits > 0) for (let k = 0; k < Math.min(hits, 6); k++) R(52 + k * 3, 18 - ((t * 10 + k * 3) % 8), 2, 2, '#ff7ac8'); // 하트 조각
+      } });
     St.advance(20);
     if (withCap()) await PX.Dance.withLines(sc > 0.6 ? [{ k: 'hand', d: 2.5 }, { k: 'spin', d: 2.5 }, { k: 'waist', d: 3 }] : [{ k: 'waist', d: 5 }], sc > 0.6 ? ['C*:가면 써도 네가 제일 눈에 띄어.', 'N:대위가 손을 높이 들어 한 바퀴 돌려 준다.', 'C^:한 곡 더.'] : ['C:박자 놓쳐도 돼. 내가 맞출게.', 'N:대위가 큰 손으로 허리를 잡고 천천히 이끈다.']);
     if (withCap() && once('dance')) G().memory('가면 아래에서', '실버마스크에서 대위와 춤을 췄다.', true);
@@ -284,9 +293,13 @@ PX.Act = (() => {
     g.player.dir = 2;
     await U.sleep(250); f.classList.remove('on');
   }
-  async function innDesk() {
+  async function innDesk(auto) {
     const S = St.S, b = innBooked();
-    if (b) { const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return; }
+    if (b) {
+      if (b.phone && withCap() && !b.greeted) { b.greeted = 1; G().cap.setDirTo(G().player.x, G().player.y); await lines([PX.Dlg.capPick(['C*:예약자 이름이 너로 돼 있더라. …내가 할 걸 그랬다.', 'C^:네가 예약했다는 메시지 받고 하루 종일 일이 손에 안 잡혔어.', 'C~:카드키 받았다. 이번엔 네가 앞장서.'])]); }
+      const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return;
+    }
+    if (auto && !(withCap() && S.rel.cap.stage >= 4)) return;
     if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
     G().cap.setDirTo(G().player.x, G().player.y);
     await lines([PX.Dlg.capPick(['C*:예약 화면 봤어? …물침대 방도 있대.', 'C^:고르는 건 네가 해. 난 따라갈게.', 'C*:어느 방이든. 근데 욕조 큰 방은 좀 궁금하긴 하다.'])]);
@@ -299,6 +312,32 @@ PX.Act = (() => {
     await lines([PX.Dlg.capPick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
     await goInnRoom(r.id);
     if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(INN_ARRIVE[r.id])), 600);
+  }
+  // 단말로 미리 예약 (연인부터) → 대위에게 같이 가자고 하기
+  async function bookByPhone() {
+    const S = St.S;
+    if (S.rel.cap.stage < 4) { PX.UI.toast('🔒 연인이 된 뒤에 예약할 수 있어요'); return; }
+    if (innBooked()) { PX.UI.toast(`🗝️ 이미 예약돼 있어요 · ${PX.MAPS[innBooked().room].name}`); return; }
+    const r0 = await PX.UI.menu('🗝️ 은밀숙소 예약', INN_ROOMS.map(r => ({ t: `${r.t} · ₢${r.price}`, sub: r.sub, k: r })));
+    if (!r0) return;
+    const when = await PX.UI.menu('언제 갈까요?', [{ t: '🌙 오늘 밤', k: 0 }, { t: '🌙 내일 밤', k: 1 }]);
+    if (!when) return;
+    if (!St.spend(r0.k.price)) { PX.UI.toast('돈이 모자라요'); return; }
+    const day = S.day + when.k;
+    S.done.innBook = { room: r0.k.id, from: day * 1440 + 18 * 60, until: (day + 1) * 1440 + 12 * 60, phone: true, day };
+    const ask = when.k === 0 ? `오늘 밤 은밀숙소 ${r0.k.t.replace(/^\S+ /, '')} 예약했어. 같이 갈래?` : `내일 밤 은밀숙소 ${r0.k.t.replace(/^\S+ /, '')} 예약해 뒀어. 같이 가자.`;
+    PX.UI.toast('🗝️ 예약 완료 · 대위에게 같이 가자고 했어요');
+    const reply = U.pick(['…지금 그거 보고 심장 떨어질 뻔했어. 당연히 가지.', '갈게. 일 끝나자마자 바로. 아니, 일 빨리 끝낼게.', '예약을 네가 했다고? …나 지금 엄청 웃고 있어. 간다.', '좋아. 그날은 내가 데리러 갈게.']);
+    if (PX.Op.together && PX.Op.together()) { const g = G(); g.modal++; try { await PX.Dlg.say('player', ask); await PX.Dlg.say('cap', reply, 'blush'); } finally { PX.Dlg.close(); g.modal--; } }
+    else { S.messages.unshift({ id: St.absMin() + Math.random(), t: reply, r: [], day: S.day, min: S.time.min, reply: 'none', mine: ask }); S.messages.unshift({ id: St.absMin(), out: true, mine: ask, t: '', r: [], day: S.day, min: S.time.min, reply: 'none', st: 'answered' }); S.messages = S.messages.slice(0, 50); PX.UI.badge(); }
+  }
+  // 예약한 날 저녁에 같이 있으면: 대위가 먼저 "가자" → 약속(📌)으로
+  function innEveningCheck() {
+    const S = St.S, b = innBooked(), g = G();
+    if (!b || !b.phone || b.asked || !withCap() || g.modal || g.mapId === 'inn' || PX.MAPS[g.mapId].innRoom) return;
+    if (St.absMin() < b.from) return;
+    b.asked = 1;
+    g.trigger(async () => { g.modal++; try { await lines([PX.Dlg.capPick(['C*:…시간 됐다. 예약한 데, 가자.', 'C^:오늘 하루 종일 기다렸어. 은밀숙소. 지금 갈까?', 'C~:카드키 받으러 가자. 내가 앞장설게.'])]); } finally { PX.Dlg.close(); g.modal--; } if (PX.Plan) PX.Plan.start('inn'); });
   }
   const INN_ARRIVE = {
     inn_mirror: ['N:사방이 거울이다. 어디를 봐도 우리 둘이 보인다.', 'C*:…이거 좀 민망한데. 어딜 봐도 내 얼굴이야.', 'C^:근데 네가 여러 명이라 그건 좋다.'],
@@ -451,5 +490,5 @@ PX.Act = (() => {
     return false;
   }
   const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
-  return { use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
+  return { innDesk, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();

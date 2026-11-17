@@ -6,6 +6,7 @@ PX.UI = (() => {
 
   // ---------- 토스트 ----------
   function toast(text, ms = 2600) {
+    text = U.fixNames(text);
     const t = el('div', { class: 'toast' }, text);
     const box = $('toasts'); while (box.children.length >= 3) box.firstChild.remove();
     box.append(t);
@@ -198,7 +199,7 @@ PX.UI = (() => {
     const row = (label, ...kids) => el('div', { class: 'row' }, el('label', null, label), el('div', { class: 'ctl' }, ...kids));
     const swatches = (list, key, colorOf) => { const w = el('div', { class: 'sw' }); list.forEach((v, i) => { const b = el('button', { class: 'swb', style: `background:${colorOf(v, i)}`, title: typeof v === 'string' ? v : '' }); b.onclick = () => { f[key] = typeof v === 'string' ? v : i; [...w.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); preview(); }; if ((typeof v === 'string' ? v : i) === f[key]) b.classList.add('on'); w.append(b); }); return w; };
     const chips = (list, key) => { const w = el('div', { class: 'chips' }); for (const [v, t] of list) { const b = el('button', { class: 'chip' + (f[key] === v ? ' on' : '') }, t); b.onclick = () => { f[key] = v; [...w.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); preview(); }; w.append(b); } return w; };
-    const nameIn = el('input', { type: 'text', maxlength: '8', placeholder: '예: 한지우', autocomplete: 'off' });
+    const nameIn = el('input', { type: 'text', maxlength: '8', placeholder: '이름', autocomplete: 'off' });
     nameIn.oninput = () => { f.name = nameIn.value.trim(); preview(); };
     const capIn = el('input', { type: 'text', maxlength: '8', value: f.capName, autocomplete: 'off' });
     capIn.oninput = () => { f.capName = capIn.value.trim() || '서무진'; preview(); };
@@ -439,6 +440,12 @@ PX.UI = (() => {
         sb.onclick = () => go(inp.value); inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(inp.value); };
         row.append(inp, sb); box.append(ch, row); p.append(box);
       }
+      if (S.rel.cap.stage >= 4 && !(PX.Op.canMsg && PX.Op.canMsg())) { // 은밀숙소 예약 (연인)
+        const b = S.done.innBook && St.absMin() < S.done.innBook.until ? S.done.innBook : null;
+        const card = el('div', { class: 'msgsend' }, el('b', null, '🗝️ 은밀숙소 예약'), el('small', null, b ? `예약됨 · ${PX.MAPS[b.room].name} · ${b.day === S.day ? '오늘 밤' : b.day != null ? '내일 밤' : ''}` : '방을 골라 예약하고, 대위에게 같이 가자고 할 수 있어요.'));
+        if (!b) { const bt = el('button', { class: 'menu-btn' }, el('span', null, '예약하고 같이 가자고 하기')); bt.onclick = async () => { await PX.Act.bookByPhone(); p.innerHTML = ''; PANES.msg(p); }; card.append(bt); }
+        p.append(card);
+      }
       if (!S.messages.length) p.append(el('p', { class: 'muted' }, `${S.capName}에게 온 메시지가 없어요. 떨어져 있으면 가끔 연락이 와요.`));
       for (const m of S.messages) {
         if (!m.out && m.reply == null && !(m.r && m.r.length)) m.reply = 'none'; // 답장 고를 게 없는 메시지
@@ -489,13 +496,13 @@ PX.UI = (() => {
     album(p) {
       const S = St.S;
       if (!S.album.length) p.append(el('p', { class: 'muted' }, '아직 추억이 없어요. 대위와의 첫 순간들이 자동으로 기록돼요. 📷 버튼으로 직접 찍을 수도 있어요.'));
-      if ((S.capPhotos || []).length) { p.append(el('h4', null, `📱 ${S.capName}가 보낸 사진`)); const g2 = el('div', { class: 'album' }); for (const a of S.capPhotos) g2.append(el('div', { class: 'ph' }, el('img', { src: a.img, alt: a.t }), el('small', null, a.t))); p.append(g2, el('h4', null, '📷 추억')); }
+      if ((S.capPhotos || []).length) { p.append(el("h4", null, `📱 ${U.josa(S.capName, "이")} 보낸 사진`)); const g2 = el('div', { class: 'album' }); for (const a of S.capPhotos) g2.append(el('div', { class: 'ph' }, el('img', { src: a.img, alt: a.t }), el('small', null, a.t))); p.append(g2, el('h4', null, '📷 추억')); }
       const grid = el('div', { class: 'album' });
       for (const a of S.album.slice().reverse()) grid.append(el('div', { class: 'ph' }, a.img ? el('img', { src: a.img, alt: a.title }) : el('div', { class: 'noimg' }, '📷'), el('b', null, a.title), el('small', null, a.date), el('p', null, a.text)));
       p.append(grid);
     },
     lore(p) {
-      const q = el('input', { type: 'search', placeholder: '검색 (예: 축제, 4월, 대위)', class: 'search' });
+      const q = el('input', { type: 'search', placeholder: '검색', class: 'search' });
       const list = el('div');
       const typeKo = { world: '세계관', festival: '축제', tour: '관광', place: '장소', travel: '여행', base: '부대 행사', special: '특수 일상', food: '음식·생활', adult: '루비웨이(성인)' };
       const render = () => {

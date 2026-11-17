@@ -131,7 +131,7 @@ PX.Cap = (() => {
     const now = St.absMin();
     // 장기작전: 떠나 있는 동안은 나타나지 않는다 (함께 투입된 경우만 동행) · 복귀 절차 중엔 절차부터
     const O = PX.Op && PX.Op.op();
-    if (O && O.phase === 'away' && !O.joint) { if (mode !== 'op') { cap.map = null; mode = 'op'; } return; }
+    if (O && O.phase === 'away' && !O.joint) { if (mode !== 'op' || cap.map) { cap.map = null; cap.stop && cap.stop(); mode = 'op'; } return; } // 작전 중엔 어디에도 없다 (불러오기 직후 포함)
     if (O && O.phase === 'away' && O.joint) { if (mode !== 'follow' && cap.map === g.mapId) mode = 'follow'; if (mode === 'follow' && cap.map !== g.mapId && !g.transition) followIntoMap(); return; }
     if (mode === 'op') mode = 'sched';
     if (mode === 'date') { const d = PX.Rom && PX.Rom.nextDate(); if (!d || d.state !== 'planned') mode = 'sched'; else { cap.stop(); return; } }
@@ -161,11 +161,12 @@ PX.Cap = (() => {
     // 동행 해제 조건: 근무·작전 시간
     if (mode === 'follow') {
       if (k === 'duty' || k === 'field') { startFarewell(k); return; } // 칼같이 가지 않는다: 아쉬워하다 간다
+      if (k === 'sleep' && S.time.min >= 23 * 60 + 30 && PX.LateNight && PX.LateNight.check()) { if (cap.map !== g.mapId && !g.transition) followIntoMap(); return; } // 데이트 중이면 밤을 어디서 보낼지 묻는다 · 같이 다닌다
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30) { release('늦었다. 잘 자, ' + U.josa(U.givenName(S.player.name), '아') + '.'); return; }
       if (cap.map !== g.mapId && !g.transition) followIntoMap();
       // 가끔 스킨십 요청
       const calm = !g.transition && !g.queue.length && !g.modal && now - (g.enteredAt || -1e9) >= 5 && !(PX.Mind && now - (PX.Mind.mem().joinAt || -1e9) < 25); // 문 앞 · 다른 대화 직후엔 묻지 않는다
-      if (calm && (!g.player.seat && r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 40 && Math.random() < 0.08 && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 60 && Math.random() < 0.04 && !g.modal && r.backoffUntil < now))) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
+      if (calm && (!g.player.seat && r.stage >= 2 && r.backoffUntil < now && now - lastSkinReq > 150 && Math.random() < 0.04 && !(PX.Mind && now - (PX.Mind.mem().playerSkinAt || -1e9) < 120) && !g.modal && PX.Mind && PX.Mind.contact() === 'NONE' || (PX.Mind && r.stage >= 3 && PX.Mind.isWalk() && now - lastSkinReq > 180 && Math.random() < 0.02 && now - (PX.Mind.mem().playerSkinAt || -1e9) >= 120 && !g.modal && r.backoffUntil < now))) { lastSkinReq = now; g.trigger(() => PX.Mind.capAsk()); }
       return;
     }
     if (mode === 'wait_door') {
@@ -324,6 +325,7 @@ PX.Cap = (() => {
     const cand = [[1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1]].map(([dx, dy]) => [px + dx, py + dy]).filter(([x, y]) => PX.W.walkable(m, x, y));
     if (cand.length) { cap.x = cand[0][0] + 0.5; cap.y = cand[0][1] + 0.5; }
     if (M) M.apply(); // 손잡기·팔짱은 문을 지나도 이어진다
+    if (to === 'inn' && S.rel.cap.stage >= 4 && !(PX.Plan && PX.Plan.cur() && PX.Plan.cur().id === 'inn')) setTimeout(() => g.trigger(() => PX.Act.innDesk(true)), 900); // 같이 들어오면 프런트가 바로 방을 묻는다
     if (to === 'rubyway' && V.ruby && S.done.rubyLine !== S.day) { S.done.rubyLine = S.day; const bd = PX.Dlg.pick('v_ruby', V.ruby); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
     if (to === 'q_captain' && V.capHome && S.done.capHomeLine !== S.day) { S.done.capHomeLine = S.day; const bd = PX.Dlg.pick('v_capHome', V.capHome); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
   }

@@ -240,7 +240,7 @@ PX.Ruby = (() => {
     if (withCap()) {
       const cm = await PX.UI.menu('대위 가면도 골라 주기', MASKS.filter(x => x.c !== m.k.c).sort(() => Math.random() - 0.5).slice(0, 4).map(x => ({ t: x.t, k: x })));
       setMask(g.cap, cm ? cm.k.c : 'lace');
-      await lines([`N:대위가 ${PX.S.MASKS[g.cap.app.mask].name}을 쓴다. 가면이 얼굴에 비해 작아 보인다.`, 'C*:어때. 못 알아보겠지?', 'N:지나가던 가면 쓴 바텐더가 대위를 알아보고 꾸벅 인사한다.', 'X:mbartender:대위님, 오셨어요.', 'C;:…가면 썼는데.']);
+      await lines([`N:대위가 ${U.josa(PX.S.MASKS[g.cap.app.mask].name, "을")} 쓴다. 가면이 얼굴에 비해 작아 보인다.`, 'C*:어때. 못 알아보겠지?', 'N:지나가던 가면 쓴 바텐더가 대위를 알아보고 꾸벅 인사한다.', 'X:mbartender:대위님, 오셨어요.', 'C;:…가면 썼는데.']);
       if (once('maskSpotted')) G().memory('가면 쓴 대위', '가면을 썼는데도 덩치 때문에 바로 들켰다.', true);
     }
   };

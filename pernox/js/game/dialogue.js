@@ -12,14 +12,16 @@ PX.Dlg = (() => {
   const ctx = () => { const S = St.S, r = S.rel.cap, op = S.cap.op, lov = r.stage >= 4, call = S.player.callCap || '오빠', gn = U.givenName(S.player.name);
     // {ob} 내가 대위를 부르는 말(오빠/자기) · {oc} 부를 때(오빠/자기야) · {cv} 대위가 나를 부를 때(연인이면 가끔 자기야)
     return { p: S.player.name, c: S.capName, rival: S.lastRival || '', days: op ? op.days : 3, n: r.loverSince != null ? S.day - r.loverSince : 100,
-      ob: lov ? call : '대위님', oc: lov ? (call === '자기' ? '자기야' : '오빠') : '대위님', cv: lov && Math.random() < 0.5 ? '자기야' : U.josa(gn, '아') }; };
+      ob: lov ? call : (St.S.player.job !== 'scout' ? '대위' : '대위님'), oc: lov ? (call === '자기' ? '자기야' : '오빠') : (St.S.player.job !== 'scout' ? '대위' : '대위님'), cv: lov && Math.random() < 0.5 ? '자기야' : U.josa(gn, '아') }; };
   // ---------- 연인 말투: 플레이어가 대위에게 하는 말을 반말 + 오빠/자기로 ----------
   let npcActive = null; // 부대원과 대화 중이면 그 사람에게 하는 말
   const lovers = () => St.S.rel.cap.stage >= 4;
-  function toCap() { const G = PX.Game; if (!lovers() || npcActive || !G.cap || G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 6 || G.cap.atDoor; }
+  // 대위에게 하는 말: 수색팀 소위는 연인 전까지 존댓말(상관), 그 밖엔 처음부터 반말
+  const banmal = () => lovers() || St.S.player.job !== 'scout';
+  function toCap() { const G = PX.Game; if (!banmal() || npcActive || !G.cap || G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 6 || G.cap.atDoor; }
   function lover(t) {
-    if (!t || !lovers()) return t;
-    const call = St.S.player.callCap || '오빠', ob = call;
+    if (!t || !banmal()) return t;
+    const call = lovers() ? (St.S.player.callCap || '오빠') : '대위', ob = call;
     // 존댓말 → 반말
     t = t.replace(/^(\([^)]*\)\s*)?네([,.!])/, (m, a, b) => (a || '') + '응' + b).replace(/아니요|아뇨/g, '아니');
     t = t.replace(/(^|[\s…])저는/g, '$1나는').replace(/(^|[\s…])전 /g, '$1난 ').replace(/(^|[\s…])제가/g, '$1내가').replace(/(^|[\s…])저도/g, '$1나도').replace(/(^|[\s…])저를/g, '$1나를').replace(/(^|[\s…])저한테/g, '$1나한테').replace(/(^|[\s…])저랑/g, '$1나랑').replace(/(^|[\s…])제 /g, '$1내 ').replace(/(^|[\s…])저희/g, '$1우리');
@@ -30,6 +32,7 @@ PX.Dlg = (() => {
     const J = { 은: '는', 는: '는', 이: '가', 가: '가', 을: '를', 를: '를', 과: '랑', 와: '랑', 이랑: '랑', 랑: '랑', 께: '한테', 께서: '가' };
     t = t.replace(/대위님(께서|이랑|은|는|이|가|을|를|과|와|랑|께)?/g, (m, j) => ob + (j ? J[j] : ''));
     const B = '(^|[\\s“"\'(…])';
+    if (!lovers()) return t; // 연인 전엔 '너'를 그대로 둔다
     t = t.replace(new RegExp(B + '너(이랑|랑|는|도|를|한테|밖에|야|만|보다|처럼|하고|의)', 'g'), (m, a, j) => a + ob + (j === '이랑' ? '랑' : j));
     t = t.replace(new RegExp(B + '너(?=[\\s.?!,…~]|$)', 'g'), (m, a) => a + ob);
     t = t.replace(new RegExp(B + '넌(?=[\\s.?!,…~]|$)', 'g'), (m, a) => a + ob + '는').replace(new RegExp(B + '네가', 'g'), (m, a) => a + ob + '가').replace(new RegExp(B + '널(?=[\\s.?!,…~]|$)', 'g'), (m, a) => a + ob + '를');
@@ -82,6 +85,7 @@ PX.Dlg = (() => {
   const bundleSeen = (bd) => capLinesOf(bd).filter(t => !tooShort(t)).slice(0, 2).some(capSaid); // 첫 대사들이 이미 나온 묶음
   function sayNow(speaker, text, face) {
     if (speaker === 'cap') try { noteCapSaid(text); recentCap.push({ t: text, at: St.absMin() }); if (recentCap.length > 8) recentCap.shift(); } catch (e) { /* 무시 */ }
+    text = U.fixNames(text);
     if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
     else if (speaker === 'player' && toCap()) text = lover(text);
     if (speaker === 'cap' && lovers()) { const gn = U.givenName(St.S.player.name); text = text.replace(new RegExp('^' + gn + '(아|야)([,.!]|\\s)'), (m, a, b) => Math.random() < 0.5 ? '자기야' + b : m); }

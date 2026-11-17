@@ -2,7 +2,7 @@
 'use strict';
 PX.Mini = (() => {
   const U = PX.U, el = U.el;
-  let root, cv, g, info, timerEl, scoreEl, raf = 0;
+  let root, cv, g, info, timerEl, scoreEl, raf = 0, labLayer = null, labs = [];
   const SZ = 120; // 내부 해상도
   function setup(title, help) {
     root = document.getElementById('mini');
@@ -11,9 +11,13 @@ PX.Mini = (() => {
     timerEl = el('b', { class: 'mt' }); scoreEl = el('b', { class: 'ms' });
     cv = el('canvas', { class: 'mcv', width: SZ, height: SZ });
     g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+    // 캔버스 위 글자는 HTML로 (작은 도트 캔버스에 한글을 그리면 깨진다)
+    labLayer = el('div', { class: 'mlabs' }); labs = [];
+    g.fillText = (text, x, y) => { const px = parseFloat(/(\d+(?:\.\d+)?)px/.exec(g.font || '10px') ? /(\d+(?:\.\d+)?)px/.exec(g.font)[1] : 10); labs.push({ text: String(text), x, y, px, c: g.fillStyle, a: g.textAlign }); };
+    const wrap = el('div', { class: 'mwrap' }, cv, labLayer);
     info = el('p', { class: 'mhelp' }, help);
     const tools = el('div', { class: 'mtools' });
-    root.append(el('div', { class: 'mhead' }, el('b', null, title), timerEl, scoreEl), cv, tools, info);
+    root.append(el('div', { class: 'mhead' }, el('b', null, title), timerEl, scoreEl), wrap, tools, info);
     return tools;
   }
   function finish(score, msg, btn = '근무 마치기', title) {
@@ -26,7 +30,13 @@ PX.Mini = (() => {
   }
   // 포인터 → 내부 좌표
   function pt(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * SZ, (e.clientY - r.top) / r.height * SZ]; }
-  function loop(fn) { let last = performance.now(); const step = (t) => { const dt = Math.min(0.05, (t - last) / 1000); last = t; if (fn(dt) !== false) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); }
+  function flushLabels() {
+    if (!labLayer) return;
+    const key = labs.map(l => l.text + l.x + l.y + l.c).join('|'); if (labLayer._k === key) return; labLayer._k = key;
+    labLayer.innerHTML = '';
+    for (const l of labs) { const s = el('span', { class: 'mlab' }, l.text); s.style.left = (l.x / SZ * 100) + '%'; s.style.top = (l.y / SZ * 100) + '%'; s.style.color = l.c; s.style.fontSize = Math.round(l.px * (labLayer.clientWidth || 360) / SZ * 0.9) + 'px'; s.style.transform = `translate(${l.a === 'center' ? '-50%' : l.a === 'right' ? '-100%' : '0'}, -85%)`; labLayer.append(s); }
+  }
+  function loop(fn) { let last = performance.now(); const step = (t) => { const dt = Math.min(0.05, (t - last) / 1000); last = t; labs = []; const r = fn(dt); flushLabels(); if (r !== false) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); }
   const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
 
   // ---------- 1. 군의관: 상처 치료 ----------

@@ -229,7 +229,7 @@ ${memLine(S)}`;
     const input = bar.querySelector('input'), send = bar.querySelector('.send'), end = bar.querySelector('.end'), chips = bar.querySelector('.chips2'), last = bar.querySelector('.last');
     last.textContent = '';
     chips.innerHTML = '';
-    input.placeholder = npc ? `${npc.def.name}에게 하고 싶은 말` : `${St.S.capName}에게 하고 싶은 말`; // 대화 상대에 맞게
+    input.placeholder = '하고 싶은 말';
     // 예시 문구 없이 바로 입력
     let total = 0;
     for (;;) {

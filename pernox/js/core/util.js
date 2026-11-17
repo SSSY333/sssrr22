@@ -65,6 +65,32 @@ PX.U = (() => {
     }
   }
   // 성 빼고 이름만 (세 글자 한글 이름이면 뒤 두 글자) — 대위가 부를 때 사용
+  // 이름 뒤 조사 자동 교정: '서무진가' → '서무진이', '지우이' → '지우가' (받침에 맞게)
+  const JOSA_PAIRS = [['이랑', '랑'], ['으로', '로'], ['이', '가'], ['은', '는'], ['을', '를'], ['과', '와'], ['아', '야']];
+  function fixJosa(text, names) {
+    if (!text || !names || !names.length) return text;
+    let t = String(text);
+    const uniq = [...new Set(names.filter(n => n && n.length >= 2))].sort((a, b) => b.length - a.length);
+    for (const n of uniq) {
+      const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('(^|[^가-힣])(' + esc + ')(이랑|랑|으로|로|이|가|은|는|을|를|과|와|아|야)(?=[\\s.,!?…~\'"」)』]|$)', 'g');
+      t = t.replace(re, (m, pre, w, j) => {
+        const pair = JOSA_PAIRS.find(p => p.includes(j)); if (!pair) return m;
+        const b = hasBatchim(w);
+        let right = pair[0] === '으로' ? (b && !isRieul(w) ? '으로' : '로') : b ? pair[0] : pair[1];
+        return pre + w + right;
+      });
+    }
+    return t;
+  }
+  // 화면에 나오는 모든 글에 쓸 이름 목록 (나 · 대위 · 부대원)
+  function nameList() {
+    const S = PX.St && PX.St.S; if (!S) return [];
+    const out = [S.capName, S.player && S.player.name, '대위님', S.player && S.player.callCap];
+    for (const n of (PX.NPCS || [])) if (n.name && n.id !== 'cap') out.push(n.name);
+    return out.filter(Boolean).flatMap(n => [n, givenName(n)]);
+  }
+  const fixNames = (t) => { try { return fixJosa(t, nameList()); } catch (e) { return t; } };
   function givenName(name) {
     if (/^[가-힣]{3}$/.test(name)) return name.slice(1);
     return name;
@@ -112,5 +138,5 @@ PX.U = (() => {
     if (store) store[key] = rec; else fresh.set(key, rec);
     return arr[i];
   }
-  return { pickFresh, hash, rng, rand, pick, clamp, lerp, shade, mix, hexToRgb, rgbToHex, josa, hasBatchim, givenName, fmt, pad2, el, sleep, dist };
+  return { fixJosa, fixNames, pickFresh, hash, rng, rand, pick, clamp, lerp, shade, mix, hexToRgb, rgbToHex, josa, hasBatchim, givenName, fmt, pad2, el, sleep, dist };
 })();

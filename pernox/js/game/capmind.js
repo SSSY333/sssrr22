@@ -218,6 +218,7 @@ PX.Mind = (() => {
     }
     if (a.cat === 'kiss' || a.id === 'fronthug' || a.id === 'embrace') { cap.showEmote('heart', 2.2); setTimeout(() => p.showEmote('heart', 1.8), 400); }
     m.acts[a.id] = now(); m.skin = a.id; m.skinMin = now(); noteMeet();
+    if (!capAsked) m.playerSkinAt = now(); // 내가 먼저 했으면 한동안 대위는 먼저 안 한다
     // 대사: 이 행동에서 최근에 안 나온 묶음
     let ls;
     if (mine) { ls = [U.pickFresh('you_' + a.id, mine.do)].concat(U.pickFresh('re_' + a.id, mine.re)); /* 반응은 이 행동의 5개를 다 돌기 전엔 반복하지 않는다 */ if (Math.random() < 0.6) setTimeout(() => cap.showEmote('heart', 1.6), 600); }
@@ -293,7 +294,8 @@ PX.Mind = (() => {
     autoT -= dt; if (autoT > 0) return; autoT = 2;
     const t = now(); if (!nextAuto) nextAuto = t + 20;
     if (t < nextAuto) return;
-    const dayKey = 'capAuto_' + S.day; if ((S.done[dayKey] || 0) >= 3) return; // 하루 세 번까지
+    const dayKey = 'capAuto_' + S.day; if ((S.done[dayKey] || 0) >= 2) return; // 하루 두 번까지
+    if (now() - (mem().playerSkinAt || -1e9) < 120) return; // 내가 방금 했으면 대위는 안 한다
     if (U.dist(cap.x, cap.y, p.x, p.y) > 2.4 || S.rel.cap.backoffUntil > t || S.rel.cap.stage < 1) return;
     if (!p.seat && !p.moving && stillT < 4) return;
     if (Math.random() < 0.6) return;
@@ -301,7 +303,7 @@ PX.Mind = (() => {
     if (!list.length) return;
     const x = U.pick(list);
     S.done[dayKey] = (S.done[dayKey] || 0) + 1;
-    nextAuto = t + 40 + Math.floor(Math.random() * 80); // 다음은 40분~2시간 뒤
+    nextAuto = t + 120 + Math.floor(Math.random() * 120); // 다음은 2~4시간 뒤
     capDo(x, false);
   }
   // 내가 대위에게 부탁하기
@@ -330,6 +332,7 @@ PX.Mind = (() => {
     // 큐에서 기다리는 사이 장소가 바뀌었거나(문 앞·입장 직후) 대위가 같이 있지 않으면 묻지 않는다
     if (g.transition || St.absMin() - (g.enteredAt || -1e9) < 5 || !g.cap || g.cap.map !== g.mapId || g.cap.atDoor) return false;
     if (St.absMin() - (m.danceAt || -1e9) < 30) return false; // 방금 같이 춤췄으면 따로 안 묻는다
+    if (St.absMin() - (m.playerSkinAt || -1e9) < 120) return false; // 내가 먼저 했으면 대위는 안 묻는다
     const list = ASKS.filter(x => { const a = BY[x.id]; return check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6); });
     if (!list.length) return false;
     const ln = (b) => (Array.isArray(b) ? b : [b]).find(y => typeof y === 'string' && /^C/.test(y)) || '';

@@ -175,6 +175,7 @@
 
   // ---------- 말풍선 · 기록 · 사진 ----------
   Game.bubble = (actor, text, sec = 3) => {
+    text = U.fixNames(text);
     if (text && PX.Dlg && PX.Dlg.ctxOk && !PX.Dlg.ctxOk(text)) return; // 밤에 '그늘', 겨울에 '덥다' 같은 말은 하지 않는다
     // 대위 말풍선: 사흘 안에 했던 말이면 그냥 조용히 (반복보다 침묵)
     if (actor === Game.cap && text && PX.Dlg && PX.Dlg.capSaid) { const S = St.S, k = String(text); S.capBub = S.capBub || {}; const h = U.hash(k); if (S.capBub[h] && St.absMin() - S.capBub[h] < 3 * 1440) return; S.capBub[h] = St.absMin(); }
@@ -336,8 +337,9 @@
   async function sleepMenu() {
     const S = St.S;
     const it = await UI.menu('침대', [
-      { t: '😴 잠자기 (아침 6시)', k: 6 }, { t: '😴 잠자기 (아침 7시)', k: 7 }, { t: '😪 늦잠 (아침 9시)', k: 9 }, { t: '🛏️ 낮잠 1시간', k: 'nap' }]);
+      { t: '🛌 침대에서 뒹굴거리기', sub: '누워서 시간 보내기', k: 'lounge' }, { t: '😴 잠자기 (아침 6시)', k: 6 }, { t: '😴 잠자기 (아침 7시)', k: 7 }, { t: '😪 늦잠 (아침 9시)', k: 9 }, { t: '🛏️ 낮잠 1시간', k: 'nap' }]);
     if (!it) return;
+    if (it.k === 'lounge') return PX.Bed.lounge();
     await Cap.beforeSleep();
     if (it.k !== 'nap' && PX.InnNight && Cap.mode === 'stay') await PX.InnNight.homeNight();
     if (it.k === 'nap') { fade(); St.advance(60); S.energy = Math.min(100, S.energy + 15); UI.toast('💤 한숨 잤다 (기력 +15)'); return; }

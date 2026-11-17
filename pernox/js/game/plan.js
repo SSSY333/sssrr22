@@ -12,6 +12,7 @@ PX.Plan = (() => {
   // 약속 종류 · 질문/대답 문장으로 알아본다 (위에서부터)
   // acts: 도착하면 할 "여기서 같이 하기" 행동 · go: 가야 할 곳(안내용) · here(): 지금 여기서도 할 수 있나
   const KINDS = [
+    { id: 'inn', re: /^\uffff$/, label: '은밀숙소 가기', acts: [], go: 'inn', fn: () => PX.Act.innDesk(), sc: [['N:']] },
     { id: 'stars', re: /별 보|별 보면서|별 보는|하늘이 빛|별비|투영실/, label: '별 보기', acts: ['bs_stars', 'st_find', 'sl_find', 'p6_warm'], go: 'base',
       here: () => night() && openSky(G().mapId) && !['rain', 'dust'].includes(St.weather()),
       far: '밖으로 나가자. 별은 하늘 뚫린 데서 봐야지.',
@@ -95,6 +96,7 @@ PX.Plan = (() => {
   const capNear = (r = 3.2) => { const g = G(); return g.cap && g.cap.map === g.mapId && !g.cap.hidden && U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < r; };
 
   function tick(dt) {
+    innT -= dt; if (innT <= 0) { innT = 3; try { PX.Act && PX.Act.innEveningCheck && PX.Act.innEveningCheck(); } catch (e) { /* 무시 */ } }
     const p = cur(); if (!p) return;
     const g = G(), k = kindOf(p), mode = PX.Cap.mode;
     if (mins() > p.until) { if (capNear(8)) g.bubble(g.cap, `${U.josa(k.label, '은')} 다음에 꼭 하자. 약속.`, 2.6); clear(); return; }
@@ -115,7 +117,8 @@ PX.Plan = (() => {
   async function run(p, k, act) {
     const g = G(); busy = true; clear();
     try {
-      if (act) await act.run();
+      if (k.fn) await k.fn();
+      else if (act) await act.run();
       else { g.modal++; try { await PX.Dlg.runLines(U.pickFresh('plansc_' + k.id, k.sc), { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
       St.addAff(2);
       const S = St.S; if (!S.done['planm_' + k.id]) { S.done['planm_' + k.id] = 1; g.memory('약속', `대위와 약속한 ${k.label}, 진짜로 했다.`, false); }
@@ -123,7 +126,10 @@ PX.Plan = (() => {
     busy = false;
   }
   // 스킨십·대화(B)가 끝났을 때 불러 준다 → 잠시 뒤 약속(A)으로 돌아온다
+  // 대화 없이 바로 약속 만들기 (예: 예약한 은밀숙소)
+  function start(id) { const k = BYID[id]; if (!k) return null; St.S.cap.plan = { id, made: mins(), until: mins() + 240, walkT: 0, nag: 0 }; PX.UI.toast(`📌 약속: ${k.label}${k.go && G().mapId !== k.go ? ` · ${mapName(k.go)}(으)로` : ''}`, 3000); return k; }
+  let innT = 0;
   function resume() { if (cur()) resumeAt = performance.now() + 2200; }
   function label() { const p = cur(); return p ? kindOf(p).label : null; }
-  return { offer, tick, resume, label, cur, clear, KINDS };
+  return { offer, tick, resume, label, cur, clear, start, KINDS };
 })();

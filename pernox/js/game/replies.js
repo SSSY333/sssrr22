@@ -121,7 +121,7 @@ PX.Reply = (() => {
   // 말투 정하기: 상대·관계·직업
   function tone(who) {
     const S = St.S, st = S.rel.cap.stage, mil = PX.JOBS[S.player.job].military;
-    if (who === 'cap') return st >= 4 ? 'c' : st >= 3 ? 'h' : 'p'; // 연인부터 서로 반말
+    if (who === 'cap') return (st >= 4 || S.player.job !== 'scout') ? 'c' : st >= 3 ? 'h' : 'p'; // 대위에게: 수색팀(연인 전)만 존댓말, 나머지는 반말
     const d = PX.NPC_BY_ID[who];
     if (!d) return 'p';
     if (mil && d.age <= 23 && !d.banmal) return 'f'; // 후배 병사에겐 편한 말
@@ -189,7 +189,7 @@ PX.Reply = (() => {
     return new Promise(res => {
       const bar = document.getElementById('chatbar');
       const inp = bar.querySelector('input'), send = bar.querySelector('.send'), end = bar.querySelector('.end');
-      bar.querySelector('.chips2').innerHTML = ''; bar.querySelector('.last').textContent = '';
+      bar.querySelector('.chips2').innerHTML = ''; bar.querySelector('.last').textContent = ''; inp.placeholder = '하고 싶은 말';
       bar.classList.remove('hidden'); inp.value = ''; setTimeout(() => inp.focus(), 50);
       const done = (v) => { bar.classList.add('hidden'); send.onclick = null; end.onclick = null; inp.onkeydown = null; res(v); };
       send.onclick = () => { const v = inp.value.trim(); if (v) done(v.slice(0, 160)); };
