@@ -147,7 +147,7 @@
     const out = W.maps[m.def.parent];
     const d = out.doors.find(d => d.to === m.id);
     enterMap(out.id, d.x + 0.5, d.y + 0.5);
-    Game.doorCool = performance.now() + 1200;
+    Game.doorCool = performance.now() + 1200; Game.doorArmed = false; // 방금 나왔으면: 손을 떼거나 문에서 멀어질 때까지는 다시 안 들어간다
     const b = d.bld.b;
     Game.player.dir = b.door.f === 'L' ? 0 : 1;
   }
@@ -899,7 +899,8 @@
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
     if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
     // 바깥: 문 앞에서 건물 쪽으로 밀면 들어간다 (나온 직후엔 잠깐 쉬었다가)
-    if (m.kind === 'out' && performance.now() > (Game.doorCool || 0)) {
+    if (m.kind === 'out' && !Game.doorArmed && !(m.doors || []).some(d => Math.abs(p.x - (d.x + 0.5)) < 1.6 && Math.abs(p.y - (d.y + 0.5)) < 1.6)) Game.doorArmed = true;
+    if (m.kind === 'out' && Game.doorArmed !== false && performance.now() > (Game.doorCool || 0)) {
       const tx = Math.floor(p.x + dx * 0.7), ty = Math.floor(p.y + dy * 0.7);
       for (const d of m.doors || []) {
         const o = d.bld; if (!o || !d.to || d.closed) continue;
@@ -933,7 +934,7 @@
       joy.x = dx / R; joy.y = dy / R; joy.active = true;
       pad.classList.toggle('run', Math.hypot(joy.x, joy.y) > 0.92);
     };
-    const end = (e) => { if (e.pointerId !== id) return; id = null; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; pad.classList.remove('run'); };
+    const end = (e) => { if (e.pointerId !== id) return; id = null; joy.active = false; Game.doorArmed = true; joy.x = joy.y = 0; knob.style.transform = ''; pad.classList.remove('run'); };
     pad.addEventListener('pointerdown', (e) => {
       if (Game.modal) return;
       PX.Audio.unlock();

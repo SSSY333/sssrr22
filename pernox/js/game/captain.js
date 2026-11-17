@@ -157,7 +157,7 @@ PX.Cap = (() => {
     if (mode === 'visit') {
       if (g.mapId !== homeId()) { release(); return; }
       if (k === 'duty' || k === 'field') { startFarewell(k); return; }
-      if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(PX.Dlg.capPick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: '조심히 가요.' }, { t: '조금만 더 있다 가요.' }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
+      if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(PX.Dlg.capPick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('조심히 가요.') }, { t: PX.Dlg.capTone('조금만 더 있다 가요.') }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
       if (S.cap.cohab && S.time.min >= 22 * 60 && !g.modal) { S.cap.stay = 'bed'; mode = 'stay'; return; } // 같이 사는 사이: 묻지 않고 함께 잔다
       if (S.time.min >= 22 * 60 && !g.modal) g.trigger(nightCheck);
       return;
@@ -317,9 +317,9 @@ PX.Cap = (() => {
         try {
         const bd = V.homeAsk ? PX.Dlg.pick('v_homeAsk', V.homeAsk) : null;
         await PX.Dlg.runLines(bd ? bd.l : ['C*:나도 들어가도 돼?']);
-        const i = await PX.Dlg.choose([{ t: '들어와요.' }, { t: '차 한 잔만이에요.' }, { t: '오늘은 여기까지요.' }]);
+        const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('들어와요.') }, { t: PX.Dlg.capTone('차 한 잔만이에요.') }, { t: PX.Dlg.capTone('오늘은 여기까지요.') }]);
         if (i < 2) { await PX.Dlg.say('player', i === 0 ? '들어와요.' : '차 한 잔만이에요.'); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
-        else { await PX.Dlg.say('player', '오늘은 여기까지요.'); await PX.Dlg.runLines(U.pick(V.homeNo || [['C:응, 알았어.']])); PX.Dlg.close(); g.modal--; if (M) M.noteRefuse('home', 240); release(null, 60); }
+        else { await PX.Dlg.say('player', PX.Dlg.capTone('오늘은 여기까지요.')); await PX.Dlg.runLines(U.pick(V.homeNo || [['C:응, 알았어.']])); PX.Dlg.close(); g.modal--; if (M) M.noteRefuse('home', 240); release(null, 60); }
         } finally { cap.atDoor = false; }
       });
       mode = 'sched'; // 대답 전까지는 밖에서 대기
@@ -366,7 +366,7 @@ PX.Cap = (() => {
       await PX.Dlg.runLines(bd ? bd.l : ['C:나 왔어.'], { reply: true });
       if (S.cap.giftPending) { const gid = S.cap.giftPending; S.cap.giftPending = null; cap.doPose('carry', 1.4, 'smile'); await PX.Dlg.runLines(['C:선물. 작전 중에 찾은 거야. 네 생각나서 챙겼어.']); St.addItem(gid); PX.UI.toast(`🎁 ${PX.U.josa(PX.ITEMS[gid].name, '을')} 받았다`); }
       M.mem().reunion = null; M.mem().longing = 20; M.noteMeet(); M.noteTalk('reunion');
-      if (r.stage >= 3) { const i = await PX.Dlg.choose([{ t: '안아 줄게요.' }, { t: '수고했어요.' }]); if (i === 0) { PX.Dlg.close(); g.modal--; await M.perform('fronthug', true); g.modal++; } else await PX.Dlg.say('player', '수고했어요.'); }
+      if (r.stage >= 3) { const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('안아 줄게요.') }, { t: PX.Dlg.capTone('수고했어요.') }]); if (i === 0) { PX.Dlg.close(); g.modal--; await M.perform('fronthug', true); g.modal++; } else await PX.Dlg.say('player', PX.Dlg.capTone('수고했어요.')); }
       g.memory('무사 귀환', `${reu.days}일 만에 돌아온 대위가 제일 먼저 나를 찾아왔다.`, true);
     } else
     // 선물 들고 오기
@@ -506,12 +506,12 @@ PX.Cap = (() => {
     const S = St.S, g = G(), D = PX.DLG_CAP;
     g.modal++;
     await PX.Dlg.runLines(U.pick(D.knock));
-    const i = await PX.Dlg.choose([{ t: '들어오라고 한다' }, { t: '밖으로 나가서 만난다' }, { t: '오늘은 쉬고 싶다고 말한다' }]);
+    const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('들어오라고 한다') }, { t: PX.Dlg.capTone('밖으로 나가서 만난다') }, { t: PX.Dlg.capTone('오늘은 쉬고 싶다고 말한다') }]);
     PX.Dlg.close(); g.modal--;
-    if (i === 0) { await PX.Dlg.say('player', '들어와요.'); PX.Dlg.close(); startVisit(); }
+    if (i === 0) { await PX.Dlg.say('player', PX.Dlg.capTone('들어와요.')); PX.Dlg.close(); startVisit(); }
     else if (i === 1) { g.goOutside(); startFollow(); g.trigger(async () => { await PX.Dlg.say('cap', '나와 줬네. 산책할래?', 'smile'); PX.Dlg.close(); }); }
     else {
-      await PX.Dlg.say('player', '오늘은 좀 쉬고 싶어요.');
+      await PX.Dlg.say('player', PX.Dlg.capTone('오늘은 좀 쉬고 싶어요.'));
       await PX.Dlg.say('cap', PX.Dlg.capPick(['응, 알았어. 푹 자. 내일 보자.', '그래. 얼굴은 내일 보면 되지. 잘 자.']), 'smile'); PX.Dlg.close();
       S.rel.cap.noFollowUntil = (S.day + 1) * 1440 + 6 * 60; release();
     }
@@ -530,7 +530,7 @@ PX.Cap = (() => {
       if (r.stage >= 4) opts.push({ t: '침대에서 같이 자요.', k: 'bed' });
       opts.push({ t: '오늘은 막사로 돌아가세요.', k: 'no' });
       const i = await PX.Dlg.choose(opts);
-      await PX.Dlg.say('player', opts[i].t);
+      await PX.Dlg.say('player', PX.Dlg.capTone(opts[i].t));
       if (opts[i].k !== 'no') {
         await PX.Dlg.runLines(U.pick(D.stayYes));
         S.cap.stay = opts[i].k; mode = 'stay'; St.addAff(6);
