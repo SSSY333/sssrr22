@@ -74,7 +74,7 @@ PX.UI = (() => {
     const html = `<b>${S.capName}</b>${comp ? '' : ' · ' + (op ? '🛰️ ' : '') + PX.Cap.status()}${comp} <span class="heart">♥ ${St.stageName(r.stage)}</span>`;
     if ($('capChip')._h !== html) { $('capChip')._h = html; $('capChip').innerHTML = html; }
   }
-  function badge() { const n = St.S.messages.filter(m => m.reply == null).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
+  function badge() { const n = St.S.messages.filter(m => !m.out && (!m.seen || m.reply == null)).length; $('termBadge').textContent = n || ''; $('termBadge').style.display = n ? '' : 'none'; }
 
   // ---------- 타이틀 ----------
   function title() {
@@ -428,58 +428,58 @@ PX.UI = (() => {
       if (mem.length) p.append(el('h4', null, '최근 추억'), ...mem.map(m => el('p', { class: 'muted' }, `· ${m.title || m.t || ''}${m.text ? ' — ' + m.text : ''}`)));
     },
     msg(p) {
-      const S = St.S;
-      // 장기작전 중인 대위에게 보내기
+      // 메신저처럼: 오래된 메시지가 위, 새 메시지가 아래 · 입력은 맨 아래 · 대위가 보낸 메시지에 답하면 새 말풍선으로 이어진다
+      const S = St.S, rerender = () => { p.innerHTML = ''; PANES.msg(p); };
+      for (const m of S.messages) { if (!m.out) m.seen = 1; if (!m.out && m.reply == null && !(m.r && m.r.length)) m.reply = 'none'; }
       const capWithMe = PX.Op.together && PX.Op.together();
-      if (capWithMe) p.append(el('div', { class: 'msgsend' }, el("b", null, `💬 ${U.josa(S.capName, "이")} 옆에 있어요`), el('small', null, '메시지 말고 직접 말해 보세요. (대위 메뉴 → 대화하기)')));
-      if (!capWithMe && PX.Op.canText && PX.Op.canText()) {
-        const away = PX.Op.canMsg(), o = PX.Op.op(), d = away ? Math.floor((St.absMin() - o.start) / 1440) + 1 : 0, off = away && o.comms[d] === false;
-        const k = PX.Cap.spotKind(), note = away ? (off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.') : k === 'sleep' ? '대위가 자는 시간이에요. 아침에 볼 거예요.' : k === 'duty' || k === 'field' ? '근무 중이라 답장이 조금 늦을 수 있어요.' : '쉬는 시간이라 금방 볼 거예요.';
-        const box = el('div', { class: 'msgsend' }, el('b', null, `${away ? '📡' : '💬'} ${S.capName}에게 보내기`), el('small', null, note));
-        const ch = el('div', { class: 'msgch' });
-        const go = (t) => { if (PX.Op.sendToCap(t)) { toast('📤 보냈어요'); p.innerHTML = ''; PANES.msg(p); } };
-        for (const t of PX.Op.quick()) { const b = el('button', null, t); b.onclick = () => go(t); ch.append(b); }
-        const row = el('div', { class: 'msgfree' }), inp = el('input', { type: 'text', maxlength: '120', placeholder: '직접 써서 보내기' }), sb = el('button', null, '보내기');
-        sb.onclick = () => go(inp.value); inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(inp.value); };
-        row.append(inp, sb); box.append(ch, row); p.append(box);
-      }
-      if (!capWithMe && S.rel.cap.stage >= 4 && !(PX.Op.canMsg && PX.Op.canMsg())) { // 은밀숙소 예약 (연인) · 같이 있을 땐 단말 대신 직접
-        const b = S.done.innBook && St.absMin() < S.done.innBook.until ? S.done.innBook : null;
-        const card = el('div', { class: 'msgsend' }, el('b', null, '🗝️ 은밀숙소 예약'), el('small', null, b ? `예약됨 · ${PX.MAPS[b.room].name} · ${b.day === S.day ? '오늘 밤' : b.day != null ? '내일 밤' : ''}` : '방을 골라 예약하고, 대위에게 같이 가자고 할 수 있어요.'));
-        if (!b) { const bt = el('button', { class: 'menu-btn' }, el('span', null, '예약하고 같이 가자고 하기')); bt.onclick = async () => { await PX.Act.bookByPhone(); p.innerHTML = ''; PANES.msg(p); }; card.append(bt); }
-        p.append(card);
-      }
-      if (!S.messages.length) p.append(el('p', { class: 'muted' }, `${S.capName}에게 온 메시지가 없어요. 떨어져 있으면 가끔 연락이 와요.`));
-      for (const m of S.messages) {
-        if (!m.out && m.reply == null && !(m.r && m.r.length)) m.reply = 'none'; // 답장 고를 게 없는 메시지
-        if (m.out) { const ST = { sent: '전송됨', read: '읽음', answered: '읽음' }; p.append(el('div', { class: 'msg' }, el('small', { style: 'display:block;text-align:right' }, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)} · ${ST[m.st] || ''}`), el('div', { class: 'bub me' }, m.mine))); continue; }
-        const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t), ...(m.photo ? [el('img', { class: 'msgph', src: m.photo, alt: '사진' })] : []));
-        if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
-        else if (m.reply === 'none') { /* 답장 필요 없는 메시지 */ }
-        else if (m.reply != null) { const rr = (m.r || [])[m.reply]; if (rr) box.append(el('div', { class: 'bub me' }, PX.Dlg.capTone(rr[0])), el('div', { class: 'bub cap' }, rr[2])); }
-        else {
-          const ch = el('div', { class: 'msgch' });
-          m.r.forEach((rr, i) => { const b = el('button', null, PX.Dlg.capTone(rr[0])); b.onclick = () => { m.reply = i; St.addAff(rr[1]); badge(); p.innerHTML = ''; PANES.msg(p); }; ch.append(b); });
-          if (PX.AI.available()) { // 직접 답장 쓰기 → 대위가 AI로 답장
-            const free = el('button', { class: 'free' }, '✍️ 직접 쓰기');
-            free.onclick = () => {
-              const row = el('div', { class: 'msgfree' }), inp = el('input', { type: 'text', maxlength: '120', placeholder: '답장을 입력하세요' }), go = el('button', null, '보내기');
-              row.append(inp, go); ch.replaceWith(row); inp.focus();
-              const sendIt = async () => {
-                const v = inp.value.trim(); if (!v) return;
-                go.disabled = true; go.textContent = '…';
-                try { const ans = await PX.AI.replyMsg(m, v); m.reply = 'free'; m.mine = v; m.ans = ans; badge(); p.innerHTML = ''; PANES.msg(p); }
-                catch (e) { go.disabled = false; go.textContent = '보내기'; toast('📡 답장을 보내지 못했어요. 다시 시도해 주세요.'); }
-              };
-              go.onclick = sendIt; inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) sendIt(); };
-            };
-            ch.append(free);
-          }
-          box.append(ch);
+      const book = S.done.innBook && St.absMin() < S.done.innBook.until ? S.done.innBook : null;
+      if (book) p.append(el('div', { class: 'chatpin' }, `🗝️ 은밀숙소 예약됨 · ${PX.MAPS[book.room].name} · ${book.day === S.day ? '오늘 밤' : '내일 밤'}`));
+      const list = S.messages.map((m, i) => ({ m, i, k: m.day * 1440 + m.min })).sort((x, y) => x.k - y.k || y.i - x.i).map(x => x.m);
+      const thread = el('div', { class: 'chat' });
+      const ST = { sent: '전송됨', read: '읽음', answered: '읽음' };
+      const row = (who, text, m, st, img) => el('div', { class: 'crow ' + who }, el('div', { class: 'cbody' }, el('div', { class: 'bub ' + who }, text), ...(img ? [el('img', { class: 'msgph', src: img, alt: '사진' })] : [])), el('small', { class: 'ctime' }, (st ? st + '\n' : '') + Cal.fmtTime(m.min)));
+      let lastDay = null;
+      for (const m of list) {
+        if (m.day !== lastDay) { thread.append(el('div', { class: 'chatday' }, Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day)))); lastDay = m.day; }
+        if (m.out) { thread.append(row('me', m.mine, m, ST[m.st] || '')); continue; }
+        thread.append(row('cap', m.t, m, '', m.photo));
+        if (!m.split) { // 예전 저장: 답장이 메시지에 붙어 있던 것도 이어지는 말풍선으로
+          if (m.reply === 'free') thread.append(row('me', m.mine, m, '읽음'), row('cap', m.ans, m));
+          else if (typeof m.reply === 'number') { const rr = (m.r || [])[m.reply]; if (rr) thread.append(row('me', PX.Dlg.capTone(rr[0]), m, '읽음'), row('cap', rr[2], m)); }
         }
-        p.append(box);
       }
+      if (!list.length) thread.append(el('p', { class: 'muted chatempty' }, `아직 ${S.capName}와(과) 주고받은 메시지가 없어요.`));
+      p.append(thread);
+      // ---------- 입력 (맨 아래 고정) ----------
+      const comp = el('div', { class: 'chatcomp' });
+      const push = (o) => { S.messages.unshift(Object.assign({ id: St.absMin() + Math.random(), day: S.day, min: S.time.min, seen: 1, split: 1 }, o)); S.messages = S.messages.slice(0, 80); };
+      const pend = list.filter(m => !m.out && m.reply == null && m.r && m.r.length).pop(); // 아직 답 안 한 대위 메시지 (가장 최근)
+      const reply = (i) => { const rr = pend.r[i]; pend.reply = i; pend.split = 1; St.addAff(rr[1]); push({ out: true, mine: PX.Dlg.capTone(rr[0]), st: 'answered' }); push({ t: rr[2], r: [], reply: 'none' }); badge(); rerender(); };
+      if (capWithMe) comp.append(el('div', { class: 'chatnote' }, `💬 ${U.josa(S.capName, '이')} 옆에 있어요. 메시지 말고 직접 말해 보세요.`));
+      else {
+        const canText = PX.Op.canText && PX.Op.canText(), away = PX.Op.canMsg(), o = PX.Op.op();
+        const k = PX.Cap.spotKind(), d = away ? Math.floor((St.absMin() - o.start) / 1440) + 1 : 0, off = away && o.comms[d] === false;
+        comp.append(el('small', { class: 'chatnote' }, pend ? '↩️ 답장 고르기' : away ? (off ? '📡 오늘은 외곽 통신이 불안정해요. 통신이 잡히면 읽어요.' : '📡 작전 중이라 답장이 언제 올지 몰라요.') : k === 'sleep' ? '🌙 대위가 자는 시간이에요. 아침에 볼 거예요.' : k === 'duty' || k === 'field' ? '🪖 근무 중이라 답장이 조금 늦을 수 있어요.' : '☕ 쉬는 시간이라 금방 볼 거예요.'));
+        const ch = el('div', { class: 'msgch' });
+        if (pend) pend.r.forEach((rr, i) => { const b = el('button', null, PX.Dlg.capTone(rr[0])); b.onclick = () => reply(i); ch.append(b); });
+        else if (canText) for (const t of PX.Op.quick()) { const b = el('button', null, t); b.onclick = () => { if (PX.Op.sendToCap(t)) rerender(); }; ch.append(b); }
+        if (!pend && !book && S.rel.cap.stage >= 4 && !away) { const b = el('button', { class: 'free' }, '🗝️ 은밀숙소 예약하고 같이 가자고 하기'); b.onclick = async () => { await PX.Act.bookByPhone(); rerender(); }; ch.append(b); }
+        comp.append(ch);
+        if (canText || (pend && PX.AI.available())) {
+          const fr = el('div', { class: 'msgfree' }), inp = el('input', { type: 'text', maxlength: '120', placeholder: pend ? '직접 답장 쓰기' : '메시지 보내기' }), sb = el('button', null, '보내기');
+          const go = async () => {
+            const v = inp.value.trim(); if (!v) return;
+            if (pend && PX.AI.available()) { sb.disabled = true; sb.textContent = '…'; try { const ans = await PX.AI.replyMsg(pend, v); pend.reply = 'free'; pend.split = 1; push({ out: true, mine: v, st: 'answered' }); push({ t: ans, r: [], reply: 'none' }); badge(); rerender(); } catch (e) { sb.disabled = false; sb.textContent = '보내기'; toast('📡 답장을 보내지 못했어요. 다시 시도해 주세요.'); } return; }
+            if (pend) { pend.reply = 'typed'; pend.split = 1; } // 직접 쓴 말로 답한 것으로
+            if (PX.Op.sendToCap(v)) rerender();
+          };
+          sb.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); };
+          fr.append(inp, sb); comp.append(fr);
+        }
+      }
+      p.append(comp);
       badge();
+      requestAnimationFrame(() => { const sc = p.closest('.sheet-body') || p; sc.scrollTop = sc.scrollHeight; });
     },
     inv(p) {
       const S = St.S;

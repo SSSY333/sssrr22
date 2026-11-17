@@ -307,3 +307,19 @@ button { touch-action: manipulation; }
 .shopgrid .card.pick.on { border-color: var(--gold); }
 canvas.thumb { image-rendering: pixelated; background: radial-gradient(circle at 50% 60%, #33295a 0%, #1d1630 70%); border-radius: 10px; }
 .item canvas.thumb { width: 48px; height: 42px; flex: none; }
+
+/* 메신저 */
+.chat { display: flex; flex-direction: column; gap: 2px; padding-bottom: 6px; }
+.chatday { align-self: center; margin: 12px 0 6px; padding: 3px 12px; border-radius: 999px; background: #1d1630; color: var(--muted); font-size: 11.5px; }
+.crow { display: flex; align-items: flex-end; gap: 6px; max-width: 100%; }
+.crow.me { flex-direction: row-reverse; }
+.crow .cbody { display: flex; flex-direction: column; max-width: 78%; }
+.crow.me .cbody { align-items: flex-end; }
+.crow .bub { max-width: 100%; margin: 2px 0; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.ctime { color: var(--muted); font-size: 10.5px; white-space: pre; line-height: 1.2; padding-bottom: 4px; text-align: right; }
+.crow.cap .ctime { text-align: left; }
+.chatpin { position: sticky; top: -10px; z-index: 2; margin: -2px 0 6px; padding: 7px 10px; border-radius: 10px; border: 2px solid var(--line); background: var(--panel2); font-size: 13px; }
+.chatcomp { position: sticky; bottom: -16px; z-index: 2; margin: 8px -14px -16px; padding: 10px 14px 14px; background: var(--panel); border-top: 2px solid var(--line); display: flex; flex-direction: column; gap: 7px; }
+.chatcomp .msgch { justify-content: flex-start; max-height: 116px; overflow-y: auto; }
+.chatnote { color: var(--muted); font-size: 12px; }
+.chatempty { text-align: center; margin: 18px 0; }

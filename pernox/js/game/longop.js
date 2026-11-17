@@ -145,7 +145,7 @@ PX.Op = (() => {
     return Math.round(now() + (r < 0.65 ? 1 + Math.random() * 6 : 8 + Math.random() * 25));
   }
   const RE_D = [
-    [/이따|만날|볼래|시간 돼|놀/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 끝나자마자 간다.', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
+    [/이따|만날|볼래|시간 돼|놀/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 지금 바로 갈게. 어디야?', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
     [/밥|먹었|배고/, { pre: ['먹었어. 너도 챙겨 먹어.', '아직. 이제 먹으러 간다. 너는?'], lov: ['먹었어. 너는? 거르면 혼난다.', '아직. 같이 먹을래? 데리러 갈게.'] }],
     [/보고 싶|생각/, { pre: ['…그런 말 받으니까 일이 손에 안 잡힌다.', '나도 방금 네 생각 했어. 진짜로.'], lov: ['나도. 지금 바로 가고 싶다.', '그 말 세 번 읽었어. 아껴 읽는 중.', '보고 싶다는 말 들으면 걸음이 빨라져. 곧 갈게.'] }],
     [/뭐 해|뭐해/, { pre: ['작전동에서 서류 보는 중. 지루해.', '장비 정리 중. 너는?'], lov: ['너 생각. 아, 일도 하고 있어. 조금.', '박 중사 잔소리 듣는 중. 구해 줘.'] }],
@@ -154,9 +154,16 @@ PX.Op = (() => {
     [/잘 자|꿈/, { pre: ['너도 잘 자. 따뜻하게 하고.'], lov: ['잘 자, 자기야. 꿈에서는 내가 먼저 갈게.', '이불 꼭 덮어. 내일 아침에 제일 먼저 연락할게.'] }],
     [/사랑/, { pre: ['…고마워. 진심으로.'], lov: ['나도 사랑해. 단말로 하니까 아쉽다. 이따 직접 할게.', '사랑해. 이거 화면 캡처했어.'] }],
   ];
+  const WHERE = { duty: '작전동', field: '외곽 근무지', meal: '식당동', sleep: '막사', rest: '막사', gym: '체육관', free: '' };
+  function whereReply(free) {
+    const g = G(), md = g && g.cap && PX.MAPS[g.cap.map], k = PX.Cap.spotKind(), lov = St.S.rel.cap.stage >= 4;
+    const place = (md && md.name) || WHERE[k] || '부대';
+    return U.pick(free ? [`지금 ${place}. 왜, 보러 올래?`, `${place}. 너는 어디야? 내가 갈게.`, lov ? `${place}. 보고 싶어서 물어본 거지? 갈게.` : `${place}에 있어. 근처면 들를게.`] : [`${place}. 근무 중이라 못 움직여. 끝나면 바로 연락할게.`, `아직 ${place}. 조금만 기다려.`]);
+  }
   const GEN_D = { pre: ['응, 봤어. 고마워.', '확인했어. 이따 얘기하자.'], lov: ['응응. 네 메시지 오면 그냥 좋다.', '봤어. 답장 고르느라 오래 걸렸어.'] };
   function dailyReply(text) {
     const lv = St.S.rel.cap.stage >= 4 ? 'lov' : 'pre', k = PX.Cap.spotKind(), free = !['duty', 'field', 'sleep'].includes(k);
+    if (/어디/.test(text)) { let r = whereReply(free); if (now() % DAY < 7 * 60 && k !== 'free') r = '일어나자마자 본다. ' + r; return { text: r, meet: free }; }
     const hit = RE_D.find(([re]) => re.test(text)), set = hit ? hit[1] : GEN_D;
     let pool = set[lv] || set.pre;
     if (hit && hit[1].free) pool = free ? pool.filter(l => !/근무 중/.test(l)) : ['지금 근무 중이야. 끝나면 바로 연락할게.', '근무 끝나고 갈게. 조금만 기다려.'];
@@ -199,19 +206,20 @@ PX.Op = (() => {
     if (!canMsg()) { // 평소
       const m = { id: now() + Math.random(), out: true, mine: t, t: '', r: [], day: S.day, min: S.time.min, reply: 'none', st: 'sent', at: now() };
       m.replyAt = dailyAt(); m.readAt = Math.round(now() + Math.random() * Math.max(1, (m.replyAt - now()) * 0.6));
-      S.messages.unshift(m); S.messages = S.messages.slice(0, 50);
+      S.messages.unshift(m); S.messages = S.messages.slice(0, 80);
       (S.outbox = S.outbox || []).push(m.id);
       return m;
     }
     const m = { id: now() + Math.random(), out: true, mine: t, t: '', r: [], day: S.day, min: S.time.min, reply: 'none', st: 'sent', at: now() };
     m.readAt = Math.round(now() + Math.random() * Math.max(5, (delayFor(o) - now()) * 0.7));
     m.replyAt = delayFor(o);
-    S.messages.unshift(m); S.messages = S.messages.slice(0, 50);
+    S.messages.unshift(m); S.messages = S.messages.slice(0, 80);
     (o.outbox = o.outbox || []).push(m.id);
     return m;
   }
   // 카테고리별 답장 (AI를 못 쓸 때)
   const RE = [
+    [/어디/, { pre: ['위치는 말 못 해. 미안. 무사히 잘 있어.'], lov: ['위치는 말 못 해. 근데 여기 하늘도 네 쪽 하늘이랑 이어져 있어.', '어딘지는 비밀. 대신 돌아가는 길은 제일 빠른 길로 갈게.'] }],
     [/밥|먹었|식사|배고/, { pre: ['먹었어. 전투식량이지만. 너도 챙겨 먹어.', '방금 먹었다. 맛은 묻지 마.'], lov: ['먹었어. 전투식량. 네가 해 준 밥 생각나더라.', '먹었어. 근데 너랑 먹는 게 백 배 맛있어. 돌아가면 냉삼.', '먹었어! 너는? 거르지 마. 내가 확인할 거야.'] }],
     [/보고 싶|그리|생각/, { pre: ['…그런 말 들으니까 힘난다. 고마워.'], lov: ['나도. 진짜 많이.', '보고 싶다는 말 세 번 읽었어. 아껴 읽는 중.', '나는 더. 돌아가면 제일 먼저 너한테 간다.', '단말 사진 몇 번 봤는지 몰라. 너 사진.'] }],
     [/다친|괜찮|조심|무사/, { pre: ['멀쩡해. 걱정 마. 늘 하던 거야.', '괜찮아. 팀 전원 이상 없음.'], lov: ['다친 데 없어. 약속했잖아. 꼭 그대로 돌아간다고.', '멀쩡해. 걱정해 줘서 고마워. 그 걱정 덕에 더 조심하고 있어.'] }],
@@ -273,7 +281,7 @@ PX.Op = (() => {
     const S = St.S;
     if (!quiet && !m.photo && together()) return sayInPerson(m);
     const msg = { id: now() + Math.random(), t: m.t, r: m.r || [], day: S.day, min: S.time.min, reply: m.r && m.r.length ? null : 'none', photo: m.photo ? photo(m.photo) : null };
-    S.messages.unshift(msg); S.messages = S.messages.slice(0, 40);
+    S.messages.unshift(msg); S.messages = S.messages.slice(0, 80);
     if (msg.photo && !quiet) { S.capPhotos = S.capPhotos || []; S.capPhotos.unshift({ day: S.day, kind: m.photo, img: msg.photo, t: m.t }); S.capPhotos = S.capPhotos.slice(0, 24); }
     if (!quiet) PX.UI.toast(`📱 ${S.capName}: ${m.t}${m.photo ? ' 📷' : ''}`, 4200);
     PX.UI.badge();
