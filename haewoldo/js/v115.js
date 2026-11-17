@@ -287,7 +287,7 @@ const _actorSay117 = Actor.prototype.say;
 Actor.prototype.say = function (text, t) {
   if (this.id === 'det' && typeof text === 'string' && casualOn()) {
     const s = speechPick(text), chat = G.detAuto && G.detAuto.kind === 'chat';
-    if (text.indexOf('[[') >= 0 || chat || G._peeking || DET_VOC.test(s) || DET_HON.test(s)) { const c = casualOn; casualOn = () => false; try { return _actorSay117.call(this, s, t); } finally { casualOn = c; } }
+    if (text.indexOf('[[') >= 0 || chat || G._peeking || G._detToOther || DET_VOC.test(s) || DET_HON.test(s)) { const c = casualOn; casualOn = () => false; try { return _actorSay117.call(this, s, t); } finally { casualOn = c; } }
   }
   return _actorSay117.call(this, text, t);
 };
