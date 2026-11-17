@@ -325,3 +325,4 @@ canvas.thumb { image-rendering: pixelated; background: radial-gradient(circle at
 .chatempty { text-align: center; margin: 18px 0; }
 .chatclear { align-self: flex-end; margin: 0 0 -4px; padding: 4px 10px; border-radius: 9px; border: 2px solid var(--line); background: var(--panel2); color: var(--muted); font: inherit; font-size: 12px; }
 .sheet { isolation: isolate; } /* 창 안의 고정 영역(z-index)이 위에 뜬 다른 창을 덮지 않게 */
+.relcard .nextstep { display: block; margin-top: 4px; color: var(--gold); line-height: 1.45; }

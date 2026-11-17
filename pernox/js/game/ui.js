@@ -388,6 +388,17 @@ PX.UI = (() => {
       p.append(el('p', { class: 'muted' }, `${S.capName} 대위 지금: ${PX.Cap.status()}`));
     },
     rel(p) {
+      // 다음 단계로 가는 실제 조건 (호감만으로 안 오르는 단계는 날짜 · 이벤트까지)
+      const nextStep = () => {
+        const S = St.S, r = S.rel.cap, T = St.THRESH, need = (n) => Math.max(0, n - r.aff);
+        const days = r.loverSince != null ? S.day - r.loverSince : 0, ok = (b) => b ? '✅' : '⬜';
+        if (r.stage < 3) return need(T[r.stage + 1]) ? `▶ ${St.STAGES[r.stage + 1]}까지 호감 ${need(T[r.stage + 1])}` : `▶ 곧 ${St.STAGES[r.stage + 1]}`;
+        if (r.stage === 3) return need(T[4]) ? `▶ 연인: 호감 ${T[4]} 이상이 되면 대위가 고백해요 (호감 ${need(T[4])} 더)` : '💌 연인: 조건 충족 · 대위와 함께 있으면 대위가 고백해요';
+        if (r.stage === 4) return `▶ 깊어진 사랑: ${ok(r.aff >= T[5])} 호감 ${T[5]} 이상 · ${ok(days >= 14)} 연인 14일 (${days >= 14 ? '충족' : `${14 - days}일 남음`})`;
+        if (r.stage === 5) return `▶ 약혼: ${ok(r.aff >= T[6])} 호감 ${T[6]} 이상 · ${ok(days >= 30)} 연인 30일 (${days >= 30 ? '충족' : `${30 - days}일 남음`}) → 대위가 특별한 저녁 약속을 잡아요. 반지를 선물해 먼저 청혼해도 돼요.`;
+        if (r.stage === 6) { const e = S.day - (S.engagedDay || S.day); return `▶ 부부: ${ok(e >= 10)} 약혼 10일 (${e >= 10 ? '충족' : `${10 - e}일 남음`}) → 대위 메뉴 '결혼식 날짜 잡기' · 다음 토요일 11시 연병장`; }
+        return '💒 부부예요.';
+      };
       const S = St.S, r = S.rel.cap, d = S.done, M = PX.Mind;
       const pct = r.stage >= 7 ? 100 : Math.round(Math.min(1, (r.aff - St.THRESH[r.stage]) / Math.max(1, St.THRESH[r.stage + 1] - St.THRESH[r.stage])) * 100);
       const HINT = ['자주 말 걸고, 같이 밥 먹고, 부탁을 들어주면 가까워져요.', '동행하고 손을 잡아 보세요. 대위가 먼저 다가오기 시작해요.', '데이트 신청을 받아 주거나 먼저 해 보세요. 설렘이 쌓여요.', '조금만 더 가까워지면 대위가 무언가 말하려 할지도…', '연인이에요. 약속을 지키고, 깊은 부탁을 들어주며 더 깊어져요.', '서로가 일상이 됐어요. 대위가 미래 이야기를 꺼내기 시작해요.', '약혼했어요. 함께할 날들을 준비해요.', '부부예요. 이 행성이 멸망할 때까지.'];
@@ -395,7 +406,8 @@ PX.UI = (() => {
         el('b', null, `${S.capName} 대위`), el('small', null, '606부대 수색팀 팀장 · 35세 · 193cm'),
         el('div', { class: 'stages' }, ...St.STAGES.map((s, i) => el('span', { class: i === r.stage ? 'on' : i < r.stage ? 'past' : '' }, s))),
         el('div', { class: 'bar' }, el('i', { style: `width:${pct}%` })),
-        el('small', null, `호감도 ${r.aff} / 1000${r.stage < 7 ? ` · 다음 단계까지 ${Math.max(0, St.THRESH[r.stage + 1] - r.aff)}` : ''}`),
+        el('small', null, `호감도 ${r.aff} / 1000`),
+        el('small', { class: 'nextstep' }, nextStep()),
         el('small', null, HINT[r.stage] || '')));
       // 지금
       const now = [PX.Cap.status()];

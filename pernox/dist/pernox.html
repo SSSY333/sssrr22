@@ -337,6 +337,7 @@ canvas.thumb { image-rendering: pixelated; background: radial-gradient(circle at
 .chatempty { text-align: center; margin: 18px 0; }
 .chatclear { align-self: flex-end; margin: 0 0 -4px; padding: 4px 10px; border-radius: 9px; border: 2px solid var(--line); background: var(--panel2); color: var(--muted); font: inherit; font-size: 12px; }
 .sheet { isolation: isolate; } /* 창 안의 고정 영역(z-index)이 위에 뜬 다른 창을 덮지 않게 */
+.relcard .nextstep { display: block; margin-top: 4px; color: var(--gold); line-height: 1.45; }
 
 </style>
 </head>
@@ -2866,6 +2867,34 @@ PX.S = (() => {
       // 자리가 없으면 그 장식은 뺀다 (가구 뒤에 반만 보이는 것보다 낫다)
     }
     m.walls = out;
+  }
+})();
+
+</script>
+<script>
+/* js/data/doorclear.js */
+// 실내 입구 앞 통로 비우기: 들어오면 바로 직진할 수 있게
+// 출구 칸 + 그 앞 두 줄(출구 좌우 한 칸씩) + 세 번째 줄 가운데에 걸친 가구는 가장 가까운 빈자리로 옮긴다
+'use strict';
+(() => {
+  const M = PX.MAPS, F = PX.FURN;
+  const size = (e) => { const f = F[e[0]]; if (!f) return null; return e[3] % 2 ? [f.d, f.w] : [f.w, f.d]; };
+  const hit = (ax, ay, aw, ad, bx, by, bw, bd) => ax < bx + bw && bx < ax + aw && ay < by + bd && by < ay + ad;
+  for (const id in M) {
+    const m = M[id]; if (m.kind !== 'in' || !Array.isArray(m.furn) || m.exit == null) continue;
+    const W = m.w, H = m.h, ex = m.exit, ey = H - 1;
+    const zone = [[ex - 1, ey - 2, 3, 3], [ex, ey - 3, 1, 1]]; // [x, y, w, d]
+    const inZone = (x, y, w, d) => zone.some(z => hit(x, y, w, d, z[0], z[1], z[2], z[3]));
+    const solid = m.furn.filter(e => e[0] !== '@' && F[e[0]] && F[e[0]].blocks !== false);
+    for (const e of solid) {
+      const sz = size(e); if (!sz) continue;
+      const [w, d] = sz;
+      if (!inZone(e[1], e[2], w, d)) continue;
+      const free = (x, y) => x >= 0 && y >= 0 && x + w <= W && y + d <= H && !inZone(x, y, w, d) && !solid.some(o => o !== e && size(o) && hit(x, y, w, d, o[1], o[2], ...size(o)));
+      let best = null;
+      for (let dy = 0; dy >= -5 && !best; dy--) for (let k = 1; k <= 8 && !best; k++) for (const dx of [-k, k]) { const x = e[1] + dx, y = e[2] + dy; if (free(x, y)) { best = [x, y]; break; } }
+      if (best) { e[1] = best[0]; e[2] = best[1]; }
+    }
   }
 })();
 
@@ -8851,6 +8880,17 @@ PX.UI = (() => {
       p.append(el('p', { class: 'muted' }, `${S.capName} 대위 지금: ${PX.Cap.status()}`));
     },
     rel(p) {
+      // 다음 단계로 가는 실제 조건 (호감만으로 안 오르는 단계는 날짜 · 이벤트까지)
+      const nextStep = () => {
+        const S = St.S, r = S.rel.cap, T = St.THRESH, need = (n) => Math.max(0, n - r.aff);
+        const days = r.loverSince != null ? S.day - r.loverSince : 0, ok = (b) => b ? '✅' : '⬜';
+        if (r.stage < 3) return need(T[r.stage + 1]) ? `▶ ${St.STAGES[r.stage + 1]}까지 호감 ${need(T[r.stage + 1])}` : `▶ 곧 ${St.STAGES[r.stage + 1]}`;
+        if (r.stage === 3) return need(T[4]) ? `▶ 연인: 호감 ${T[4]} 이상이 되면 대위가 고백해요 (호감 ${need(T[4])} 더)` : '💌 연인: 조건 충족 · 대위와 함께 있으면 대위가 고백해요';
+        if (r.stage === 4) return `▶ 깊어진 사랑: ${ok(r.aff >= T[5])} 호감 ${T[5]} 이상 · ${ok(days >= 14)} 연인 14일 (${days >= 14 ? '충족' : `${14 - days}일 남음`})`;
+        if (r.stage === 5) return `▶ 약혼: ${ok(r.aff >= T[6])} 호감 ${T[6]} 이상 · ${ok(days >= 30)} 연인 30일 (${days >= 30 ? '충족' : `${30 - days}일 남음`}) → 대위가 특별한 저녁 약속을 잡아요. 반지를 선물해 먼저 청혼해도 돼요.`;
+        if (r.stage === 6) { const e = S.day - (S.engagedDay || S.day); return `▶ 부부: ${ok(e >= 10)} 약혼 10일 (${e >= 10 ? '충족' : `${10 - e}일 남음`}) → 대위 메뉴 '결혼식 날짜 잡기' · 다음 토요일 11시 연병장`; }
+        return '💒 부부예요.';
+      };
       const S = St.S, r = S.rel.cap, d = S.done, M = PX.Mind;
       const pct = r.stage >= 7 ? 100 : Math.round(Math.min(1, (r.aff - St.THRESH[r.stage]) / Math.max(1, St.THRESH[r.stage + 1] - St.THRESH[r.stage])) * 100);
       const HINT = ['자주 말 걸고, 같이 밥 먹고, 부탁을 들어주면 가까워져요.', '동행하고 손을 잡아 보세요. 대위가 먼저 다가오기 시작해요.', '데이트 신청을 받아 주거나 먼저 해 보세요. 설렘이 쌓여요.', '조금만 더 가까워지면 대위가 무언가 말하려 할지도…', '연인이에요. 약속을 지키고, 깊은 부탁을 들어주며 더 깊어져요.', '서로가 일상이 됐어요. 대위가 미래 이야기를 꺼내기 시작해요.', '약혼했어요. 함께할 날들을 준비해요.', '부부예요. 이 행성이 멸망할 때까지.'];
@@ -8858,7 +8898,8 @@ PX.UI = (() => {
         el('b', null, `${S.capName} 대위`), el('small', null, '606부대 수색팀 팀장 · 35세 · 193cm'),
         el('div', { class: 'stages' }, ...St.STAGES.map((s, i) => el('span', { class: i === r.stage ? 'on' : i < r.stage ? 'past' : '' }, s))),
         el('div', { class: 'bar' }, el('i', { style: `width:${pct}%` })),
-        el('small', null, `호감도 ${r.aff} / 1000${r.stage < 7 ? ` · 다음 단계까지 ${Math.max(0, St.THRESH[r.stage + 1] - r.aff)}` : ''}`),
+        el('small', null, `호감도 ${r.aff} / 1000`),
+        el('small', { class: 'nextstep' }, nextStep()),
         el('small', null, HINT[r.stage] || '')));
       // 지금
       const now = [PX.Cap.status()];
@@ -14153,7 +14194,7 @@ ${memLine(S)}`;
   function enterMap(id, x, y, silent) {
     if (id !== 'mask' && PX.Ruby) PX.Ruby.unmask();
     Game.prevMap = Game.mapId;
-    Game.mapId = id; Game.enteredAt = St.absMin();
+    Game.mapId = id; Game.enteredAt = St.absMin(); Game.enteredReal = performance.now();
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;
     if (PX.Bath) PX.Bath.onMap(id);
@@ -14959,7 +15000,8 @@ ${memLine(S)}`;
       if (sp2.length) { bumped.walkPath([sp2[0]]); if (Math.random() < 0.3 && bumped !== Game.cap) Game.bubble(bumped, U.pick(['앗.', '어이쿠.', '…!']), 1.4); }
     }
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
-    if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
+    // 실내 출구: 출구 쪽(아래)으로 걸어갈 때만 나간다 · 들어온 직후 잠깐은 안 나간다 (옆으로 비켜 가다 밟아도 안 나가게)
+    if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y && dy > 0.2 && performance.now() - (Game.enteredReal || 0) > 700) leaveRoom();
     // 바깥: 문 앞에서 건물 쪽으로 밀면 들어간다 (나온 직후엔 잠깐 쉬었다가)
     if (m.kind === 'out' && !Game.doorArmed && !(m.doors || []).some(d => Math.abs(p.x - (d.x + 0.5)) < 1.6 && Math.abs(p.y - (d.y + 0.5)) < 1.6)) Game.doorArmed = true;
     if (m.kind === 'out' && Game.doorArmed !== false && performance.now() > (Game.doorCool || 0)) {

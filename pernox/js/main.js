@@ -92,7 +92,7 @@
   function enterMap(id, x, y, silent) {
     if (id !== 'mask' && PX.Ruby) PX.Ruby.unmask();
     Game.prevMap = Game.mapId;
-    Game.mapId = id; Game.enteredAt = St.absMin();
+    Game.mapId = id; Game.enteredAt = St.absMin(); Game.enteredReal = performance.now();
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;
     if (PX.Bath) PX.Bath.onMap(id);
@@ -898,7 +898,8 @@
       if (sp2.length) { bumped.walkPath([sp2[0]]); if (Math.random() < 0.3 && bumped !== Game.cap) Game.bubble(bumped, U.pick(['앗.', '어이쿠.', '…!']), 1.4); }
     }
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
-    if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
+    // 실내 출구: 출구 쪽(아래)으로 걸어갈 때만 나간다 · 들어온 직후 잠깐은 안 나간다 (옆으로 비켜 가다 밟아도 안 나가게)
+    if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y && dy > 0.2 && performance.now() - (Game.enteredReal || 0) > 700) leaveRoom();
     // 바깥: 문 앞에서 건물 쪽으로 밀면 들어간다 (나온 직후엔 잠깐 쉬었다가)
     if (m.kind === 'out' && !Game.doorArmed && !(m.doors || []).some(d => Math.abs(p.x - (d.x + 0.5)) < 1.6 && Math.abs(p.y - (d.y + 0.5)) < 1.6)) Game.doorArmed = true;
     if (m.kind === 'out' && Game.doorArmed !== false && performance.now() > (Game.doorCool || 0)) {
