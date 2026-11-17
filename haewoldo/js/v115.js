@@ -356,7 +356,7 @@ autoSeats = function (m) {
       dd.push(K.ground ? sx + sy + 0.6 : K.side ? sx + sy + 2.3 : objDrawKey(o) + (r < 2 ? 0.05 : -0.05));
     }
     if (!seats.length) continue;
-    const key = 'auto' + (i++);
+    const key = 'auto_' + (o.aid || o.uid || (o.kind + ':' + (o.k || '') + '@' + o.x + ',' + o.y)); i++;   // 다시 만들어도 같은 이름
     m.benches[key] = { name: K.name, place: m.id === 'island' ? placeAt(o.x, o.y, m) : null, seats, stand, face, d: dd, pairs: seats.length > 1 ? [[0, 1]] : [], auto: true, obj: o };
     if (K.leisure) m.benches[key].leisure = K.leisure;
     if (K.ground) m.benches[key].ground = true;
@@ -392,3 +392,21 @@ computeAction = (function (prev) {
     return Object.assign({}, d0, { cands: [d0, ...rest].slice(0, 4) });
   };
 })(computeAction);
+
+/* 자리 정리: 섬 · 일터를 다시 지은 뒤 곧바로 앉을 자리 만들기, 사라진 자리에 앉아 있던 사람은 일으켜 세우기 */
+const _devRebuild121 = devRebuild;
+devRebuild = function () { const r = _devRebuild121.apply(this, arguments); try { autoSeats(); } catch (e) { console.error(e); } seatLostCheck(); return r; };
+function seatLostCheck() {
+  for (const a of G.actors || []) {
+    if (!a.seat) continue; const m = MAPS[a.map], bk = m && m.benches && m.benches[a.seat.bench];
+    if (bk && bk.seats[a.seat.idx]) continue;
+    const k = G.seatOcc && seatKey ? seatKey(a.map, a.seat.bench, a.seat.idx) : null; if (k && G.seatOcc[k]) delete G.seatOcc[k];
+    a.seat = null; a.pose = 'stand'; a.lie = 0; a.ox = 0; a.oy = 0; a.leis = null;
+    if (m && !walkable(Math.floor(a.x), Math.floor(a.y), m)) [a.x, a.y] = nearestWalkable(a.x, a.y, m);
+  }
+}
+let _slT = 0;
+const _loop121 = loop;
+loop = function (ts) { if (G.started && S && (_slT += 1 / 60) > 0.5) { _slT = 0; try { seatLostCheck(); } catch (e) { } } return _loop121(ts); };
+const _buildWorld121 = buildWorld;
+buildWorld = function () { const r = _buildWorld121.apply(this, arguments); try { if (S) autoSeats(); } catch (e) { console.error(e); } return r; };

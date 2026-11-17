@@ -82,7 +82,7 @@ class Actor {
   say(text, t = 3.2) { this.bubble = { text: fillNames(text), t }; }
   emo(icon, t = 1.6) { this.emote = { icon, t }; }
   sitAt(benchKey, idx) {
-    const bk = MAPS[this.map].benches[benchKey]; const s = bk.seats[idx];
+    const bk = MAPS[this.map] && MAPS[this.map].benches[benchKey]; const s = bk && bk.seats[idx]; if (!s) return;
     this.stop(); this.seat = { bench: benchKey, idx }; this.x = s[0] + 0.5; this.y = s[1] + 0.5; this.pose = 'sit'; this.face = 'f'; this.left = true;
   }
   standUp() {
@@ -339,7 +339,8 @@ function render(dt) {
     if (o.hide && o.hide()) continue;
     if (o.season && o.season !== se) continue;
     if (o.minStage && (!S || S.rel.stage < o.minStage)) continue;
-    const sp = objSprite(o), [sx, sy] = iso(o.x + 0.5, o.y + 0.5); if (!inView(sx, sy)) continue;
+    let sp; try { sp = objSprite(o); } catch (e) { if (!G._sprErr) { G._sprErr = true; console.error('[sprite]', o.kind, o.k, e); } continue; } if (!sp) continue;
+    const [sx, sy] = iso(o.x + 0.5, o.y + 0.5); if (!inView(sx, sy)) continue;
     const fw = o.fw || 1, fh = o.fh || 1, flat = o.flat || (o.kind === 'furn' && FURN[o.k].flat), wallI = o.kind === 'furn' && FURN[o.k].wall;
     const key = o.keyFix != null ? o.keyFix : wallI ? o.x + o.y + 0.1 : flat ? -1000 + o.x + o.y : o.x + o.y + (fw - 1) + (fh - 1) + 2;   // 러그 · 매트 같은 바닥 장식은 늘 사람 · 가구 밑에
     o._key = key;
@@ -359,7 +360,8 @@ function render(dt) {
     if (!a.visible || a.map !== m.id) continue;
     const [sx, sy] = iso(a.x, a.y); if (!inView(sx, sy)) continue;
     let d = a.x + a.y;
-    if (a.seat) { const s = m.benches[a.seat.bench].seats[a.seat.idx]; const sd = typeof seatDepth === 'function' ? seatDepth(a, m) : null; d = sd != null ? sd : s[0] + s[1] + 2.05; }
+    if (a.seat && !(m.benches[a.seat.bench] && m.benches[a.seat.bench].seats[a.seat.idx])) { /* 앉은 자리가 사라짐 → 그냥 서 있는 것처럼 그림 (다음 틀에서 일으켜 세움) */ }
+    else if (a.seat) { const s = m.benches[a.seat.bench].seats[a.seat.idx]; const sd = typeof seatDepth === 'function' ? seatDepth(a, m) : null; d = sd != null ? sd : s[0] + s[1] + 2.05; }
     else if (a.seatFurn && !(a.seatFurn._key < -500)) d = (a.seatFurn._seatD != null ? a.seatFurn._seatD : (a.seatFurn._key || a.seatFurn.x + a.seatFurn.y + 2) + (a._bedLie ? 0.3 : a.seatFurn.front ? 0.05 : -0.05));
     else if (a.carried) d = G.det.x + G.det.y + 0.05;
     else for (const s of solids) {   // 방석 같은 바닥 자리에 앉은 사람도 보통 사람처럼 앞뒤 가림
@@ -370,7 +372,7 @@ function render(dt) {
     list.push({ d, f: () => drawActor(g, a, sx, sy) });
   }
   list.sort((p, q) => p.d - q.d);
-  for (const it of list) it.f();
+  for (const it of list) { try { it.f(); } catch (e) { if (!G._drawErr) { G._drawErr = true; console.error('[draw]', e); } } }   // 하나가 잘못돼도 나머지는 그림
 
   // 파티클
   for (const p of G.parts) {
