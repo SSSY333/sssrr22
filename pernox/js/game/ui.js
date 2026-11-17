@@ -253,7 +253,11 @@ PX.UI = (() => {
     if (tab) termTab = tab;
     sheet('개인 단말', (b, close) => {
       const tabs = el('div', { class: 'tabs' }), pane = el('div', { class: 'pane' });
-      const show = (k) => { termTab = k; [...tabs.children].forEach(c => c.classList.toggle('on', c.dataset.k === k)); pane.innerHTML = ''; PANES[k](pane, close); };
+      const show = (k) => {
+        if (!PANES[k]) k = 'cal';
+        termTab = k; [...tabs.children].forEach(c => c.classList.toggle('on', c.dataset.k === k)); pane.innerHTML = '';
+        try { PANES[k](pane, close); } catch (e) { console.warn('단말 탭 오류', k, e); termTab = 'cal'; pane.innerHTML = ''; pane.append(el('p', { class: 'muted' }, '이 화면을 여는 중에 문제가 생겼어요. 다른 탭을 눌러 주세요.')); }
+      };
       for (const [k, t] of TABS) { const btn = el('button', { 'data-k': k }, t); if (k === 'msg') btn.append(el('i', { class: 'dot', id: 'msgDot' })); btn.onclick = () => show(k); tabs.append(btn); }
       b.append(tabs, pane); show(termTab);
     }, { wide: true });
@@ -437,11 +441,12 @@ PX.UI = (() => {
       }
       if (!S.messages.length) p.append(el('p', { class: 'muted' }, `${S.capName}에게 온 메시지가 없어요. 떨어져 있으면 가끔 연락이 와요.`));
       for (const m of S.messages) {
+        if (!m.out && m.reply == null && !(m.r && m.r.length)) m.reply = 'none'; // 답장 고를 게 없는 메시지
         if (m.out) { const ST = { sent: '전송됨', read: '읽음', answered: '읽음' }; p.append(el('div', { class: 'msg' }, el('small', { style: 'display:block;text-align:right' }, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)} · ${ST[m.st] || ''}`), el('div', { class: 'bub me' }, m.mine))); continue; }
         const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t), ...(m.photo ? [el('img', { class: 'msgph', src: m.photo, alt: '사진' })] : []));
         if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
         else if (m.reply === 'none') { /* 답장 필요 없는 메시지 */ }
-        else if (m.reply != null) { box.append(el('div', { class: 'bub me' }, m.r[m.reply][0]), el('div', { class: 'bub cap' }, m.r[m.reply][2])); }
+        else if (m.reply != null) { const rr = (m.r || [])[m.reply]; if (rr) box.append(el('div', { class: 'bub me' }, rr[0]), el('div', { class: 'bub cap' }, rr[2])); }
         else {
           const ch = el('div', { class: 'msgch' });
           m.r.forEach((rr, i) => { const b = el('button', null, rr[0]); b.onclick = () => { m.reply = i; St.addAff(rr[1]); badge(); p.innerHTML = ''; PANES.msg(p); }; ch.append(b); });

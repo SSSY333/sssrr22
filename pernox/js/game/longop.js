@@ -125,8 +125,9 @@ PX.Op = (() => {
   // 답장 텀이 들쭉날쭉: 금방 · 한두 시간 · 반나절 · 통신 끊긴 날은 복구될 때 · 밤엔 아침에
   const canMsg = () => { const o = op(); return !!(o && o.phase === 'away' && !o.joint); };
   const QUICK = { pre: ['오늘은 괜찮았어요?', '밥은 챙겨 먹었어요?', '조심히 다녀오세요.', '오늘 부대는 조용했어요.', '잘 자요.'],
+    mid: ['밥은 먹었어요?', '보고 싶어요.', '오늘 뭐 했는지 알려 줘요.', '저 오늘 일 잘 끝냈어요.', '조심해요. 꼭이요.', '잘 자요. 꿈에서 봐요.'],
     lov: ['밥 먹었어?', '보고 싶어.', '오늘 뭐 했어? 다 말해 줘.', '나 오늘 {ob} 생각 엄청 했어.', '다친 데 없지?', '사랑해. 얼른 와.', '잘 자. 꿈에 나와.'] };
-  function quick() { const st = St.S.rel.cap.stage; return QUICK[st >= 4 ? 'lov' : st >= 2 ? 'mid' : 'pre'].map(t => U.fmt(t, PX.Dlg.ctx())); }
+  function quick() { const st = St.S.rel.cap.stage; return (QUICK[st >= 4 ? 'lov' : st >= 2 ? 'mid' : 'pre'] || QUICK.pre).map(t => U.fmt(t, PX.Dlg.ctx())); }
   function delayFor(o) {
     const r = Math.random(), S = St.S;
     let d = r < 0.25 ? 4 + Math.random() * 16 : r < 0.6 ? 35 + Math.random() * 90 : r < 0.85 ? 150 + Math.random() * 240 : 360 + Math.random() * 300;
