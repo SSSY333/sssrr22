@@ -1921,6 +1921,11 @@ PX.S = (() => {
   def('salonmirror', { name: '미용실 거울', cat: 'base', parts: [P(0.05, 0.1, 0, 0.9, 0.3, 10, '#f4f1ea'), P(0.1, 0.12, 10, 0.8, 0.06, 22, '#cfe8f2'), P(0.05, 0.1, 32, 0.9, 0.1, 2, '#e8c56a')], det: [{ p: 1, f: 'S', u: [0.05, 0.75], v: [2, 20], c: '#e6f6fb' }], light: { r: 1.6, c: '#fff3d8', z: 26 } });
   def('hairwash', { name: '샴푸대', w: 2, cat: 'base', parts: [P(0, 0.2, 0, 2, 0.7, 9, '#f4f1ea'), P(0.2, 0.25, 9, 0.6, 0.5, 3, '#fbfaf6'), P(1.0, 0.3, 9, 0.9, 0.5, 4, '#2a2f3a')] });
 
+  // 광장 장식
+  def('starmonument', { name: '별빛 결정 조형물', w: 2, d: 2, cat: 'out', use: 'inspect', parts: [P(0, 0, 0, 2, 2, 4, '#c9ccd6'), P(0.2, 0.2, 4, 1.6, 1.6, 3, '#e6e9ee'), P(0.65, 0.65, 7, 0.7, 0.7, 26, '#bfe6ff', { a: 1 }), P(0.8, 0.8, 33, 0.4, 0.4, 8, '#e8f6ff', { a: 1 }), P(0.85, 0.85, 41, 0.3, 0.3, 4, '#fff3b0')], light: { r: 3.2, c: '#bfe6ff', z: 30 } });
+  def('foodcart', { name: '야식 수레', w: 2, cat: 'out', use: 'stall', parts: [P(0.05, 0.2, 2, 1.9, 0.7, 10, '#c9654a'), P(0.1, 0.25, 0, 0.15, 0.15, 3, '#3a3a3a'), P(1.7, 0.25, 0, 0.15, 0.15, 3, '#3a3a3a'), P(0.05, 0.2, 12, 1.9, 0.7, 1, '#f4efe4'), P(0.3, 0.35, 13, 0.4, 0.3, 3, '#ffd166'), P(1.1, 0.35, 13, 0.5, 0.3, 2, '#e07a5f'), P(0.05, 0.15, 13, 0.08, 0.08, 18, '#8a5a3c'), P(1.87, 0.15, 13, 0.08, 0.08, 18, '#8a5a3c'), P(-0.05, 0.1, 31, 2.1, 0.85, 2, '#ff9ed2')], det: [{ p: 0, f: 'S', u: [0.2, 1.7], v: [2, 8], c: '#e8a080' }], light: { r: 2, c: '#ffd9a0', z: 24, night: true } });
+  def('flowerarch', { name: '꽃 아치', w: 2, cat: 'out', blocks: false, parts: [P(0, 0.4, 0, 0.15, 0.2, 30, '#f4f1ea'), P(1.85, 0.4, 0, 0.15, 0.2, 30, '#f4f1ea'), P(0, 0.35, 30, 2, 0.3, 4, '#ff9ed2'), P(0.2, 0.35, 34, 0.4, 0.3, 3, '#ffd1dc'), P(1.3, 0.35, 34, 0.4, 0.3, 3, '#b9ffe8'), P(-0.05, 0.35, 20, 0.25, 0.3, 6, '#ffb3c9'), P(1.8, 0.35, 16, 0.25, 0.3, 6, '#cfe8ff')] });
+
   const NEWF = ['armchair', 'beanbag', 'lowtable', 'cushion', 'starlamp', 'globe', 'teddy', 'cactus', 'terrarium', 'record', 'easel', 'clock', 'dresser', 'nightstand', 'bookcase_w', 'heartrug', 'starrug', 'fishbowl', 'keyboard', 'screen', 'robotvac', 'mobile', 'hammock', 'canopybed', 'daybed', 'coffeemaker', 'plushcap', 'lavalamp', 'wallshelf_plant'];
   // 별빛 가구점 판매 목록: 기존 숙소 가구 + 새 가구
   PX.FASHION.furniture = ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'sidetable', 'cabinet', 'chair', 'stool', 'sofa', 'sofa_green', 'table', 'desk', 'shelf', 'mirror', 'cafetable', 'aquarium', 'cooler', 'tv', 'bed', 'bigbed', 'wardrobe', 'fridge', 'kitchen', 'glassvase', 'bunnyplush', 'moodlamp', 'candles', 'vanity', 'waterbed', 'roundbed', 'bathtub'].concat(NEWF);
@@ -2713,6 +2718,11 @@ PX.S = (() => {
   room('salon', { name: '은하 헤어', w: 12, h: 9, floor: 'tile', wall: '#e6eef4', exit: 6,
     furn: [['salonmirror', 1, 0, 0], ['salonchair', 1, 1, 0, 'sl.c1'], ['salonmirror', 3, 0, 0], ['salonchair', 3, 1, 0, 'sl.c2'], ['salonmirror', 5, 0, 0], ['salonchair', 5, 1, 0, 'sl.c3'], ['hairwash', 8, 0, 0], ['shopcounter', 9, 4, 0, 'sl.shop'], ['bench', 0, 6, 0], ['plant', 11, 0, 0], ['bigplant', 11, 8, 0]],
     walls: [['L', 4.4, 'window', 1.0]], crowd: [{ role: 'stylist', fixed: [2.5, 2.5, 2] }, { role: 'shopper', n: 1, x0: 1, y0: 4, x1: 8, y1: 7 }] });
+  // 은하 국수당 (냉삼집 옆)
+  const nd = [['kitchen', 0, 0, 0], ['stove', 2, 0, 0], ['fridge', 4, 0, 0], ['shopcounter', 6, 1, 0, 'nd.shop'], ['bigplant', 12, 0, 0], ['moodlamp', 10, 0, 0], ['lamp', 0, 9, 0], ['bigplant', 12, 9, 0]];
+  for (const [tx, ty] of [[2, 4], [2, 7], [9, 4], [9, 7]]) nd.push(['cafetable', tx, ty, 0, `nd.t${tx}${ty}`], ['chair', tx - 1, ty, 3], ['chair', tx + 1, ty, 1]);
+  room('noodle', { name: '은하 국수당', w: 13, h: 10, floor: 'darkwood', wall: '#e8d4b8', exit: 6, date: true, furn: nd,
+    walls: [['B', 8.6, 'menu', 1.6], ['L', 3.0, 'window', 1.2], ['L', 6.6, 'poster', 0.7]], crowd: [{ role: 'noodleboss', fixed: [7.5, 0.5, 0] }, { role: 'diner', n: 3, x0: 1, y0: 3, x1: 11, y1: 8 }] });
   // 광장 상점가: 큰길(세로) 바로 옆과, 새로 낸 남쪽 상점가 길 앞에 문이 나도록 배치
   const P = M.plaza;
   P.buildings.push(
@@ -2737,6 +2747,25 @@ PX.S = (() => {
     { role: 'audience', n: 4, busy: 'day', from: 11, to: 23, x0: 14, y0: 32, x1: 23, y1: 37 },
     { role: 'picnicker', n: 4, busy: 'day', from: 9, to: 22, x0: 14, y0: 38, x1: 23, y1: 47 },
     { role: 'citizen', n: 4, busy: 'day', to: 24, x0: 27, y0: 27, x1: 38, y1: 38 }]);
+  // ---------- 북쪽: 은하 국수당 · 유리꽃 정원 (조명만 줄지어 있던 자리) ----------
+  P.buildings.push({ id: 'p_noodle', name: '은하 국수당', to: 'noodle', x: 14, y: 13, w: 8, d: 7, h: 42, wall: '#f2e2c8', roof: '#b8543a', stripe: '#ffd166', icon: 'cup', door: { f: 'R', u: 3 }, roofDeco: ['vents'], awning: '#e07a5f' });
+  const drop = (f) => { for (let i = P.decor.length - 1; i >= 0; i--) if (f(P.decor[i])) P.decor.splice(i, 1); };
+  drop(d => d[0] === 'lantern' && (d[2] === 10 || d[1] === 27)); // 줄지어 선 항로등
+  drop(d => (d[0] === 'fountain' && d[1] === 18 && d[2] === 18) || (d[0] === 'benchout' && ((d[1] === 16 && (d[2] === 22 || d[2] === 15)) || (d[1] === 20 && d[2] === 22))) || (d[0] === 'streetlamp' && d[2] === 14 && (d[1] === 14 || d[1] === 22)));
+  P.spots['plaza.fountain'] = [20, 42, 3, 'stand'];
+  P.decor.push(
+    // 유리꽃 정원 (서쪽)
+    ['flowerbed', 15, 2, 0], ['flowerbed', 19, 2, 0], ['benchout', 15, 6, 0], ['benchout', 19, 6, 0], ['glowflower', 18, 3, 0], ['tree', 22, 3, 0], ['tree2', 14, 5, 0], ['glowflower', 17, 7, 0], ['glowflower', 21, 7, 0],
+    // 별빛 결정 조형물 정원 (동쪽)
+    ['starmonument', 31, 3, 0], ['benchout', 29, 6, 2], ['benchout', 33, 6, 2], ['flowerbed', 28, 2, 0], ['flowerbed', 34, 2, 0], ['tree2', 36, 6, 0], ['glowflower', 28, 6, 0], ['glowflower', 36, 3, 0],
+    // 길가 화단 (항로등 대신)
+    ['planter', 14, 10, 0], ['planter', 19, 10, 0], ['glowflower', 17, 10, 0], ['glowflower', 22, 10, 0], ['planter', 28, 10, 0], ['planter', 33, 10, 0], ['glowflower', 31, 10, 0], ['glowflower', 36, 10, 0],
+    ['glowflower', 27, 30, 0], ['glowflower', 27, 34, 0], ['glowflower', 27, 38, 0], ['glowflower', 27, 42, 0], ['flowerarch', 12, 11, 0], ['flowerarch', 28, 45, 0],
+    // 국수당 앞 야식 수레
+    ['foodcart', 15, 21, 0], ['foodcart', 19, 21, 0], ['streetlamp', 22, 21, 0]);
+  P.shops = Object.assign(P.shops || {}, { stall: 'streetfood' });
+  P.crowd.push({ role: 'picnicker', n: 3, busy: 'day', from: 9, to: 22, x0: 14, y0: 1, x1: 37, y1: 8 }, { role: 'diner', n: 2, busy: 'day', from: 11, to: 23, x0: 14, y0: 21, x1: 22, y1: 23 });
+  M.noodle.parent = 'plaza'; M.noodle.building = 'p_noodle';
   for (const id of ['interior', 'boutique', 'salon']) { M[id].parent = 'plaza'; M[id].building = 'p_' + id; } // 나가면 광장 그 가게 앞으로
   P.roads.push({ x0: 27, y0: 46, x1: 50, y1: 47, axis: 'x', walk: true }); // 남쪽 상점가 길
   // 길을 막던 장식 옮기기: 큰길 위 유리꽃 화단 · 상점가 길 위 나무 · 가구점 자리의 축제 매대
@@ -2882,6 +2911,12 @@ PX.S = (() => {
   it('mineralSalt', { name: '광물염', price: 15, capLike: 1, icon: '🧂', desc: '제4행성 광물염 조미료. 요리 좋아하는 사람에게.' });
   it('souvenir', { name: '돔시티 스노볼', price: 25, capLike: 1, icon: '🔮', desc: '흔들면 은빛 가루가 흩날린다.' });
   it('festivalBadge', { name: '축제 기념 배지', price: 20, capLike: 0, icon: '🎗️', desc: '돔시티 행사 기념품.' });
+  // 은하 국수당
+  it('starUdon', { name: '별빛 우동', cat: 'food', price: 16, energy: 24, capLike: 2, icon: '🍜', desc: '맑은 국물 위에 별 모양 어묵이 떠 있다.' });
+  it('coldNoodle', { name: '궤도 물냉면', cat: 'food', price: 18, energy: 22, capLike: 2, icon: '🥢', desc: '살얼음 동동. 대위가 여름에 꼭 시키는 메뉴.' });
+  it('seafoodNoodle', { name: '제3행성 해물짬뽕', cat: 'food', price: 22, energy: 30, capLike: 2, icon: '🍲', desc: '해양도시 해산물이 듬뿍. 국물이 맵다.' });
+  it('dumpling', { name: '광물 군만두', cat: 'food', price: 12, energy: 14, capLike: 2, icon: '🥟', desc: '바삭한 날개가 달린 군만두 여섯 개.' });
+  it('friedRice', { name: '향열매 볶음밥', cat: 'food', price: 15, energy: 22, capLike: 1, icon: '🍚', desc: '달큰한 향열매 소스로 볶았다.' });
   // 가구 아이템 (상점 구매 → 숙소 배치)
   for (const fid of PX.FASHION.furniture) {
     const f = PX.FURN[fid];
@@ -2905,6 +2940,8 @@ PX.S = (() => {
     smoked: { name: '냉훈제거리', items: ['smoked', 'hotchoco', 'iceDessert', 'souvenir'] },
     interior: { name: '별빛 가구점', items: PX.FASHION.furniture.map(f => 'f_' + f) },
     boutique: { name: '궤도 부티크', items: PX.FASHION.outfits.map(o => 'o_' + o) },
+    noodle: { name: '은하 국수당', items: ['starUdon', 'coldNoodle', 'seafoodNoodle', 'dumpling', 'friedRice', 'coffee'] },
+    streetfood: { name: '광장 야식 수레', items: ['skewer', 'dumpling', 'fruitIce', 'iceDessert', 'hotchoco', 'coffee'] },
     vending: { name: '자판기', items: ['coffee', 'hotchoco', 'protein', 'earthSnack'] },
   };
 })();
@@ -3061,7 +3098,7 @@ PX.S = (() => {
     lines: { g: ['인공노을 회랑은 매일 17시 40분! 놓치지 마세요.', '빛먼지 산책교는 수요일이랑 토요일 밤이에요.', '별비 투영실은 1일, 15일, 그리고 마지막 날!', '은사막 전망대는 가을 새벽이 제일 예뻐요.'] } });
   add({ id: 'yu', name: '유건우', age: 40, job: '민간 경비원', team: '돔시티', look: look(2, 'crew', '갈색', '갈색', { top: '#2f3a4a', bottom: '#2a2d33', badge: '#e8c56a' }),
     personality: '도시 소문에 밝다. 듬직하다.', work: '돔시티 순찰', home: '-',
-    sched: '08:00 dome.lab|11:00 plaza.gate|14:00 plaza.water|17:00 plaza.street|20:00 dome.plaza|22:00 -', we: '10:00 plaza.fountain|15:00 plaza.water|20:00 -',
+    sched: '08:00 dome.lab|11:00 plaza.gate|14:00 plaza.water|17:00 plaza.street|20:00 dome.plaza|22:00 -', we: '10:00 plaza.fountain2|15:00 plaza.water|20:00 -',
     likesFood: '냉훈제 생선', likesGift: '아이스커피',
     lines: { g: ['밤길 조심해요. 돔 안이라도요.', '봉인 화물 이야기? 반은 헛소문이에요. 반은… 모르죠.', '술집 골목엔 헌병 순찰 돌아요. 걱정 마세요.'] } });
 
@@ -11111,6 +11148,15 @@ PX.Place = (() => {
   add('samgyup', { id: 'sg_ssam', t: '🥬 쌈 싸 주기', s: 2, run: async () => {
     await say([['N:쌈을 싸서 대위에게 내민다. 대위가 잠깐 굳는다.', 'C!:…나 주는 거야?', 'C~:한입에 다 먹어야지. 남기면 안 되니까.']], [['N:대위가 큼직한 쌈을 싸서 입 앞에 내민다.', 'C*:아~. 크다고? 다 들어가. 해 봐.', 'N:볼이 빵빵해지자 대위가 웃음을 못 참는다.']]);
     reward('sg_ssam', 3); } });
+  add('noodle', { id: 'nd_eat', t: '🍜 마주 앉아 국수 먹기', sub: '₢18 · 기력 +25', s: 0, run: async () => {
+    if (!pay(18)) return;
+    await say([['N:김이 펄펄 나는 우동 두 그릇이 나온다. 대위가 젓가락을 쪼개 내 쪽에 먼저 놓아 준다.', 'C:여기 국물 진짜야. 작전 끝나면 꼭 여기 와.', 'C^:…같이 오니까 더 맛있다. 진짜로.'], ['N:대위가 곱빼기를 시키더니 면을 절반 덜어 내 그릇에 옮겨 준다.', 'C:너 아까 배고프다고 했잖아. 나는 이 정도면 돼.', 'N:사장 할머니가 그걸 보고 웃으며 만두 한 접시를 서비스로 놓고 간다.']],
+      [['N:마주 앉아 후루룩 면을 먹는다. 대위가 국물이 튄 내 입가를 엄지로 닦아 준다.', 'C*:천천히 먹어. 안 뺏어 먹어.', 'P:{ob} 그릇에서 하나 가져갈 거야.', 'C^:가져가. 다 네 거야.'], ['N:냉면 한 그릇을 시켜서 둘이 나눠 먹는다. 면 한 가닥이 둘 사이로 길게 이어진다.', 'C!:…', 'C~:끊지 마. 그대로 와.']]);
+    St.S.energy = Math.min(100, St.S.energy + 25); St.S.hunger = Math.min(100, (St.S.hunger || 50) + 30); St.advance(30); reward('nd_eat', 3, ['은하 국수당', '냉삼집 옆 국수당에서 마주 앉아 국수를 먹었다.']); } });
+  add('noodle', { id: 'nd_dumpling', t: '🥟 군만두 하나씩 나눠 먹기', sub: '₢12', s: 1, run: async () => {
+    if (!pay(12)) return;
+    await say([['N:바삭한 날개가 붙은 군만두 여섯 개. 대위가 정확히 세 개씩 나눈다.', 'C:공평하게. …아니다, 네가 네 개 먹어.']], [['N:마지막 만두 하나가 남았다. 둘 다 젓가락을 멈춘다.', 'C*:가위바위보. 진 사람이 먹여 주기.', 'N:대위가 졌다. 만두를 반으로 갈라 후후 불어서 입에 넣어 준다.', 'C^:진 게 이긴 것 같은데.']]);
+    St.advance(15); reward('nd_dumpling', 2); } });
   add('flower', { id: 'fl_pick', t: '💐 꽃 골라 주기', sub: '대위가 사 준다', s: 1, run: async () => {
     await say([['C:하나 골라. 아니, 내가 골라 볼게.', 'N:대위가 한참 고민하다 작은 유리꽃을 집는다.', 'C*:너 닮았어. 반짝이고, 오래 가.']], [['C^:하얀 꽃. 네가 좋아한다고 했던 거. 기억하지?']]);
     St.addItem('glassflower'); PX.UI.toast('🎁 유리꽃 모조 장식 받음'); reward('fl_pick', 3, ['꽃 선물', '꽃시장에서 대위가 오래 고민해서 꽃을 골라 줬다.']); } });
@@ -11240,7 +11286,7 @@ PX.Place = (() => {
 
   // ===================== 어디서든 데이트 중에 =====================
   // 데이트 장소 · 관광지 · 바깥(부대 제외)에서, 썸 이상이면 늘 할 수 있는 것들. 장소 분위기에 따라 대사가 바뀐다
-  const FLAVOR = { water: ['lake', 'beach', 'pool', 'aquagarden', 'spa', 'onsen'], sky: ['terrace', 'startrain', 'hill', 'starroom', 'skylounge', 'aurora', 'silverdesert', 'camp'], bloom: ['glasshouse', 'flower', 'bluegarden', 'glowpath', 'cafestreet', 'corridor'], neon: ['rubyway', 'beaconst', 'arcade', 'pub', 'mask', 'dice', 'plaza', 'dome'], food: ['cafe', 'samgyup'] };
+  const FLAVOR = { water: ['lake', 'beach', 'pool', 'aquagarden', 'spa', 'onsen'], sky: ['terrace', 'startrain', 'hill', 'starroom', 'skylounge', 'aurora', 'silverdesert', 'camp'], bloom: ['glasshouse', 'flower', 'bluegarden', 'glowpath', 'cafestreet', 'corridor'], neon: ['rubyway', 'beaconst', 'arcade', 'pub', 'mask', 'dice', 'plaza', 'dome'], food: ['cafe', 'samgyup', 'noodle'] };
   const flavor = () => { const id = G().mapId; for (const k in FLAVOR) if (FLAVOR[k].includes(id)) return k; return 'any'; };
   const dateish = () => { const g = G(), md = PX.MAPS[g.mapId] || {}; if (g.mapId === 'base' || md.home || md.innRoom) return false; const d = PX.Rom && PX.Rom.nextDate(); return (d && d.state === 'on') || md.date || md.tour || md.kind === 'out'; };
   const DATE = {
@@ -11417,6 +11463,7 @@ PX.Bath = (() => {
   // 별빛 광장의 사람들
   Object.assign(PX.Ruby.ROLES, {
     audience: { names: ['버스킹 구경하는 사람', '박자 맞추는 학생', '퇴근길 관객', '손뼉 치는 아이'], talk: ['이 버스커 매주 화요일이랑 토요일에 와요. 오늘 운 좋으시네요.', '신청곡 받는대요. 옛 지구 노래도 다 안대요.', '저 무대 원래 행정국 행사용인데 요즘은 다 버스킹해요.', '돔 천장 울림 때문에 여기서 부르면 목소리가 두 배로 커져요.'], amb: ['♪ 따라 부르는 중', '앵콜!', '와아—', '(손뼉)'] },
+    noodleboss: { names: ['국수당 사장 할머니'], look: { top: '#f4efe4', bottom: '#5a4a3a', hair: 'lowbun', hairColor: '#c9ccd6', big: 0 }, talk: ['국물은 아침 다섯 시부터 우려. 광물염 한 꼬집이 비법이야.', '덩치 큰 군인 하나가 맨날 곱빼기 시켜. 근데 꼭 반은 옆 사람 그릇에 덜어 주더라.', '바로 옆 냉삼집 문 사장이랑은 삼십 년 친구야. 손님 서로 보내 줘.', '물냉면은 살얼음이 생명이야. 녹기 전에 먹어.'], amb: ['어서 와요!', '국수 나왔어요~', '곱빼기 되지!'], next: () => PX.UI.shop('noodle') },
     picnicker: { names: ['분수대에 앉은 연인', '산책 나온 가족', '도시락 먹는 직장인', '스케치하는 학생'], browse: true, talk: ['분수 물빛이 밤엔 보라색으로 바뀌어요. 그때 다시 와 보세요.', '점심은 여기서 먹어요. 실내는 답답해서요.', '분수에 동전 던지면 소원 이뤄진대요. 저는 벌써 세 개 던졌어요.', '꽃시장에서 산 유리꽃이에요. 햇빛 받으면 무지개가 떠요.'], amb: ['날씨 좋다.', '물소리 좋네.', '한 입만 줘.', '여기 앉자.'] },
   });
   // 대위가 옆에 있을 때 상점가에서 한마디
@@ -12942,7 +12989,7 @@ PX.Rom = (() => {
 
   // ---------- 데이트 약속 ----------
   const PLACES = [
-    { map: 'cafe', name: '향열매 카페', at: [12, 15, 19] }, { map: 'samgyup', name: '냉삼집', at: [12, 18, 19] }, { map: 'lake', name: '인공호수 공원', at: [11, 15, 18] },
+    { map: 'cafe', name: '향열매 카페', at: [12, 15, 19] }, { map: 'samgyup', name: '냉삼집', at: [12, 18, 19] }, { map: 'noodle', name: '은하 국수당', at: [12, 18, 19] }, { map: 'lake', name: '인공호수 공원', at: [11, 15, 18] },
     { map: 'hill', name: '관람언덕', at: [16, 18, 19] }, { map: 'starroom', name: '별비 투영실', at: [19, 20] }, { map: 'plaza', name: '중앙광장 분수대', at: [12, 18, 20] },
     { map: 'beach', name: '흰모래 해변돔', at: [11, 14, 16] }, { map: 'corridor', name: '인공노을 회랑', at: [17, 18] },
   ];
@@ -13829,7 +13876,7 @@ ${memLine(S)}`;
     if (Game.cap.seat && (Cap.mode === 'follow' || Cap.mode === 'visit')) { if (Cap.mode === 'follow') Game.cap.leaveSeat(); }
   }
   // 앉아서(누워서) 할 수 있는 일: 자리·장소·대위가 옆에 있는지에 따라
-  const FOODPLACE = { cafe: 'cafe', samgyup: 'samgyup', mess: 'meal', pub: 'drink', skylounge: 'cafe', arcade: 'vending', terminal: 'vending', lounge: 'vending', plaza: 'stall' };
+  const FOODPLACE = { cafe: 'cafe', samgyup: 'samgyup', mess: 'meal', pub: 'drink', skylounge: 'cafe', arcade: 'vending', terminal: 'vending', lounge: 'vending', plaza: 'streetfood', noodle: 'noodle' };
   async function seatMenu() {
     const S = St.S, p = Game.player, cap = Game.cap, seat = p.seat, o = seat && seat.obj;
     if (!o) return;

@@ -255,7 +255,7 @@
     if (Game.cap.seat && (Cap.mode === 'follow' || Cap.mode === 'visit')) { if (Cap.mode === 'follow') Game.cap.leaveSeat(); }
   }
   // 앉아서(누워서) 할 수 있는 일: 자리·장소·대위가 옆에 있는지에 따라
-  const FOODPLACE = { cafe: 'cafe', samgyup: 'samgyup', mess: 'meal', pub: 'drink', skylounge: 'cafe', arcade: 'vending', terminal: 'vending', lounge: 'vending', plaza: 'stall' };
+  const FOODPLACE = { cafe: 'cafe', samgyup: 'samgyup', mess: 'meal', pub: 'drink', skylounge: 'cafe', arcade: 'vending', terminal: 'vending', lounge: 'vending', plaza: 'streetfood', noodle: 'noodle' };
   async function seatMenu() {
     const S = St.S, p = Game.player, cap = Game.cap, seat = p.seat, o = seat && seat.obj;
     if (!o) return;

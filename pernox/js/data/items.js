@@ -55,6 +55,12 @@
   it('mineralSalt', { name: '광물염', price: 15, capLike: 1, icon: '🧂', desc: '제4행성 광물염 조미료. 요리 좋아하는 사람에게.' });
   it('souvenir', { name: '돔시티 스노볼', price: 25, capLike: 1, icon: '🔮', desc: '흔들면 은빛 가루가 흩날린다.' });
   it('festivalBadge', { name: '축제 기념 배지', price: 20, capLike: 0, icon: '🎗️', desc: '돔시티 행사 기념품.' });
+  // 은하 국수당
+  it('starUdon', { name: '별빛 우동', cat: 'food', price: 16, energy: 24, capLike: 2, icon: '🍜', desc: '맑은 국물 위에 별 모양 어묵이 떠 있다.' });
+  it('coldNoodle', { name: '궤도 물냉면', cat: 'food', price: 18, energy: 22, capLike: 2, icon: '🥢', desc: '살얼음 동동. 대위가 여름에 꼭 시키는 메뉴.' });
+  it('seafoodNoodle', { name: '제3행성 해물짬뽕', cat: 'food', price: 22, energy: 30, capLike: 2, icon: '🍲', desc: '해양도시 해산물이 듬뿍. 국물이 맵다.' });
+  it('dumpling', { name: '광물 군만두', cat: 'food', price: 12, energy: 14, capLike: 2, icon: '🥟', desc: '바삭한 날개가 달린 군만두 여섯 개.' });
+  it('friedRice', { name: '향열매 볶음밥', cat: 'food', price: 15, energy: 22, capLike: 1, icon: '🍚', desc: '달큰한 향열매 소스로 볶았다.' });
   // 가구 아이템 (상점 구매 → 숙소 배치)
   for (const fid of PX.FASHION.furniture) {
     const f = PX.FURN[fid];
@@ -78,6 +84,8 @@
     smoked: { name: '냉훈제거리', items: ['smoked', 'hotchoco', 'iceDessert', 'souvenir'] },
     interior: { name: '별빛 가구점', items: PX.FASHION.furniture.map(f => 'f_' + f) },
     boutique: { name: '궤도 부티크', items: PX.FASHION.outfits.map(o => 'o_' + o) },
+    noodle: { name: '은하 국수당', items: ['starUdon', 'coldNoodle', 'seafoodNoodle', 'dumpling', 'friedRice', 'coffee'] },
+    streetfood: { name: '광장 야식 수레', items: ['skewer', 'dumpling', 'fruitIce', 'iceDessert', 'hotchoco', 'coffee'] },
     vending: { name: '자판기', items: ['coffee', 'hotchoco', 'protein', 'earthSnack'] },
   };
 })();

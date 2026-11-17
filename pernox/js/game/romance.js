@@ -11,7 +11,7 @@ PX.Rom = (() => {
 
   // ---------- 데이트 약속 ----------
   const PLACES = [
-    { map: 'cafe', name: '향열매 카페', at: [12, 15, 19] }, { map: 'samgyup', name: '냉삼집', at: [12, 18, 19] }, { map: 'lake', name: '인공호수 공원', at: [11, 15, 18] },
+    { map: 'cafe', name: '향열매 카페', at: [12, 15, 19] }, { map: 'samgyup', name: '냉삼집', at: [12, 18, 19] }, { map: 'noodle', name: '은하 국수당', at: [12, 18, 19] }, { map: 'lake', name: '인공호수 공원', at: [11, 15, 18] },
     { map: 'hill', name: '관람언덕', at: [16, 18, 19] }, { map: 'starroom', name: '별비 투영실', at: [19, 20] }, { map: 'plaza', name: '중앙광장 분수대', at: [12, 18, 20] },
     { map: 'beach', name: '흰모래 해변돔', at: [11, 14, 16] }, { map: 'corridor', name: '인공노을 회랑', at: [17, 18] },
   ];

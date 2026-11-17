@@ -188,6 +188,15 @@ PX.Place = (() => {
   add('samgyup', { id: 'sg_ssam', t: '🥬 쌈 싸 주기', s: 2, run: async () => {
     await say([['N:쌈을 싸서 대위에게 내민다. 대위가 잠깐 굳는다.', 'C!:…나 주는 거야?', 'C~:한입에 다 먹어야지. 남기면 안 되니까.']], [['N:대위가 큼직한 쌈을 싸서 입 앞에 내민다.', 'C*:아~. 크다고? 다 들어가. 해 봐.', 'N:볼이 빵빵해지자 대위가 웃음을 못 참는다.']]);
     reward('sg_ssam', 3); } });
+  add('noodle', { id: 'nd_eat', t: '🍜 마주 앉아 국수 먹기', sub: '₢18 · 기력 +25', s: 0, run: async () => {
+    if (!pay(18)) return;
+    await say([['N:김이 펄펄 나는 우동 두 그릇이 나온다. 대위가 젓가락을 쪼개 내 쪽에 먼저 놓아 준다.', 'C:여기 국물 진짜야. 작전 끝나면 꼭 여기 와.', 'C^:…같이 오니까 더 맛있다. 진짜로.'], ['N:대위가 곱빼기를 시키더니 면을 절반 덜어 내 그릇에 옮겨 준다.', 'C:너 아까 배고프다고 했잖아. 나는 이 정도면 돼.', 'N:사장 할머니가 그걸 보고 웃으며 만두 한 접시를 서비스로 놓고 간다.']],
+      [['N:마주 앉아 후루룩 면을 먹는다. 대위가 국물이 튄 내 입가를 엄지로 닦아 준다.', 'C*:천천히 먹어. 안 뺏어 먹어.', 'P:{ob} 그릇에서 하나 가져갈 거야.', 'C^:가져가. 다 네 거야.'], ['N:냉면 한 그릇을 시켜서 둘이 나눠 먹는다. 면 한 가닥이 둘 사이로 길게 이어진다.', 'C!:…', 'C~:끊지 마. 그대로 와.']]);
+    St.S.energy = Math.min(100, St.S.energy + 25); St.S.hunger = Math.min(100, (St.S.hunger || 50) + 30); St.advance(30); reward('nd_eat', 3, ['은하 국수당', '냉삼집 옆 국수당에서 마주 앉아 국수를 먹었다.']); } });
+  add('noodle', { id: 'nd_dumpling', t: '🥟 군만두 하나씩 나눠 먹기', sub: '₢12', s: 1, run: async () => {
+    if (!pay(12)) return;
+    await say([['N:바삭한 날개가 붙은 군만두 여섯 개. 대위가 정확히 세 개씩 나눈다.', 'C:공평하게. …아니다, 네가 네 개 먹어.']], [['N:마지막 만두 하나가 남았다. 둘 다 젓가락을 멈춘다.', 'C*:가위바위보. 진 사람이 먹여 주기.', 'N:대위가 졌다. 만두를 반으로 갈라 후후 불어서 입에 넣어 준다.', 'C^:진 게 이긴 것 같은데.']]);
+    St.advance(15); reward('nd_dumpling', 2); } });
   add('flower', { id: 'fl_pick', t: '💐 꽃 골라 주기', sub: '대위가 사 준다', s: 1, run: async () => {
     await say([['C:하나 골라. 아니, 내가 골라 볼게.', 'N:대위가 한참 고민하다 작은 유리꽃을 집는다.', 'C*:너 닮았어. 반짝이고, 오래 가.']], [['C^:하얀 꽃. 네가 좋아한다고 했던 거. 기억하지?']]);
     St.addItem('glassflower'); PX.UI.toast('🎁 유리꽃 모조 장식 받음'); reward('fl_pick', 3, ['꽃 선물', '꽃시장에서 대위가 오래 고민해서 꽃을 골라 줬다.']); } });
@@ -317,7 +326,7 @@ PX.Place = (() => {
 
   // ===================== 어디서든 데이트 중에 =====================
   // 데이트 장소 · 관광지 · 바깥(부대 제외)에서, 썸 이상이면 늘 할 수 있는 것들. 장소 분위기에 따라 대사가 바뀐다
-  const FLAVOR = { water: ['lake', 'beach', 'pool', 'aquagarden', 'spa', 'onsen'], sky: ['terrace', 'startrain', 'hill', 'starroom', 'skylounge', 'aurora', 'silverdesert', 'camp'], bloom: ['glasshouse', 'flower', 'bluegarden', 'glowpath', 'cafestreet', 'corridor'], neon: ['rubyway', 'beaconst', 'arcade', 'pub', 'mask', 'dice', 'plaza', 'dome'], food: ['cafe', 'samgyup'] };
+  const FLAVOR = { water: ['lake', 'beach', 'pool', 'aquagarden', 'spa', 'onsen'], sky: ['terrace', 'startrain', 'hill', 'starroom', 'skylounge', 'aurora', 'silverdesert', 'camp'], bloom: ['glasshouse', 'flower', 'bluegarden', 'glowpath', 'cafestreet', 'corridor'], neon: ['rubyway', 'beaconst', 'arcade', 'pub', 'mask', 'dice', 'plaza', 'dome'], food: ['cafe', 'samgyup', 'noodle'] };
   const flavor = () => { const id = G().mapId; for (const k in FLAVOR) if (FLAVOR[k].includes(id)) return k; return 'any'; };
   const dateish = () => { const g = G(), md = PX.MAPS[g.mapId] || {}; if (g.mapId === 'base' || md.home || md.innRoom) return false; const d = PX.Rom && PX.Rom.nextDate(); return (d && d.state === 'on') || md.date || md.tour || md.kind === 'out'; };
   const DATE = {

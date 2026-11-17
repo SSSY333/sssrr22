@@ -147,7 +147,7 @@
     lines: { g: ['인공노을 회랑은 매일 17시 40분! 놓치지 마세요.', '빛먼지 산책교는 수요일이랑 토요일 밤이에요.', '별비 투영실은 1일, 15일, 그리고 마지막 날!', '은사막 전망대는 가을 새벽이 제일 예뻐요.'] } });
   add({ id: 'yu', name: '유건우', age: 40, job: '민간 경비원', team: '돔시티', look: look(2, 'crew', '갈색', '갈색', { top: '#2f3a4a', bottom: '#2a2d33', badge: '#e8c56a' }),
     personality: '도시 소문에 밝다. 듬직하다.', work: '돔시티 순찰', home: '-',
-    sched: '08:00 dome.lab|11:00 plaza.gate|14:00 plaza.water|17:00 plaza.street|20:00 dome.plaza|22:00 -', we: '10:00 plaza.fountain|15:00 plaza.water|20:00 -',
+    sched: '08:00 dome.lab|11:00 plaza.gate|14:00 plaza.water|17:00 plaza.street|20:00 dome.plaza|22:00 -', we: '10:00 plaza.fountain2|15:00 plaza.water|20:00 -',
     likesFood: '냉훈제 생선', likesGift: '아이스커피',
     lines: { g: ['밤길 조심해요. 돔 안이라도요.', '봉인 화물 이야기? 반은 헛소문이에요. 반은… 모르죠.', '술집 골목엔 헌병 순찰 돌아요. 걱정 마세요.'] } });
 
