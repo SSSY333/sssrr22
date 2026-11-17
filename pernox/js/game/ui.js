@@ -430,7 +430,9 @@ PX.UI = (() => {
     msg(p) {
       const S = St.S;
       // 장기작전 중인 대위에게 보내기
-      if (PX.Op.canMsg && PX.Op.canMsg()) {
+      const capWithMe = PX.Op.together && PX.Op.together();
+      if (capWithMe) p.append(el('div', { class: 'msgsend' }, el("b", null, `💬 ${U.josa(S.capName, "이")} 옆에 있어요`), el('small', null, '메시지 말고 직접 말해 보세요. (대위 메뉴 → 대화하기)')));
+      if (!capWithMe && PX.Op.canMsg && PX.Op.canMsg()) {
         const o = PX.Op.op(), d = Math.floor((St.absMin() - o.start) / 1440) + 1, off = o.comms[d] === false;
         const box = el('div', { class: 'msgsend' }, el('b', null, `📡 ${S.capName}에게 보내기`), el('small', null, off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.'));
         const ch = el('div', { class: 'msgch' });
@@ -440,7 +442,7 @@ PX.UI = (() => {
         sb.onclick = () => go(inp.value); inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(inp.value); };
         row.append(inp, sb); box.append(ch, row); p.append(box);
       }
-      if (S.rel.cap.stage >= 4 && !(PX.Op.canMsg && PX.Op.canMsg())) { // 은밀숙소 예약 (연인)
+      if (!capWithMe && S.rel.cap.stage >= 4 && !(PX.Op.canMsg && PX.Op.canMsg())) { // 은밀숙소 예약 (연인) · 같이 있을 땐 단말 대신 직접
         const b = S.done.innBook && St.absMin() < S.done.innBook.until ? S.done.innBook : null;
         const card = el('div', { class: 'msgsend' }, el('b', null, '🗝️ 은밀숙소 예약'), el('small', null, b ? `예약됨 · ${PX.MAPS[b.room].name} · ${b.day === S.day ? '오늘 밤' : b.day != null ? '내일 밤' : ''}` : '방을 골라 예약하고, 대위에게 같이 가자고 할 수 있어요.'));
         if (!b) { const bt = el('button', { class: 'menu-btn' }, el('span', null, '예약하고 같이 가자고 하기')); bt.onclick = async () => { await PX.Act.bookByPhone(); p.innerHTML = ''; PANES.msg(p); }; card.append(bt); }

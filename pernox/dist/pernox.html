@@ -8575,7 +8575,9 @@ PX.UI = (() => {
     msg(p) {
       const S = St.S;
       // 장기작전 중인 대위에게 보내기
-      if (PX.Op.canMsg && PX.Op.canMsg()) {
+      const capWithMe = PX.Op.together && PX.Op.together();
+      if (capWithMe) p.append(el('div', { class: 'msgsend' }, el("b", null, `💬 ${U.josa(S.capName, "이")} 옆에 있어요`), el('small', null, '메시지 말고 직접 말해 보세요. (대위 메뉴 → 대화하기)')));
+      if (!capWithMe && PX.Op.canMsg && PX.Op.canMsg()) {
         const o = PX.Op.op(), d = Math.floor((St.absMin() - o.start) / 1440) + 1, off = o.comms[d] === false;
         const box = el('div', { class: 'msgsend' }, el('b', null, `📡 ${S.capName}에게 보내기`), el('small', null, off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.'));
         const ch = el('div', { class: 'msgch' });
@@ -8585,7 +8587,7 @@ PX.UI = (() => {
         sb.onclick = () => go(inp.value); inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(inp.value); };
         row.append(inp, sb); box.append(ch, row); p.append(box);
       }
-      if (S.rel.cap.stage >= 4 && !(PX.Op.canMsg && PX.Op.canMsg())) { // 은밀숙소 예약 (연인)
+      if (!capWithMe && S.rel.cap.stage >= 4 && !(PX.Op.canMsg && PX.Op.canMsg())) { // 은밀숙소 예약 (연인) · 같이 있을 땐 단말 대신 직접
         const b = S.done.innBook && St.absMin() < S.done.innBook.until ? S.done.innBook : null;
         const card = el('div', { class: 'msgsend' }, el('b', null, '🗝️ 은밀숙소 예약'), el('small', null, b ? `예약됨 · ${PX.MAPS[b.room].name} · ${b.day === S.day ? '오늘 밤' : b.day != null ? '내일 밤' : ''}` : '방을 골라 예약하고, 대위에게 같이 가자고 할 수 있어요.'));
         if (!b) { const bt = el('button', { class: 'menu-btn' }, el('span', null, '예약하고 같이 가자고 하기')); bt.onclick = async () => { await PX.Act.bookByPhone(); p.innerHTML = ''; PANES.msg(p); }; card.append(bt); }
@@ -11020,7 +11022,30 @@ PX.Plan = (() => {
     St.S.cap.plan = { id: k.id, made: mins(), until: mins() + 180, walkT: 0, nagT: 0 };
     const where = k.go && G().mapId !== k.go && !hereOk(k) ? ` · ${mapName(k.go)}(으)로` : '';
     PX.UI.toast(`📌 약속: ${k.label}${where}`, 3000);
+    askGoNow(k);
     return k;
+  }
+  // 같이 있을 때 약속이 잡히면: 걸어갈 필요 없이 바로 같이 가거나, 다른 걸 먼저 하거나
+  const outOf = (id) => { const md = PX.MAPS[id] || {}; return md.kind === 'out' ? id : md.parent; };
+  function travelMins(from, to) {
+    const a = outOf(from), b = outOf(to);
+    if (a === b) return 5;
+    const dome = (x) => x && x !== 'base' && x !== 'outskirts';
+    if (dome(a) && dome(b)) return 15;
+    return 30;
+  }
+  function askGoNow(k) {
+    const g = G();
+    if (!k.go || hereOk(k) || g.mapId === k.go || !(PX.Op && PX.Op.together && PX.Op.together()) || !PX.Act || !PX.Act.travel) return;
+    g.trigger(async () => {
+      const p = cur(); if (!p || p.id !== k.id) return;
+      const mins = travelMins(g.mapId, k.go);
+      const it = await PX.UI.menu(`📌 ${k.label}`, [{ t: `🚶 지금 같이 가기`, sub: `${mapName(k.go)} · ${mins}분`, k: 'go' }, { t: '☕ 다른 거 먼저 하기', sub: '약속은 기억해 둘게요', k: 'later' }]);
+      if (!it) return;
+      if (it.k === 'later') { p.nagT = -1e9; p.later = true; return; } // 재촉하지 않는다
+      await PX.Act.travel(k.go, mins);
+      arriveT = 1.4; // 도착하면 바로
+    });
   }
   // 지금 여기에서 그 약속을 할 수 있는 행동
   function actHere(k) {
@@ -11060,7 +11085,7 @@ PX.Plan = (() => {
     } else arriveT = 0;
     // 한참 딴 데 있으면 대위가 다시 말을 꺼낸다
     p.nagT = (p.nagT || 0) + dt;
-    if (p.nagT > 55 && !k.walk && capNear(5) && !g.bubbles.some(b => b.actor === g.cap)) { p.nagT = 0; g.bubble(g.cap, U.fmt(line(NAG, k), PX.Dlg.ctx()), 3); }
+    if (!p.later && p.nagT > 55 && !k.walk && capNear(5) && !g.bubbles.some(b => b.actor === g.cap)) { p.nagT = 0; g.bubble(g.cap, U.fmt(line(NAG, k), PX.Dlg.ctx()), 3); }
   }
   async function run(p, k, act) {
     const g = G(); busy = true; clear();
@@ -13590,6 +13615,7 @@ ${memLine(S)}`;
     const items = [{ t: '💬 대화하기', k: 'talk' }];
     if (PX.AI.available()) items.push({ t: '✨ 자유롭게 대화하기', k: 'ai', sub: '하고 싶은 말을 직접 입력하면 대위가 대답해요' });
     items.push({ t: '😊 표정·행동으로 반응하기', k: 'react', sub: '웃으며 바라보기 · 빤히 보기 · 부끄러워하기 …' });
+    if (S.rel.cap.stage >= 4 && Cap.mode === 'follow' && (S.time.min >= 19 * 60 || S.time.min < 3 * 60) && !PX.MAPS[Game.mapId].innRoom) items.push({ t: '🗝️ 오늘 밤 은밀숙소 가자고 하기', k: 'innask', sub: '직접 말하기 · 같이 가서 방 잡기' });
     if (S.rel.cap.stage >= 4) items.push({ t: '💞 부르는 말 바꾸기', k: 'call', sub: `지금: ${S.player.callCap || '오빠'}` });
     if (!duty) items.push({ t: '🤝 스킨십', k: 'skin', sub: M.contact() !== 'NONE' ? `지금: ${M.NAME[M.contact()]}` : '손잡기 · 포옹 · 입맞춤 …' });
     for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', run: a.fn }); // run: 메뉴가 자동 실행하지 않게 (두 번 실행 방지)
@@ -13616,6 +13642,16 @@ ${memLine(S)}`;
     if (it.k === 'talk') return Dlg.capTalk();
     if (it.k === 'ai') return PX.AI.chat();
     if (it.k === 'react') return reactMenu();
+    if (it.k === 'innask') {
+      Game.modal++;
+      try {
+        await Dlg.say('player', U.pick(['…오늘 은밀숙소 갈래?', '오늘 밤, 은밀숙소에서 같이 있을래?', '방 잡을까? 은밀숙소.']), 'blush');
+        await Dlg.runLines(Dlg.capPick([['C!:…', 'C~:…지금 그 말, 내가 먼저 하려고 했는데.', 'C*:가자. 지금.'], ['C*:네가 먼저 말해 주니까 좋다.', 'C^:손 잡아. 안 놓을 거야.']]));
+      } finally { Dlg.close(); Game.modal--; }
+      if (Game.mapId !== 'inn') { if (Game.mapId !== 'rubyway') await PX.Act.travel('rubyway', 15); await PX.Act.travel('inn', 2); }
+      await U.sleep(400); Game.trigger(() => PX.Act.innDesk(true));
+      return;
+    }
     if (it.k === 'call') { Game.modal++; await Dlg.askCall(); Dlg.close(); Game.modal--; return; }
     if (it.k === 'comp') return compMenu();
     if (it.k === 'follow') { Cap.startFollow(); M.noteMeet(); Game.bubble(cap, U.pickFresh('followYes', ['좋아. 어디든.', '그 말 기다렸어.', '오케이. 네 속도에 맞출게.', '가자. 오늘은 네가 대장이야.'])); St.addAff(1); return; }

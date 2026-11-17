@@ -580,6 +580,7 @@
     const items = [{ t: '💬 대화하기', k: 'talk' }];
     if (PX.AI.available()) items.push({ t: '✨ 자유롭게 대화하기', k: 'ai', sub: '하고 싶은 말을 직접 입력하면 대위가 대답해요' });
     items.push({ t: '😊 표정·행동으로 반응하기', k: 'react', sub: '웃으며 바라보기 · 빤히 보기 · 부끄러워하기 …' });
+    if (S.rel.cap.stage >= 4 && Cap.mode === 'follow' && (S.time.min >= 19 * 60 || S.time.min < 3 * 60) && !PX.MAPS[Game.mapId].innRoom) items.push({ t: '🗝️ 오늘 밤 은밀숙소 가자고 하기', k: 'innask', sub: '직접 말하기 · 같이 가서 방 잡기' });
     if (S.rel.cap.stage >= 4) items.push({ t: '💞 부르는 말 바꾸기', k: 'call', sub: `지금: ${S.player.callCap || '오빠'}` });
     if (!duty) items.push({ t: '🤝 스킨십', k: 'skin', sub: M.contact() !== 'NONE' ? `지금: ${M.NAME[M.contact()]}` : '손잡기 · 포옹 · 입맞춤 …' });
     for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', run: a.fn }); // run: 메뉴가 자동 실행하지 않게 (두 번 실행 방지)
@@ -606,6 +607,16 @@
     if (it.k === 'talk') return Dlg.capTalk();
     if (it.k === 'ai') return PX.AI.chat();
     if (it.k === 'react') return reactMenu();
+    if (it.k === 'innask') {
+      Game.modal++;
+      try {
+        await Dlg.say('player', U.pick(['…오늘 은밀숙소 갈래?', '오늘 밤, 은밀숙소에서 같이 있을래?', '방 잡을까? 은밀숙소.']), 'blush');
+        await Dlg.runLines(Dlg.capPick([['C!:…', 'C~:…지금 그 말, 내가 먼저 하려고 했는데.', 'C*:가자. 지금.'], ['C*:네가 먼저 말해 주니까 좋다.', 'C^:손 잡아. 안 놓을 거야.']]));
+      } finally { Dlg.close(); Game.modal--; }
+      if (Game.mapId !== 'inn') { if (Game.mapId !== 'rubyway') await PX.Act.travel('rubyway', 15); await PX.Act.travel('inn', 2); }
+      await U.sleep(400); Game.trigger(() => PX.Act.innDesk(true));
+      return;
+    }
     if (it.k === 'call') { Game.modal++; await Dlg.askCall(); Dlg.close(); Game.modal--; return; }
     if (it.k === 'comp') return compMenu();
     if (it.k === 'follow') { Cap.startFollow(); M.noteMeet(); Game.bubble(cap, U.pickFresh('followYes', ['좋아. 어디든.', '그 말 기다렸어.', '오케이. 네 속도에 맞출게.', '가자. 오늘은 네가 대장이야.'])); St.addAff(1); return; }

@@ -72,7 +72,30 @@ PX.Plan = (() => {
     St.S.cap.plan = { id: k.id, made: mins(), until: mins() + 180, walkT: 0, nagT: 0 };
     const where = k.go && G().mapId !== k.go && !hereOk(k) ? ` · ${mapName(k.go)}(으)로` : '';
     PX.UI.toast(`📌 약속: ${k.label}${where}`, 3000);
+    askGoNow(k);
     return k;
+  }
+  // 같이 있을 때 약속이 잡히면: 걸어갈 필요 없이 바로 같이 가거나, 다른 걸 먼저 하거나
+  const outOf = (id) => { const md = PX.MAPS[id] || {}; return md.kind === 'out' ? id : md.parent; };
+  function travelMins(from, to) {
+    const a = outOf(from), b = outOf(to);
+    if (a === b) return 5;
+    const dome = (x) => x && x !== 'base' && x !== 'outskirts';
+    if (dome(a) && dome(b)) return 15;
+    return 30;
+  }
+  function askGoNow(k) {
+    const g = G();
+    if (!k.go || hereOk(k) || g.mapId === k.go || !(PX.Op && PX.Op.together && PX.Op.together()) || !PX.Act || !PX.Act.travel) return;
+    g.trigger(async () => {
+      const p = cur(); if (!p || p.id !== k.id) return;
+      const mins = travelMins(g.mapId, k.go);
+      const it = await PX.UI.menu(`📌 ${k.label}`, [{ t: `🚶 지금 같이 가기`, sub: `${mapName(k.go)} · ${mins}분`, k: 'go' }, { t: '☕ 다른 거 먼저 하기', sub: '약속은 기억해 둘게요', k: 'later' }]);
+      if (!it) return;
+      if (it.k === 'later') { p.nagT = -1e9; p.later = true; return; } // 재촉하지 않는다
+      await PX.Act.travel(k.go, mins);
+      arriveT = 1.4; // 도착하면 바로
+    });
   }
   // 지금 여기에서 그 약속을 할 수 있는 행동
   function actHere(k) {
@@ -112,7 +135,7 @@ PX.Plan = (() => {
     } else arriveT = 0;
     // 한참 딴 데 있으면 대위가 다시 말을 꺼낸다
     p.nagT = (p.nagT || 0) + dt;
-    if (p.nagT > 55 && !k.walk && capNear(5) && !g.bubbles.some(b => b.actor === g.cap)) { p.nagT = 0; g.bubble(g.cap, U.fmt(line(NAG, k), PX.Dlg.ctx()), 3); }
+    if (!p.later && p.nagT > 55 && !k.walk && capNear(5) && !g.bubbles.some(b => b.actor === g.cap)) { p.nagT = 0; g.bubble(g.cap, U.fmt(line(NAG, k), PX.Dlg.ctx()), 3); }
   }
   async function run(p, k, act) {
     const g = G(); busy = true; clear();
