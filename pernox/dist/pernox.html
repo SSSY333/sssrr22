@@ -8827,9 +8827,10 @@ PX.UI = (() => {
       // 장기작전 중인 대위에게 보내기
       const capWithMe = PX.Op.together && PX.Op.together();
       if (capWithMe) p.append(el('div', { class: 'msgsend' }, el("b", null, `💬 ${U.josa(S.capName, "이")} 옆에 있어요`), el('small', null, '메시지 말고 직접 말해 보세요. (대위 메뉴 → 대화하기)')));
-      if (!capWithMe && PX.Op.canMsg && PX.Op.canMsg()) {
-        const o = PX.Op.op(), d = Math.floor((St.absMin() - o.start) / 1440) + 1, off = o.comms[d] === false;
-        const box = el('div', { class: 'msgsend' }, el('b', null, `📡 ${S.capName}에게 보내기`), el('small', null, off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.'));
+      if (!capWithMe && PX.Op.canText && PX.Op.canText()) {
+        const away = PX.Op.canMsg(), o = PX.Op.op(), d = away ? Math.floor((St.absMin() - o.start) / 1440) + 1 : 0, off = away && o.comms[d] === false;
+        const k = PX.Cap.spotKind(), note = away ? (off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.') : k === 'sleep' ? '대위가 자는 시간이에요. 아침에 볼 거예요.' : k === 'duty' || k === 'field' ? '근무 중이라 답장이 조금 늦을 수 있어요.' : '쉬는 시간이라 금방 볼 거예요.';
+        const box = el('div', { class: 'msgsend' }, el('b', null, `${away ? '📡' : '💬'} ${S.capName}에게 보내기`), el('small', null, note));
         const ch = el('div', { class: 'msgch' });
         const go = (t) => { if (PX.Op.sendToCap(t)) { toast('📤 보냈어요'); p.innerHTML = ''; PANES.msg(p); } };
         for (const t of PX.Op.quick()) { const b = el('button', null, t); b.onclick = () => go(t); ch.append(b); }
@@ -12684,6 +12685,7 @@ PX.Op = (() => {
   // 매 분 호출
   function tick() {
     const S = St.S, o = op(), t = now(), g = G();
+    dailyTick();
     if (!o) return;
     if (o.phase !== 'away' && o.outbox && o.outbox.length) { for (const id of o.outbox) { const m = S.messages.find(x => x.id === id); if (m && m.st === 'sent') m.st = 'read'; } o.outbox = []; } // 돌아왔으면 직접 얘기한다
     if (o.phase === 'planned') {
@@ -12774,7 +12776,63 @@ PX.Op = (() => {
   const QUICK = { pre: ['오늘은 괜찮았어요?', '밥은 챙겨 먹었어요?', '조심히 다녀오세요.', '오늘 부대는 조용했어요.', '잘 자요.'],
     mid: ['밥은 먹었어요?', '보고 싶어요.', '오늘 뭐 했는지 알려 줘요.', '저 오늘 일 잘 끝냈어요.', '조심해요. 꼭이요.', '잘 자요. 꿈에서 봐요.'],
     lov: ['밥 먹었어?', '보고 싶어.', '오늘 뭐 했어? 다 말해 줘.', '나 오늘 {ob} 생각 엄청 했어.', '다친 데 없지?', '사랑해. 얼른 와.', '잘 자. 꿈에 나와.'] };
-  function quick() { const st = St.S.rel.cap.stage; return (QUICK[st >= 4 ? 'lov' : st >= 2 ? 'mid' : 'pre'] || QUICK.pre).map(t => U.fmt(t, PX.Dlg.ctx())); }
+  function quick() {
+    const st = St.S.rel.cap.stage, lv = st >= 4 ? 'lov' : st >= 2 ? 'mid' : 'pre', away = canMsg();
+    const night = St.S.time.min >= 21 * 60 || St.S.time.min < 5 * 60;
+    return ((away ? QUICK : QUICK_D)[lv] || QUICK_D.pre).filter(t => night || !/잘 자/.test(t)).map(t => U.fmt(t, PX.Dlg.ctx()));
+  }
+  // 평소 (작전 아닐 때) 떨어져 있으면 보내는 메시지
+  const QUICK_D = { pre: ['뭐 해요?', '밥 먹었어요?', '오늘 하루 어땠어요?', '이따 시간 돼요?', '오늘 고마웠어요.', '잘 자요.'],
+    mid: ['뭐 해요?', '밥은 먹었어요?', '보고 싶어요.', '이따 만날래요?', '오늘 하루 어땠어요?', '방금 대위님 생각났어요.', '잘 자요. 꿈에서 봐요.'],
+    lov: ['뭐 해?', '밥 먹었어?', '보고 싶어.', '이따 볼래?', '오늘 하루 어땠어?', '방금 {ob} 생각났어.', '사랑해.', '잘 자. 꿈에 나와.'] };
+  const canText = () => { const o = op(); if (o && o.phase === 'away') return !o.joint; return !together(); };
+  function dailyAt() { // 대위가 지금 뭐 하는지에 따라 답장 텀이 다르다
+    const k = PX.Cap.spotKind(), r = Math.random(), t = St.S.time.min;
+    if (k === 'sleep' || t < 5 * 60) { let at = now(); const m = ((at % DAY) + DAY) % DAY; at += (m < 6 * 60 + 20 ? 0 : DAY) + 6 * 60 + 20 - m + Math.random() * 40; return Math.round(at); }
+    if (k === 'duty' || k === 'field') return Math.round(now() + (r < 0.35 ? 12 + Math.random() * 30 : 45 + Math.random() * 110)); // 쉬는 시간에 몰래
+    return Math.round(now() + (r < 0.65 ? 1 + Math.random() * 6 : 8 + Math.random() * 25));
+  }
+  const RE_D = [
+    [/이따|만날|볼래|시간 돼|놀/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 끝나자마자 간다.', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
+    [/밥|먹었|배고/, { pre: ['먹었어. 너도 챙겨 먹어.', '아직. 이제 먹으러 간다. 너는?'], lov: ['먹었어. 너는? 거르면 혼난다.', '아직. 같이 먹을래? 데리러 갈게.'] }],
+    [/보고 싶|생각/, { pre: ['…그런 말 받으니까 일이 손에 안 잡힌다.', '나도 방금 네 생각 했어. 진짜로.'], lov: ['나도. 지금 바로 가고 싶다.', '그 말 세 번 읽었어. 아껴 읽는 중.', '보고 싶다는 말 들으면 걸음이 빨라져. 곧 갈게.'] }],
+    [/뭐 해|뭐해/, { pre: ['작전동에서 서류 보는 중. 지루해.', '장비 정리 중. 너는?'], lov: ['너 생각. 아, 일도 하고 있어. 조금.', '박 중사 잔소리 듣는 중. 구해 줘.'] }],
+    [/하루|어땠/, { pre: ['평범했어. 지금 이 메시지가 제일 좋은 일이야.', '외곽은 조용했어. 다행이지. 너는?'], lov: ['길었어. 근데 네 메시지 받으니까 다 괜찮아졌어.', '별일 없었어. 너 보러 가면 별일 생기겠지.'] }],
+    [/고마/, { pre: ['내가 더 고마워.', '천만에. 또 불러.'], lov: ['고마운 건 나야. 매일.'] }],
+    [/잘 자|꿈/, { pre: ['너도 잘 자. 따뜻하게 하고.'], lov: ['잘 자, 자기야. 꿈에서는 내가 먼저 갈게.', '이불 꼭 덮어. 내일 아침에 제일 먼저 연락할게.'] }],
+    [/사랑/, { pre: ['…고마워. 진심으로.'], lov: ['나도 사랑해. 단말로 하니까 아쉽다. 이따 직접 할게.', '사랑해. 이거 화면 캡처했어.'] }],
+  ];
+  const GEN_D = { pre: ['응, 봤어. 고마워.', '확인했어. 이따 얘기하자.'], lov: ['응응. 네 메시지 오면 그냥 좋다.', '봤어. 답장 고르느라 오래 걸렸어.'] };
+  function dailyReply(text) {
+    const lv = St.S.rel.cap.stage >= 4 ? 'lov' : 'pre', k = PX.Cap.spotKind(), free = !['duty', 'field', 'sleep'].includes(k);
+    const hit = RE_D.find(([re]) => re.test(text)), set = hit ? hit[1] : GEN_D;
+    let pool = set[lv] || set.pre;
+    if (hit && hit[1].free) pool = free ? pool.filter(l => !/근무 중/.test(l)) : ['지금 근무 중이야. 끝나면 바로 연락할게.', '근무 끝나고 갈게. 조금만 기다려.'];
+    let r = U.pickFresh('dre_' + (hit ? RE_D.indexOf(hit) : 'g') + lv, pool);
+    if (k === 'duty' || k === 'field') r = U.pick(['근무 중이라 늦었어. ', '쉬는 시간에 몰래 보는 거야. ', '']) + r;
+    if (now() % DAY < 7 * 60 && k !== 'free') r = U.pick(['아침에 봤다. ', '일어나자마자 본다. ']) + r;
+    return { text: r, meet: !!(hit && hit[1].free && free) };
+  }
+  let dReplying = false;
+  async function dailyTick() {
+    const S = St.S; if (!S.outbox || !S.outbox.length || dReplying) return;
+    const list = S.outbox.map(id => S.messages.find(m => m.id === id)).filter(Boolean);
+    if (!list.length) { S.outbox = []; return; }
+    for (const m of list) if (m.st === 'sent' && now() >= m.readAt) m.st = 'read';
+    const due = list.some(m => now() >= m.replyAt) || together(); // 그 사이 만났으면 직접 대답
+    if (!due) return;
+    dReplying = true;
+    try {
+      const all = list.map(m => m.mine).join(' / ');
+      let r = dailyReply(all), ans = null;
+      if (PX.AI && PX.AI.available() && !together()) { try { ans = await PX.AI.replyMsg({ t: `(평소 · 대위는 지금 ${{ duty: '근무 중', field: '외곽 근무 중', sleep: '자다 깬 참', meal: '밥 먹는 중', rest: '막사에서 쉬는 중' }[PX.Cap.spotKind()] || '쉬는 시간'} · 플레이어가 보낸 메시지에 답장)` }, all); } catch (e) { ans = null; } }
+      for (const m of list) m.st = 'answered';
+      S.outbox = [];
+      send({ t: ans || r.text, r: [] });
+      if (r.meet && PX.Cap.mode === 'sched' && !together()) PX.Cap.mode = 'seek'; // 시간 되면 정말 찾아온다
+      if (S.done.dmsgDay !== S.day) { S.done.dmsgDay = S.day; St.addAff(1); }
+    } finally { dReplying = false; PX.UI.badge(); }
+  }
   function delayFor(o) {
     const r = Math.random(), S = St.S;
     let d = r < 0.25 ? 4 + Math.random() * 16 : r < 0.6 ? 35 + Math.random() * 90 : r < 0.85 ? 150 + Math.random() * 240 : 360 + Math.random() * 300;
@@ -12784,8 +12842,15 @@ PX.Op = (() => {
     return Math.round(at);
   }
   function sendToCap(text) {
-    const S = St.S, o = op(); if (!canMsg() || !text) return null;
+    const S = St.S, o = op(); if (!canText() || !text) return null;
     const t = String(text).trim().slice(0, 120); if (!t) return null;
+    if (!canMsg()) { // 평소
+      const m = { id: now() + Math.random(), out: true, mine: t, t: '', r: [], day: S.day, min: S.time.min, reply: 'none', st: 'sent', at: now() };
+      m.replyAt = dailyAt(); m.readAt = Math.round(now() + Math.random() * Math.max(1, (m.replyAt - now()) * 0.6));
+      S.messages.unshift(m); S.messages = S.messages.slice(0, 50);
+      (S.outbox = S.outbox || []).push(m.id);
+      return m;
+    }
     const m = { id: now() + Math.random(), out: true, mine: t, t: '', r: [], day: S.day, min: S.time.min, reply: 'none', st: 'sent', at: now() };
     m.readAt = Math.round(now() + Math.random() * Math.max(5, (delayFor(o) - now()) * 0.7));
     m.replyAt = delayFor(o);
@@ -12970,7 +13035,7 @@ PX.Op = (() => {
     g.memory('함께 귀환', `${o.days}일간의 ${o.area} 작전을 마치고 함께 돌아왔다.`, true);
   }
 
-  return { together, canMsg, sendToCap, quick, maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
+  return { together, canMsg, canText, sendToCap, quick, maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
 })();
 
 </script>

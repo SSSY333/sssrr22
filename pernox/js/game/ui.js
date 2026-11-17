@@ -432,9 +432,10 @@ PX.UI = (() => {
       // 장기작전 중인 대위에게 보내기
       const capWithMe = PX.Op.together && PX.Op.together();
       if (capWithMe) p.append(el('div', { class: 'msgsend' }, el("b", null, `💬 ${U.josa(S.capName, "이")} 옆에 있어요`), el('small', null, '메시지 말고 직접 말해 보세요. (대위 메뉴 → 대화하기)')));
-      if (!capWithMe && PX.Op.canMsg && PX.Op.canMsg()) {
-        const o = PX.Op.op(), d = Math.floor((St.absMin() - o.start) / 1440) + 1, off = o.comms[d] === false;
-        const box = el('div', { class: 'msgsend' }, el('b', null, `📡 ${S.capName}에게 보내기`), el('small', null, off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.'));
+      if (!capWithMe && PX.Op.canText && PX.Op.canText()) {
+        const away = PX.Op.canMsg(), o = PX.Op.op(), d = away ? Math.floor((St.absMin() - o.start) / 1440) + 1 : 0, off = away && o.comms[d] === false;
+        const k = PX.Cap.spotKind(), note = away ? (off ? '오늘은 외곽 통신이 불안정해요. 보내 두면 통신이 잡힐 때 읽어요.' : '작전 중이라 답장이 언제 올지 몰라요.') : k === 'sleep' ? '대위가 자는 시간이에요. 아침에 볼 거예요.' : k === 'duty' || k === 'field' ? '근무 중이라 답장이 조금 늦을 수 있어요.' : '쉬는 시간이라 금방 볼 거예요.';
+        const box = el('div', { class: 'msgsend' }, el('b', null, `${away ? '📡' : '💬'} ${S.capName}에게 보내기`), el('small', null, note));
         const ch = el('div', { class: 'msgch' });
         const go = (t) => { if (PX.Op.sendToCap(t)) { toast('📤 보냈어요'); p.innerHTML = ''; PANES.msg(p); } };
         for (const t of PX.Op.quick()) { const b = el('button', null, t); b.onclick = () => go(t); ch.append(b); }
