@@ -165,7 +165,7 @@
 
   // ================= 실내 =================
   room('terminal', { name: '여객 터미널', w: 16, h: 11, floor: 'tile', wall: '#d9e6ee', exit: 8, travelRoom: true,
-    furn: [['travelkiosk', 6, 2, 0], ['travelkiosk', 9, 2, 0], ['bench', 1, 6, 0], ['bench', 1, 8, 0], ['bench', 11, 6, 0], ['bench', 11, 8, 0], ['vending', 15, 2, 1], ['shopcounter', 1, 1, 0], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0], ['@', 8, 4, 0, 'term.desk', 'stand']],
+    furn: [['travelkiosk', 6, 2, 0], ['travelkiosk', 9, 2, 0], ['bench', 1, 6, 0], ['bench', 1, 8, 0], ['bench', 11, 6, 0], ['bench', 11, 8, 0], ['vending', 14, 0, 0], ['shopcounter', 1, 1, 0], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0], ['@', 8, 4, 0, 'term.desk', 'stand']],
     walls: [['B', 3.0, 'screen', 2.4], ['B', 10.6, 'screen', 2.4], ['L', 4.0, 'window', 1.4]],
     travel: [{ to: 'station', label: '🛰️ 궤도정거장 (2시간)', mins: 120 }, { to: 'planet3', label: '🌊 제3행성 해양도시 (6시간)', mins: 360 }, { to: 'planet4', label: '💎 제4행성 광물도시 (6시간)', mins: 360 }, { to: 'planet6', label: '❄️ 제6행성 얼음권 기지 (6시간)', mins: 360 }] });
   room('skylounge', { name: '항성 · 별빛 라운지', w: 14, h: 10, floor: 'carpet', wall: '#141028', exit: 7, stars: true, date: true,
@@ -209,13 +209,13 @@
   // 은밀숙소 테마 객실: 로비 프런트에서 예약하면 올라감 (나가면 로비로)
   const INN = { w: 10, h: 8, exit: 5, adult: true, date: true, innRoom: true, exitTo: 'inn', amb: 0.3, parent: 'rubyway' };
   room('inn_mirror', Object.assign({}, INN, { name: '은밀숙소 · 거울 객실', floor: 'carpet', wall: '#3f2a4a',
-    furn: [['roundbed', 3, 0, 0, 'innm.bed'], ['sidetable', 2, 0, 0], ['sidetable', 5, 0, 0], ['vanity', 9, 2, 1], ['mirror', 0, 3, 3], ['sofa', 0, 6, 3], ['moodlamp', 9, 0, 0], ['candles', 6, 3, 0], ['rug', 3, 3, 0]],
+    furn: [['roundbed', 3, 0, 0, 'innm.bed'], ['sidetable', 2, 0, 0], ['sidetable', 5, 0, 0], ['vanity', 7, 0, 0], ['mirror', 0, 3, 3], ['sofa', 0, 6, 3], ['moodlamp', 9, 0, 0], ['candles', 6, 3, 0], ['rug', 3, 3, 0]],
     walls: [['B', 0.6, 'mirrorw', 1.4], ['B', 7.0, 'mirrorw', 1.4], ['L', 1.2, 'mirrorw', 1.6]] }));
   room('inn_bath', Object.assign({}, INN, { name: '은밀숙소 · 큰 욕조 객실', floor: 'tile', wall: '#2f4a5a',
     furn: [['bigbed', 6, 0, 0, 'innb.bed'], ['sidetable', 8, 0, 0], ['bathtub', 1, 0, 0], ['candles', 3, 0, 0], ['candles', 0, 2, 0], ['plant', 0, 7, 0], ['moodlamp', 9, 3, 0], ['sofa', 9, 5, 1], ['vanity', 4, 0, 0]],
     walls: [['B', 1.0, 'window', 1.6], ['L', 4.0, 'mirrorw', 1.2]] }));
   room('inn_water', Object.assign({}, INN, { name: '은밀숙소 · 물침대 객실', floor: 'neonfloor', wall: '#1f2a4a', stars: true,
-    furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 9, 4, 1], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
+    furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 8, 0, 0], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
     walls: [['B', 2.0, 'window', 1.4], ['B', 7.0, 'window', 1.4]] }));
   room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.5, adult: true,
     furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0], ['velvetrope', 2, 4, 0], ['velvetrope', 9, 4, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 12, 0, 0]], walls: [],

@@ -2007,7 +2007,7 @@ PX.S = (() => {
     furn: [['opsdesk', 1, 0, 0], ['chair', 2, 1, 2, 'ops.d1'], ['opsdesk', 4, 0, 0], ['chair', 5, 1, 2, 'ops.d2'], ['console', 7, 0, 0], ['server', 9, 0, 0], ['opsdesk', 10, 0, 0], ['chair', 11, 1, 2, 'ops.d3'], ['opsdesk', 13, 0, 0], ['chair', 13, 1, 2, 'ops.cap'], ['flagstand', 15, 0, 0],
       ['locker', 0, 3, 3], ['locker', 0, 4, 3], ['locker', 0, 5, 3], ['weaponrack', 0, 7, 3],
       ['briefing', 6, 5, 0, 'ops.work'], ['@', 5, 6, 1, 'ops.b1', 'stand'], ['@', 9, 5, 3, 'ops.b2', 'stand'], ['@', 7, 7, 2, 'ops.b3', 'stand'], ['@', 8, 4, 0, 'ops.b4', 'stand'], ['@', 6, 4, 0, 'ops.b5', 'stand'],
-      ['opsdesk', 11, 8, 0], ['chair', 12, 9, 2, 'ops.d4'], ['drone', 3, 9, 0], ['crates', 1, 11, 0], ['bench', 5, 10, 0], ['vending', 15, 4, 1], ['bigplant', 15, 11, 0]],
+      ['opsdesk', 11, 8, 0], ['chair', 12, 9, 2, 'ops.d4'], ['drone', 3, 9, 0], ['crates', 1, 11, 0], ['bench', 5, 10, 0], ['vending', 0, 9, 3], ['bigplant', 15, 11, 0]],
     walls: [['B', 6.2, 'map', 1.0], ['L', 9.6, 'board', 1.2], ['L', 1.0, 'window', 1.0]] });
   const mess = [['crates', 0, 0, 0], ['stove', 3, 0, 0], ['stove', 5, 0, 0], ['fridge', 7, 0, 0], ['fridge', 8, 0, 0], ['servecounter', 3, 2, 0, 'mess.counter'], ['@', 4, 1, 0, 'mess.cook', 'stand'], ['@', 6, 1, 0, 'mess.cook2', 'stand'],
     ['vending', 0, 3, 3], ['vending', 0, 4, 3], ['sink', 23, 0, 0], ['bigplant', 22, 0, 0], ['bigplant', 0, 15, 0], ['bigplant', 23, 15, 0]];
@@ -2019,7 +2019,7 @@ PX.S = (() => {
   room('med', { name: '의무동', w: 15, h: 11, floor: 'medtile', wall: '#dfeceb', exit: 10,
     furn: [['medcab', 0, 0, 0], ['medcab', 1, 0, 0], ['examdesk', 2, 0, 0, 'med.work'], ['chair', 3, 1, 2, 'med.doc'], ['stool', 2, 2, 0, 'med.patient'], ['scanner', 5, 0, 0],
       ['medbed', 8, 0, 0, 'med.bed1'], ['curtain', 9, 0, 1], ['medbed', 10, 0, 0, 'med.bed2'], ['curtain', 11, 0, 1], ['medbed', 12, 0, 0, 'med.bed3'], ['curtain', 13, 0, 1], ['medbed', 14, 0, 0, 'med.bed4'],
-      ['bench', 0, 5, 3, 'med.wait'], ['opsdesk', 5, 5, 0], ['chair', 6, 6, 2, 'med.nurse'], ['sink', 14, 4, 1], ['vending', 14, 6, 1], ['plant', 0, 10, 0], ['bigplant', 14, 10, 0]],
+      ['bench', 0, 5, 3, 'med.wait'], ['opsdesk', 5, 5, 0], ['chair', 6, 6, 2, 'med.nurse'], ['sink', 14, 4, 1], ['vending', 0, 8, 3], ['plant', 0, 10, 0], ['bigplant', 14, 10, 0]],
     walls: [['B', 7.2, 'cross', 0.7], ['L', 3.6, 'window', 1.0], ['L', 8.6, 'window', 1.0]] });
   room('hangar', { name: '정비격납고', w: 19, h: 14, floor: 'hangar', wall: '#6b737e', exit: 9, wallH: 92,
     furn: [['workbench', 5, 0, 0, 'hg.work'], ['@', 5, 1, 2, 'hg.w1', 'work'], ['workbench', 8, 0, 0], ['@', 8, 1, 2, 'hg.w2', 'work'], ['workbench', 11, 0, 0], ['@', 11, 1, 2, 'hg.w3', 'work'],
@@ -2187,11 +2187,11 @@ PX.S = (() => {
   room('samgyup', { name: '냉삼집', w: 15, h: 12, floor: 'darkwood', wall: '#d9c7a8', exit: 7, furn: sg, date: true,
     walls: [['B', 0.6, 'menu', 1.2], ['B', 6.8, 'notice', 0.9], ['L', 2.2, 'window', 1.0], ['L', 5.6, 'poster', 0.7]] });
   room('flower', { name: '유리돔 꽃시장', w: 13, h: 11, floor: 'tile', wall: '#e8f4f0', exit: 6, date: true,
-    furn: [['cafecounter', 5, 1, 0, 'fl.shop'], ['@', 6, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 0, 0, 0], ['flowershelf', 10, 0, 0], ['flowershelf', 0, 4, 3], ['flowerbed', 3, 5, 0], ['flowerbed', 8, 5, 0], ['bench', 4, 9, 0], ['glassvase', 12, 0, 0], ['bigplant', 12, 10, 0], ['plant', 0, 10, 0]],
+    furn: [['cafecounter', 5, 1, 0, 'fl.shop'], ['@', 6, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 0, 0, 0], ['flowershelf', 10, 0, 0], ['flowershelf', 0, 4, 3], ['flowerbed', 3, 5, 0], ['flowerbed', 8, 5, 0], ['bench', 1, 9, 0], ['glassvase', 12, 0, 0], ['bigplant', 12, 10, 0], ['plant', 0, 10, 0]],
     walls: [['B', 2.6, 'window', 1.0], ['B', 7.4, 'window', 1.0], ['L', 6.0, 'window', 1.0]] });
   room('arcade', { name: '오락실', w: 13, h: 10, floor: 'darktile', wall: '#2a1f4f', exit: 6, date: true,
     furn: [['arcade', 1, 0, 0], ['arcade', 2, 0, 0], ['arcade', 3, 0, 0], ['arcade', 4, 0, 0], ['@', 2, 1, 2, 'ac.player', 'stand'], ['clawmachine', 8, 0, 0], ['clawmachine', 9, 0, 0], ['clawmachine', 10, 0, 0], ['clawmachine', 11, 0, 0], ['clawmachine', 0, 3, 3], ['clawmachine', 0, 4, 3],
-      ['shopcounter', 10, 4, 0], ['@', 11, 3, 0, 'ac.clerk', 'stand'], ['vending', 12, 6, 1], ['gametable', 5, 5, 0], ['stool', 4, 5, 0], ['stool', 7, 5, 0], ['bench', 1, 8, 0], ['bigplant', 12, 9, 0]],
+      ['shopcounter', 10, 4, 0], ['@', 11, 3, 0, 'ac.clerk', 'stand'], ['vending', 0, 6, 3], ['gametable', 5, 5, 0], ['stool', 4, 5, 0], ['stool', 7, 5, 0], ['bench', 1, 8, 0], ['bigplant', 12, 9, 0]],
     walls: [['B', 5.4, 'poster', 0.7], ['B', 11.0, 'screen', 1.2], ['L', 6.8, 'poster', 0.7]] });
   const st = [['projector', 7, 2, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0]];
   for (const ty of [6, 10]) for (let tx = 1; tx <= 14; tx++) if (tx !== 7 && tx !== 8) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
@@ -2386,7 +2386,7 @@ PX.S = (() => {
 
   // ================= 실내 =================
   room('terminal', { name: '여객 터미널', w: 16, h: 11, floor: 'tile', wall: '#d9e6ee', exit: 8, travelRoom: true,
-    furn: [['travelkiosk', 6, 2, 0], ['travelkiosk', 9, 2, 0], ['bench', 1, 6, 0], ['bench', 1, 8, 0], ['bench', 11, 6, 0], ['bench', 11, 8, 0], ['vending', 15, 2, 1], ['shopcounter', 1, 1, 0], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0], ['@', 8, 4, 0, 'term.desk', 'stand']],
+    furn: [['travelkiosk', 6, 2, 0], ['travelkiosk', 9, 2, 0], ['bench', 1, 6, 0], ['bench', 1, 8, 0], ['bench', 11, 6, 0], ['bench', 11, 8, 0], ['vending', 14, 0, 0], ['shopcounter', 1, 1, 0], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0], ['@', 8, 4, 0, 'term.desk', 'stand']],
     walls: [['B', 3.0, 'screen', 2.4], ['B', 10.6, 'screen', 2.4], ['L', 4.0, 'window', 1.4]],
     travel: [{ to: 'station', label: '🛰️ 궤도정거장 (2시간)', mins: 120 }, { to: 'planet3', label: '🌊 제3행성 해양도시 (6시간)', mins: 360 }, { to: 'planet4', label: '💎 제4행성 광물도시 (6시간)', mins: 360 }, { to: 'planet6', label: '❄️ 제6행성 얼음권 기지 (6시간)', mins: 360 }] });
   room('skylounge', { name: '항성 · 별빛 라운지', w: 14, h: 10, floor: 'carpet', wall: '#141028', exit: 7, stars: true, date: true,
@@ -2430,13 +2430,13 @@ PX.S = (() => {
   // 은밀숙소 테마 객실: 로비 프런트에서 예약하면 올라감 (나가면 로비로)
   const INN = { w: 10, h: 8, exit: 5, adult: true, date: true, innRoom: true, exitTo: 'inn', amb: 0.3, parent: 'rubyway' };
   room('inn_mirror', Object.assign({}, INN, { name: '은밀숙소 · 거울 객실', floor: 'carpet', wall: '#3f2a4a',
-    furn: [['roundbed', 3, 0, 0, 'innm.bed'], ['sidetable', 2, 0, 0], ['sidetable', 5, 0, 0], ['vanity', 9, 2, 1], ['mirror', 0, 3, 3], ['sofa', 0, 6, 3], ['moodlamp', 9, 0, 0], ['candles', 6, 3, 0], ['rug', 3, 3, 0]],
+    furn: [['roundbed', 3, 0, 0, 'innm.bed'], ['sidetable', 2, 0, 0], ['sidetable', 5, 0, 0], ['vanity', 7, 0, 0], ['mirror', 0, 3, 3], ['sofa', 0, 6, 3], ['moodlamp', 9, 0, 0], ['candles', 6, 3, 0], ['rug', 3, 3, 0]],
     walls: [['B', 0.6, 'mirrorw', 1.4], ['B', 7.0, 'mirrorw', 1.4], ['L', 1.2, 'mirrorw', 1.6]] }));
   room('inn_bath', Object.assign({}, INN, { name: '은밀숙소 · 큰 욕조 객실', floor: 'tile', wall: '#2f4a5a',
     furn: [['bigbed', 6, 0, 0, 'innb.bed'], ['sidetable', 8, 0, 0], ['bathtub', 1, 0, 0], ['candles', 3, 0, 0], ['candles', 0, 2, 0], ['plant', 0, 7, 0], ['moodlamp', 9, 3, 0], ['sofa', 9, 5, 1], ['vanity', 4, 0, 0]],
     walls: [['B', 1.0, 'window', 1.6], ['L', 4.0, 'mirrorw', 1.2]] }));
   room('inn_water', Object.assign({}, INN, { name: '은밀숙소 · 물침대 객실', floor: 'neonfloor', wall: '#1f2a4a', stars: true,
-    furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 9, 4, 1], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
+    furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 8, 0, 0], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
     walls: [['B', 2.0, 'window', 1.4], ['B', 7.0, 'window', 1.4]] }));
   room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.5, adult: true,
     furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0], ['velvetrope', 2, 4, 0], ['velvetrope', 9, 4, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 12, 0, 0]], walls: [],
@@ -2486,7 +2486,7 @@ PX.S = (() => {
   // ---------- 광물온천 스파 (LB18) ----------
   const spa = out('spa', { name: '광물온천 스파', w: 28, h: 22, fill: 'mosaic', arrive: [14, 14], lore: 'LB18', fx: ['steam'], hours: ['10:00', '23:00'], amb: 0.25, tint: ['#ffb38a', 0.05] });
   spa.zones = [{ t: 'water', x0: 4, y0: 4, x1: 11, y1: 9 }, { t: 'water', x0: 16, y0: 4, x1: 23, y1: 9 }, { t: 'crystal', x0: 12, y0: 3, x1: 15, y1: 4 }];
-  spa.decor.push(['hotspring', 6, 11, 0], ['hotspring', 18, 11, 0], ['crystalcluster', 2, 3, 0], ['crystalcluster', 25, 3, 0], ['crystalcluster', 13, 6, 0], ['spastall', 22, 16, 0], ['benchout', 5, 15, 0], ['benchout', 17, 15, 0], ['candles', 3, 12, 0], ['candles', 24, 12, 0], ['bigplant', 2, 18, 0]);
+  spa.decor.push(['hotspring', 6, 11, 0], ['hotspring', 18, 11, 0], ['crystalcluster', 2, 3, 0], ['crystalcluster', 25, 3, 0], ['crystalcluster', 13, 6, 0], ['vending', 22, 16, 0], ['benchout', 5, 15, 0], ['benchout', 17, 15, 0], ['candles', 3, 12, 0], ['candles', 24, 12, 0], ['bigplant', 2, 18, 0]);
   spa.shops = { stall: 'mineral' };
 
   // ---------- 별빛 관람열차 (LB21) ----------
@@ -9424,12 +9424,54 @@ PX.Act = (() => {
     PX.UI.toast(win ? '🏰 멋진 모래성 완성!' : '🌊 파도에 무너졌다…');
     if (withCap()) { await lines(win ? ['C^:오, 잘 만들었다. 깃발 꽂자.', 'C*:성 이름은 네 이름으로.'] : ['C:무너졌네. 다시 쌓자. 이번엔 내가 파도 막을게.']); if (win && once('sandcastle')) G().memory('모래성', '해변에서 같이 모래성을 쌓았다.', true); }
   };
+  // ---------- 온천 · 스파: 탕에 들어가서 이것저것 ----------
+  const ONSEN = (() => {
+    const L = (pre, love) => () => PX.Dlg.capPick(St.S.rel.cap.stage >= 4 && love ? love : pre);
+    return {
+      soak: { solo: [['N:대여한 탕옷 차림으로 천천히 몸을 담근다. 광물 성분이 녹은 물이 은은하게 푸른빛을 낸다.', 'N:어깨까지 잠기자 하루 종일 굳어 있던 등이 스르르 풀린다.'], ['N:물 위로 하얀 김이 피어오른다. 탕 바닥의 수정 조각들이 빛을 받아 반짝인다.', 'N:눈을 감으니 물 흐르는 소리만 남는다.']],
+        cap: L([['N:대위가 탕 가장자리에 앉아 조심스럽게 발부터 넣는다.', 'C;:…뜨겁다. 원래 이렇게 뜨거워?', 'C:아니, 괜찮아. 들어갈 수 있어. 작전 때 사막도 걸었는데.', 'N:삼 분 뒤, 대위는 귀까지 빨개져서 눈을 감고 있다.'], ['N:둘이 한 칸 떨어져 나란히 몸을 담근다. 김 때문에 얼굴이 흐릿하게 보인다.', 'C:여기 물, 제4행성 광맥에서 끌어온 거래. 피로가 빨리 풀린대.', 'C*:…진짜네. 졸려.']],
+          [['N:대위가 먼저 들어가 손을 내민다. 잡고 내려서자 물이 허리까지 찰랑인다.', 'C*:미끄러워. 손 놓지 마.', 'N:나란히 앉자 대위가 물속에서 손가락을 슬쩍 깍지 낀다.', 'C~:…따뜻하다. 물 말고.'], ['N:김이 자욱해서 바로 옆 대위 얼굴만 겨우 보인다.', 'C:이러니까 세상에 우리 둘만 있는 것 같다.', 'P:원래 둘만 있잖아, 이 탕에.', 'C^:그러네. 운 좋다.']]) },
+      stars: { solo: [['N:고개를 젖혀 탕 가장자리에 기댄다. 돔 천장 너머로 별이 흐릿하게 번진다.', 'N:김 사이로 보이는 별은 물속에서 보는 것처럼 일렁인다.']],
+        cap: L([['N:고개를 젖히자 김 너머로 별이 일렁인다.', 'C:물에 비친 별이 더 많다. 봐, 네 손 위에도 하나.', 'C*:…가만히 있어. 떨어지겠다.']],
+          [['N:어깨에 머리를 기대자 대위가 가만히 기대 오도록 자세를 낮춰 준다.', 'C*:저기. 파랗게 깜빡이는 거. 제6행성이야.', 'C:언젠가 같이 가자. 거기 얼음 동굴이 예쁘대.', 'P:{ob}가 데려가 주면.', 'C^:약속. 기록해 둬.'], ['N:대위 어깨에 기대 별을 본다. 젖은 머리카락이 대위 목에 닿는다.', 'C~:간지러워.', 'P:비킬까?', 'C*:아니. 그대로 있어. 간지러운 게 좋아.']]) },
+      splash: { solo: [['N:손바닥으로 물을 떠서 천천히 흘려본다. 떨어지는 물방울마다 광물빛이 섞여 반짝인다.']],
+        cap: L([['N:손바닥으로 물을 튕기자 대위 얼굴에 정통으로 맞는다.', 'C!:…', 'C*:지금 선전포고한 거지.', 'N:대위가 손으로 물을 크게 퍼 올린다. 둘 다 머리까지 흠뻑 젖는다.', 'C^:졌다고 해. 그럼 멈출게.'], ['N:물속에서 대위 발끝을 톡 건드린다.', 'C:…뭐야. 물고기야?', 'N:한 번 더 건드리자 대위가 웃음을 참는다.', 'C*:잡았다. 이 물고기 꽤 크네.']],
+          [['N:손으로 물총을 만들어 대위 볼을 맞힌다.', 'C!:…너.', 'N:대위가 순식간에 다가와 두 손목을 가볍게 붙잡는다. 얼굴이 가깝다.', 'C*:잡혔다. 이제 어떡할래.', 'P:…항복.', 'C~:항복 받아 줄게. 대신 벌칙은 나중에.'], ['N:대위 머리 위에 물을 조금 부어 준다. 젖은 앞머리가 이마에 붙는다.', 'C;:…이거 무슨 의식이야?', 'P:머리 감겨 주는 거야.', 'C^:그럼 끝까지 해 줘. 손 가만히 둘게.']]) },
+      massage: { cap: L([['N:대위 어깨가 돌처럼 굳어 있다.', 'C:어깨? …좀 뭉치긴 했지. 장비를 맨날 메니까.', 'N:살짝 눌러 주자 대위가 숨을 길게 내쉰다.', 'C*:…거기. 응. 거기. 고마워.']],
+          [['N:대위 뒤로 가서 젖은 어깨를 엄지로 천천히 누른다.', 'C~:…으. 거기 진짜 뭉쳤다.', 'C*:너 손 작은데 힘 세다.', 'N:목 뒤를 누르자 대위가 고개를 푹 숙인다.', 'C:이제 내 차례. 돌아 앉아. 살살 할게.', 'N:큰 손이 어깨를 감싼다. 생각보다 훨씬 조심스럽다.'], ['C:등 좀 대 봐. 오늘 종일 서 있었잖아.', 'N:대위의 엄지가 날개뼈 옆을 천천히 누른다. 따뜻한 물과 손이 같이 등을 풀어 준다.', 'C*:힘 괜찮아? 아프면 말해.', 'P:…좋아. 계속.']]) },
+      milk: { solo: [['N:탕에서 나와 가운을 걸치고 자판기에서 차가운 광물우유를 뽑는다.', 'N:달고 시원한 게 목을 타고 내려간다. 온천 다음엔 역시 이거다.']],
+        cap: L([['N:가운 차림으로 나란히 앉아 차가운 광물우유를 딴다.', 'C:온천 끝엔 이거라고 박 중사가 그랬어. 허리에 손 올리고 마셔야 한대.', 'N:대위가 진지하게 허리에 손을 올리고 마신다.', 'C^:…맛있네. 규칙 지킨 보람이 있다.']],
+          [['N:가운 차림으로 벤치에 앉는다. 대위가 차가운 우유 두 개를 들고 온다.', 'C*:딸기 맛이랑 흰 우유. 골라.', 'P:반반 나눠 먹자.', 'C^:그럴 줄 알았어. 빨대 두 개 받아 왔어.'], ['N:볼이 발그레한 채로 우유를 마신다. 대위가 젖은 머리를 수건으로 대충 털어 준다.', 'C:머리 덜 말리면 감기 걸려.', 'C~:…가만히 있어. 내가 해 줄게.']]) },
+    };
+  })();
   H.onsen = async (o) => {
-    goSit(o); if (withCap()) PX.Cap.sitNear(G());
-    G().fade(); St.advance(40); St.S.energy = Math.min(100, St.S.energy + 30);
-    PX.UI.toast('♨️ 광물온천에 몸을 담갔다 (기력 +30)');
-    await capSay('onsen');
-    if (withCap() && once('onsen')) G().memory('광물온천', '대위는 3분 만에 덥다고 했지만 끝까지 옆에 있었다.', true);
+    const S = St.S, g = G();
+    goSit(o); const wc = withCap(); if (wc) PX.Cap.sitNear(g);
+    const st = S.rel.cap.stage, k = 'onsenE_' + S.day;
+    g.fade(); St.advance(20);
+    const gain = S.done[k] ? 8 : 25; S.done[k] = 1; S.energy = Math.min(100, S.energy + gain);
+    PX.UI.toast(`♨️ 따뜻한 광물온천에 몸을 담갔다 (기력 +${gain})`);
+    const used = {};
+    for (let n = 0; n < 4; n++) {
+      const items = [
+        { t: '♨️ 어깨까지 푹 담그기', sub: '물소리 · 김', k: 'soak' },
+        { t: '🌌 김 너머로 별 보기', sub: wc && st >= 4 ? '어깨에 기대서' : '고개 젖히고', k: 'stars' },
+        { t: '💦 물장난', sub: wc ? '살짝만' : '손바닥으로 물 튕기기', k: 'splash' },
+        wc && st >= 3 ? { t: '💆 어깨 주물러 주기', sub: '뭉친 데 풀어 주기', k: 'massage' } : null,
+        { t: '🥛 나와서 차가운 우유', sub: '₢4 · 온천 끝 마무리', k: 'milk' },
+        { t: '🚪 그만 나가기', k: 'out' },
+      ].filter(Boolean).map(it => used[it.k] ? Object.assign({}, it, { sub: (it.sub ? it.sub + ' · ' : '') + '방금 함' }) : it);
+      const it = await PX.UI.menu('♨️ 온천에서', items);
+      if (!it || it.k === 'out') break;
+      const a = ONSEN[it.k], pool = wc ? a.cap : a.solo;
+      if (it.k === 'milk' && !St.spend(4)) { PX.UI.toast('💸 ₢4이 필요해요'); continue; }
+      used[it.k] = 1;
+      await lines(typeof pool === 'function' ? pool() : U.pickFresh('onsen_' + it.k, pool));
+      St.advance(it.k === 'soak' ? 20 : 10);
+      if (wc && !S.done['onsenA_' + it.k + '_' + S.day]) { S.done['onsenA_' + it.k + '_' + S.day] = 1; St.addAff(it.k === 'massage' || it.k === 'stars' ? 3 : 2); }
+      if (it.k === 'milk') { S.energy = Math.min(100, S.energy + 5); break; }
+    }
+    if (wc && once('onsen')) g.memory('광물온천', '대위는 삼 분 만에 덥다고 했지만 끝까지 옆에 있었다.', true);
   };
   H.salvage = async (o) => {
     const S = St.S, g = G();
@@ -10922,6 +10964,32 @@ PX.Place = (() => {
       [['N:두 개의 등이 나란히 떠오르다가, 어느 순간 꼭 붙어서 같이 올라간다.', 'C*:…봤어? 쟤네도 우리 같다.', 'N:대위가 손을 꼭 쥔다. 네온 불빛이 둘의 얼굴을 분홍빛으로 물들인다.']]);
     St.advance(20); reward('be_lantern', 3, ['항로등 거리', '항로등 아래서 소원 등 두 개가 꼭 붙어서 날아갔다.']); } });
   const S_en = (n) => { St.S.energy = Math.min(100, (St.S.energy || 50) + n); };
+  // 온천 · 스파: 탕에 직접 들어가기 (탕 메뉴)
+  add(['spa', 'onsen'], { id: 'sp_bath', t: '♨️ 탕에 같이 들어가기', sub: '푹 담그기 · 별 보기 · 물장난 · 어깨 주무르기', s: 0, run: async () => {
+    const g = G(), m = PX.W.maps[g.mapId];
+    const hs = m.objs.filter(o => o.fid === 'hotspring').sort((a, b) => U.dist(a.x, a.y, g.player.x, g.player.y) - U.dist(b.x, b.y, g.player.x, g.player.y))[0];
+    if (hs) await PX.Act.use(hs); } });
+
+  // ===================== 어디서든 데이트 중에 =====================
+  // 데이트 장소 · 관광지 · 바깥(부대 제외)에서, 썸 이상이면 늘 할 수 있는 것들. 장소 분위기에 따라 대사가 바뀐다
+  const FLAVOR = { water: ['lake', 'beach', 'pool', 'aquagarden', 'spa', 'onsen'], sky: ['terrace', 'startrain', 'hill', 'starroom', 'skylounge', 'aurora', 'silverdesert', 'camp'], bloom: ['glasshouse', 'flower', 'bluegarden', 'glowpath', 'cafestreet', 'corridor'], neon: ['rubyway', 'beaconst', 'arcade', 'pub', 'mask', 'dice', 'plaza', 'dome'], food: ['cafe', 'samgyup'] };
+  const flavor = () => { const id = G().mapId; for (const k in FLAVOR) if (FLAVOR[k].includes(id)) return k; return 'any'; };
+  const dateish = () => { const g = G(), md = PX.MAPS[g.mapId] || {}; if (g.mapId === 'base' || md.home || md.innRoom) return false; const d = PX.Rom && PX.Rom.nextDate(); return (d && d.state === 'on') || md.date || md.tour || md.kind === 'out'; };
+  const DATE = {
+    photo: { pre: { any: [['C:사진? …나 사진 잘 안 찍는데.', 'N:대위가 어색하게 브이를 한다. 손가락이 너무 곧다.', 'C;:지워. 아니, 지우지 마. 한 장은 있어도 되겠다.']], water: [['N:물빛을 배경으로 단말을 든다. 대위가 화면 끝에 반쯤 걸쳐 선다.', 'C:나는 배경이야. 너 찍어.', 'N:찍고 보니 대위가 화면 속 나를 보고 웃고 있다.']], sky: [['N:별빛이 너무 어두워 화면에 둘 다 까맣게 나온다.', 'C^:…별만 잘 나왔네. 이것도 나쁘지 않다.']], neon: [['N:네온 간판 아래서 한 장. 대위 얼굴이 분홍색이다.', 'C;:이거 내 얼굴 맞아? …지우지 마. 기념이니까.']] },
+      love: { any: [['N:팔을 뻗어 둘이 같이 나오게 찍는다. 셔터 직전, 대위가 볼에 얼굴을 붙인다.', 'C*:이게 제일 잘 나온 거다. 배경 화면 해.'], ['C:셋 세면 찍어. 하나, 둘—', 'N:셋에서 대위가 고개를 돌려 볼에 입을 맞춘다. 사진엔 놀란 내 얼굴이 남았다.', 'C^:이건 내 단말에도 보내 줘.']], water: [['N:반짝이는 물을 배경으로 셀카. 대위가 뒤에서 어깨를 감싸 안는다.', 'C*:물빛보다 네가 더 반짝인다. …이건 사진엔 안 나오네.']], sky: [['N:별을 배경으로 찍으려는데 너무 어둡다. 대위가 단말 손전등을 켜서 내 얼굴만 비춘다.', 'C^:됐다. 별은 내가 볼게. 너는 찍혀.']], bloom: [['N:꽃잎이 흩날리는 길에서 대위가 단말을 뺏어 든다.', 'C:너만 찍을 거야. 움직이지 마.', 'C*:…열 장 찍었다. 다 예뻐서 못 지우겠다.']] } },
+    snack: { pre: { any: [['N:근처 노점에서 꼬치 두 개를 산다. 대위가 하나를 건넨다.', 'C:뜨거우니까 불어서 먹어.', 'C^:…맛있네. 다음엔 내가 산다.']], water: [['N:물가 벤치에 앉아 차가운 젤리 음료를 나눠 든다.', 'C:이거 색이 이상한데 맛은 괜찮다.']], neon: [['N:네온 노점에서 반짝이는 솜사탕을 산다. 대위가 한 입 뜯어 먹고 얼굴을 찡그린다.', 'C;:…설탕이 터진다. 입 안에서.', 'C^:근데 재밌다. 하나 더 사.']], food: [['C:여기 메뉴 중에 네가 안 먹어 본 거 시켜. 내가 다 먹어 줄게, 맛없으면.', 'N:대위가 정말로 남김없이 먹는다.']] },
+      love: { any: [['N:노점 꼬치를 하나만 산다. 대위가 한 입 먹고 내 입에 가져다 댄다.', 'C*:반반. 이게 데이트 규칙이야.'], ['N:대위가 아이스크림을 들고 온다. 숟가락은 하나.', 'C~:…깜빡했다. 진짜야.', 'P:거짓말.', 'C^:응, 거짓말.']], water: [['N:물가에서 과일 컵을 나눠 먹는다. 대위가 제일 큰 조각을 내 쪽으로 밀어 준다.', 'C:너 이거 좋아하잖아. 다 알아.']], neon: [['N:반짝이는 솜사탕을 둘이 양쪽에서 뜯어 먹다가 가운데서 코끝이 닿는다.', 'C!:…', 'C*:이거 일부러 아니야. 근데 한 번 더 해 볼래?']], food: [['C*:먹여 줘.', 'P:손 있잖아.', 'C^:오늘은 없어. 데이트 날이라.']] } },
+    ask: { pre: { any: [['C:하나씩 묻기 할래? 내가 먼저. 너 어릴 때 꿈이 뭐였어?', { q: [['별 보는 사람이요.', 2, ['C^:이뤘네. 여기 별 많잖아.']], ['기억 안 나요.', 1, ['C:나도. 지금이 더 좋으면 된 거지.']]] }, 'C*:이제 네 차례. 아무거나 물어봐.'], ['C:좋아하는 계절 있어? 여기는 계절이 돔 설정이라 좀 웃기지만.', { q: [['봄이요.', 2, ['C^:유리꽃 피는 거. 나도 그게 좋아.']], ['겨울이요.', 2, ['C*:제6행성 가면 진짜 겨울 있어. 언제 보여 줄게.']]] }]], sky: [['C:별 이름 하나 지어 줄 수 있으면 뭐라고 할 거야?', { q: [['{oc}의 별.', 3, ['C!:…', 'C;:그건 반칙이야.']], ['보라별.', 2, ['C:보라색 별이 있긴 하지. 저기, 깜빡이는 거.']]] }]] },
+      love: { any: [['C:하나만 물어볼게. 나 언제부터 좋았어?', { q: [['처음부터.', 4, ['C~:…거짓말. 근데 듣기 좋다.']], ['비밀.', 2, ['C*:그럼 맞힐 때까지 매일 물어볼 거야.']]] }], ['C:오늘 제일 좋았던 거 하나만 말해 봐.', { q: [['지금.', 4, ['C^:…나도. 지금.']], ['아까 그거 먹은 거.', 2, ['C*:먹는 거에 졌다. 인정.']]] }], ['C:우리 십 년 뒤엔 뭐 하고 있을까.', { q: [['여기서 이러고 있겠지.', 4, ['C^:응. 똑같이. 너랑.']], ['{ob} 흰머리 세고 있겠지.', 3, ['C;:…벌써 몇 개 있어. 세지 마.']]] }]], sky: [['C:별 하나 줄게. 저거. 이제 네 거야.', { q: [['그럼 옆에 거는 {ob} 거.', 4, ['C^:좋다. 나란히 있네, 우리 별.']], ['등기부 떼 줘.', 2, ['C*:…궤도정거장에 문의해 볼게. 진지하게.']]] }]] } },
+    quiet: { pre: { any: [['N:둘 다 한동안 아무 말도 하지 않는다. 어색하지 않은 침묵이다.', 'C:…좋다. 이렇게 조용한 거.'], ['N:대위가 먼 곳을 본다. 그 옆얼굴을 본다.', 'C:뭘 그렇게 봐.', 'C*:…아니, 봐도 돼.']], water: [['N:물결 소리만 들린다. 대위가 돌멩이 하나를 주워 물수제비를 뜬다. 다섯 번.', 'C^:오늘 컨디션 좋다.']], sky: [['N:하늘이 너무 넓어서 둘 다 말을 잃는다.', 'C:…여기 오길 잘했다.']] },
+      love: { any: [['N:말없이 손만 잡고 있다. 대위 엄지가 손등을 천천히 쓸어내린다.', 'C~:…이게 제일 좋은 대화 같다.'], ['N:대위 어깨에 머리를 기댄다. 대위가 고개를 기울여 머리 위에 볼을 얹는다.', 'C*:졸리면 자도 돼. 깨워 줄게. 아마 안 깨우겠지만.']], water: [['N:물가에 앉아 발끝으로 물결을 건드린다. 대위가 내 발 옆에 발을 나란히 둔다.', 'C:발 크기 차이 봐. 웃기다.']], sky: [['N:누워서 하늘을 본다. 대위 팔이 베개 대신 머리 밑에 들어온다.', 'C*:팔 저려도 안 뺄 거야.']], neon: [['N:시끄러운 거리 한가운데, 대위가 내 귀를 두 손으로 살짝 막는다.', 'C~:…이러면 내 목소리만 들리지. 사랑해.']] } },
+  };
+  const dsay = (k) => { const d = DATE[k], f = flavor(), love = lov(); const set = love ? d.love : d.pre; return lines(PX.Dlg.capPick((set[f] || []).concat(set.any))); };
+  add('*', { id: 'dt_photo', t: '📸 같이 사진 찍기', sub: '데이트 기념', s: 2, when: dateish, run: async () => { await dsay('photo'); St.advance(5); reward('dt_photo', 2, ['첫 데이트 사진', '같이 찍은 사진. 대위는 그걸 배경 화면으로 했다.']); } });
+  add('*', { id: 'dt_snack', t: '🍡 간식 나눠 먹기', sub: '₢6 · 근처 노점', s: 2, when: dateish, run: async () => { if (!pay(6)) return; await dsay('snack'); St.advance(15); St.S.hunger = Math.min(100, (St.S.hunger || 50) + 8); reward('dt_snack', 2); } });
+  add('*', { id: 'dt_ask', t: '❓ 하나씩 물어보기', sub: '서로에 대해', s: 2, when: dateish, run: async () => { await dsay('ask'); St.advance(10); reward('dt_ask', 3); } });
+  add('*', { id: 'dt_quiet', t: '🤍 말없이 같이 있기', sub: '그냥 옆에', s: 3, when: dateish, run: async () => { await dsay('quiet'); St.advance(20); reward('dt_quiet', 2); } });
 
   const held = (fn) => async () => { const g = G(); g.modal++; try { await fn(); } finally { PX.Dlg.close(); g.modal--; } };
   add('rubyway', { id: 'rw_inn', t: '🗝️ 은밀숙소 가자고 하기', sub: '밤 · 연인', s: 4, when: night, run: held(() => PX.InnNight.suggest('street')) });
@@ -10933,9 +11001,9 @@ PX.Place = (() => {
     const g = G(), S = St.S, cap = g.cap;
     if (!cap || cap.map !== g.mapId || cap.hidden) return [];
     const st = S.rel.cap.stage;
-    return (A[g.mapId] || []).filter(a => st >= (a.s || 0) && (!a.when || a.when())).map(a => ({ t: a.t, sub: (a.sub || '') + (S.done['pa_' + a.id + '_' + S.day] ? (a.sub ? ' · ' : '') + '오늘 함' : ''), run: a.run }));
+    return (A[g.mapId] || []).concat(A['*'] || []).filter(a => st >= (a.s || 0) && (!a.when || a.when())).map(a => ({ t: a.t, sub: (a.sub || '') + (S.done['pa_' + a.id + '_' + S.day] ? (a.sub ? ' · ' : '') + '오늘 함' : ''), run: a.run }));
   }
-  return { list, A };
+  return { list, A, flavor };
 })();
 
 </script>
@@ -12532,6 +12600,14 @@ PX.Rom = (() => {
       }
       return;
     }
+    if (d.state === 'on') { // 데이트 도중: 가끔 대위가 먼저 작은 순간을 만든다 (한 데이트에 최대 3번)
+      const withMe = ['follow', 'visit', 'stay'].includes(PX.Cap.mode) && g.cap.map === g.mapId && !g.cap.hidden;
+      if (!d.nextMo) d.nextMo = d.started + 20 + Math.floor(Math.random() * 15);
+      if (withMe && t >= d.nextMo && (d.moN || 0) < 3 && !g.modal && !g.transition && U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < 5) {
+        d.moN = (d.moN || 0) + 1; d.nextMo = t + 35 + Math.floor(Math.random() * 25);
+        g.trigger(() => dateMoment());
+      }
+    }
     if (d.state === 'on' && (t - d.started > 180 || g.mapId !== d.map && !PX.MAPS[g.mapId].date && PX.MAPS[g.mapId].kind === 'in' && PX.MAPS[g.mapId].home)) endDate(d);
   }
   // 같이 있을 때 약속 시간이 되면
@@ -12562,6 +12638,26 @@ PX.Rom = (() => {
     else await lines([late > 10 ? PX.Dlg.capPick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : PX.Dlg.capPick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
     if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('dateStart'); }
     St.addAff(4);
+  }
+  // 데이트 도중의 작은 순간들: 장소 분위기 × 관계 단계. 같은 장면은 다 돌기 전까지 다시 안 나온다
+  const MOMENT = {
+    any: { pre: [['N:대위가 걸음을 내 보폭에 맞춰 늦춘다. 처음엔 몰랐는데, 계속 그렇다.', 'C:…빨랐어? 버릇이야. 맞출게.'], ['C:아까부터 사람들이 쳐다보는데.', 'C;:내 키 때문이겠지. 신경 쓰지 마.', 'N:대위가 슬쩍 사람들 쪽 시야를 몸으로 가려 준다.'], ['C:오늘 몇 시까지 괜찮아?', { q: [['늦게까지요.', 2, ['C^:좋다. 그럼 천천히 다니자.']], ['정해 두진 않았어요.', 1, ['C:그럼 피곤해지면 말해. 바로 데려다줄게.']]] }], ['N:바람에 머리카락이 흐트러진다. 대위가 손을 뻗었다가 멈춘다.', 'C;:…머리. 붙었어. 떼도 돼?', 'N:허락하자 대위가 아주 조심스럽게 떼어 준다.']],
+      love: [['N:걷다가 대위가 갑자기 멈춰서 나를 내려다본다.', 'C*:아니, 그냥. 오늘 예뻐서 한 번 더 보려고.'], ['C:손 차갑다. 이리 줘.', 'N:대위가 내 손을 자기 외투 주머니에 같이 넣는다. 주머니 안에서 손가락이 얽힌다.', 'C^:이제 따뜻하지.'], ['C:아까 그 사람이 우리 보고 신혼이냐고 물어볼 뻔했어.', { q: [['뭐라고 할 건데?', 3, ['C*:"아직요." 라고. 아직.']], ['아니라고 해.', 1, ['C;:…응. 아니라고. 아직은.']]] }], ['N:신호를 기다리는 동안 대위가 정수리에 턱을 살짝 얹는다.', 'C~:키 차이 활용하는 중.'], ['C:오늘 데이트 점수 몇 점이야?', { q: [['백 점.', 3, ['C^:만점이다. 기록해 둘게.']], ['아직 몰라. 남은 시간에 달렸지.', 2, ['C*:…그럼 지금부터 더 열심히 한다.']]] }]] },
+    water: { pre: [['N:물 위로 빛나는 무언가가 튀어 오른다. 작은 발광 물고기다.', 'C:저거 봐. 저 녀석 길 잃었나 봐.', 'C^:…너도 봤지? 나 혼자 본 거 아니지?']], love: [['N:물가 난간에 나란히 기댄다. 물에 비친 둘의 그림자가 하나로 겹쳐 있다.', 'C*:물속 우리가 더 붙어 있네.', 'N:대위가 그림자처럼 한 걸음 더 붙는다.'], ['C:물에 손 넣어 봐. 차가워.', 'N:손을 넣자 대위가 물속에서 손을 잡는다.', 'C~:물속이라 아무도 못 봐.']] },
+    sky: { pre: [['N:하늘을 가로지르는 긴 빛줄기. 유성이다.', 'C:소원 빌었어?', { q: [['빌었어요.', 2, ['C:무슨 소원인지는 안 물어볼게. 이뤄지라고.']], ['너무 빨라서 못 빌었어요.', 1, ['C^:다음 거 오면 내가 신호 줄게. 지금처럼 같이 보고 있으면 돼.']]] }]], love: [['N:별이 하나 떨어진다. 대위가 내 손을 잡고 눈을 감는다.', 'C*:같은 소원 빌었을 것 같다.', 'P:뭔데?', 'C^:지금 이대로, 오래.'], ['C:저기 저 별 빛, 이천 년 전에 출발한 거래.', 'C*:나는 지금 출발했어. 너한테.', 'C;:…방금 그 말 잊어. 너무 느끼했다.']] },
+    bloom: { pre: [['N:꽃잎 하나가 대위 어깨에 내려앉는다. 대위는 모른다.', { q: [['떼 준다.', 2, ['C!:…아, 고마워.', 'C*:꽃잎이 나보다 먼저 너한테 들켰네.']], ['그냥 둔다.', 1, ['N:대위는 꽃잎을 단 채 한참을 걷는다. 조금 귀엽다.']]] }]], love: [['N:대위가 길가 꽃 하나를 가리킨다. 꺾지는 않는다.', 'C:저거 네 머리에 꽂으면 예쁘겠다. 근데 꺾으면 불쌍하니까.', 'C*:…대신 내가 귀 뒤로 머리 넘겨 줄게.'], ['N:꽃향기 속에서 대위가 고개를 숙여 내 머리 냄새를 맡는다.', 'C~:꽃보다 네가 더 좋은 냄새 나.']] },
+    neon: { pre: [['N:네온 간판이 깜빡이며 대위 얼굴을 파랑, 분홍으로 물들인다.', 'C;:…왜 웃어.', 'C:내 얼굴 색 바뀌는 거 보고 웃은 거지. 알아.']], love: [['N:사람들이 몰려와 둘 사이를 갈라놓으려 한다. 대위가 손목을 잡아 끌어당긴다.', 'C*:놓치는 줄 알았다. 이제 안 놔.'], ['N:쇼윈도에 비친 둘을 본다. 대위가 유리에 대고 손가락으로 하트를 그린다.', 'C~:…아무도 못 봤지?']] },
+    food: { pre: [['C:여기서 제일 맛있는 거 시켜. 오늘은 내가 산다.', 'C^:대신 다음엔 네가 사. 그래야 또 오지.']], love: [['N:대위가 내 접시에 제일 잘 익은 걸 자꾸 올려 준다.', 'C:먹어. 넌 많이 먹어야 돼.', 'P:{ob}는?', 'C*:너 먹는 거 보면 배불러. 진짜로.']] },
+  };
+  async function dateMoment() {
+    const g = G();
+    if (g.modal || g.cap.map !== g.mapId) return;
+    const f = PX.Place && PX.Place.flavor ? PX.Place.flavor() : 'any', love = st() >= 4;
+    const pool = [].concat((MOMENT[f] || {})[love ? 'love' : 'pre'] || [], MOMENT.any[love ? 'love' : 'pre']);
+    g.cap.setDirTo(g.player.x, g.player.y);
+    g.modal++;
+    try { await PX.Dlg.runLines(PX.Dlg.capPick(pool), { reply: true }); } finally { PX.Dlg.close(); g.modal--; }
+    St.addAff(2);
   }
   async function endDate(d) {
     if (d.state !== 'on') return;

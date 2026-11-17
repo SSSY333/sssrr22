@@ -22,7 +22,7 @@
   // ---------- 광물온천 스파 (LB18) ----------
   const spa = out('spa', { name: '광물온천 스파', w: 28, h: 22, fill: 'mosaic', arrive: [14, 14], lore: 'LB18', fx: ['steam'], hours: ['10:00', '23:00'], amb: 0.25, tint: ['#ffb38a', 0.05] });
   spa.zones = [{ t: 'water', x0: 4, y0: 4, x1: 11, y1: 9 }, { t: 'water', x0: 16, y0: 4, x1: 23, y1: 9 }, { t: 'crystal', x0: 12, y0: 3, x1: 15, y1: 4 }];
-  spa.decor.push(['hotspring', 6, 11, 0], ['hotspring', 18, 11, 0], ['crystalcluster', 2, 3, 0], ['crystalcluster', 25, 3, 0], ['crystalcluster', 13, 6, 0], ['spastall', 22, 16, 0], ['benchout', 5, 15, 0], ['benchout', 17, 15, 0], ['candles', 3, 12, 0], ['candles', 24, 12, 0], ['bigplant', 2, 18, 0]);
+  spa.decor.push(['hotspring', 6, 11, 0], ['hotspring', 18, 11, 0], ['crystalcluster', 2, 3, 0], ['crystalcluster', 25, 3, 0], ['crystalcluster', 13, 6, 0], ['vending', 22, 16, 0], ['benchout', 5, 15, 0], ['benchout', 17, 15, 0], ['candles', 3, 12, 0], ['candles', 24, 12, 0], ['bigplant', 2, 18, 0]);
   spa.shops = { stall: 'mineral' };
 
   // ---------- 별빛 관람열차 (LB21) ----------

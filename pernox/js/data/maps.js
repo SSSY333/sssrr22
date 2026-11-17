@@ -26,7 +26,7 @@
     furn: [['opsdesk', 1, 0, 0], ['chair', 2, 1, 2, 'ops.d1'], ['opsdesk', 4, 0, 0], ['chair', 5, 1, 2, 'ops.d2'], ['console', 7, 0, 0], ['server', 9, 0, 0], ['opsdesk', 10, 0, 0], ['chair', 11, 1, 2, 'ops.d3'], ['opsdesk', 13, 0, 0], ['chair', 13, 1, 2, 'ops.cap'], ['flagstand', 15, 0, 0],
       ['locker', 0, 3, 3], ['locker', 0, 4, 3], ['locker', 0, 5, 3], ['weaponrack', 0, 7, 3],
       ['briefing', 6, 5, 0, 'ops.work'], ['@', 5, 6, 1, 'ops.b1', 'stand'], ['@', 9, 5, 3, 'ops.b2', 'stand'], ['@', 7, 7, 2, 'ops.b3', 'stand'], ['@', 8, 4, 0, 'ops.b4', 'stand'], ['@', 6, 4, 0, 'ops.b5', 'stand'],
-      ['opsdesk', 11, 8, 0], ['chair', 12, 9, 2, 'ops.d4'], ['drone', 3, 9, 0], ['crates', 1, 11, 0], ['bench', 5, 10, 0], ['vending', 15, 4, 1], ['bigplant', 15, 11, 0]],
+      ['opsdesk', 11, 8, 0], ['chair', 12, 9, 2, 'ops.d4'], ['drone', 3, 9, 0], ['crates', 1, 11, 0], ['bench', 5, 10, 0], ['vending', 0, 9, 3], ['bigplant', 15, 11, 0]],
     walls: [['B', 6.2, 'map', 1.0], ['L', 9.6, 'board', 1.2], ['L', 1.0, 'window', 1.0]] });
   const mess = [['crates', 0, 0, 0], ['stove', 3, 0, 0], ['stove', 5, 0, 0], ['fridge', 7, 0, 0], ['fridge', 8, 0, 0], ['servecounter', 3, 2, 0, 'mess.counter'], ['@', 4, 1, 0, 'mess.cook', 'stand'], ['@', 6, 1, 0, 'mess.cook2', 'stand'],
     ['vending', 0, 3, 3], ['vending', 0, 4, 3], ['sink', 23, 0, 0], ['bigplant', 22, 0, 0], ['bigplant', 0, 15, 0], ['bigplant', 23, 15, 0]];
@@ -38,7 +38,7 @@
   room('med', { name: '의무동', w: 15, h: 11, floor: 'medtile', wall: '#dfeceb', exit: 10,
     furn: [['medcab', 0, 0, 0], ['medcab', 1, 0, 0], ['examdesk', 2, 0, 0, 'med.work'], ['chair', 3, 1, 2, 'med.doc'], ['stool', 2, 2, 0, 'med.patient'], ['scanner', 5, 0, 0],
       ['medbed', 8, 0, 0, 'med.bed1'], ['curtain', 9, 0, 1], ['medbed', 10, 0, 0, 'med.bed2'], ['curtain', 11, 0, 1], ['medbed', 12, 0, 0, 'med.bed3'], ['curtain', 13, 0, 1], ['medbed', 14, 0, 0, 'med.bed4'],
-      ['bench', 0, 5, 3, 'med.wait'], ['opsdesk', 5, 5, 0], ['chair', 6, 6, 2, 'med.nurse'], ['sink', 14, 4, 1], ['vending', 14, 6, 1], ['plant', 0, 10, 0], ['bigplant', 14, 10, 0]],
+      ['bench', 0, 5, 3, 'med.wait'], ['opsdesk', 5, 5, 0], ['chair', 6, 6, 2, 'med.nurse'], ['sink', 14, 4, 1], ['vending', 0, 8, 3], ['plant', 0, 10, 0], ['bigplant', 14, 10, 0]],
     walls: [['B', 7.2, 'cross', 0.7], ['L', 3.6, 'window', 1.0], ['L', 8.6, 'window', 1.0]] });
   room('hangar', { name: '정비격납고', w: 19, h: 14, floor: 'hangar', wall: '#6b737e', exit: 9, wallH: 92,
     furn: [['workbench', 5, 0, 0, 'hg.work'], ['@', 5, 1, 2, 'hg.w1', 'work'], ['workbench', 8, 0, 0], ['@', 8, 1, 2, 'hg.w2', 'work'], ['workbench', 11, 0, 0], ['@', 11, 1, 2, 'hg.w3', 'work'],
@@ -206,11 +206,11 @@
   room('samgyup', { name: '냉삼집', w: 15, h: 12, floor: 'darkwood', wall: '#d9c7a8', exit: 7, furn: sg, date: true,
     walls: [['B', 0.6, 'menu', 1.2], ['B', 6.8, 'notice', 0.9], ['L', 2.2, 'window', 1.0], ['L', 5.6, 'poster', 0.7]] });
   room('flower', { name: '유리돔 꽃시장', w: 13, h: 11, floor: 'tile', wall: '#e8f4f0', exit: 6, date: true,
-    furn: [['cafecounter', 5, 1, 0, 'fl.shop'], ['@', 6, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 0, 0, 0], ['flowershelf', 10, 0, 0], ['flowershelf', 0, 4, 3], ['flowerbed', 3, 5, 0], ['flowerbed', 8, 5, 0], ['bench', 4, 9, 0], ['glassvase', 12, 0, 0], ['bigplant', 12, 10, 0], ['plant', 0, 10, 0]],
+    furn: [['cafecounter', 5, 1, 0, 'fl.shop'], ['@', 6, 0, 0, 'fl.clerk', 'stand'], ['flowershelf', 0, 0, 0], ['flowershelf', 10, 0, 0], ['flowershelf', 0, 4, 3], ['flowerbed', 3, 5, 0], ['flowerbed', 8, 5, 0], ['bench', 1, 9, 0], ['glassvase', 12, 0, 0], ['bigplant', 12, 10, 0], ['plant', 0, 10, 0]],
     walls: [['B', 2.6, 'window', 1.0], ['B', 7.4, 'window', 1.0], ['L', 6.0, 'window', 1.0]] });
   room('arcade', { name: '오락실', w: 13, h: 10, floor: 'darktile', wall: '#2a1f4f', exit: 6, date: true,
     furn: [['arcade', 1, 0, 0], ['arcade', 2, 0, 0], ['arcade', 3, 0, 0], ['arcade', 4, 0, 0], ['@', 2, 1, 2, 'ac.player', 'stand'], ['clawmachine', 8, 0, 0], ['clawmachine', 9, 0, 0], ['clawmachine', 10, 0, 0], ['clawmachine', 11, 0, 0], ['clawmachine', 0, 3, 3], ['clawmachine', 0, 4, 3],
-      ['shopcounter', 10, 4, 0], ['@', 11, 3, 0, 'ac.clerk', 'stand'], ['vending', 12, 6, 1], ['gametable', 5, 5, 0], ['stool', 4, 5, 0], ['stool', 7, 5, 0], ['bench', 1, 8, 0], ['bigplant', 12, 9, 0]],
+      ['shopcounter', 10, 4, 0], ['@', 11, 3, 0, 'ac.clerk', 'stand'], ['vending', 0, 6, 3], ['gametable', 5, 5, 0], ['stool', 4, 5, 0], ['stool', 7, 5, 0], ['bench', 1, 8, 0], ['bigplant', 12, 9, 0]],
     walls: [['B', 5.4, 'poster', 0.7], ['B', 11.0, 'screen', 1.2], ['L', 6.8, 'poster', 0.7]] });
   const st = [['projector', 7, 2, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0]];
   for (const ty of [6, 10]) for (let tx = 1; tx <= 14; tx++) if (tx !== 7 && tx !== 8) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
