@@ -1344,8 +1344,9 @@ PX.O = (() => {
     // 바닥 판 두께 (디오라마 느낌)
     const slab = { x: 0, y: 0, z: -10, w: m.w, d: m.h, h: 10, c: shade(wc, -0.55), noTop: true, edge: false };
     G.box(g, ox, oy, slab);
-    const back = { x: -t, y: -t, z: -10, w: m.w + t, d: t, h: H + 10, c: wc, lf: wc, top: shade(wc, -0.3) };
-    const left = { x: -t, y: 0, z: -10, w: t, d: m.h, h: H + 10, c: wc, rf: shade(wc, -0.12), top: shade(wc, -0.3) };
+    // 벽은 바닥 높이(z=0)에서 시작한다: 아래로 내려오면 첫 줄 바닥 타일을 벽 색으로 덮어 '벽이 바닥을 침범'해 보인다
+    const back = { x: -t, y: -t, z: 0, w: m.w + t, d: t, h: H, c: wc, lf: wc, top: shade(wc, -0.3) };
+    const left = { x: -t, y: 0, z: 0, w: t, d: m.h, h: H, c: wc, rf: shade(wc, -0.12), top: shade(wc, -0.3) };
     G.box(g, ox, oy, back); G.box(g, ox, oy, left);
     // 걸레받이
     const bb = { x: 0, y: -t, z: 0, w: m.w, d: t, h: 0 }, lb = { x: -t, y: 0, z: 0, w: t, d: m.h, h: 0 };
@@ -5530,6 +5531,9 @@ PX.W = (() => {
   }
   // 실내: 뒷벽·왼쪽 벽에 붙은 줄은 사람이 서지 않는다 (벽 속에 들어가 보이는 문제) · 출입구는 예외
   function blockWalls(m) {
+    m.wallFree = null;
+    return; // 원인(벽이 첫 줄 바닥을 덮어 그리던 것)을 고쳐서 벽 옆 바닥도 다시 걸을 수 있다
+    /* eslint-disable no-unreachable */
     if (m.kind !== 'in') return;
     const ex = m.exit || {}, keep = new Set(); // 카운터 뒤 직원 자리('@')는 그대로 둔다
     for (const sp of Object.values(m.spots || {})) if (!sp.seat && !sp.obj) keep.add(Math.floor(sp.y) * m.w + Math.floor(sp.x));

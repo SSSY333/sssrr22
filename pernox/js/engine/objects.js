@@ -231,8 +231,9 @@ PX.O = (() => {
     // 바닥 판 두께 (디오라마 느낌)
     const slab = { x: 0, y: 0, z: -10, w: m.w, d: m.h, h: 10, c: shade(wc, -0.55), noTop: true, edge: false };
     G.box(g, ox, oy, slab);
-    const back = { x: -t, y: -t, z: -10, w: m.w + t, d: t, h: H + 10, c: wc, lf: wc, top: shade(wc, -0.3) };
-    const left = { x: -t, y: 0, z: -10, w: t, d: m.h, h: H + 10, c: wc, rf: shade(wc, -0.12), top: shade(wc, -0.3) };
+    // 벽은 바닥 높이(z=0)에서 시작한다: 아래로 내려오면 첫 줄 바닥 타일을 벽 색으로 덮어 '벽이 바닥을 침범'해 보인다
+    const back = { x: -t, y: -t, z: 0, w: m.w + t, d: t, h: H, c: wc, lf: wc, top: shade(wc, -0.3) };
+    const left = { x: -t, y: 0, z: 0, w: t, d: m.h, h: H, c: wc, rf: shade(wc, -0.12), top: shade(wc, -0.3) };
     G.box(g, ox, oy, back); G.box(g, ox, oy, left);
     // 걸레받이
     const bb = { x: 0, y: -t, z: 0, w: m.w, d: t, h: 0 }, lb = { x: -t, y: 0, z: 0, w: t, d: m.h, h: 0 };

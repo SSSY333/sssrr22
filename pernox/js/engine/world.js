@@ -128,6 +128,9 @@ PX.W = (() => {
   }
   // 실내: 뒷벽·왼쪽 벽에 붙은 줄은 사람이 서지 않는다 (벽 속에 들어가 보이는 문제) · 출입구는 예외
   function blockWalls(m) {
+    m.wallFree = null;
+    return; // 원인(벽이 첫 줄 바닥을 덮어 그리던 것)을 고쳐서 벽 옆 바닥도 다시 걸을 수 있다
+    /* eslint-disable no-unreachable */
     if (m.kind !== 'in') return;
     const ex = m.exit || {}, keep = new Set(); // 카운터 뒤 직원 자리('@')는 그대로 둔다
     for (const sp of Object.values(m.spots || {})) if (!sp.seat && !sp.obj) keep.add(Math.floor(sp.y) * m.w + Math.floor(sp.x));
