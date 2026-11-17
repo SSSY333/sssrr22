@@ -17,6 +17,7 @@ PX.A = (() => {
       if (!tgt) return false;
       // 서 있는 사람이 있는 칸은 돌아서 간다 (사람을 뚫고 지나가지 않게)
       const occ = PX.Game && PX.Game.occ, me = this;
+      if (this.def && this.def.id !== 'cap' && m.wallFree && m.wallFree.size) { const a0 = opt && opt.allow; opt = Object.assign({}, opt || {}, { allow: (x, y) => m.wallFree.has(y * m.w + x) || (a0 ? a0(x, y) : false) }); } // 직원은 카운터 뒤 벽 줄로 다닌다
       const o2 = occ ? Object.assign({ cost: (x, y) => { const a = occ.get(y * m.w + x); return a && a !== me ? 6 : 0; } }, opt || {}) : opt;
       const p = PX.Path.find(m, Math.floor(this.x), Math.floor(this.y), tgt[0], tgt[1], o2);
       if (!p) return false;

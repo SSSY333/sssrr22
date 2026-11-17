@@ -79,6 +79,7 @@ PX.W = (() => {
     }
     // 가구 막힘 반영
     for (const o of m.objs) if (o.kind === 'furn' && o.blocks) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
+    blockWalls(m);
     resolveSpots(m);
     m.staticLights = m.lights.filter(L => !L.obj);
     maps[id] = m;
@@ -125,9 +126,21 @@ PX.W = (() => {
     }
     return g;
   }
+  // 실내: 뒷벽·왼쪽 벽에 붙은 줄은 사람이 서지 않는다 (벽 속에 들어가 보이는 문제) · 출입구는 예외
+  function blockWalls(m) {
+    if (m.kind !== 'in') return;
+    const ex = m.exit || {}, keep = new Set(); // 카운터 뒤 직원 자리('@')는 그대로 둔다
+    for (const sp of Object.values(m.spots || {})) if (!sp.seat && !sp.obj) keep.add(Math.floor(sp.y) * m.w + Math.floor(sp.x));
+    m.wallFree = new Set(); // 벽 줄 중 가구가 없는 칸: 직원(NPC)만 지나다닌다
+    for (let x = 0; x < m.w; x++) if (m.walk[x]) m.wallFree.add(x);
+    for (let y = 0; y < m.h; y++) if (m.walk[y * m.w]) m.wallFree.add(y * m.w);
+    for (let x = 0; x < m.w; x++) if (!(ex.x === x && ex.y === 0) && !keep.has(x)) m.walk[x] = 0;
+    for (let y = 0; y < m.h; y++) if (!(ex.x === 0 && ex.y === y) && !keep.has(y * m.w)) m.walk[y * m.w] = 0;
+  }
   function rebuildWalk(m) {
     m.walk.set(baseGrid(m));
     for (const o of m.objs) if (o.kind === 'furn' && o.blocks && !o.hidden && !o.desert) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
+    blockWalls(m);
     m.lights = (m.staticLights || []).concat(m.objs.filter(o => o.light).map(o => o.light));
     resolveSpots(m);
   }

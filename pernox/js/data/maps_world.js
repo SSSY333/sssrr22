@@ -196,7 +196,7 @@
     furn: [['perfumebar', 3, 1, 0], ['scentshelf', 0, 0, 0], ['scentshelf', 8, 0, 0], ['sofa', 0, 4, 3], ['cafetable', 1, 4, 0], ['diffuser', 9, 3, 0], ['glassvase', 10, 5, 0], ['plant', 10, 7, 0], ['moodlamp', 0, 7, 0], ['candles', 6, 0, 0]],
     walls: [['B', 2.8, 'mirrorw', 1.6], ['L', 1.0, 'window', 1.2]], crowd: [{ role: 'perfumer', fixed: [4.5, 0.5, 0] }, { role: 'guest', n: 1, x0: 5, y0: 3, x1: 9, y1: 6 }] });
   room('dice', { name: '다이스키스', w: 12, h: 9, floor: 'neonfloor', wall: '#2a2f4a', exit: 6, date: true, adult: true, amb: 0.35,
-    furn: [['dicetable', 1, 3, 0], ['chair', 0, 3, 3], ['chair', 3, 4, 1], ['cardtable', 8, 3, 0], ['chair', 7, 3, 3], ['chair', 10, 4, 1], ['barcounter', 4, 1, 0], ['arcade', 0, 0, 0], ['arcade', 11, 0, 0], ['velvetrope', 4, 7, 0], ['velvetrope', 8, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 11, 8, 0]],
+    furn: [['dicetable', 2, 3, 0], ['chair', 1, 3, 3], ['chair', 4, 4, 1], ['cardtable', 8, 3, 0], ['chair', 7, 3, 3], ['chair', 10, 4, 1], ['barcounter', 4, 1, 0], ['arcade', 0, 0, 0], ['arcade', 11, 0, 0], ['velvetrope', 4, 7, 0], ['velvetrope', 8, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 11, 8, 0]],
     walls: [['B', 2.0, 'poster', 0.7], ['B', 8.6, 'poster', 0.7]], crowd: [{ role: 'dealer', fixed: [5.5, 0.5, 0] }, { role: 'gamer', n: 2, x0: 1, y0: 5, x1: 10, y1: 7 }] });
   room('mask', { name: '실버마스크', w: 13, h: 10, floor: 'neonfloor', wall: '#3a3f4a', exit: 6, amb: 0.4, date: true, adult: true,
     furn: [['dancefloor', 5, 3, 0], ['barcounter', 1, 1, 0], ['sofa', 9, 0, 0], ['sofa', 12, 4, 1], ['cafetable', 10, 2, 0], ['jukebox', 12, 0, 0], ['maskrack', 11, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 0, 4, 0], ['velvetrope', 3, 7, 0], ['velvetrope', 9, 7, 0]],

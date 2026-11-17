@@ -8,7 +8,7 @@ PX.Decor = (() => {
   const OUT_CAT = ['tree', 'tree2', 'bush', 'glowflower', 'flowerbed', 'planter', 'bigplant', 'plant', 'streetlamp', 'lantern', 'benchout', 'logseat', 'beachchair', 'parasol', 'cafetable', 'fountain', 'kiosk', 'telescope', 'vending', 'campfire', 'dometent', 'icesculpture', 'crystalcluster', 'rock', 'rockbig', 'crate', 'crates', 'sandbags', 'railing', 'neonsign', 'stall', 'pullup', 'target'];
   const IN_CAT = ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'chair', 'stool', 'sofa', 'sofa_green', 'bench', 'cafetable', 'table', 'sidetable', 'shelf', 'cabinet', 'tv', 'arcade', 'gametable', 'vending', 'locker', 'crate', 'crates', 'mirror', 'aquarium', 'glassvase', 'bunnyplush', 'cooler', 'pullup', 'armtable'];
   let active = false, m = null, sel = null, drag = null, bar = null, before = null, homeMode = false;
-  const locked = o => !!(o.spot || o.event || o.desert || ['shuttle', 'event', 'work', 'meal', 'shop'].includes(o.use) || ['terminal', 'photo'].includes(o.fid));
+  const locked = o => !!((o.spot && !(homeMode && ['bed', 'sit'].includes(o.use || (o.f && o.f.use)))) || o.event || o.desert || ['shuttle', 'event', 'work', 'meal', 'shop'].includes(o.use) || ['terminal', 'photo'].includes(o.fid));
 
   function entryPoint(map) {
     if (map.kind === 'in') return [map.exit.x, map.exit.y];

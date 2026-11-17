@@ -2393,7 +2393,7 @@ PX.S = (() => {
     furn: [['perfumebar', 3, 1, 0], ['scentshelf', 0, 0, 0], ['scentshelf', 8, 0, 0], ['sofa', 0, 4, 3], ['cafetable', 1, 4, 0], ['diffuser', 9, 3, 0], ['glassvase', 10, 5, 0], ['plant', 10, 7, 0], ['moodlamp', 0, 7, 0], ['candles', 6, 0, 0]],
     walls: [['B', 2.8, 'mirrorw', 1.6], ['L', 1.0, 'window', 1.2]], crowd: [{ role: 'perfumer', fixed: [4.5, 0.5, 0] }, { role: 'guest', n: 1, x0: 5, y0: 3, x1: 9, y1: 6 }] });
   room('dice', { name: '다이스키스', w: 12, h: 9, floor: 'neonfloor', wall: '#2a2f4a', exit: 6, date: true, adult: true, amb: 0.35,
-    furn: [['dicetable', 1, 3, 0], ['chair', 0, 3, 3], ['chair', 3, 4, 1], ['cardtable', 8, 3, 0], ['chair', 7, 3, 3], ['chair', 10, 4, 1], ['barcounter', 4, 1, 0], ['arcade', 0, 0, 0], ['arcade', 11, 0, 0], ['velvetrope', 4, 7, 0], ['velvetrope', 8, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 11, 8, 0]],
+    furn: [['dicetable', 2, 3, 0], ['chair', 1, 3, 3], ['chair', 4, 4, 1], ['cardtable', 8, 3, 0], ['chair', 7, 3, 3], ['chair', 10, 4, 1], ['barcounter', 4, 1, 0], ['arcade', 0, 0, 0], ['arcade', 11, 0, 0], ['velvetrope', 4, 7, 0], ['velvetrope', 8, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 11, 8, 0]],
     walls: [['B', 2.0, 'poster', 0.7], ['B', 8.6, 'poster', 0.7]], crowd: [{ role: 'dealer', fixed: [5.5, 0.5, 0] }, { role: 'gamer', n: 2, x0: 1, y0: 5, x1: 10, y1: 7 }] });
   room('mask', { name: '실버마스크', w: 13, h: 10, floor: 'neonfloor', wall: '#3a3f4a', exit: 6, amb: 0.4, date: true, adult: true,
     furn: [['dancefloor', 5, 3, 0], ['barcounter', 1, 1, 0], ['sofa', 9, 0, 0], ['sofa', 12, 4, 1], ['cafetable', 10, 2, 0], ['jukebox', 12, 0, 0], ['maskrack', 11, 7, 0], ['moodlamp', 0, 8, 0], ['moodlamp', 0, 4, 0], ['velvetrope', 3, 7, 0], ['velvetrope', 9, 7, 0]],
@@ -5481,6 +5481,7 @@ PX.W = (() => {
     }
     // 가구 막힘 반영
     for (const o of m.objs) if (o.kind === 'furn' && o.blocks) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
+    blockWalls(m);
     resolveSpots(m);
     m.staticLights = m.lights.filter(L => !L.obj);
     maps[id] = m;
@@ -5527,9 +5528,21 @@ PX.W = (() => {
     }
     return g;
   }
+  // 실내: 뒷벽·왼쪽 벽에 붙은 줄은 사람이 서지 않는다 (벽 속에 들어가 보이는 문제) · 출입구는 예외
+  function blockWalls(m) {
+    if (m.kind !== 'in') return;
+    const ex = m.exit || {}, keep = new Set(); // 카운터 뒤 직원 자리('@')는 그대로 둔다
+    for (const sp of Object.values(m.spots || {})) if (!sp.seat && !sp.obj) keep.add(Math.floor(sp.y) * m.w + Math.floor(sp.x));
+    m.wallFree = new Set(); // 벽 줄 중 가구가 없는 칸: 직원(NPC)만 지나다닌다
+    for (let x = 0; x < m.w; x++) if (m.walk[x]) m.wallFree.add(x);
+    for (let y = 0; y < m.h; y++) if (m.walk[y * m.w]) m.wallFree.add(y * m.w);
+    for (let x = 0; x < m.w; x++) if (!(ex.x === x && ex.y === 0) && !keep.has(x)) m.walk[x] = 0;
+    for (let y = 0; y < m.h; y++) if (!(ex.x === 0 && ex.y === y) && !keep.has(y * m.w)) m.walk[y * m.w] = 0;
+  }
   function rebuildWalk(m) {
     m.walk.set(baseGrid(m));
     for (const o of m.objs) if (o.kind === 'furn' && o.blocks && !o.hidden && !o.desert) for (let y = o.y; y < o.y + o.fd; y++) for (let x = o.x; x < o.x + o.fw; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) m.walk[y * m.w + x] = 0;
+    blockWalls(m);
     m.lights = (m.staticLights || []).concat(m.objs.filter(o => o.light).map(o => o.light));
     resolveSpots(m);
   }
@@ -6059,6 +6072,7 @@ PX.A = (() => {
       if (!tgt) return false;
       // 서 있는 사람이 있는 칸은 돌아서 간다 (사람을 뚫고 지나가지 않게)
       const occ = PX.Game && PX.Game.occ, me = this;
+      if (this.def && this.def.id !== 'cap' && m.wallFree && m.wallFree.size) { const a0 = opt && opt.allow; opt = Object.assign({}, opt || {}, { allow: (x, y) => m.wallFree.has(y * m.w + x) || (a0 ? a0(x, y) : false) }); } // 직원은 카운터 뒤 벽 줄로 다닌다
       const o2 = occ ? Object.assign({ cost: (x, y) => { const a = occ.get(y * m.w + x); return a && a !== me ? 6 : 0; } }, opt || {}) : opt;
       const p = PX.Path.find(m, Math.floor(this.x), Math.floor(this.y), tgt[0], tgt[1], o2);
       if (!p) return false;
@@ -8869,7 +8883,7 @@ PX.Decor = (() => {
   const OUT_CAT = ['tree', 'tree2', 'bush', 'glowflower', 'flowerbed', 'planter', 'bigplant', 'plant', 'streetlamp', 'lantern', 'benchout', 'logseat', 'beachchair', 'parasol', 'cafetable', 'fountain', 'kiosk', 'telescope', 'vending', 'campfire', 'dometent', 'icesculpture', 'crystalcluster', 'rock', 'rockbig', 'crate', 'crates', 'sandbags', 'railing', 'neonsign', 'stall', 'pullup', 'target'];
   const IN_CAT = ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'chair', 'stool', 'sofa', 'sofa_green', 'bench', 'cafetable', 'table', 'sidetable', 'shelf', 'cabinet', 'tv', 'arcade', 'gametable', 'vending', 'locker', 'crate', 'crates', 'mirror', 'aquarium', 'glassvase', 'bunnyplush', 'cooler', 'pullup', 'armtable'];
   let active = false, m = null, sel = null, drag = null, bar = null, before = null, homeMode = false;
-  const locked = o => !!(o.spot || o.event || o.desert || ['shuttle', 'event', 'work', 'meal', 'shop'].includes(o.use) || ['terminal', 'photo'].includes(o.fid));
+  const locked = o => !!((o.spot && !(homeMode && ['bed', 'sit'].includes(o.use || (o.f && o.f.use)))) || o.event || o.desert || ['shuttle', 'event', 'work', 'meal', 'shop'].includes(o.use) || ['terminal', 'photo'].includes(o.fid));
 
   function entryPoint(map) {
     if (map.kind === 'in') return [map.exit.x, map.exit.y];
