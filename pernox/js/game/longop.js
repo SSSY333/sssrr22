@@ -131,7 +131,7 @@ PX.Op = (() => {
   function quick() {
     const st = St.S.rel.cap.stage, lv = st >= 4 ? 'lov' : st >= 2 ? 'mid' : 'pre', away = canMsg();
     const night = St.S.time.min >= 21 * 60 || St.S.time.min < 5 * 60;
-    return ((away ? QUICK : QUICK_D)[lv] || QUICK_D.pre).filter(t => night || !/잘 자/.test(t)).map(t => U.fmt(t, PX.Dlg.ctx()));
+    return ((away ? QUICK : QUICK_D)[lv] || QUICK_D.pre).filter(t => night || !/잘 자/.test(t)).map(t => PX.Dlg.capTone(U.fmt(t, PX.Dlg.ctx())));
   }
   // 평소 (작전 아닐 때) 떨어져 있으면 보내는 메시지
   const QUICK_D = { pre: ['뭐 해요?', '밥 먹었어요?', '오늘 하루 어땠어요?', '이따 시간 돼요?', '오늘 고마웠어요.', '잘 자요.'],

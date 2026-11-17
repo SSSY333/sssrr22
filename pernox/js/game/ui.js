@@ -456,10 +456,10 @@ PX.UI = (() => {
         const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t), ...(m.photo ? [el('img', { class: 'msgph', src: m.photo, alt: '사진' })] : []));
         if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
         else if (m.reply === 'none') { /* 답장 필요 없는 메시지 */ }
-        else if (m.reply != null) { const rr = (m.r || [])[m.reply]; if (rr) box.append(el('div', { class: 'bub me' }, rr[0]), el('div', { class: 'bub cap' }, rr[2])); }
+        else if (m.reply != null) { const rr = (m.r || [])[m.reply]; if (rr) box.append(el('div', { class: 'bub me' }, PX.Dlg.capTone(rr[0])), el('div', { class: 'bub cap' }, rr[2])); }
         else {
           const ch = el('div', { class: 'msgch' });
-          m.r.forEach((rr, i) => { const b = el('button', null, rr[0]); b.onclick = () => { m.reply = i; St.addAff(rr[1]); badge(); p.innerHTML = ''; PANES.msg(p); }; ch.append(b); });
+          m.r.forEach((rr, i) => { const b = el('button', null, PX.Dlg.capTone(rr[0])); b.onclick = () => { m.reply = i; St.addAff(rr[1]); badge(); p.innerHTML = ''; PANES.msg(p); }; ch.append(b); });
           if (PX.AI.available()) { // 직접 답장 쓰기 → 대위가 AI로 답장
             const free = el('button', { class: 'free' }, '✍️ 직접 쓰기');
             free.onclick = () => {

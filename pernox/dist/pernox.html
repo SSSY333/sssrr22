@@ -6745,6 +6745,7 @@ PX.Dlg = (() => {
     // 존댓말 → 반말
     t = t.replace(/^(\([^)]*\)\s*)?네([,.!])/, (m, a, b) => (a || '') + '응' + b).replace(/아니요|아뇨/g, '아니');
     t = t.replace(/(^|[\s…])저는/g, '$1나는').replace(/(^|[\s…])전 /g, '$1난 ').replace(/(^|[\s…])제가/g, '$1내가').replace(/(^|[\s…])저도/g, '$1나도').replace(/(^|[\s…])저를/g, '$1나를').replace(/(^|[\s…])저한테/g, '$1나한테').replace(/(^|[\s…])저랑/g, '$1나랑').replace(/(^|[\s…])제 /g, '$1내 ').replace(/(^|[\s…])저희/g, '$1우리');
+    t = t.replace(/시니까/g, '니까').replace(/(하|가|오|보)시면/g, '$1면');
     t = t.replace(/리셨/g, '렸').replace(/하셨/g, '했').replace(/오셨/g, '왔').replace(/가셨/g, '갔').replace(/드셨/g, '먹었').replace(/보셨/g, '봤').replace(/주셨/g, '줬').replace(/계셨/g, '있었').replace(/으셨/g, '었');
     t = t.replace(/입니다/g, '이야').replace(/습니다/g, '어').replace(/이에요/g, '이야').replace(/예요/g, '야').replace(/마세요/g, '마').replace(/드세요/g, '먹어').replace(/주세요/g, '줘').replace(/하세요/g, '해').replace(/가세요/g, '가').replace(/오세요/g, '와').replace(/쉬세요/g, '쉬어').replace(/보세요/g, '봐').replace(/계세요/g, '있어').replace(/으세요/g, '어').replace(/세요/g, '어').replace(/드릴게/g, '줄게').replace(/드려/g, '줘').replace(/군요/g, '구나').replace(/죠([.?!…~\s]|$)/g, '지$1');
     t = t.replace(/([가-힣])요([.?!…~,\s)]|$)/g, '$1$2');
@@ -6759,6 +6760,34 @@ PX.Dlg = (() => {
     t = t.replace(new RegExp(B + '네 (?=[가-힣])', 'g'), (m, a) => a + ob + ' ');
     return t;
   }
+
+  // 반말 → 존댓말 (수색팀 소위가 연인 되기 전, 상관인 대위에게)
+  const KEEP = /^(아|어|음|와|헉|흠|앗|오|엥|에이|하하|헤헤|응응|으|흐|휴|읏|쉿|네|예|자기야|호|흥|칫|좀)$/;
+  const hasBat = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c <= 11171 && c % 28 !== 0 && c % 28 !== 4 && c % 28 !== 8; }; // ㄴ · ㄹ 받침은 그냥 '요' (하면요 · 뭘요)
+  function endPolite(w) {
+    if (/(요|니다|니까|죠|세요|다|님|기)$/.test(w) || KEEP.test(w)) return w;
+    if (w === '마') return '마세요';
+    if (w === '응') return '네'; if (w === '아니' || w === '아냐') return '아니요'; if (w === '미안') return '죄송해요'; if (w === '고마워') return '고마워요';
+    if (/거야$/.test(w)) return w.replace(/거야$/, '거예요');
+    if (/이야$/.test(w)) return w.replace(/이야$/, '이에요');
+    if (/[냐니]$/.test(w) && w.length > 1) return w.slice(0, -1) + '나요';
+    if (/[^는은인던]지$/.test(w)) return w.slice(0, -1) + '죠';
+    if (/자$/.test(w) && w.length > 1) return w.slice(0, -1) + '죠';
+    if (/야$/.test(w) && w.length > 1) { const c = w.charCodeAt(w.length - 2) - 0xac00; return c >= 0 && c % 28 === 0 ? w.slice(0, -1) + '예요' : w; }
+    if (hasBat(w) && !/(걸|군|겠|었|았|않|는데|은데|던데|텐데)$/.test(w)) return w + '이요'; // 받침 있는 말: 손이요 · 외곽이요
+    return w + '요';
+  }
+  function polite(t) {
+    if (!t || /^\(.*\)$/.test(t.trim())) return t;
+    t = t.replace(/(^|[\s…])나는/g, '$1저는').replace(/(^|[\s…])난 /g, '$1전 ').replace(/(^|[\s…])내가/g, '$1제가').replace(/(^|[\s…])나도/g, '$1저도').replace(/(^|[\s…])나를/g, '$1저를').replace(/(^|[\s…])나한테/g, '$1저한테').replace(/(^|[\s…])나랑/g, '$1저랑').replace(/(^|[\s…])내 (?=[가-힣])/g, '$1제 ');
+    const J = { 는: '은', 도: '도', 를: '을', 한테: '한테', 랑: '이랑', 이랑: '이랑', 보다: '보다', 만: '만', 하고: '하고', 의: '의' };
+    t = t.replace(/(^|[\s“"'(…])너(이랑|랑|는|도|를|한테|보다|만|하고|의)/g, (m, a, j) => a + '대위님' + J[j]).replace(/(^|[\s“"'(…])네가/g, '$1대위님이').replace(/(^|[\s“"'(…])넌(?=[\s.?!,…~]|$)/g, '$1대위님은').replace(/(^|[\s“"'(…])널(?=[\s.?!,…~]|$)/g, '$1대위님을').replace(/(^|[\s“"'(…])너(?=[\s.?!,…~]|$)/g, '$1대위님');
+    // 문장 끝에서만 (말줄임표는 줄 끝일 때만 문장 끝으로 본다)
+    return t.replace(/([가-힣]+)([.?!~]+[…]*|…+(?=\s*$)|$)(?=[\s"”')]|$)/g, (m, w, pun) => endPolite(w) + pun);
+  }
+  // 대위에게 하는 말을 지금 관계에 맞는 말투로 (연인이거나 수색팀이 아니면 반말 · 수색팀 소위는 연인 전까지 존댓말)
+  const capTone = (t) => !t ? t : banmal() ? lover(t) : polite(t);
+  function toCapAny() { const G = PX.Game; if (npcActive || !G || !G.cap || G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 8 || G.cap.atDoor; }
 
   function portrait(speaker, face) {
     const g = portEl.getContext('2d');
@@ -6807,7 +6836,7 @@ PX.Dlg = (() => {
     if (speaker === 'cap') try { noteCapSaid(text); recentCap.push({ t: text, at: St.absMin() }); if (recentCap.length > 8) recentCap.shift(); } catch (e) { /* 무시 */ }
     text = U.fixNames(text);
     if (text && text[0] === '\u2060') text = text.slice(1); // 그대로 말하기 표시 (예: 근무 중 장난으로 '대위님')
-    else if (speaker === 'player' && toCap()) text = lover(text);
+    else if (speaker === 'player' && toCapAny()) text = capTone(text);
     if (speaker === 'cap' && lovers()) { const gn = U.givenName(St.S.player.name); text = text.replace(new RegExp('^' + gn + '(아|야)([,.!]|\\s)'), (m, a, b) => Math.random() < 0.5 ? '자기야' + b : m); }
     if (PX.Dlg.onSay) try { PX.Dlg.onSay(speaker, text); } catch (e) {}
     return new Promise(res0 => {
@@ -6848,7 +6877,7 @@ PX.Dlg = (() => {
       chEl.innerHTML = ''; chEl.classList.remove('hidden'); nextEl.classList.add('hidden');
       box.classList.remove('hidden');
       opts.forEach((o, i) => {
-        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, toCap() ? lover(o.t) : o.t);
+        const b = U.el('button', { class: 'choice' + (o.hurt ? ' hurt' : '') }, toCapAny() ? capTone(o.t) : o.t);
         b.addEventListener('click', (e) => { e.stopPropagation(); chEl.classList.add('hidden'); res(i); });
         chEl.append(b);
       });
@@ -7231,7 +7260,7 @@ PX.Dlg = (() => {
     const un = base.filter(x => !capSaid(first(x)));
     return U.pickFresh('cp' + U.hash(arr.map(first).join('|')), un.length ? un : base);
   }
-  return { topicClash, recentCapText, capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
+  return { topicClash, recentCapText, capPick, capSaid, noteCapSaid, bundleSeen, askCall, lover, polite, capTone, toCap, ctxOk, reset, thinking, init, say, choose, close, runLines, pick, capTalk, npcTalk, apology, maybeConfess, get open() { return open; }, ctx };
 })();
 
 </script>
@@ -8851,10 +8880,10 @@ PX.UI = (() => {
         const box = el('div', { class: 'msg' }, el('small', null, `${Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, m.day))} ${Cal.fmtTime(m.min)}`), el('div', { class: 'bub cap' }, m.t), ...(m.photo ? [el('img', { class: 'msgph', src: m.photo, alt: '사진' })] : []));
         if (m.reply === 'free') { box.append(el('div', { class: 'bub me' }, m.mine), el('div', { class: 'bub cap' }, m.ans)); }
         else if (m.reply === 'none') { /* 답장 필요 없는 메시지 */ }
-        else if (m.reply != null) { const rr = (m.r || [])[m.reply]; if (rr) box.append(el('div', { class: 'bub me' }, rr[0]), el('div', { class: 'bub cap' }, rr[2])); }
+        else if (m.reply != null) { const rr = (m.r || [])[m.reply]; if (rr) box.append(el('div', { class: 'bub me' }, PX.Dlg.capTone(rr[0])), el('div', { class: 'bub cap' }, rr[2])); }
         else {
           const ch = el('div', { class: 'msgch' });
-          m.r.forEach((rr, i) => { const b = el('button', null, rr[0]); b.onclick = () => { m.reply = i; St.addAff(rr[1]); badge(); p.innerHTML = ''; PANES.msg(p); }; ch.append(b); });
+          m.r.forEach((rr, i) => { const b = el('button', null, PX.Dlg.capTone(rr[0])); b.onclick = () => { m.reply = i; St.addAff(rr[1]); badge(); p.innerHTML = ''; PANES.msg(p); }; ch.append(b); });
           if (PX.AI.available()) { // 직접 답장 쓰기 → 대위가 AI로 답장
             const free = el('button', { class: 'free' }, '✍️ 직접 쓰기');
             free.onclick = () => {
@@ -12970,7 +12999,7 @@ PX.Op = (() => {
   function quick() {
     const st = St.S.rel.cap.stage, lv = st >= 4 ? 'lov' : st >= 2 ? 'mid' : 'pre', away = canMsg();
     const night = St.S.time.min >= 21 * 60 || St.S.time.min < 5 * 60;
-    return ((away ? QUICK : QUICK_D)[lv] || QUICK_D.pre).filter(t => night || !/잘 자/.test(t)).map(t => U.fmt(t, PX.Dlg.ctx()));
+    return ((away ? QUICK : QUICK_D)[lv] || QUICK_D.pre).filter(t => night || !/잘 자/.test(t)).map(t => PX.Dlg.capTone(U.fmt(t, PX.Dlg.ctx())));
   }
   // 평소 (작전 아닐 때) 떨어져 있으면 보내는 메시지
   const QUICK_D = { pre: ['뭐 해요?', '밥 먹었어요?', '오늘 하루 어땠어요?', '이따 시간 돼요?', '오늘 고마웠어요.', '잘 자요.'],
