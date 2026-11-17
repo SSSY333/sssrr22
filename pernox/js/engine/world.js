@@ -382,7 +382,7 @@ PX.W = (() => {
     }
     // 조명 · 날씨
     const amb = ambient(m, env.min, env.weather);
-    if (m.kind === 'out' && !m.def.dome && m.def.fx !== 'stars') weatherFx(g, env, W, H);
+    if (m.kind === 'out' && !m.def.dome && ![].concat(m.def.fx || []).includes('stars')) weatherFx(g, env, W, H);
     if (amb.tint) { g.globalAlpha = amb.tint[1]; g.fillStyle = amb.tint[0]; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
     if (amb.d > 0.02) {
       const dk = view.dark, dg = dk.getContext('2d');
@@ -419,6 +419,7 @@ PX.W = (() => {
     }
     if (m.kind === 'out' && m.def.dome) domeFx(g, env, W, H);
     if (m.def.fx) specialFx(g, m, env, W, H);
+    if (m.def.fx || m.def.tour) tourFx(g, m, env, W, H);
     if (extra && extra.overlay) extra.overlay(g);
   }
 
@@ -452,7 +453,7 @@ PX.W = (() => {
   // 지역 특수 효과: 별, 오로라, 빛먼지
   const sfx = [];
   function specialFx(g, m, env, W, H) {
-    const t = performance.now() / 1000, fx = m.def.fx;
+    const t = performance.now() / 1000, fxs = [].concat(m.def.fx || []), fx = fxs.includes('aurora') ? 'aurora' : fxs.includes('lightdust') ? 'lightdust' : fxs[0];
     if (fx === 'aurora' && (env.min >= 19 * 60 || env.min < 5 * 60)) {
       for (let i = 0; i < 3; i++) {
         const y0 = 30 + i * 22 + Math.sin(t * 0.3 + i) * 6;
@@ -467,6 +468,65 @@ PX.W = (() => {
       sfx.length = n;
       for (const p of sfx) { p.y -= (4 + p.s * 8) * env.dt; p.x += Math.sin(t + p.s * 9) * 5 * env.dt; if (p.y < 0) { p.y = H; p.x = Math.random() * W; } g.fillStyle = `rgba(255,${200 + 55 * p.s | 0},${160 + 90 * p.s | 0},${0.4 + 0.5 * Math.abs(Math.sin(t * 2 + p.s * 7))})`; g.fillRect(p.x | 0, p.y | 0, on ? 2 : 1, on ? 2 : 1); }
     }
+  }
+  // ---------- 관광지 효과: 장소마다 신비롭고 로맨틱하게 (가볍게 · 절전 모드면 줄인다) ----------
+  const TP = {}; let tourMap = null;
+  function pool(k, n, mk) { const a = TP[k] = TP[k] || []; while (a.length < n) a.push(mk()); a.length = n; return a; }
+  function tourFx(g, m, env, W, H) {
+    if (tourMap !== m.id) { for (const k in TP) delete TP[k]; tourMap = m.id; }
+    const t = performance.now() / 1000, dt = env.dt, fxs = [].concat(m.def.fx || []), low = env.low ? 0.5 : 1, min = env.min;
+    const night = min >= 19 * 60 || min < 5 * 60, R = Math.random;
+    const dot = (x, y, s, c, a) => { g.globalAlpha = a; g.fillStyle = c; g.fillRect(x | 0, y | 0, s, s); };
+    for (const fx of fxs) {
+      if (fx === 'fireflies') { // 반딧불: 밤에 더 많이 · 깜빡이며 떠다닌다
+        for (const p of pool(fx, ((night ? 26 : 8) * low) | 0, () => ({ x: R() * W, y: H * 0.3 + R() * H * 0.7, s: R(), ph: R() * 9 }))) { p.x += Math.sin(t * 0.7 + p.ph) * 9 * dt; p.y += Math.cos(t * 0.5 + p.ph * 2) * 6 * dt; const a = Math.max(0, Math.sin(t * (1.5 + p.s) + p.ph)); dot(p.x, p.y, 2, '#d8ff8a', 0.25 + 0.6 * a); dot(p.x - 1, p.y - 1, 4, '#d8ff8a', 0.12 * a); }
+      } else if (fx === 'petals') { // 유리꽃잎: 반짝이며 천천히 떨어진다
+        for (const p of pool(fx, (22 * low) | 0, () => ({ x: R() * W, y: R() * H, s: R(), ph: R() * 9, c: ['#ffc6e6', '#ffe2f2', '#c9b6ff', '#bfe8ff'][R() * 4 | 0] }))) { p.y += (10 + p.s * 10) * dt; p.x += Math.sin(t * 1.3 + p.ph) * 14 * dt; if (p.y > H) { p.y = -4; p.x = R() * W; } const flick = Math.abs(Math.sin(t * 3 + p.ph)); dot(p.x, p.y, flick > 0.5 ? 3 : 2, p.c, 0.55 + 0.4 * flick); }
+      } else if (fx === 'bubbles') { // 빛 거품: 아래에서 위로
+        for (const p of pool(fx, (18 * low) | 0, () => ({ x: R() * W, y: R() * H, s: R(), ph: R() * 9 }))) { p.y -= (8 + p.s * 12) * dt; p.x += Math.sin(t + p.ph) * 6 * dt; if (p.y < -4) { p.y = H + 4; p.x = R() * W; } g.globalAlpha = 0.35 + 0.25 * p.s; g.strokeStyle = '#bff4ff'; g.lineWidth = 1; g.beginPath(); g.arc(p.x, p.y, 1.5 + p.s * 2.5, 0, 6.29); g.stroke(); dot(p.x - 1, p.y - 1.5, 1, '#ffffff', 0.7); }
+      } else if (fx === 'waves') { // 물빛 반짝임: 화면 아래쪽에 반짝 반짝
+        for (const p of pool(fx, (30 * low) | 0, () => ({ x: R() * W, y: H * 0.45 + R() * H * 0.55, ph: R() * 9 }))) { const a = Math.max(0, Math.sin(t * 2.4 + p.ph)); if (a > 0.6) { dot(p.x, p.y, 1, '#ffffff', a); dot(p.x - 2, p.y, 5, '#bfe8ff', 0.25 * a); } if (a < 0.02) { p.x = R() * W; p.y = H * 0.45 + R() * H * 0.55; } }
+      } else if (fx === 'meteors') { // 유성: 밤에 가끔 긴 꼬리
+        if (!night) continue;
+        const a = pool(fx, 1, () => ({ x: 0, y: 0, life: -R() * 4 }));
+        const s = a[0]; s.life += dt; if (s.life > 1.1) { s.life = -2 - R() * 4; s.x = R() * W * 0.8; s.y = R() * H * 0.3; }
+        if (s.life > 0) { const k = s.life * 260; for (let i = 0; i < 22; i++) dot(s.x + k - i * 3, s.y + k * 0.42 - i * 1.3, i < 2 ? 2 : 1, i < 3 ? '#ffffff' : '#ffd6f0', Math.max(0, (1 - i / 22) * (1 - s.life / 1.1))); }
+      } else if (fx === 'silver') { // 은빛 모래: 해 질 때 더 반짝
+        const sun = min >= 16 * 60 && min < 20 * 60;
+        for (const p of pool(fx, ((sun ? 45 : 18) * low) | 0, () => ({ x: R() * W, y: H * 0.35 + R() * H * 0.65, ph: R() * 9 }))) { const a = Math.max(0, Math.sin(t * 3 + p.ph)); if (a > 0.7) { dot(p.x, p.y, 1, '#ffffff', a); dot(p.x - 1, p.y, 3, '#e8dcff', 0.3 * a); } }
+      } else if (fx === 'steam') { // 김: 몽글몽글 위로
+        for (const p of pool(fx, (16 * low) | 0, () => ({ x: R() * W, y: H * 0.4 + R() * H * 0.6, s: R(), age: R() * 4 }))) { p.age += dt; p.y -= 7 * dt; p.x += Math.sin(t + p.s * 9) * 4 * dt; if (p.age > 4) { p.age = 0; p.y = H * 0.5 + R() * H * 0.5; p.x = R() * W; } const a = Math.sin(p.age / 4 * Math.PI) * 0.18; g.globalAlpha = a; g.fillStyle = '#fff3ea'; g.beginPath(); g.arc(p.x, p.y, 6 + p.age * 3, 0, 6.29); g.fill(); }
+      } else if (fx === 'sunset') { // 인공노을: 17:40~18:30 회랑이 노을빛으로
+        const on = min >= 17 * 60 + 40 && min < 18 * 60 + 30;
+        const k = on ? 0.32 : 0.08; const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, `rgba(255,150,90,${k})`); gr.addColorStop(0.6, `rgba(255,110,150,${k * 0.7})`); gr.addColorStop(1, 'rgba(120,80,200,0)');
+        g.globalAlpha = 1; g.fillStyle = gr; g.fillRect(0, 0, W, H);
+        if (on) for (const p of pool(fx, (14 * low) | 0, () => ({ x: R() * W, y: R() * H, ph: R() * 9 }))) { p.y -= 3 * dt; if (p.y < 0) p.y = H; dot(p.x, p.y, 2, '#ffd29a', 0.3 + 0.3 * Math.sin(t * 2 + p.ph)); }
+      } else if (fx === 'fish') { // 홀로그램 물고기: 밤 조명이 켜지면 바닥 아래로 헤엄친다
+        if (!(min >= 19 * 60 || min < 1 * 60)) continue;
+        for (const p of pool(fx, (9 * low) | 0, () => ({ x: R() * W, y: H * 0.3 + R() * H * 0.6, v: (R() < 0.5 ? -1 : 1) * (14 + R() * 16), ph: R() * 9, c: ['#7fe3ff', '#ff9fd6', '#ffd166', '#9b7bff'][R() * 4 | 0] }))) {
+          p.x += p.v * dt; p.y += Math.sin(t * 1.5 + p.ph) * 4 * dt; if (p.x < -12) p.x = W + 10; if (p.x > W + 12) p.x = -10;
+          const d = p.v > 0 ? 1 : -1, a = 0.45 + 0.2 * Math.sin(t * 3 + p.ph);
+          dot(p.x, p.y, 5, p.c, a); dot(p.x - d * 3, p.y + 1, 3, p.c, a * 0.8); dot(p.x - d * 5, p.y, 2, p.c, a * 0.6); dot(p.x + d * 3, p.y + 1, 1, '#ffffff', a);
+        }
+      } else if (fx === 'orbit') { // 궤도광: 하늘에 빛의 고리가 천천히 돈다
+        g.globalAlpha = 1; g.lineWidth = 1;
+        for (let i = 0; i < 3; i++) { const rx = W * (0.35 + i * 0.12), ry = H * (0.06 + i * 0.025), cx = W / 2, cy = H * 0.18; g.strokeStyle = `rgba(${i === 1 ? '255,180,230' : '170,220,255'},${0.18 + 0.08 * Math.sin(t + i)})`; g.beginPath(); g.ellipse(cx, cy, rx, ry, -0.12, 0, 6.29); g.stroke(); const a = t * (0.25 + i * 0.1) + i * 2; dot(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, 2, '#ffffff', 0.9); }
+      } else if (fx === 'beacons') { // 항로등: 떠 있는 등불이 둥실
+        for (const p of pool(fx, (16 * low) | 0, () => ({ x: R() * W, y: R() * H * 0.6, ph: R() * 9, c: ['#ffb36b', '#ff7ac8', '#7fe3ff'][R() * 3 | 0] }))) { p.y += Math.sin(t * 0.8 + p.ph) * 3 * dt; p.x += 3 * dt; if (p.x > W + 6) p.x = -6; const a = 0.55 + 0.3 * Math.sin(t * 1.6 + p.ph); dot(p.x - 3, p.y - 3, 7, p.c, 0.12 * a); dot(p.x - 1, p.y - 1, 3, p.c, a); }
+      } else if (fx === 'neon') { // 네온 안개: 분홍·하늘빛이 일렁인다
+        const k = night ? 0.1 : 0.04; g.globalAlpha = 1; g.fillStyle = `rgba(255,90,180,${k * (0.6 + 0.4 * Math.sin(t * 0.7))})`; g.fillRect(0, H * 0.55, W, H * 0.45); g.fillStyle = `rgba(90,200,255,${k * (0.6 + 0.4 * Math.cos(t * 0.5))})`; g.fillRect(0, 0, W, H * 0.4);
+      } else if (fx === 'trainstars') { // 관람열차 창밖: 별이 옆으로 흘러간다
+        for (const p of pool(fx, (40 * low) | 0, () => ({ x: R() * W, y: R() * H, s: R() }))) { p.x -= (30 + p.s * 120) * dt; if (p.x < -10) { p.x = W + 10; p.y = R() * H; } const len = 2 + p.s * 10; g.globalAlpha = 0.3 + 0.6 * p.s; g.fillStyle = p.s > 0.85 ? '#ffd6f0' : '#ffffff'; g.fillRect(p.x | 0, p.y | 0, len | 0, 1); }
+      } else if (fx === 'stars' && m.def.tour) { // 반짝이는 별 몇 개 더
+        for (const p of pool('tstars', (24 * low) | 0, () => ({ x: R() * W, y: R() * H * 0.5, ph: R() * 9 }))) { const a = Math.max(0, Math.sin(t * 1.7 + p.ph)); dot(p.x, p.y, 1, '#ffffff', a); if (a > 0.95) { dot(p.x - 1, p.y, 3, '#ffffff', 0.5); dot(p.x, p.y - 1, 1, '#ffffff', 0.5); dot(p.x, p.y + 1, 1, '#ffffff', 0.5); } }
+      }
+    }
+    // 연인과 관광지: 가끔 작은 하트가 둥실 (대위와 함께일 때)
+    const G = PX.Game, S = PX.St.S;
+    if (m.def.tour && G && G.cap && G.cap.map === m.id && S.rel.cap.stage >= 4 && PX.Cap.mode === 'follow') {
+      for (const p of pool('hearts', (6 * low) | 0, () => ({ x: R() * W, y: H + R() * H, ph: R() * 9 }))) { p.y -= 9 * dt; p.x += Math.sin(t + p.ph) * 5 * dt; if (p.y < -6) { p.y = H + 6; p.x = R() * W; } const a = 0.18 + 0.12 * Math.sin(t * 2 + p.ph); g.globalAlpha = a; g.fillStyle = '#ff9fcf'; const x = p.x | 0, y = p.y | 0; g.fillRect(x - 2, y, 2, 2); g.fillRect(x + 1, y, 2, 2); g.fillRect(x - 2, y + 1, 5, 2); g.fillRect(x - 1, y + 3, 3, 1); g.fillRect(x, y + 4, 1, 1); }
+    }
+    g.globalAlpha = 1;
   }
   function domeFx(g, env, W, H) { // 돔 안: 은은한 발광 포자
     if (partKind !== 'dome') { parts.length = 0; partKind = 'dome'; }

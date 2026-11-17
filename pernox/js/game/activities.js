@@ -16,14 +16,45 @@ PX.Act = (() => {
   const ARRIVE = { base: [27.5, 58.5], dome: [23.5, 40.5], plaza: [26.5, 45.5] };
 
   // ---------- 이동 ----------
+  // ---------- 돔시티 관광 셔틀: 한 메뉴에서 어디든 ----------
+  const hm = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+  function openNow(rng) { if (!rng) return true; const t = St.S.time.min, a = hm(rng[0]), b = hm(rng[1]) % 1440; return a < b ? t >= a && t < b : t >= a || t < b; }
+  function special(id) {
+    const S = St.S, t = S.time.min, wd = PX.Cal.weekday(S.time.y, S.time.m, S.time.d), md = PX.MAPS[id] || {};
+    if (id === 'corridor' && t >= 17 * 60 + 40 && t < 18 * 60 + 30) return '🌅 지금 인공노을';
+    if (id === 'bridge' && (wd === 3 || wd === 6) && t >= 20 * 60 + 30 && t < 21 * 60 + 30) return '✨ 지금 빛먼지 연출';
+    if ((id === 'hill' || id === 'silverdesert') && t >= 16 * 60 + 30 && t < 19 * 60 + 30) return '🌇 노을 시간';
+    if (id === 'glowpath' && t >= 20 * 60 && t < 23 * 60) return '🌿 발광초가 제일 밝은 시간';
+    if (md.best && openNow(md.best)) return '💫 지금이 제일 예쁜 시간';
+    return '';
+  }
+  async function shuttle() {
+    const g = G(), S = St.S, here = g.mapId;
+    const items = (PX.TOUR || []).filter(([id]) => id !== here && PX.MAPS[id]).map(([id, ic, mins]) => {
+      const md = PX.MAPS[id], open = openNow(md.hours), sp = special(id);
+      return { t: `${ic} ${md.name}`, sub: [`${mins}분`, md.hours ? `${md.hours[0]}~${md.hours[1] === '24:00' ? '00:00' : md.hours[1]}` : null, open ? sp : '지금은 운영 안 해요'].filter(Boolean).join(' · '), k: { to: id, mins, need: id === 'rubyway' ? 'adult' : id === 'base' ? 'pass' : null }, off: !open, offMsg: `${U.josa(md.name, '은')} ${md.hours ? md.hours[0] + '~' + md.hours[1] : ''}에 열어요` };
+    });
+    const it = await PX.UI.menu('🚝 돔시티 관광 셔틀', items);
+    if (!it) return;
+    const t = it.k;
+    if (t.need === 'pass' && !PX.JOBS[S.player.job].military && !St.has('pass')) { PX.UI.toast('🪪 부대 출입 허가증이 필요해요'); return; }
+    if (t.need === 'adult' && !S.done.adultOk) {
+      const ok = await PX.UI.ask('루비웨이', '루비웨이는 성인 대상 유흥 · 데이트 구역이에요. 성인이고, 직접 선택해서 들어가시나요? (노골적인 묘사는 나오지 않아요)', '들어갈래요', '그만둘래요');
+      if (!ok) return; S.done.adultOk = 1;
+    }
+    await travel(t.to, t.mins);
+  }
   async function travelMenu() {
     const g = G(), S = St.S, md = PX.MAPS[g.mapId];
     if (PX.Op && PX.Op.inField()) return PX.Op.board(); // 합동작전 중: 작전 일과
+    if (md.tour || ['plaza', 'dome', 'rubyway'].includes(g.mapId)) return shuttle(); // 돔시티 어디서든 셔틀 한 번에
     const list = (md.travel || []).filter(t => PX.MAPS[t.to]);
+    if (g.mapId === 'base' || g.mapId === 'port') list.push({ to: '__shuttle', label: '🚝 돔시티 관광 셔틀 (어디든 바로)', mins: 30 });
     if (!list.length) { PX.UI.toast('이곳에서는 다른 곳으로 갈 수 없어요'); return; }
     const it = await PX.UI.menu(`${md.name} · 이동`, list.map(t => ({ t: t.label, sub: `${t.mins >= 60 ? Math.round(t.mins / 60) + '시간' : t.mins + '분'}${t.need === 'scout' ? ' · 수색팀 소속이거나 대위와 동행할 때' : t.need === 'adult' ? ' · 성인만' : ''}`, k: t })));
     if (!it) return;
     const t = it.k;
+    if (t.to === '__shuttle') { if (g.mapId === 'base') await travel('plaza', 30); return shuttle(); }
     if (t.need === 'scout' && S.player.job !== 'scout' && PX.Cap.mode !== 'follow') { PX.UI.toast('🚫 출입 제한 구역이에요. 수색팀 소속이거나 대위와 동행해야 해요.'); return; }
     if (t.need === 'pass' && !PX.JOBS[S.player.job].military && !St.has('pass')) { PX.UI.toast('🪪 부대 출입 허가증이 필요해요'); return; }
     if (t.need === 'adult' && !S.done.adultOk) {
@@ -490,5 +521,5 @@ PX.Act = (() => {
     return false;
   }
   const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
-  return { innDesk, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
+  return { shuttle, innDesk, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();
