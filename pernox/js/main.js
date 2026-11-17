@@ -399,13 +399,8 @@
     const key = S.day + ':' + shift;
     if (S.workLog[key]) { UI.toast('이번 근무는 이미 마쳤어요'); return; }
     if (S.energy < 12) { UI.toast('😵 너무 피곤해서 일할 수 없어요. 뭘 좀 먹거나 쉬어요.'); return; }
-    const ctx = {};
-    // 대위는 수색에서 돌아와 실제로 의무실에 와 있을 때만 환자로 온다
-    const capHere = Game.cap.map === Game.mapId && !Game.cap.hidden && PX.CapAct.ctx() === 'med';
-    if (job.mini === 'treat') ctx.patient = capHere ? S.capName + ' 대위' : U.pick(['정시우 일병', '최민재 병장', '이준혁 하사', '외곽 경계병', '정비병', '통신병']);
-    const score = await PX.Mini.run(job.mini, ctx);
-    // 시간이 흐르기 전에 (대위가 아직 의무실에 있을 때) 말한다
-    if (ctx.patient && ctx.patient.startsWith(S.capName)) { Game.modal++; await Dlg.runLines(['C*:선생님 손 진짜 부드럽다.', 'C^:다음에 또 다쳐 와야겠다.', { q: [['다치지 마세요.', 3, ['C:응. 네가 그러라면.']], ['일부러 다치면 혼나요.', 2, ['C*:혼나는 것도 좋은데.']]] }]); Dlg.close(); Game.modal--; Game.trigger(() => Cap.afterTreat()); }
+    const score = await PX.Jobs.shift(S.player.job, key); // 이번 근무 업무 골라서
+    if (score == null) return;
     const pay = Math.round(job.pay * (0.6 + 0.6 * score));
     S.money += pay; S.energy = Math.max(0, S.energy - 18); S.workLog[key] = 1; S.workLog[S.day] = (S.workLog[S.day] || 0) + 1; S.stats.work++;
     const end = shift === 0 ? 12 * 60 : 17 * 60;

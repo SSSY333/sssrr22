@@ -93,7 +93,7 @@ PX.UI = (() => {
   }
   function pickSlot(kind) {
     sheet(kind === 'new' ? '새 게임 — 저장 칸 고르기' : '불러오기', (b, close) => {
-      for (const n of [1, 2]) {
+      for (const n of [1, 2, 3, 4, 5]) {
         const p = St.peek(n);
         const info = p ? (p.broken ? '손상된 저장' : `${p.name} (${p.job}) · ${p.date} · ${p.cap}와(과) ${p.stage}`) : '비어 있음';
         const btn = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}`), el('small', null, info));
@@ -533,7 +533,7 @@ PX.UI = (() => {
       const bdNote = el('small', { class: 'note' }, S.player.bday ? '' : '내 생일을 정하면 그날 대위가 챙겨 줘요.');
       p.append(el('h4', null, '🎂 생일'), el('div', { class: 'row' }, el('label', null, '내 생일'), bdayPick(S.player.bday, v => { if (v) { S.player.bday = v; bdNote.textContent = `${v.m}월 ${v.d}일로 정했어요`; } })), el('div', { class: 'row' }, el('label', null, `${S.capName} 생일`), bdayPick(S.capBday, v => { if (v) { S.capBday = v; bdNote.textContent = `대위 생일: ${v.m}월 ${v.d}일`; } })), bdNote);
       p.append(el('h4', null, '시간 흐름'), sp, el('h4', null, '소리'), snd, el('h4', null, '화질 (폰이 버벅이면 절전)'), qa, el('small', null, PX.Game.lowPerf ? '지금 절전 모드로 돌아가는 중' : ''), el('h4', null, '저장'));
-      for (const n of [1, 2]) {
+      for (const n of [1, 2, 3, 4, 5]) {
         const pk = St.peek(n);
         const b = el('button', { class: 'menu-btn' }, el('span', null, `저장 칸 ${n}에 저장${S.slot === n ? ' (사용 중)' : ''}`), el('small', null, pk ? `${pk.name} · ${pk.date}` : '비어 있음'));
         b.onclick = async () => { if (pk && S.slot !== n && !(await ask('저장', `저장 칸 ${n}번(${pk.name})을 덮어쓸까요?`, '덮어쓰기'))) return; const ok = St.save(n, false); toast(ok ? `💾 저장 칸 ${n}에 저장했어요` : '저장하지 못했어요 (저장 공간 부족)'); p.innerHTML = ''; PANES.set(p, close); };

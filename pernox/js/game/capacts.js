@@ -124,6 +124,7 @@ PX.CapAct = (() => {
   const A = {};
   const gain = (k, n) => { if (today(k)) { St.addAff(n); return true; } return false; };
   A.treat = async () => {
+    if (PX.Jobs && PX.Jobs.examWanted()) return PX.Jobs.capExam(); // 의무팀 · 복귀 검진 시간
     const S = St.S, medic = S.player.job === 'medic';
     await lines(['C:…네가 해 주는 거야? 그럼 얌전히 있을게.', 'N:대위가 소매를 걷는다. 팔뚝에 긁힌 자국과 모래가 묻어 있다.']);
     const r = await PX.Mini.run('treat', { patient: S.capName + ' 대위' });
