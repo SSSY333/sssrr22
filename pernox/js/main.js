@@ -95,6 +95,7 @@
     Game.mapId = id; Game.enteredAt = St.absMin();
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;
+    if (PX.Bath) PX.Bath.onMap(id);
     const m = W.maps[id];
     const t = PX.Path.nearestWalkable(m, x, y); if (t && !W.walkable(m, Math.floor(x), Math.floor(y))) { p.x = t[0] + 0.5; p.y = t[1] + 0.5; }
     // 이 맵에 있어야 할 NPC 즉시 배치 (보이지 않던 사이 위치 동기화)
@@ -217,7 +218,7 @@
       case 'terminal': return UI.terminal();
       case 'album': return UI.terminal('album');
       case 'storage': return UI.terminal('inv');
-      case 'shop': return UI.shop({ cafe: 'cafe', samgyup: 'samgyup', flower: 'flower', arcade: 'arcade' }[Game.mapId] || 'px');
+      case 'shop': if (Game.mapId === 'salon') return PX.Bath.salon(); return UI.shop({ cafe: 'cafe', samgyup: 'samgyup', flower: 'flower', arcade: 'arcade', interior: 'interior', boutique: 'boutique' }[Game.mapId] || 'px');
       case 'grill': return grill(o);
       case 'claw': return claw();
       case 'show': return show();
@@ -415,8 +416,9 @@
   }
   async function wardrobe() {
     const S = St.S;
-    const it = await UI.menu('옷장', Object.entries(PX.S.OUTFITS).map(([k, o]) => ({ t: (S.player.outfit === k ? '✔ ' : '') + o.ko, k })));
-    if (!it) return;
+    const own = ['uniform', 'training', 'hoodie', 'shirt', 'skirt'].concat(S.closet || []);
+    const it = await UI.pickCards('👗 옷장', own.map(k => ({ t: PX.S.OUTFITS[k].ko, sub: S.player.outfit === k ? '입는 중' : null, on: S.player.outfit === k, k, img: UI.lookThumb({ outfit: k, bath: false }) })), (S.closet || []).length ? null : '돔시티 중앙광장 궤도 부티크에서 옷을 더 살 수 있어요.');
+    if (!it || it.k === S.player.outfit) return;
     S.player.outfit = it.k; Game.player.app = PX.S.playerApp(S.player, St.season());
     UI.toast('👕 옷을 갈아입었다');
     if (Cap.mode === 'visit' || (Game.cap.map === Game.mapId && Cap.mode === 'follow')) setTimeout(() => Game.bubble(Game.cap, U.pick(['오, 그거 잘 어울린다.', '…나 지금 눈 둘 데가 없다.', '예쁘다. 그거 입고 나랑 나가자.'])), 600);
@@ -1265,6 +1267,6 @@
   }
   Game.boot = boot;
   // 디버그/테스트용 훅
-  window.__px = { Game, St, W, Cap, Dlg, UI, tapAt, interactables, nearest, enterBuilding, leaveRoom, sleepUntil, useObj, capMenu };
+  window.__px = { Game, St, W, Cap, Dlg, UI, tapAt, interactables, nearest, enterBuilding, leaveRoom, sleepUntil, useObj, capMenu, wardrobe };
   boot();
 })();

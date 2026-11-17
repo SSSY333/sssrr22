@@ -305,6 +305,16 @@ button { touch-action: manipulation; }
 .mlabs { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 14px; }
 .mlab { position: absolute; white-space: nowrap; font-family: 'Jua', sans-serif; text-shadow: 0 2px 0 rgba(0,0,0,.45); line-height: 1; }
 
+.shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 6px; }
+.shopgrid .card { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px 8px; border: 2px solid #3a2f56; border-radius: 12px; background: #1d1630; color: inherit; font: inherit; text-align: center; min-width: 0; }
+.shopgrid .card b { font-weight: 400; font-size: 12.5px; line-height: 1.25; word-break: keep-all; }
+.shopgrid .card small { color: var(--muted); font-size: 11px; }
+.shopgrid .card button { padding: 5px 10px; border-radius: 9px; border: 2px solid var(--line); background: var(--gold); color: #2a1020; font: inherit; font-size: 12.5px; }
+.shopgrid .card button:disabled { background: #3a2f56; color: var(--muted); }
+.shopgrid .card.pick.on { border-color: var(--gold); }
+canvas.thumb { image-rendering: pixelated; background: radial-gradient(circle at 50% 60%, #33295a 0%, #1d1630 70%); border-radius: 10px; }
+.item canvas.thumb { width: 48px; height: 42px; flex: none; }
+
 </style>
 <canvas id="game"></canvas>
   <div id="labels"></div>
@@ -871,6 +881,9 @@ PX.G = (() => {
 
   // ---------- 7×7 도트 아이콘 (간판용) ----------
   const ICONS = {
+    shirt: ['.##.##.', '#######', '#######', '.#####.', '.#####.', '.#####.', '.#####.'],
+    scissors: ['#....#.', '.#..#..', '..##...', '..##...', '.#..#..', '##..##.', '##..##.'],
+    sofa: ['.......', '.#####.', '.#####.', '#######', '#######', '#.....#', '.......'],
     cross: ['..###..', '..###..', '#######', '#######', '#######', '..###..', '..###..'],
     fork: ['#.#.#..', '#.#.#.#', '#####.#', '..#..##', '..#..##', '..#...#', '..#...#'],
     wrench: ['.##....', '#..#...', '#..##..', '.####..', '...###.', '....###', '.....##'],
@@ -1423,9 +1436,9 @@ PX.O = (() => {
 PX.S = (() => {
   const G = PX.G, { shade } = PX.U;
   const SKINS = ['#fde3cf', '#f6cba6', '#e2a77c', '#b97a52', '#8a5438'];
-  const HAIRC = { '흑발': '#2a2433', '갈색': '#6b4430', '밝은 갈색': '#a0703f', '금발': '#e3bf6c', '붉은색': '#b8543a', '분홍': '#e78ab0', '은발': '#c9ccd6', '푸른색': '#4a6fb8' };
+  const HAIRC = { '흑발': '#2a2433', '갈색': '#6b4430', '밝은 갈색': '#a0703f', '금발': '#e3bf6c', '붉은색': '#b8543a', '분홍': '#e78ab0', '은발': '#c9ccd6', '푸른색': '#4a6fb8', '애쉬 브라운': '#8a7a6a', '와인': '#7a2f45', '민트': '#7fd3b8', '라벤더': '#b89ae0', '하늘색': '#8ac4ef', '백금발': '#f2e6c4', '오렌지 브라운': '#c4723a', '그레이': '#8a8f99' };
   const EYEC = { '검정': '#2a2030', '갈색': '#6b3d22', '파랑': '#3b6fd0', '초록': '#3a9a5a', '회색': '#707a88', '호박색': '#c9862a', '보라': '#8a5ad0' };
-  const HAIRS = { pony: '포니테일', messybun: '앞머리 올림머리', short: '짧은 머리', crew: '스포츠 머리', bob: '단발', long: '긴 머리', bun: '올림머리', curly: '곱슬', wolf: '울프컷' };
+  const HAIRS = { pony: '포니테일', messybun: '앞머리 올림머리', short: '짧은 머리', crew: '스포츠 머리', bob: '단발', long: '긴 머리', bun: '올림머리', curly: '곱슬', wolf: '울프컷', twin: '트윈테일', braid: '옆 땋은 머리', halfup: '반묶음', pixie: '픽시컷', wave: '긴 웨이브', hime: '히메컷', lowbun: '낮은 똥머리', highpony: '하이 포니테일', twoblock: '투블럭', perm: '가르마 펌' };
   // 신체 비율
   const BODY = {
     n: { fw: 32, fh: 48, ax: 16, ay: 45, hw: 16, hh: 15, tw: 10, th: 8, aw: 2, lh: 8, lw: 4, gap: 2 },
@@ -1465,9 +1478,12 @@ PX.S = (() => {
       if (view === 'F') { R(lx, legTop + 8, B.lw, 2, shoe); R(rx, legTop + 8, B.lw, 2, shoe); }
     } else {
       const lOff = -Math.max(0, phase), rOff = -Math.max(0, -phase);
-      if (app.skirt) {
+      if (app.skirt || app.dress || app.robe) {
+        const sl = app.dress || app.robe ? B.lh - 1 : 6; // 원피스·가운은 무릎 아래까지
         R(lx + 1, legTop + 5 + lOff, B.lw - 1, B.lh - 2, skin); R(rx, legTop + 5 + rOff, B.lw - 1, B.lh - 2, skin);
-        R(lx - 1, legTop, B.lw * 2 + B.gap + 2, 6, bot);
+        R(lx - 1, legTop, B.lw * 2 + B.gap + 2, sl, bot);
+        if (app.dress || app.robe) { R(lx - 2, legTop + sl - 2, B.lw * 2 + B.gap + 4, 2, bot); R(lx - 1, legTop + sl - 1, B.lw * 2 + B.gap + 2, 1, shade(bot, -0.18)); }
+        if (app.robe) R(cx, legTop, 1, sl, shade(bot, -0.15));
       } else {
         R(lx, legTop + lOff, B.lw, B.lh + 1, bot); R(rx, legTop + rOff, B.lw, B.lh + 1, bot);
         R(lx, legTop + lOff, B.lw, 1, shade(bot, -0.15));
@@ -1490,7 +1506,11 @@ PX.S = (() => {
         R(tx + 2, tTop + 5, B.tw / 2 - 3, 1, shade(top, -0.25)); R(cx + 1, tTop + 5, B.tw / 2 - 3, 1, shade(top, -0.25));
         R(cx, tTop + 2, 1, B.th - 4, shade(top, -0.18));
       }
-      if (!sit && !app.skirt) R(tx, tTop + B.th - 2, B.tw, 2, shade(bot, -0.25)); // 벨트
+      if (!sit && !app.skirt && !app.dress && !app.robe) R(tx, tTop + B.th - 2, B.tw, 2, shade(bot, -0.25)); // 벨트
+      if (app.stripe) for (let k = 2; k < B.th - 2; k += 3) R(tx, tTop + k, B.tw, 1, app.stripe);
+      if (app.trim) { R(tx, tTop + B.th - 1, B.tw, 1, app.trim); if (view === 'F') R(cx - 2, tTop, 4, 1, app.trim); }
+      if (app.robe) { if (view === 'F') { R(cx - 1, tTop, 2, 3, skin); R(cx - 2, tTop, 1, 4, shade(top, -0.15)); R(cx + 1, tTop, 1, 4, shade(top, -0.15)); } R(tx, tTop + B.th - 3, B.tw, 2, app.robe); if (view === 'F') R(cx + 2, tTop + B.th - 1, 2, 3, app.robe); }
+      if (app.scarf) { R(tx - 1, tTop, B.tw + 2, 2, app.scarf); if (view === 'F') R(tx + 2, tTop + 2, 2, 5, app.scarf); }
       if (sit) { // 앉으면 허벅지와 신발이 몸 아래로 보인다
         const ky = tTop + B.th;
         R(lx, ky - 1, B.lw, 3, bot); R(rx, ky - 1, B.lw, 3, bot);
@@ -1688,12 +1708,16 @@ PX.S = (() => {
     if (app.hair === 'bob') { R(hx - 1, hy + 4, hw + 2, hh - 2, d); }
     if (app.hair === 'wolf') { R(hx - 1, hy + 4, hw + 2, hh + 2, d); }
     if (app.hair === 'pony') { R(hx + hw - 1, hy + 4, 3, 8, d); }
+    if (app.hair === 'wave' || app.hair === 'hime') { R(hx - 2, hy + 4, hw + 4, hh + 9, d); }
+    if (app.hair === 'halfup') { R(hx - 1, hy + 4, hw + 2, hh + 5, d); }
+    if (app.hair === 'twin') { R(hx - 4, hy + 3, 3, 12, d); R(hx + hw + 1, hy + 3, 3, 12, d); }
+    if (app.hair === 'highpony') { R(hx + hw - 1, hy, 3, 13, d); }
   }
   function hairDraw(R, app, hx, hy, hw, hh, col, view, B) {
     const hl = shade(col, 0.25), dk = shade(col, -0.18);
     const st = app.hair;
     if (view === 'B') { // 뒷모습: 머리 전체
-      const len = { messybun: hh - 2, short: hh - 3, crew: hh - 5, bob: hh, long: hh + 6, pony: hh - 3, bun: hh - 3, curly: hh - 2, wolf: hh + 2, slick: hh - 4 }[st] || hh - 3;
+      const len = { twin: hh - 3, braid: hh - 2, halfup: hh + 4, pixie: hh - 5, wave: hh + 8, hime: hh + 7, lowbun: hh - 3, highpony: hh - 3, twoblock: hh - 5, perm: hh - 3, messybun: hh - 2, short: hh - 3, crew: hh - 5, bob: hh, long: hh + 6, pony: hh - 3, bun: hh - 3, curly: hh - 2, wolf: hh + 2, slick: hh - 4 }[st] || hh - 3;
       if (app.big) { R(hx - 1, hy - 1, hw + 2, Math.min(len, hh) + 1, col); R(hx, hy - 2, hw, 2, col); }
       else { R(hx, hy, hw, Math.min(len, hh), col); R(hx + 2, hy - 1, hw - 4, 1, col); R(hx - 1, hy + 2, hw + 2, Math.min(len, hh) - 2, col); }
       if (len > hh) R(hx - 1, hy + hh, hw + 2, len - hh, col);
@@ -1702,7 +1726,13 @@ PX.S = (() => {
       if (st === 'bun') { R(hx + hw / 2 - 3, hy - 5, 6, 5, col); }
       if (st === 'messybun') { R(hx + hw / 2 - 4, hy - 4, 8, 7, col); R(hx + hw / 2 - 2, hy - 3, 3, 1, hl); R(hx - 2, hy + hh - 3, 1, 3, dk); R(hx + hw + 1, hy + hh - 4, 1, 4, dk); }
       if (st === 'slick') { R(hx + 4, hy + 1, 6, 1, hl); }
-      if (st === 'curly') for (let i = -1; i < hw + 1; i += 3) R(hx + i, hy + hh - 4, 2, 2, col);
+      if (st === 'curly' || st === 'perm' || st === 'wave') for (let i = -1; i < hw + 1; i += 3) R(hx + i, hy + Math.min(len, hh + 8) - 2, 2, 2, col);
+      if (st === 'twin') { R(hx - 3, hy + 3, 3, 12, dk); R(hx + hw, hy + 3, 3, 12, dk); R(hx - 3, hy + 3, 3, 1, '#ff8fb0'); R(hx + hw, hy + 3, 3, 1, '#ff8fb0'); }
+      if (st === 'braid') { for (let k = 0; k < 5; k++) R(hx + hw - 3 + (k % 2), hy + hh - 2 + k * 2, 3, 2, k % 2 ? dk : col); }
+      if (st === 'halfup') { R(hx + hw / 2 - 2, hy + 3, 4, 3, dk); R(hx + hw / 2 - 1, hy + 2, 2, 1, '#e8c56a'); }
+      if (st === 'lowbun') { R(hx + hw / 2 - 3, hy + hh - 4, 6, 5, dk); }
+      if (st === 'highpony') { R(hx + hw / 2 - 2, hy - 3, 4, 3, col); R(hx + hw / 2 - 2, hy, 4, 13, dk); }
+      if (st === 'twoblock') { R(hx - 1, hy + hh - 6, hw + 2, 3, shade(col, -0.3)); }
       return;
     }
     // 앞모습
@@ -1727,6 +1757,20 @@ PX.S = (() => {
         R(hx + hw - 1, hy + 2, 2, 2, '#ff8fb0'); R(hx + hw, hy + 4, 2, 6, dk); R(hx + hw + 1, hy + 10, 1, 2, dk); R(hx + 3, hy - 1, 4, 1, hl); break;
       case 'bun': R(hx - 1, hy + 2, 2, 4, col); R(hx + hw - 1, hy + 2, 2, 4, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + hw / 2 - 3, hy - 6, 6, 5, col); R(hx + hw / 2 - 2, hy - 5, 2, 1, hl); break;
       case 'curly': for (let i = -1; i < hw + 1; i += 2) R(hx + i, hy - 3 + (i % 4 === 1 ? 1 : 0), 2, 2, col); R(hx - 2, hy + 2, 3, 6, col); R(hx + hw - 1, hy + 2, 3, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 2, hy + 4, 2, 1, col); R(hx + hw - 4, hy + 4, 2, 1, col); break;
+      case 'twin': R(hx - 1, hy + 2, 2, 5, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 4, hy + 5, 2, 1, col); R(hx + hw - 6, hy + 5, 2, 1, col);
+        R(hx - 3, hy + 1, 3, 2, '#ff8fb0'); R(hx + hw, hy + 1, 3, 2, '#ff8fb0'); R(hx - 4, hy + 3, 3, 11, dk); R(hx + hw + 1, hy + 3, 3, 11, dk); R(hx - 4, hy + 14, 2, 1, dk); R(hx + hw + 2, hy + 14, 2, 1, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'braid': R(hx - 1, hy + 2, 2, 6, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + hw - 6, hy + 5, 3, 1, col);
+        for (let k = 0; k < 6; k++) R(hx + hw - 1 + (k % 2), hy + 6 + k * 2, 3, 2, k % 2 ? dk : col); R(hx + hw, hy + 18, 2, 1, '#e05a7a'); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'halfup': R(hx - 1, hy + 2, 2, hh + 4, col); R(hx + hw - 1, hy + 2, 2, hh + 4, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 3, hy + 4, 3, 1, col); R(hx + hw / 2 - 2, hy - 3, 4, 3, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'pixie': R(hx - 1, hy + 2, 1, 4, col); R(hx + hw, hy + 2, 1, 4, col); R(hx + 1, hy + 2, hw - 5, 2, col); R(hx + 2, hy + 4, 4, 1, col); R(hx + hw - 4, hy + 2, 2, 1, col); R(hx + 4, hy - 1, 4, 1, hl); break;
+      case 'wave': R(hx - 2, hy + 2, 3, hh + 8, col); R(hx + hw - 1, hy + 2, 3, hh + 8, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + hw - 6, hy + 5, 3, 1, col);
+        for (let k = 0; k < 4; k++) { R(hx - 3 + (k % 2), hy + 6 + k * 4, 1, 2, dk); R(hx + hw + 2 - (k % 2), hy + 8 + k * 4, 1, 2, dk); } R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'hime': R(hx - 1, hy + 2, 3, hh - 4, col); R(hx + hw - 2, hy + 2, 3, hh - 4, col); R(hx - 2, hy + hh - 2, 2, 9, col); R(hx + hw, hy + hh - 2, 2, 9, col); R(hx + 1, hy + 2, hw - 2, 4, col); R(hx + 1, hy + 6, hw - 2, 1, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'lowbun': R(hx - 1, hy + 2, 2, 6, col); R(hx + hw - 1, hy + 2, 2, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 3, hy + 4, 2, 1, col); R(hx - 2, hy + 8, 1, 3, dk); R(hx + hw + 1, hy + hh - 5, 3, 4, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'highpony': R(hx, hy + 2, 2, 5, col); R(hx + hw - 2, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 3, hy + 4, 3, 1, col);
+        R(hx + hw / 2 - 2, hy - 4, 4, 3, col); R(hx + hw / 2 - 1, hy - 2, 2, 1, '#ff8fb0'); R(hx + hw - 1, hy - 3, 3, 4, dk); R(hx + hw + 1, hy + 1, 2, 9, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'twoblock': R(hx - 1, hy - 1, hw + 2, 3, col); R(hx - 1, hy + 2, 1, 3, shade(col, -0.3)); R(hx + hw, hy + 2, 1, 3, shade(col, -0.3)); R(hx + 1, hy + 2, hw - 6, 2, col); R(hx + 2, hy + 4, 3, 1, col); R(hx + 4, hy - 2, 5, 1, hl); break;
+      case 'perm': for (let i = -1; i < hw + 1; i += 2) R(hx + i, hy - 2 + (i % 4 === 1 ? 1 : 0), 2, 2, col); R(hx - 1, hy + 2, 2, 5, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw / 2 - 1, 3, col); R(hx + hw / 2 + 1, hy + 2, hw / 2 - 2, 2, col); R(hx + 2, hy + 5, 2, 1, col); R(hx + hw / 2, hy + 1, 1, 2, shade(col, -0.25)); break;
       case 'wolf': R(hx - 1, hy + 2, 2, hh + 1, col); R(hx + hw - 1, hy + 2, 2, hh + 1, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 2, hy + 5, 2, 1, col); R(hx + hw - 5, hy + 5, 2, 1, col); R(hx + 3, hy - 1, 3, 1, hl); break;
     }
   }
@@ -1744,12 +1788,12 @@ PX.S = (() => {
 
   // 플레이어 외형 → 그리기용
   function playerApp(p, season) {
-    const o = OUTFITS[p.outfit] || OUTFITS.uniform;
-    const job = PX.JOBS[p.job];
+    const o = OUTFITS[p.bath ? 'bathrobe' : p.outfit] || OUTFITS.uniform;
+    const job = PX.JOBS[p.job], v = (x) => typeof x === 'function' ? x(job) : x;
     const a = {
       skin: SKINS[p.skin] || SKINS[1], hair: p.hair, hairColor: HAIRC[p.hairColor] || '#2a2433', eye: EYEC[p.eye] || '#2a2030',
-      top: o.top(job), bottom: o.bottom(job), shoe: o.shoe, sleeve: season === 'summer' && o.summerShort ? 'short' : o.sleeve,
-      coat: o.coat ? o.coat(job) : null, skirt: !!o.skirt, badge: o.badge ? job.color : null,
+      top: v(o.top), bottom: v(o.bottom), shoe: o.shoe, sleeve: season === 'summer' && o.summerShort ? 'short' : o.sleeve,
+      coat: o.coat ? v(o.coat) : null, skirt: !!o.skirt, dress: !!o.dress, robe: o.robe || null, stripe: o.stripe || null, trim: o.trim || null, scarf: o.scarf || null, hat: o.hat || null, vest: o.vest || null, badge: o.badge ? job.color : null,
       eyeStyle: p.gender === '남성' ? 'sharp' : 'big', brows: p.gender === '남성' ? (HAIRC[p.hairColor] || '#2a2433') : null, hood: !!o.hood,
       tag: job.military && p.outfit === 'uniform' ? 1 : 0,
     };
@@ -1764,6 +1808,118 @@ PX.S = (() => {
   };
 
   return { frame, get, invalidate, playerApp, SKINS, HAIRC, EYEC, HAIRS, OUTFITS, BODY, MASKS };
+})();
+
+</script>
+<script>
+/* js/data/fashion.js */
+// 옷 · 가구 · 미용실 카탈로그
+//  - 옷: 궤도 부티크에서 사서 옷장에서 갈아입는다 (모든 옷은 실제 캐릭터 모습으로 미리 보기)
+//  - 가구: 별빛 가구점(돔시티) · PX에서 사서 숙소에 놓는다 (실제 가구 그림으로 미리 보기)
+//  - 머리: 은하 헤어(미용실)에서 모양 · 색을 바꾼다
+'use strict';
+(() => {
+  // ---------------- 옷 ----------------
+  // top/bottom/shoe: 색 · sleeve: long/short/none · skirt(짧은 치마) · dress(무릎 아래) · stripe/trim/scarf/vest/coat/hat: 포인트 색
+  const O = (ko, price, o) => Object.assign({ ko, price, sleeve: 'long', shoe: '#3a3340' }, o);
+  const NEW = {
+    // 데일리
+    knit_cream: O('크림 꽈배기 니트 · 청바지', 120, { top: '#f2e8d5', bottom: '#4a6a9a', shoe: '#f4efe4', trim: '#e0d2b6' }),
+    stripe_tee: O('줄무늬 티 · 면바지', 80, { top: '#f4f6f8', stripe: '#3b5fa8', bottom: '#c9b48a', shoe: '#f4efe4', sleeve: 'short' }),
+    mint_cardigan: O('민트 가디건 · 플리츠 치마', 140, { top: '#a8e0cc', vest: '#f4f6f8', bottom: '#5a6a8a', skirt: true, shoe: '#5a3f2a' }),
+    denim_jacket: O('데님 재킷 · 흰 티', 160, { top: '#f4f6f8', coat: '#4a6a9a', bottom: '#2f3a4a', shoe: '#e9eef2' }),
+    navy_sweat: O('네이비 맨투맨 · 조거', 90, { top: '#2f3f66', bottom: '#5a5f6a', shoe: '#e9eef2', trim: '#f4f6f8' }),
+    lilac_hood: O('라일락 후드 · 트레이닝', 110, { top: '#c9b0e8', bottom: '#4a4560', shoe: '#f4efe4', hood: true }),
+    check_shirt: O('체크 셔츠 · 청바지', 100, { top: '#b8543a', stripe: '#6b2a20', bottom: '#4a6a9a', shoe: '#5a3f2a' }),
+    sky_blouse: O('하늘 블라우스 · 롱스커트', 150, { top: '#cfe6f7', bottom: '#f4efe4', dress: true, shoe: '#e6d6c8', trim: '#ffffff' }),
+    yellow_knit: O('노란 니트 조끼 · 셔츠', 130, { top: '#f4f6f8', vest: '#f2c94c', bottom: '#4a4a52', shoe: '#5a3f2a' }),
+    black_casual: O('올블랙 캐주얼', 120, { top: '#25232b', bottom: '#1f1c22', shoe: '#1f1c22', trim: '#4a4555' }),
+    // 원피스 · 데이트
+    rose_dress: O('장미빛 원피스', 220, { top: '#d9566f', bottom: '#d9566f', dress: true, shoe: '#f4efe4', sleeve: 'short', trim: '#ffd1dc' }),
+    white_dress: O('하얀 여름 원피스', 210, { top: '#fbfaf6', bottom: '#fbfaf6', dress: true, shoe: '#e6d6c8', sleeve: 'none', trim: '#e8d9b8' }),
+    navy_dress: O('네이비 셔츠 원피스', 200, { top: '#2f3f66', bottom: '#2f3f66', dress: true, shoe: '#5a3f2a', trim: '#f4f6f8' }),
+    floral_dress: O('유리꽃 무늬 원피스', 240, { top: '#ffe0ec', stripe: '#ff9ed2', bottom: '#ffe0ec', dress: true, shoe: '#f4efe4', sleeve: 'short' }),
+    lavender_dress: O('라벤더 쉬폰 원피스', 230, { top: '#c9b0e8', bottom: '#b89ae0', dress: true, shoe: '#f4efe4', sleeve: 'short', trim: '#efe6ff' }),
+    star_dress: O('은하 드레스', 380, { top: '#1f2346', stripe: '#3a3f7a', bottom: '#1f2346', dress: true, shoe: '#c9ccd6', sleeve: 'none', trim: '#e8c56a' }),
+    red_slip: O('붉은 슬립 드레스', 320, { top: '#a8243a', bottom: '#a8243a', dress: true, shoe: '#1f1c22', sleeve: 'none' }),
+    // 셔츠 · 정장
+    suit_black: O('검정 슈트', 350, { top: '#f4f6f8', coat: '#25232b', bottom: '#25232b', shoe: '#1f1c22', trim: '#25232b' }),
+    suit_beige: O('베이지 셋업', 330, { top: '#f4efe4', coat: '#c9b48a', bottom: '#c9b48a', shoe: '#5a3f2a' }),
+    trench: O('트렌치코트', 290, { top: '#f4efe4', coat: '#c9a86a', bottom: '#3a3f4a', shoe: '#5a3f2a', trim: '#a8865a' }),
+    blouse_slacks: O('리본 블라우스 · 슬랙스', 180, { top: '#fbfaf6', scarf: '#d9566f', bottom: '#3a3f4a', shoe: '#1f1c22' }),
+    // 계절
+    puffer: O('하얀 패딩 · 니트', 300, { top: '#eef2f5', bottom: '#4a4a52', shoe: '#c9b48a', trim: '#cfd8de' }),
+    muffler_coat: O('카멜 코트 · 머플러', 320, { top: '#f2e8d5', coat: '#a8754a', scarf: '#b8243a', bottom: '#3a3f4a', shoe: '#5a3f2a' }),
+    winter_knit: O('눈꽃 스웨터', 160, { top: '#b8243a', stripe: '#f4f6f8', bottom: '#3a3f4a', shoe: '#5a3f2a' }),
+    summer_set: O('린넨 반팔 · 반바지', 110, { top: '#f2e8d5', bottom: '#c9b48a', shoe: '#e6d6c8', sleeve: 'short' }),
+    beach_shirt: O('하와이안 셔츠', 120, { top: '#3ab0c9', stripe: '#ffd166', bottom: '#f4efe4', shoe: '#e6d6c8', sleeve: 'short' }),
+    tank_shorts: O('나시 · 숏팬츠', 90, { top: '#f4f6f8', bottom: '#4a6a9a', shoe: '#f4efe4', sleeve: 'none' }),
+    // SF · 행성 스타일
+    pilot_suit: O('항로 조종사 점프슈트', 260, { top: '#e8eef4', bottom: '#e8eef4', shoe: '#3a4450', trim: '#ff8a3d', vest: '#5fa8ff' }),
+    nebula_hood: O('성운 그라데이션 후드', 200, { top: '#6a4ab0', stripe: '#9f7fe0', bottom: '#2a2346', shoe: '#e9eef2', hood: true }),
+    silver_jacket: O('은빛 보머 재킷', 280, { top: '#25232b', coat: '#c9ccd6', bottom: '#2f3a4a', shoe: '#e9eef2' }),
+    glow_tee: O('발광 실 티셔츠', 140, { top: '#1f2a3a', stripe: '#7fe3ff', bottom: '#2f3a4a', shoe: '#e9eef2', sleeve: 'short' }),
+    researcher_coat: O('연구원 롱가운 스타일', 210, { top: '#cfe6f7', coat: '#fbfaf6', bottom: '#3a3f4a', shoe: '#e6d6c8' }),
+    crystal_dress: O('광물빛 원피스', 360, { top: '#7fd3d0', stripe: '#bff5f0', bottom: '#5ab8b4', dress: true, shoe: '#f4efe4', sleeve: 'short' }),
+    // 잠옷 · 집
+    pajama_pink: O('분홍 잠옷', 90, { top: '#ffc9da', stripe: '#ffe8ef', bottom: '#ffc9da', shoe: '#ffffff' }),
+    pajama_navy: O('네이비 체크 잠옷', 90, { top: '#2f3f66', stripe: '#5a6a9a', bottom: '#2f3f66', shoe: '#ffffff' }),
+    homewear: O('니트 홈웨어 세트', 100, { top: '#e6d6c8', bottom: '#e6d6c8', shoe: '#f4efe4', trim: '#c9b49a' }),
+    oversized_shirt: O('대위 셔츠 같은 오버핏 셔츠', 130, { top: '#6b7a5a', bottom: '#2a2f22', shoe: '#ffffff', trim: '#4f5a3d' }),
+  };
+  Object.assign(PX.S.OUTFITS, NEW);
+  // 온천 · 스파 탈의실 전용 (사지 않음)
+  PX.S.OUTFITS.bathrobe = O('온천 가운', 0, { top: '#f4f1ea', bottom: '#f4f1ea', robe: '#7fb3c9', shoe: '#e6d6c8', sleeve: 'short', noSale: true });
+  PX.FASHION = { outfits: Object.keys(NEW) };
+
+  // ---------------- 가구 (숙소용 새 가구) ----------------
+  const P = (x, y, z, w, d, h, c, o) => [x, y, z, w, d, h, c, o];
+  const legs4 = (w, d, h, c, i = 0.08, s = 0.1) => [P(i, i, 0, s, s, h, c), P(w - i - s, i, 0, s, s, h, c), P(i, d - i - s, 0, s, s, h, c), P(w - i - s, d - i - s, 0, s, s, h, c)];
+  const def = (id, o) => { PX.FURN[id] = Object.assign({ id, w: 1, d: 1, parts: [], det: [], blocks: true, use: null, seats: null, cat: 'home' }, o); };
+  def('armchair', { name: '패브릭 안락의자', price: 220, use: 'sit', seats: [[0.5, 0.55, 0, 8]], parts: [P(0.1, 0.15, 0, 0.8, 0.75, 8, '#d9a87a'), P(0.1, 0.1, 8, 0.8, 0.2, 12, '#c4915f'), P(0.05, 0.15, 8, 0.15, 0.75, 6, '#c4915f'), P(0.8, 0.15, 8, 0.15, 0.75, 6, '#c4915f')] });
+  def('beanbag', { name: '빈백 소파', price: 150, use: 'sit', seats: [[0.5, 0.5, 0, 5]], parts: [P(0.1, 0.1, 0, 0.8, 0.8, 6, '#e07a5f'), P(0.15, 0.1, 6, 0.7, 0.3, 5, '#d0694f')] });
+  def('lowtable', { name: '원목 좌식 테이블', w: 2, price: 140, parts: [...legs4(2, 1, 6, '#8a5a3c', 0.12), P(0, 0.05, 6, 2, 0.9, 2, '#c49a6c'), P(0.6, 0.3, 8, 0.3, 0.3, 3, '#f4efe4')] });
+  def('cushion', { name: '방석', price: 30, blocks: false, use: 'sit', seats: [[0.5, 0.5, 0, 3]], parts: [P(0.15, 0.15, 0, 0.7, 0.7, 3, '#ff9ed2'), P(0.45, 0.45, 3, 0.1, 0.1, 1, '#e05a7a')] });
+  def('starlamp', { name: '별 무드 조명', price: 120, parts: [P(0.35, 0.35, 0, 0.3, 0.3, 4, '#3a3f4a'), P(0.25, 0.25, 4, 0.5, 0.5, 9, '#fff3b0', { a: 1 }), P(0.4, 0.4, 13, 0.2, 0.2, 3, '#ffd166')], light: { r: 2.4, c: '#ffe9a8', z: 10, night: true } });
+  def('globe', { name: '행성 지구본', price: 160, parts: [P(0.4, 0.4, 0, 0.2, 0.2, 8, '#8a6a3a'), P(0.22, 0.22, 8, 0.56, 0.56, 12, '#4a8fd0'), P(0.3, 0.3, 12, 0.3, 0.2, 4, '#5fb06a'), P(0.55, 0.5, 15, 0.2, 0.2, 3, '#5fb06a')] });
+  def('teddy', { name: '곰 인형', price: 70, blocks: false, parts: [P(0.25, 0.3, 0, 0.5, 0.4, 8, '#b8865a'), P(0.3, 0.32, 8, 0.4, 0.35, 7, '#c4935f'), P(0.28, 0.32, 14, 0.12, 0.12, 3, '#a8754a'), P(0.6, 0.32, 14, 0.12, 0.12, 3, '#a8754a')] });
+  def('cactus', { name: '외계 선인장', price: 60, parts: [P(0.3, 0.3, 0, 0.4, 0.4, 6, '#c9654a'), P(0.4, 0.4, 6, 0.2, 0.2, 14, '#5fb06a'), P(0.25, 0.42, 11, 0.15, 0.15, 6, '#5fb06a'), P(0.45, 0.42, 20, 0.12, 0.12, 2, '#ff9ed2')] });
+  def('terrarium', { name: '발광 이끼 테라리움', price: 130, parts: [P(0.2, 0.2, 0, 0.6, 0.6, 2, '#5a4a3a'), P(0.2, 0.2, 2, 0.6, 0.6, 10, '#cfe8f2', { a: 1 }), P(0.3, 0.3, 2, 0.4, 0.4, 4, '#7fe3a0')], light: { r: 1.4, c: '#9ff5c0', z: 6, night: true } });
+  def('record', { name: '레트로 음악 상자', price: 190, parts: [P(0.1, 0.2, 0, 0.8, 0.6, 9, '#7a5236'), P(0.15, 0.25, 9, 0.6, 0.5, 1, '#25232b'), P(0.65, 0.3, 10, 0.15, 0.15, 1, '#e8c56a')], det: [{ p: 0, f: 'S', u: [0.15, 0.65], v: [2, 6], c: '#5a3a24' }] });
+  def('easel', { name: '그림 이젤', price: 110, parts: [P(0.2, 0.5, 0, 0.08, 0.08, 26, '#8a5a3c'), P(0.72, 0.5, 0, 0.08, 0.08, 26, '#8a5a3c'), P(0.15, 0.45, 10, 0.7, 0.06, 14, '#fbfaf6'), P(0.25, 0.43, 14, 0.4, 0.02, 6, '#8ac4ef')] });
+  def('clock', { name: '괘종시계', price: 240, parts: [P(0.25, 0.3, 0, 0.5, 0.4, 32, '#6b4430'), P(0.3, 0.28, 22, 0.4, 0.05, 8, '#f4efe4')], det: [{ p: 0, f: 'S', u: [0.15, 0.35], v: [6, 16], c: '#e8c56a' }] });
+  def('dresser', { name: '흰 서랍장', w: 2, price: 230, parts: [P(0.05, 0.15, 0, 1.9, 0.7, 16, '#f4f1ea'), P(0.3, 0.3, 16, 0.3, 0.3, 6, '#ff9ed2'), P(1.3, 0.35, 16, 0.4, 0.25, 3, '#c9b48a')], det: [{ p: 0, f: 'S', u: [0.1, 1.8], v: [2, 7], c: '#e6e0d4' }, { p: 0, f: 'S', u: [0.1, 1.8], v: [9, 14], c: '#e6e0d4' }] });
+  def('nightstand', { name: '원목 협탁', price: 90, parts: [P(0.15, 0.15, 0, 0.7, 0.7, 10, '#a87c52'), P(0.35, 0.35, 10, 0.25, 0.25, 6, '#f2d28a')], det: [{ p: 0, f: 'S', u: [0.1, 0.6], v: [3, 7], c: '#8a6240' }] });
+  def('bookcase_w', { name: '하얀 책장', w: 2, price: 210, parts: [P(0, 0.1, 0, 2, 0.8, 30, '#f4f1ea'), P(0.1, 0.12, 4, 0.5, 0.05, 6, '#5b7fc7'), P(0.7, 0.12, 4, 0.4, 0.05, 6, '#d9566f'), P(1.2, 0.12, 16, 0.6, 0.05, 6, '#5fb06a'), P(0.2, 0.12, 16, 0.3, 0.05, 6, '#f2c94c')] });
+  def('heartrug', { name: '하트 러그', w: 2, d: 2, price: 120, blocks: false, parts: [P(0.2, 0.3, 0, 1.6, 1.4, 1, '#ffb3c9'), P(0.4, 0.15, 0, 0.5, 0.3, 1, '#ffb3c9'), P(1.1, 0.15, 0, 0.5, 0.3, 1, '#ffb3c9'), P(0.6, 0.6, 1, 0.8, 0.6, 0.5, '#ffd1dc')] });
+  def('starrug', { name: '은하수 러그', w: 2, d: 2, price: 150, blocks: false, parts: [P(0.1, 0.1, 0, 1.8, 1.8, 1, '#2a2f5a'), P(0.4, 0.5, 1, 0.1, 0.1, 0.5, '#ffffff'), P(1.3, 0.4, 1, 0.1, 0.1, 0.5, '#fff3b0'), P(0.9, 1.2, 1, 0.1, 0.1, 0.5, '#ffffff'), P(0.3, 1.5, 1, 0.8, 0.1, 0.5, '#9f7fe0')] });
+  def('fishbowl', { name: '발광 물고기 어항', price: 140, parts: [P(0.25, 0.25, 0, 0.5, 0.5, 6, '#8a5a3c'), P(0.2, 0.2, 6, 0.6, 0.6, 9, '#bfe3ee', { a: 1 }), P(0.4, 0.4, 9, 0.15, 0.1, 2, '#ff8a3d')], light: { r: 1.4, c: '#9fe6ff', z: 10, night: true } });
+  def('keyboard', { name: '전자 키보드', w: 2, price: 280, parts: [...legs4(2, 0.6, 10, '#3a3f4a', 0.1), P(0, 0.1, 10, 2, 0.5, 3, '#25232b'), P(0.1, 0.25, 13, 1.8, 0.25, 1, '#fbfaf6')] });
+  def('screen', { name: '꽃무늬 칸막이', w: 2, price: 170, parts: [P(0, 0.4, 0, 0.66, 0.08, 28, '#f2e8d5'), P(0.68, 0.4, 0, 0.66, 0.08, 28, '#f2e8d5'), P(1.36, 0.4, 0, 0.64, 0.08, 28, '#f2e8d5')], det: [{ p: 0, f: 'S', u: [0.1, 0.5], v: [10, 20], c: '#ff9ed2' }, { p: 2, f: 'S', u: [0.1, 0.5], v: [6, 16], c: '#ff9ed2' }] });
+  def('robotvac', { name: '청소 로봇', price: 200, blocks: false, parts: [P(0.25, 0.25, 0, 0.5, 0.5, 2, '#e8eef4'), P(0.45, 0.3, 2, 0.1, 0.1, 1, '#5fa8ff')] });
+  def('mobile', { name: '행성 모빌 스탠드', price: 180, parts: [P(0.45, 0.45, 0, 0.1, 0.1, 30, '#c9ccd6'), P(0.2, 0.45, 30, 0.6, 0.06, 1, '#c9ccd6'), P(0.15, 0.4, 24, 0.15, 0.15, 5, '#ff8a3d'), P(0.7, 0.4, 22, 0.12, 0.12, 4, '#7fd3d0'), P(0.4, 0.2, 26, 0.12, 0.12, 4, '#b89ae0')] });
+  def('hammock', { name: '실내 해먹 체어', price: 260, use: 'sit', seats: [[0.5, 0.6, 0, 9]], parts: [P(0.45, 0.45, 0, 0.1, 0.1, 30, '#8a5a3c'), P(0.2, 0.35, 6, 0.6, 0.5, 6, '#f2e8d5'), P(0.2, 0.3, 12, 0.6, 0.1, 10, '#e6d6c8')] });
+  def('canopybed', { name: '캐노피 침대', w: 2, d: 2, price: 820, use: 'bed', seats: [[0.6, 1.1, 0, 10], [1.4, 1.1, 0, 10]], parts: [P(0, 0, 0, 2, 2, 6, '#f4f1ea'), P(0.06, 0.16, 6, 1.88, 1.78, 4, '#fbfaf6'), P(0.06, 0.75, 9, 1.88, 1.19, 3, '#ffc9da'), P(0.15, 0.24, 10, 0.75, 0.36, 3, '#ffffff'), P(1.1, 0.24, 10, 0.75, 0.36, 3, '#ffffff'), P(0, 0, 0, 0.1, 0.1, 40, '#e6d6c8'), P(1.9, 0, 0, 0.1, 0.1, 40, '#e6d6c8'), P(0, 0, 40, 2, 0.1, 2, '#e6d6c8'), P(0, 0.1, 30, 0.06, 1.0, 10, '#ffe8ef', { a: 1 })] });
+  def('daybed', { name: '창가 데이베드', w: 2, price: 360, use: 'sit', seats: [[0.6, 0.5, 0, 8], [1.4, 0.5, 0, 8]], parts: [P(0, 0.05, 0, 2, 0.9, 7, '#7a8aa8'), P(0, 0.05, 7, 2, 0.2, 9, '#6a7a98'), P(0.1, 0.3, 7, 0.4, 0.3, 3, '#f2d28a'), P(1.5, 0.3, 7, 0.4, 0.3, 3, '#ff9ed2')] });
+  def('coffeemaker', { name: '향열매 커피머신 선반', price: 210, parts: [P(0.1, 0.15, 0, 0.8, 0.7, 14, '#8a5a3c'), P(0.2, 0.25, 14, 0.4, 0.4, 9, '#3a3f4a'), P(0.65, 0.35, 14, 0.15, 0.15, 3, '#fbfaf6')] });
+  def('plushcap', { name: '대위 닮은 인형', price: 150, blocks: false, parts: [P(0.2, 0.3, 0, 0.6, 0.4, 9, '#6b7a5a'), P(0.25, 0.32, 9, 0.5, 0.36, 8, '#f6cba6'), P(0.25, 0.3, 16, 0.5, 0.4, 2, '#2a2433')] });
+  def('lavalamp', { name: '라바 램프', price: 90, parts: [P(0.38, 0.38, 0, 0.24, 0.24, 3, '#3a3f4a'), P(0.36, 0.36, 3, 0.28, 0.28, 12, '#ff6bd5', { a: 1 }), P(0.42, 0.42, 6, 0.15, 0.15, 3, '#ffb0e8')], light: { r: 1.6, c: '#ff8fe0', z: 8, night: true } });
+  def('wallshelf_plant', { name: '식물 선반', w: 2, price: 180, parts: [...legs4(2, 0.6, 22, '#c9ccd6', 0.05, 0.06), P(0, 0.1, 10, 2, 0.5, 1, '#e6e0d4'), P(0, 0.1, 21, 2, 0.5, 1, '#e6e0d4'), P(0.2, 0.2, 11, 0.3, 0.3, 6, '#5fb06a'), P(1.2, 0.2, 11, 0.3, 0.3, 8, '#7fd3a0'), P(0.7, 0.2, 22, 0.3, 0.3, 6, '#ff9ed2')] });
+
+  // 가게 · 탈의실 설비 (판매 안 함)
+  def('changebooth', { name: '탈의실', w: 2, cat: 'base', use: 'changing', parts: [P(0, 0.1, 0, 2, 0.8, 2, '#cfd8de'), P(0, 0.1, 2, 0.08, 0.8, 30, '#e6e0d4'), P(0.96, 0.1, 2, 0.08, 0.8, 30, '#e6e0d4'), P(1.92, 0.1, 2, 0.08, 0.8, 30, '#e6e0d4'), P(0, 0.1, 32, 2, 0.8, 2, '#c9b49a'), P(0.08, 0.84, 6, 0.88, 0.05, 25, '#9fd8e8'), P(1.04, 0.84, 6, 0.88, 0.05, 25, '#f2b8c9')], det: [{ p: 5, f: 'S', u: [0.1, 0.8], v: [3, 22], c: '#b8e6f2' }, { p: 6, f: 'S', u: [0.1, 0.8], v: [3, 22], c: '#ffd1dc' }] });
+  def('clothesrack', { name: '옷걸이 행거', w: 2, cat: 'base', parts: [P(0.05, 0.45, 0, 0.08, 0.08, 28, '#c9ccd6'), P(1.87, 0.45, 0, 0.08, 0.08, 28, '#c9ccd6'), P(0.05, 0.45, 27, 1.9, 0.08, 2, '#c9ccd6'), P(0.2, 0.3, 12, 0.3, 0.35, 14, '#d9566f'), P(0.55, 0.3, 12, 0.3, 0.35, 14, '#f2e8d5'), P(0.9, 0.3, 10, 0.3, 0.35, 16, '#2f3f66'), P(1.25, 0.3, 12, 0.3, 0.35, 14, '#a8e0cc'), P(1.6, 0.3, 11, 0.25, 0.35, 15, '#c9b0e8')] });
+  def('mannequin', { name: '마네킹', cat: 'base', parts: [P(0.35, 0.35, 0, 0.3, 0.3, 2, '#3a3f4a'), P(0.47, 0.47, 2, 0.06, 0.06, 10, '#c9ccd6'), P(0.3, 0.38, 12, 0.4, 0.25, 12, '#ff9ed2'), P(0.25, 0.36, 8, 0.5, 0.3, 6, '#ff9ed2'), P(0.4, 0.42, 24, 0.2, 0.15, 5, '#e6e0d4')] });
+  def('salonchair', { name: '미용 의자', cat: 'base', use: 'salon', seats: [[0.5, 0.6, 2, 10]], parts: [P(0.4, 0.4, 0, 0.2, 0.2, 7, '#c9ccd6'), P(0.15, 0.25, 7, 0.7, 0.6, 3, '#2a2f3a'), P(0.15, 0.75, 10, 0.7, 0.12, 12, '#2a2f3a'), P(0.1, 0.25, 10, 0.08, 0.5, 4, '#c9ccd6'), P(0.82, 0.25, 10, 0.08, 0.5, 4, '#c9ccd6')] });
+  def('salonmirror', { name: '미용실 거울', cat: 'base', parts: [P(0.05, 0.1, 0, 0.9, 0.3, 10, '#f4f1ea'), P(0.1, 0.12, 10, 0.8, 0.06, 22, '#cfe8f2'), P(0.05, 0.1, 32, 0.9, 0.1, 2, '#e8c56a')], det: [{ p: 1, f: 'S', u: [0.05, 0.75], v: [2, 20], c: '#e6f6fb' }], light: { r: 1.6, c: '#fff3d8', z: 26 } });
+  def('hairwash', { name: '샴푸대', w: 2, cat: 'base', parts: [P(0, 0.2, 0, 2, 0.7, 9, '#f4f1ea'), P(0.2, 0.25, 9, 0.6, 0.5, 3, '#fbfaf6'), P(1.0, 0.3, 9, 0.9, 0.5, 4, '#2a2f3a')] });
+
+  const NEWF = ['armchair', 'beanbag', 'lowtable', 'cushion', 'starlamp', 'globe', 'teddy', 'cactus', 'terrarium', 'record', 'easel', 'clock', 'dresser', 'nightstand', 'bookcase_w', 'heartrug', 'starrug', 'fishbowl', 'keyboard', 'screen', 'robotvac', 'mobile', 'hammock', 'canopybed', 'daybed', 'coffeemaker', 'plushcap', 'lavalamp', 'wallshelf_plant'];
+  // 별빛 가구점 판매 목록: 기존 숙소 가구 + 새 가구
+  PX.FASHION.furniture = ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'sidetable', 'cabinet', 'chair', 'stool', 'sofa', 'sofa_green', 'table', 'desk', 'shelf', 'mirror', 'cafetable', 'aquarium', 'cooler', 'tv', 'bed', 'bigbed', 'wardrobe', 'fridge', 'kitchen', 'glassvase', 'bunnyplush', 'moodlamp', 'candles', 'vanity', 'waterbed', 'roundbed', 'bathtub'].concat(NEWF);
+
+  // ---------------- 미용실 ----------------
+  PX.FASHION.salon = { cut: 60, color: 80 };
 })();
 
 </script>
@@ -2534,6 +2690,34 @@ PX.S = (() => {
 })();
 
 </script>
+<script>
+/* js/data/maps_shop.js */
+// 돔시티 중앙광장 상점가: 별빛 가구점 · 궤도 부티크 · 은하 헤어 + 온천 · 스파 탈의실
+'use strict';
+(() => {
+  const M = PX.MAPS;
+  const room = (id, o) => { M[id] = Object.assign({ id, kind: 'in', wallH: 84 }, o); };
+  room('interior', { name: '별빛 가구점', w: 14, h: 10, floor: 'darkwood', wall: '#e8dccb', exit: 7,
+    furn: [['shopcounter', 1, 1, 0, 'int.shop'], ['canopybed', 4, 0, 0], ['daybed', 7, 0, 0], ['bookcase_w', 10, 0, 0], ['starlamp', 12, 0, 0], ['armchair', 0, 4, 0], ['lowtable', 2, 4, 0], ['beanbag', 4, 5, 0], ['starrug', 7, 4, 0], ['globe', 10, 4, 0], ['clock', 13, 3, 0], ['fishbowl', 12, 5, 0], ['wallshelf_plant', 0, 8, 0], ['mobile', 11, 8, 0], ['bigplant', 13, 9, 0]],
+    walls: [['B', 2.8, 'window', 1.2], ['L', 5.0, 'window', 1.2]], crowd: [{ role: 'furnclerk', fixed: [1.5, 0.5, 0] }, { role: 'shopper', n: 2, x0: 3, y0: 3, x1: 11, y1: 8 }] });
+  room('boutique', { name: '궤도 부티크', w: 12, h: 9, floor: 'mosaic', wall: '#f2e6ee', exit: 6,
+    furn: [['shopcounter', 9, 1, 0, 'bt.shop'], ['clothesrack', 1, 0, 0], ['clothesrack', 4, 0, 0], ['mannequin', 7, 0, 0], ['mannequin', 0, 3, 0], ['clothesrack', 0, 6, 3], ['changebooth', 9, 6, 0], ['mirror', 11, 4, 0], ['cushion', 5, 4, 0], ['bigplant', 11, 8, 0]],
+    walls: [['B', 6.0, 'mirrorw', 1.0], ['L', 4.4, 'window', 1.0]], crowd: [{ role: 'boutiqueclerk', fixed: [9.5, 0.5, 0] }, { role: 'shopper', n: 2, x0: 2, y0: 2, x1: 8, y1: 7 }] });
+  room('salon', { name: '은하 헤어', w: 12, h: 9, floor: 'tile', wall: '#e6eef4', exit: 6,
+    furn: [['salonmirror', 1, 0, 0], ['salonchair', 1, 1, 0, 'sl.c1'], ['salonmirror', 3, 0, 0], ['salonchair', 3, 1, 0, 'sl.c2'], ['salonmirror', 5, 0, 0], ['salonchair', 5, 1, 0, 'sl.c3'], ['hairwash', 8, 0, 0], ['shopcounter', 9, 4, 0, 'sl.shop'], ['bench', 0, 6, 0], ['plant', 11, 0, 0], ['bigplant', 11, 8, 0]],
+    walls: [['L', 4.4, 'window', 1.0]], crowd: [{ role: 'stylist', fixed: [2.5, 2.5, 2] }, { role: 'shopper', n: 1, x0: 1, y0: 4, x1: 8, y1: 7 }] });
+  // 광장 건물 (오른쪽 아래 잔디 쪽 상점가)
+  const P = M.plaza;
+  P.buildings.push(
+    { id: 'p_interior', name: '별빛 가구점', to: 'interior', x: 3, y: 39, w: 8, d: 6, h: 40, wall: '#e8dccb', roof: '#8a6a4a', stripe: '#ffd166', icon: 'sofa', door: { f: 'R', u: 3 }, awning: '#c9a86a' },
+    { id: 'p_boutique', name: '궤도 부티크', to: 'boutique', x: 31, y: 40, w: 7, d: 6, h: 40, wall: '#f2e6ee', roof: '#c9b0e8', stripe: '#ff9ed2', icon: 'shirt', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
+    { id: 'p_salon', name: '은하 헤어', to: 'salon', x: 40, y: 40, w: 7, d: 6, h: 40, wall: '#e6eef4', roof: '#5a6a8a', stripe: '#7fe3ff', icon: 'scissors', door: { f: 'R', u: 3 }, glass: true, awning: '#7fe3ff' });
+  // 온천 · 스파 탈의실
+  M.onsen.furn.push(['changebooth', 12, 4, 0]);
+  M.spa.decor.push(['changebooth', 10, 16, 0]);
+})();
+
+</script>
   <script>
 /* js/data/crowds.js */
 // 맵별 사람들 (이름 없는 주민 · 병사 · 손님 · 관광객). 낮에 붐비고 밤엔 한산하다.
@@ -2669,10 +2853,12 @@ PX.S = (() => {
   it('souvenir', { name: '돔시티 스노볼', price: 25, capLike: 1, icon: '🔮', desc: '흔들면 은빛 가루가 흩날린다.' });
   it('festivalBadge', { name: '축제 기념 배지', price: 20, capLike: 0, icon: '🎗️', desc: '돔시티 행사 기념품.' });
   // 가구 아이템 (상점 구매 → 숙소 배치)
-  for (const fid of ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'sidetable', 'cabinet', 'chair', 'stool', 'sofa', 'sofa_green', 'table', 'desk', 'shelf', 'mirror', 'cafetable', 'aquarium', 'cooler', 'tv', 'bed', 'bigbed', 'wardrobe', 'fridge', 'kitchen', 'glassvase']) {
+  for (const fid of PX.FASHION.furniture) {
     const f = PX.FURN[fid];
     it('f_' + fid, { name: f.name, cat: 'furn', furn: fid, price: f.price || 100, icon: '🪑', desc: `숙소에 놓을 수 있는 가구 (${f.w}×${f.d})` });
   }
+  // 옷 아이템 (부티크 구매 → 옷장)
+  for (const oid of PX.FASHION.outfits) { const o = PX.S.OUTFITS[oid]; it('o_' + oid, { name: o.ko, cat: 'outfit', outfit: oid, price: o.price, icon: '👗', desc: '옷장에서 갈아입을 수 있어요' }); }
   PX.ITEMS = I;
   PX.SHOPS = {
     px: { name: '보급창고 PX', clerk: 'song', items: ['coffee', 'hotchoco', 'protein', 'ramen', 'samgyup', 'earthSnack', 'iceDessert', 'handfan', 'hotpack', 'toolkit', 'patch', 'mineral', 'f_plant', 'f_bigplant', 'f_lamp', 'f_rug', 'f_rug_blue', 'f_sidetable', 'f_cabinet', 'f_chair', 'f_stool', 'f_sofa', 'f_sofa_green', 'f_table', 'f_desk', 'f_shelf', 'f_mirror', 'f_cooler', 'f_tv', 'f_aquarium', 'f_bigbed', 'f_wardrobe'] },
@@ -2687,6 +2873,8 @@ PX.S = (() => {
     seafood: { name: '해양도시 매대', items: ['seafood', 'iceDessert', 'souvenir'] },
     mineral: { name: '광물도시 매대', items: ['mineral', 'mineralSalt', 'ring', 'protein', 'souvenir'] },
     smoked: { name: '냉훈제거리', items: ['smoked', 'hotchoco', 'iceDessert', 'souvenir'] },
+    interior: { name: '별빛 가구점', items: PX.FASHION.furniture.map(f => 'f_' + f) },
+    boutique: { name: '궤도 부티크', items: PX.FASHION.outfits.map(o => 'o_' + o) },
     vending: { name: '자판기', items: ['coffee', 'hotchoco', 'protein', 'earthSnack'] },
   };
 })();
@@ -8681,20 +8869,66 @@ PX.UI = (() => {
     },
   };
 
+  // ---------- 미리 보기: 가구는 실제 가구 그림, 옷 · 머리는 내 캐릭터가 입은 모습 ----------
+  function thumb(src, w, h, scale) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.className = 'thumb';
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+    const s = scale || Math.max(1, Math.floor(Math.min((w - 4) / src.width, (h - 4) / src.height)));
+    g.drawImage(src, Math.round((w - src.width * s) / 2), Math.round((h - src.height * s) / 2), src.width * s, src.height * s);
+    return c;
+  }
+  function furnThumb(fid) { const spr = PX.O.furniture(fid, 0, St.season()); return thumb(spr.c, 84, 76); }
+  function lookThumb(patch, pose) {
+    const S = St.S, p = Object.assign({}, S.player, patch);
+    const app = PX.S.playerApp(p, St.season());
+    const fr = PX.S.frame(app, pose || 'idle', 0, 'F', 'smile');
+    return thumb(fr.c, 72, 100);
+  }
+  function itemThumb(it) {
+    if (it.furn) return furnThumb(it.furn);
+    if (it.outfit) return lookThumb({ outfit: it.outfit, bath: false });
+    return el('span', { class: 'ic' }, it.icon);
+  }
   // ---------- 상점 ----------
   function shop(id) {
     const sh = PX.SHOPS[id], S = St.S;
+    const big = ['interior', 'boutique'].includes(id) || sh.items.some(i => PX.ITEMS[i].furn || PX.ITEMS[i].outfit);
     sheet(sh.name, (b) => {
       const info = el('p', { class: 'muted' });
-      const upd = () => { info.textContent = `소지금 ₢${S.money}`; };
+      const upd = () => { info.textContent = `소지금 ₢${S.money}` + (id === 'boutique' ? ' · 산 옷은 숙소 옷장에서 갈아입어요' : id === 'interior' ? ' · 산 가구는 숙소 꾸미기에서 놓아요' : ''); };
       upd(); b.append(info);
+      const grid = big ? el('div', { class: 'shopgrid' }) : b;
+      if (big) b.append(grid);
       for (const iid of sh.items) {
         const it = PX.ITEMS[iid];
-        const row = el('div', { class: 'item' }, el('span', { class: 'ic' }, it.icon), el('div', null, el('b', null, it.name), el('small', null, it.desc)));
-        const buy = el('button', null, `₢${it.price}`);
-        buy.onclick = () => { if (!St.spend(it.price)) { toast('돈이 모자라요'); return; } St.addItem(iid); toast(`${it.icon} ${it.name} 구매`); upd(); PX.Audio && PX.Audio.coin(); };
-        row.append(buy); b.append(row);
+        const owned = it.outfit && (S.closet || []).includes(it.outfit);
+        const buy = el('button', null, owned ? '보유' : `₢${it.price}`);
+        if (owned) buy.disabled = true;
+        buy.onclick = () => {
+          if (it.outfit && (S.closet || []).includes(it.outfit)) return;
+          if (!St.spend(it.price)) { toast('돈이 모자라요'); return; }
+          if (it.outfit) { S.closet = (S.closet || []).concat(it.outfit); buy.textContent = '보유'; buy.disabled = true; toast(`👗 ${it.name} 구매 · 옷장에 넣었어요`); }
+          else { St.addItem(iid); toast(`${it.furn ? '🪑' : it.icon} ${it.name} 구매`); }
+          upd(); PX.Audio && PX.Audio.coin();
+        };
+        if (big) { const f = it.furn && PX.FURN[it.furn]; grid.append(el('div', { class: 'card' }, itemThumb(it), el('b', null, it.name), el('small', null, it.furn ? `${f.w}×${f.d}` + (S.inv[iid] ? ` · 가진 것 ${S.inv[iid]}` : '') : it.outfit ? '옷' : it.desc), buy)); }
+        else b.append(el('div', { class: 'item' }, itemThumb(it), el('div', null, el('b', null, it.name), el('small', null, it.desc)), buy));
       }
+    });
+  }
+  // 그림 카드로 고르기 (옷장 · 미용실): items = [{ t, sub, k, img, on }]
+  function pickCards(title, items, note) {
+    return new Promise(res => {
+      let done = false;
+      sheet(title, (b, close) => {
+        if (note) b.append(el('p', { class: 'muted' }, note));
+        const grid = el('div', { class: 'shopgrid' }); b.append(grid);
+        for (const it of items) {
+          const card = el('button', { class: 'card pick' + (it.on ? ' on' : '') }, it.img, el('b', null, it.t), it.sub ? el('small', null, it.sub) : null);
+          card.onclick = () => { done = true; close(); res(it); };
+          grid.append(card);
+        }
+      }, { onClose: () => { if (!done) res(null); } });
     });
   }
   // 선물 고르기
@@ -8709,7 +8943,7 @@ PX.UI = (() => {
     });
   }
 
-  return { ask, toast, sheet, menu, hud, badge, title, create, terminal, shop, pickGift, PANES };
+  return { ask, toast, sheet, menu, hud, badge, title, create, terminal, shop, pickGift, pickCards, lookThumb, furnThumb, PANES };
 })();
 
 </script>
@@ -9428,7 +9662,7 @@ PX.Act = (() => {
   const ONSEN = (() => {
     const L = (pre, love) => () => PX.Dlg.capPick(St.S.rel.cap.stage >= 4 && love ? love : pre);
     return {
-      soak: { solo: [['N:대여한 탕옷 차림으로 천천히 몸을 담근다. 광물 성분이 녹은 물이 은은하게 푸른빛을 낸다.', 'N:어깨까지 잠기자 하루 종일 굳어 있던 등이 스르르 풀린다.'], ['N:물 위로 하얀 김이 피어오른다. 탕 바닥의 수정 조각들이 빛을 받아 반짝인다.', 'N:눈을 감으니 물 흐르는 소리만 남는다.']],
+      soak: { solo: [['N:가운을 탕 옆 걸이에 걸어 두고 천천히 몸을 담근다. 광물 성분이 녹은 물이 은은하게 푸른빛을 낸다.', 'N:어깨까지 잠기자 하루 종일 굳어 있던 등이 스르르 풀린다.'], ['N:물 위로 하얀 김이 피어오른다. 탕 바닥의 수정 조각들이 빛을 받아 반짝인다.', 'N:눈을 감으니 물 흐르는 소리만 남는다.']],
         cap: L([['N:대위가 탕 가장자리에 앉아 조심스럽게 발부터 넣는다.', 'C;:…뜨겁다. 원래 이렇게 뜨거워?', 'C:아니, 괜찮아. 들어갈 수 있어. 작전 때 사막도 걸었는데.', 'N:삼 분 뒤, 대위는 귀까지 빨개져서 눈을 감고 있다.'], ['N:둘이 한 칸 떨어져 나란히 몸을 담근다. 김 때문에 얼굴이 흐릿하게 보인다.', 'C:여기 물, 제4행성 광맥에서 끌어온 거래. 피로가 빨리 풀린대.', 'C*:…진짜네. 졸려.']],
           [['N:대위가 먼저 들어가 손을 내민다. 잡고 내려서자 물이 허리까지 찰랑인다.', 'C*:미끄러워. 손 놓지 마.', 'N:나란히 앉자 대위가 물속에서 손가락을 슬쩍 깍지 낀다.', 'C~:…따뜻하다. 물 말고.'], ['N:김이 자욱해서 바로 옆 대위 얼굴만 겨우 보인다.', 'C:이러니까 세상에 우리 둘만 있는 것 같다.', 'P:원래 둘만 있잖아, 이 탕에.', 'C^:그러네. 운 좋다.']]) },
       stars: { solo: [['N:고개를 젖혀 탕 가장자리에 기댄다. 돔 천장 너머로 별이 흐릿하게 번진다.', 'N:김 사이로 보이는 별은 물속에서 보는 것처럼 일렁인다.']],
@@ -9446,6 +9680,7 @@ PX.Act = (() => {
   })();
   H.onsen = async (o) => {
     const S = St.S, g = G();
+    if (PX.Bath && !(await PX.Bath.ensure())) return;
     goSit(o); const wc = withCap(); if (wc) PX.Cap.sitNear(g);
     const st = S.rel.cap.stage, k = 'onsenE_' + S.day;
     g.fade(); St.advance(20);
@@ -9472,6 +9707,7 @@ PX.Act = (() => {
       if (it.k === 'milk') { S.energy = Math.min(100, S.energy + 5); break; }
     }
     if (wc && once('onsen')) g.memory('광물온천', '대위는 삼 분 만에 덥다고 했지만 끝까지 옆에 있었다.', true);
+    if (PX.Bath) await PX.Bath.after();
   };
   H.salvage = async (o) => {
     const S = St.S, g = G();
@@ -9923,7 +10159,7 @@ PX.Ruby = (() => {
     if (a.extra === 'pubboss' || a.extra === 'innclerk') pool = pool.filter(t => withCap() || !t.includes('대위'));
     { const g2 = G(); g2.modal++; await PX.Dlg.runLines([`X:${a.id}:` + U.pickFresh('xtalk_' + a.extra, pool)], { reply: true }); PX.Dlg.close(); g2.modal--; }
     // 직원은 하는 일로 이어진다
-    const next = { dealer: () => H.cards(), pubboss: () => H.rumor(), host: () => H.reserve(), usher: null, maskhost: () => H.mask(), rosevendor: () => H.rosecart(), cocktailer: () => H.cocktail(), busker: () => H.busk() }[a.extra];
+    const next = { dealer: () => H.cards(), pubboss: () => H.rumor(), host: () => H.reserve(), usher: null, maskhost: () => H.mask(), rosevendor: () => H.rosecart(), cocktailer: () => H.cocktail(), busker: () => H.busk() }[a.extra] || R.next;
     if (next) await next();
     if (a.extra === 'mp' && withCap() && once('rubyMP')) await lines(['C*:헌병이 나 보고 경례하려다 말았어. 사복이라.', 'C:…그래도 너 데리고 다니는 거 다 봤겠다. 내일 소문 나겠네. 좋다.']);
   }
@@ -11005,6 +11241,153 @@ PX.Place = (() => {
   }
   return { list, A, flavor };
 })();
+
+</script>
+<script>
+/* js/game/shops.js */
+// 온천 · 스파 탈의실 (가운으로 갈아입고 들어가서, 탈의실에서 다시 갈아입기) · 미용실 · 상점가 점원
+'use strict';
+PX.Bath = (() => {
+  const U = PX.U, St = PX.St;
+  const G = () => PX.Game;
+  const withCap = () => PX.Act.withCap();
+  const lov = () => St.S.rel.cap.stage >= 4;
+  const toast = (t) => PX.UI.toast(t);
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls, { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
+  const pick = (pre, love) => PX.Dlg.capPick(lov() && love ? love : pre);
+  const BATH_MAPS = ['onsen', 'spa'];
+  const refresh = () => { G().player.app = PX.S.playerApp(St.S.player, St.season()); };
+  function capRobe(on) {
+    const g = G();
+    if (on) { g.cap.app = Object.assign({}, PX.NPC_BY_ID.cap.look, { top: '#f4f1ea', bottom: '#f4f1ea', robe: '#4f6a8a', jacket: null, vest: null, coat: null, sleeve: 'short', badge: null, tag: 0, hat: null, shoe: '#e6d6c8' }); g.capRobe = true; }
+    else if (g.capRobe) { g.capRobe = false; g.capOutfit(); }
+  }
+  const booth = () => PX.W.maps[G().mapId].objs.find(o => o.fid === 'changebooth');
+  async function goBooth() {
+    const o = booth(); if (!o) return;
+    const g = G(), m = PX.W.maps[g.mapId], a = PX.W.accessTile(m, o);
+    g.fade(); await U.sleep(250);
+    if (!a) return;
+    g.player.leaveSeat(); g.player.stop(); g.player.x = a.x + 0.5; g.player.y = a.y + 0.5; g.player.dir = 2;
+    if (withCap()) { if (g.cap.leaveSeat) g.cap.leaveSeat(); const t = PX.Path.nearestWalkable(m, a.x + 1, a.y, 3); if (t) { g.cap.x = t[0] + 0.5; g.cap.y = t[1] + 0.5; } }
+  }
+
+  // ---------- 탈의실 ----------
+  const IN = {
+    solo: [['N:커튼을 치고 옷을 벗어 바구니에 개어 넣는다. 보송한 온천 가운을 걸치고 허리끈을 묶는다.', 'N:머리를 질끈 묶고 나오니 발바닥에 닿는 타일이 따뜻하다.'], ['N:탈의실 사물함에 옷을 넣고 열쇠 고리를 손목에 건다.', 'N:가운 자락에서 은은한 광물 향이 난다. 벌써 몸이 풀리는 것 같다.']],
+    pre: [['N:두 칸짜리 탈의실. 대위가 옆 칸 커튼을 친다.', 'N:커튼 너머로 한참 동안 허리끈과 씨름하는 소리가 난다.', 'C;:…이 가운, 사이즈가 하나밖에 없대.', 'N:나와 보니 대위의 가운 소매가 팔꿈치에 걸려 있다.', 'C:웃지 마. 작전복보다 어렵다, 이거.'], ['N:각자 탈의실 칸으로 들어간다. 옆 칸에서 단추 푸는 소리가 작게 들린다.', 'C:다 갈아입었어? …나는 다 했어. 근데 이거 원래 이렇게 짧아?', 'N:나와 보니 대위 가운이 무릎 위로 한참 올라와 있다.']],
+    love: [['N:대위가 옆 칸으로 들어가다 멈춘다.', 'C*:…같은 칸 쓰면 안 되나.', 'P:안 돼. 여기 공공장소야.', 'C^:알아. 물어만 본 거야.', 'N:나와 보니 대위가 허리끈을 대충 묶고 서 있다. 탕에 들어가지도 않았는데 귀가 빨갛다.', 'C~:…가운 잘 어울린다. 너 말이야.'], ['N:커튼 너머에서 대위가 낮게 부른다.', 'C:허리끈 어떻게 묶어? 리본? 매듭?', 'P:나와 봐. 묶어 줄게.', 'N:대위 허리에 끈을 둘러 리본으로 묶어 준다. 대위가 숨을 참는다.', 'C*:…이러니까 선물 포장된 것 같다.']],
+  };
+  const OUT = {
+    solo: [['N:탈의실에서 젖은 머리를 수건으로 말리고, 개어 둔 옷으로 갈아입는다.', 'N:몸이 노곤하다. 피부에서 은은한 광물 냄새가 난다.'], ['N:가운을 반납함에 넣고 원래 옷을 입는다. 거울 속 볼이 발그레하다.']],
+    pre: [['N:각자 탈의실에서 옷을 갈아입고 나온다.', 'C:머리 다 말렸어? 감기 걸린다.', 'N:대위는 머리에서 아직 물이 뚝뚝 떨어진다.'], ['N:옷을 갈아입고 나오니 대위가 벌써 나와 기다리고 있다. 원래 옷이 훨씬 편해 보인다.', 'C:역시 이게 낫다. 가운은 바람이 숭숭 들어와.']],
+    love: [['N:옷을 갈아입고 나오니 대위가 수건을 들고 기다리고 있다.', 'C*:이리 와. 머리 덜 말랐어.', 'N:큰 손이 수건 너머로 머리를 꾹꾹 눌러 말려 준다.', 'C~:온천 냄새 난다. 좋다.'], ['N:옷을 다 입고 나오자 대위가 셔츠 단추를 하나 잘못 끼운 채 서 있다.', 'P:단추.', 'C;:…아.', 'N:단추를 다시 끼워 주자 대위가 고개를 숙여 이마를 살짝 맞댄다.', 'C*:고마워. 오늘 너한테 다 맡기고 싶다.']],
+  };
+  async function changeIn() {
+    const S = St.S, wc = withCap();
+    G().fade(); await U.sleep(200);
+    S.player.bath = true; refresh(); if (wc) capRobe(true);
+    St.advance(5);
+    await lines(wc ? pick(IN.pre, IN.love) : U.pickFresh('bathIn', IN.solo));
+    toast('🧺 온천 가운으로 갈아입었다');
+  }
+  async function changeOut() {
+    const S = St.S, wc = withCap();
+    G().fade(); await U.sleep(200);
+    S.player.bath = false; refresh(); capRobe(false);
+    St.advance(10);
+    await lines(wc ? pick(OUT.pre, OUT.love) : U.pickFresh('bathOut', OUT.solo));
+    toast('👕 원래 옷으로 갈아입었다');
+  }
+  async function changing() {
+    const g = G();
+    if (g.mapId === 'boutique') { PX.UI.shop('boutique'); return; } // 부티크 피팅룸 = 입어 보고 고르기
+    if (!BATH_MAPS.includes(g.mapId)) return;
+    g.modal++;
+    try { if (St.S.player.bath) await changeOut(); else await changeIn(); } finally { g.modal--; }
+  }
+  // 탕에 들어가기 전: 가운으로 안 갈아입었으면 탈의실부터
+  async function ensure() {
+    if (St.S.player.bath) return true;
+    if (!booth()) return true;
+    const ok = await PX.UI.ask('♨️ 온천', '탕에는 탈의실에서 온천 가운으로 갈아입고 들어가요.', '탈의실 가기', '그만두기');
+    if (!ok) return false;
+    const g = G(); g.modal++;
+    try { await goBooth(); await changeIn(); } finally { g.modal--; }
+    return true;
+  }
+  // 탕에서 나온 뒤
+  async function after() {
+    if (!St.S.player.bath || !booth()) return;
+    const it = await PX.UI.menu('♨️ 탕에서 나왔다', [{ t: '🚪 탈의실에서 옷 갈아입기', k: 'out' }, { t: '🧺 가운 입은 채로 좀 더 쉬기', sub: '나중에 탈의실에서 갈아입어요', k: 'stay' }]);
+    if (!it || it.k !== 'out') return;
+    const g = G(); g.modal++;
+    try { await goBooth(); await changeOut(); } finally { g.modal--; }
+  }
+  // 온천을 벗어나면 (이동 · 잠 등) 탈의실에서 갈아입고 나온 걸로
+  function onMap(id) {
+    const S = St.S;
+    if (S && S.player.bath && !BATH_MAPS.includes(id)) { S.player.bath = false; refresh(); capRobe(false); setTimeout(() => toast('👕 탈의실에 들러 옷을 갈아입고 나왔다'), 400); }
+  }
+
+  // ---------- 미용실 ----------
+  const STY = [['N:미용사가 어깨에 가운을 둘러 주고 거울 속 얼굴을 찬찬히 본다.', 'N:"얼굴선이 예뻐서 뭐든 어울리겠어요." 가위 소리가 경쾌하게 이어진다.'], ['N:따뜻한 물로 머리를 감겨 준다. 손끝이 두피를 꾹꾹 눌러 줘서 깜빡 졸 뻔한다.', 'N:"다 됐어요. 거울 보세요." 거울 속에 낯설고 반가운 내가 있다.'], ['N:미용사가 머리카락을 몇 갈래로 나눠 집게로 고정한다.', 'N:"돔 습도가 낮아서 이 머리는 오래 가요." 드라이기 바람이 따뜻하다.']];
+  const CAP_WAIT = [['C:나 저기 앉아서 기다릴게. 천천히 해.'], ['C;:…여기 의자가 작다. 아니야, 괜찮아. 기다릴게.']];
+  const CAP_SEE = {
+    pre: [['C!:…어. 머리 했네.', 'C:잘 어울린다. 처음엔 누군지 몰랐어. 진짜로.'], ['C:기다리는 동안 잡지 세 권 읽었어. 다 머리 얘기더라.', 'C^:…근데 잡지보다 네가 낫다.'], ['C:바뀌었네. 좋다.', 'C*:…좋다는 말밖에 생각이 안 난다.']],
+    love: [['C!:…', 'C*:잠깐. 한 바퀴만 돌아 봐.', 'C~:…또 반했다. 오늘만 두 번째야.'], ['N:대위가 손을 뻗어 새 머리 끝을 조심스럽게 만져 본다.', 'C:부드럽다. 향도 다르네.', 'C^:나 이제 너 볼 때마다 머리부터 볼 것 같아.'], ['C*:누가 내 애인을 이렇게 예쁘게 해 놨어.', 'C^:미용사님한테 팁 드리고 올게. 진심이야.']],
+  };
+  async function salon() {
+    const S = St.S, P = S.player, F = PX.FASHION.salon, g = G();
+    const what = await PX.UI.menu('✂️ 은하 헤어', [{ t: '✂️ 머리 모양 바꾸기', sub: `₢${F.cut} · 미리 보고 골라요`, k: 'cut' }, { t: '🎨 염색하기', sub: `₢${F.color}`, k: 'color' }, { t: '💇 커트 + 염색', sub: `₢${F.cut + F.color}`, k: 'both' }]);
+    if (!what) return;
+    let hair = P.hair, color = P.hairColor;
+    if (what.k !== 'color') {
+      const it = await PX.UI.pickCards('✂️ 머리 모양', Object.entries(PX.S.HAIRS).map(([k, n]) => ({ t: n, k, on: k === P.hair, sub: k === P.hair ? '지금 머리' : null, img: PX.UI.lookThumb({ hair: k, bath: false }) })), '내 얼굴에 직접 해 본 모습이에요.');
+      if (!it) return; hair = it.k;
+    }
+    if (what.k !== 'cut') {
+      const it = await PX.UI.pickCards('🎨 머리 색', Object.keys(PX.S.HAIRC).map(k => ({ t: k, k, on: k === P.hairColor, sub: k === P.hairColor ? '지금 색' : null, img: PX.UI.lookThumb({ hair, hairColor: k, bath: false }) })));
+      if (!it) return; color = it.k;
+    }
+    if (hair === P.hair && color === P.hairColor) { toast('지금 머리 그대로예요'); return; }
+    const cost = (hair !== P.hair ? F.cut : 0) + (color !== P.hairColor ? F.color : 0);
+    if (!St.spend(cost)) { toast(`💸 ₢${cost}이 필요해요`); return; }
+    const wc = withCap();
+    if (wc) await lines(U.pickFresh('salonWait', CAP_WAIT));
+    const ch = PX.W.maps[g.mapId].objs.find(o => o.fid === 'salonchair' && o.seats && o.seats.some(s => !s.by));
+    if (ch) { const s = ch.seats.find(s => !s.by); g.player.sitOn(s); }
+    await lines(U.pickFresh('salonSty', STY));
+    g.fade(); St.advance(cost >= F.cut + F.color ? 120 : hair !== P.hair ? 60 : 90);
+    P.hair = hair; P.hairColor = color; refresh();
+    PX.Audio && PX.Audio.coin && PX.Audio.coin();
+    toast(`💇 ${PX.S.HAIRS[hair]} · ${color}`);
+    if (wc) { g.cap.setDirTo(g.player.x, g.player.y); await lines(pick(CAP_SEE.pre, CAP_SEE.love)); St.addAff(2); }
+    else S.hairNew = S.day; // 따로 했으면 다음에 만났을 때 // 다음에 만나면 알아챈다
+    if (!S.done.firstSalon) { S.done.firstSalon = 1; g.memory('새 머리', `은하 헤어에서 ${PX.S.HAIRS[hair]}로 바꿨다.`, true); }
+  }
+  // 따로 머리 하고 나서 처음 만나면
+  function noticeHair() {
+    const S = St.S, g = G();
+    if (g.capRobe && !(withCap() && BATH_MAPS.includes(g.cap.map))) capRobe(false); // 대위가 온천을 떠나면 원래 옷
+    if (g.queue.length || g.transition) return;
+    if (S.hairNew == null || S.day - S.hairNew > 3 || g.modal || g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 3) return;
+    S.hairNew = null;
+    g.trigger(async () => { if (g.modal) { S.hairNew = S.day; return; } g.cap.setDirTo(g.player.x, g.player.y); await lines(pick(CAP_SEE.pre, CAP_SEE.love)); });
+  }
+
+  // ---------- 점원 ----------
+  Object.assign(PX.Ruby.ROLES, {
+    furnclerk: { names: ['가구점 사장'], look: { top: '#c9a86a', bottom: '#4a3a2a', hair: 'bun', hairColor: '#6b4430', big: 0 }, talk: ['숙소가 좁아도 괜찮아요. 작은 것부터 하나씩 바꾸면 방이 달라져요.', '캐노피 침대는 신혼부부들이 제일 많이 봐요. 군인 한 분도 한참 서 있다 가셨어요.', '별 무드 조명은 밤에 켜야 진짜예요. 천장에 별이 떠요.'], amb: ['편하게 둘러보세요.', '앉아 보셔도 돼요.', '새 물건 들어왔어요.'], next: () => PX.UI.shop('interior') },
+    boutiqueclerk: { names: ['부티크 점원'], look: { top: '#2a2346', bottom: '#2a2346', dress: true, hair: 'halfup', hairColor: '#b89ae0', big: 0 }, talk: ['다 입어 볼 수 있어요. 마음에 드는 거 있으면 말씀하세요.', '은하 드레스는 이번 보급선으로 들어온 거예요. 돔시티에 세 벌뿐이에요.', '같이 오신 분이 계속 이 원피스 앞에 서 있던데요. 아는 분이세요?'], amb: ['신상 들어왔어요~', '거울 앞에 서 보세요.'], next: () => PX.UI.shop('boutique') },
+    stylist: { names: ['헤어 디자이너 미로'], look: { top: '#25232b', bottom: '#25232b', hair: 'pixie', hairColor: '#7fd3b8', big: 0 }, talk: ['돔 안은 건조해서 머리가 금방 상해요. 그래도 색은 오래 가요.', '이번 달 유행은 하이 포니테일이에요. 무중력 호텔 가는 분들이 많이 해요.', '아까 덩치 큰 손님이 "그냥 짧게"라고만 하고 가셨어요. 그분은 늘 그래요.'], amb: ['다음 분~', '드라이 들어갑니다.', '가위 소리 좋죠?'], next: () => salon() },
+  });
+  // 대위가 옆에 있을 때 상점가에서 한마디
+  return { changing, ensure, after, onMap, salon, noticeHair, changeIn, changeOut };
+})();
+// 탈의실 · 미용 의자 상호작용
+Object.assign(PX.Act.LABEL, { changing: '🚪 탈의실', salon: '💇 미용 의자' });
+Object.assign(PX.Ruby.H, { changing: () => PX.Bath.changing(), salon: () => PX.Bath.salon() });
 
 </script>
   <script>
@@ -12838,7 +13221,7 @@ PX.Rom = (() => {
     return true;
   }
 
-  function minute() { tick(); weddingTick(); cohabTick(); if (St.S.time.min % 30 === 0) proposalCheck(); annivCheck(); }
+  function minute() { tick(); weddingTick(); cohabTick(); if (St.S.time.min % 30 === 0) proposalCheck(); annivCheck(); if (PX.Bath) PX.Bath.noticeHair(); }
   return { askDate, capAskDate, nextDate, tick, minute, applyLeave, onLeave, festivalScene, overlay, fireworks, playerProposes, planWedding, proposalCheck, annivToday, dayKo, capFreeAt };
 })();
 
@@ -13249,6 +13632,7 @@ ${memLine(S)}`;
     Game.mapId = id; Game.enteredAt = St.absMin();
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;
+    if (PX.Bath) PX.Bath.onMap(id);
     const m = W.maps[id];
     const t = PX.Path.nearestWalkable(m, x, y); if (t && !W.walkable(m, Math.floor(x), Math.floor(y))) { p.x = t[0] + 0.5; p.y = t[1] + 0.5; }
     // 이 맵에 있어야 할 NPC 즉시 배치 (보이지 않던 사이 위치 동기화)
@@ -13371,7 +13755,7 @@ ${memLine(S)}`;
       case 'terminal': return UI.terminal();
       case 'album': return UI.terminal('album');
       case 'storage': return UI.terminal('inv');
-      case 'shop': return UI.shop({ cafe: 'cafe', samgyup: 'samgyup', flower: 'flower', arcade: 'arcade' }[Game.mapId] || 'px');
+      case 'shop': if (Game.mapId === 'salon') return PX.Bath.salon(); return UI.shop({ cafe: 'cafe', samgyup: 'samgyup', flower: 'flower', arcade: 'arcade', interior: 'interior', boutique: 'boutique' }[Game.mapId] || 'px');
       case 'grill': return grill(o);
       case 'claw': return claw();
       case 'show': return show();
@@ -13569,8 +13953,9 @@ ${memLine(S)}`;
   }
   async function wardrobe() {
     const S = St.S;
-    const it = await UI.menu('옷장', Object.entries(PX.S.OUTFITS).map(([k, o]) => ({ t: (S.player.outfit === k ? '✔ ' : '') + o.ko, k })));
-    if (!it) return;
+    const own = ['uniform', 'training', 'hoodie', 'shirt', 'skirt'].concat(S.closet || []);
+    const it = await UI.pickCards('👗 옷장', own.map(k => ({ t: PX.S.OUTFITS[k].ko, sub: S.player.outfit === k ? '입는 중' : null, on: S.player.outfit === k, k, img: UI.lookThumb({ outfit: k, bath: false }) })), (S.closet || []).length ? null : '돔시티 중앙광장 궤도 부티크에서 옷을 더 살 수 있어요.');
+    if (!it || it.k === S.player.outfit) return;
     S.player.outfit = it.k; Game.player.app = PX.S.playerApp(S.player, St.season());
     UI.toast('👕 옷을 갈아입었다');
     if (Cap.mode === 'visit' || (Game.cap.map === Game.mapId && Cap.mode === 'follow')) setTimeout(() => Game.bubble(Game.cap, U.pick(['오, 그거 잘 어울린다.', '…나 지금 눈 둘 데가 없다.', '예쁘다. 그거 입고 나랑 나가자.'])), 600);
@@ -14419,7 +14804,7 @@ ${memLine(S)}`;
   }
   Game.boot = boot;
   // 디버그/테스트용 훅
-  window.__px = { Game, St, W, Cap, Dlg, UI, tapAt, interactables, nearest, enterBuilding, leaveRoom, sleepUntil, useObj, capMenu };
+  window.__px = { Game, St, W, Cap, Dlg, UI, tapAt, interactables, nearest, enterBuilding, leaveRoom, sleepUntil, useObj, capMenu, wardrobe };
   boot();
 })();
 

@@ -543,20 +543,66 @@ PX.UI = (() => {
     },
   };
 
+  // ---------- 미리 보기: 가구는 실제 가구 그림, 옷 · 머리는 내 캐릭터가 입은 모습 ----------
+  function thumb(src, w, h, scale) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.className = 'thumb';
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+    const s = scale || Math.max(1, Math.floor(Math.min((w - 4) / src.width, (h - 4) / src.height)));
+    g.drawImage(src, Math.round((w - src.width * s) / 2), Math.round((h - src.height * s) / 2), src.width * s, src.height * s);
+    return c;
+  }
+  function furnThumb(fid) { const spr = PX.O.furniture(fid, 0, St.season()); return thumb(spr.c, 84, 76); }
+  function lookThumb(patch, pose) {
+    const S = St.S, p = Object.assign({}, S.player, patch);
+    const app = PX.S.playerApp(p, St.season());
+    const fr = PX.S.frame(app, pose || 'idle', 0, 'F', 'smile');
+    return thumb(fr.c, 72, 100);
+  }
+  function itemThumb(it) {
+    if (it.furn) return furnThumb(it.furn);
+    if (it.outfit) return lookThumb({ outfit: it.outfit, bath: false });
+    return el('span', { class: 'ic' }, it.icon);
+  }
   // ---------- 상점 ----------
   function shop(id) {
     const sh = PX.SHOPS[id], S = St.S;
+    const big = ['interior', 'boutique'].includes(id) || sh.items.some(i => PX.ITEMS[i].furn || PX.ITEMS[i].outfit);
     sheet(sh.name, (b) => {
       const info = el('p', { class: 'muted' });
-      const upd = () => { info.textContent = `소지금 ₢${S.money}`; };
+      const upd = () => { info.textContent = `소지금 ₢${S.money}` + (id === 'boutique' ? ' · 산 옷은 숙소 옷장에서 갈아입어요' : id === 'interior' ? ' · 산 가구는 숙소 꾸미기에서 놓아요' : ''); };
       upd(); b.append(info);
+      const grid = big ? el('div', { class: 'shopgrid' }) : b;
+      if (big) b.append(grid);
       for (const iid of sh.items) {
         const it = PX.ITEMS[iid];
-        const row = el('div', { class: 'item' }, el('span', { class: 'ic' }, it.icon), el('div', null, el('b', null, it.name), el('small', null, it.desc)));
-        const buy = el('button', null, `₢${it.price}`);
-        buy.onclick = () => { if (!St.spend(it.price)) { toast('돈이 모자라요'); return; } St.addItem(iid); toast(`${it.icon} ${it.name} 구매`); upd(); PX.Audio && PX.Audio.coin(); };
-        row.append(buy); b.append(row);
+        const owned = it.outfit && (S.closet || []).includes(it.outfit);
+        const buy = el('button', null, owned ? '보유' : `₢${it.price}`);
+        if (owned) buy.disabled = true;
+        buy.onclick = () => {
+          if (it.outfit && (S.closet || []).includes(it.outfit)) return;
+          if (!St.spend(it.price)) { toast('돈이 모자라요'); return; }
+          if (it.outfit) { S.closet = (S.closet || []).concat(it.outfit); buy.textContent = '보유'; buy.disabled = true; toast(`👗 ${it.name} 구매 · 옷장에 넣었어요`); }
+          else { St.addItem(iid); toast(`${it.furn ? '🪑' : it.icon} ${it.name} 구매`); }
+          upd(); PX.Audio && PX.Audio.coin();
+        };
+        if (big) { const f = it.furn && PX.FURN[it.furn]; grid.append(el('div', { class: 'card' }, itemThumb(it), el('b', null, it.name), el('small', null, it.furn ? `${f.w}×${f.d}` + (S.inv[iid] ? ` · 가진 것 ${S.inv[iid]}` : '') : it.outfit ? '옷' : it.desc), buy)); }
+        else b.append(el('div', { class: 'item' }, itemThumb(it), el('div', null, el('b', null, it.name), el('small', null, it.desc)), buy));
       }
+    });
+  }
+  // 그림 카드로 고르기 (옷장 · 미용실): items = [{ t, sub, k, img, on }]
+  function pickCards(title, items, note) {
+    return new Promise(res => {
+      let done = false;
+      sheet(title, (b, close) => {
+        if (note) b.append(el('p', { class: 'muted' }, note));
+        const grid = el('div', { class: 'shopgrid' }); b.append(grid);
+        for (const it of items) {
+          const card = el('button', { class: 'card pick' + (it.on ? ' on' : '') }, it.img, el('b', null, it.t), it.sub ? el('small', null, it.sub) : null);
+          card.onclick = () => { done = true; close(); res(it); };
+          grid.append(card);
+        }
+      }, { onClose: () => { if (!done) res(null); } });
     });
   }
   // 선물 고르기
@@ -571,5 +617,5 @@ PX.UI = (() => {
     });
   }
 
-  return { ask, toast, sheet, menu, hud, badge, title, create, terminal, shop, pickGift, PANES };
+  return { ask, toast, sheet, menu, hud, badge, title, create, terminal, shop, pickGift, pickCards, lookThumb, furnThumb, PANES };
 })();

@@ -116,7 +116,7 @@ PX.Ruby = (() => {
     if (a.extra === 'pubboss' || a.extra === 'innclerk') pool = pool.filter(t => withCap() || !t.includes('대위'));
     { const g2 = G(); g2.modal++; await PX.Dlg.runLines([`X:${a.id}:` + U.pickFresh('xtalk_' + a.extra, pool)], { reply: true }); PX.Dlg.close(); g2.modal--; }
     // 직원은 하는 일로 이어진다
-    const next = { dealer: () => H.cards(), pubboss: () => H.rumor(), host: () => H.reserve(), usher: null, maskhost: () => H.mask(), rosevendor: () => H.rosecart(), cocktailer: () => H.cocktail(), busker: () => H.busk() }[a.extra];
+    const next = { dealer: () => H.cards(), pubboss: () => H.rumor(), host: () => H.reserve(), usher: null, maskhost: () => H.mask(), rosevendor: () => H.rosecart(), cocktailer: () => H.cocktail(), busker: () => H.busk() }[a.extra] || R.next;
     if (next) await next();
     if (a.extra === 'mp' && withCap() && once('rubyMP')) await lines(['C*:헌병이 나 보고 경례하려다 말았어. 사복이라.', 'C:…그래도 너 데리고 다니는 거 다 봤겠다. 내일 소문 나겠네. 좋다.']);
   }

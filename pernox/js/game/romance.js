@@ -327,6 +327,6 @@ PX.Rom = (() => {
     return true;
   }
 
-  function minute() { tick(); weddingTick(); cohabTick(); if (St.S.time.min % 30 === 0) proposalCheck(); annivCheck(); }
+  function minute() { tick(); weddingTick(); cohabTick(); if (St.S.time.min % 30 === 0) proposalCheck(); annivCheck(); if (PX.Bath) PX.Bath.noticeHair(); }
   return { askDate, capAskDate, nextDate, tick, minute, applyLeave, onLeave, festivalScene, overlay, fireworks, playerProposes, planWedding, proposalCheck, annivToday, dayKo, capFreeAt };
 })();

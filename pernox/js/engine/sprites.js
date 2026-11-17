@@ -4,9 +4,9 @@
 PX.S = (() => {
   const G = PX.G, { shade } = PX.U;
   const SKINS = ['#fde3cf', '#f6cba6', '#e2a77c', '#b97a52', '#8a5438'];
-  const HAIRC = { '흑발': '#2a2433', '갈색': '#6b4430', '밝은 갈색': '#a0703f', '금발': '#e3bf6c', '붉은색': '#b8543a', '분홍': '#e78ab0', '은발': '#c9ccd6', '푸른색': '#4a6fb8' };
+  const HAIRC = { '흑발': '#2a2433', '갈색': '#6b4430', '밝은 갈색': '#a0703f', '금발': '#e3bf6c', '붉은색': '#b8543a', '분홍': '#e78ab0', '은발': '#c9ccd6', '푸른색': '#4a6fb8', '애쉬 브라운': '#8a7a6a', '와인': '#7a2f45', '민트': '#7fd3b8', '라벤더': '#b89ae0', '하늘색': '#8ac4ef', '백금발': '#f2e6c4', '오렌지 브라운': '#c4723a', '그레이': '#8a8f99' };
   const EYEC = { '검정': '#2a2030', '갈색': '#6b3d22', '파랑': '#3b6fd0', '초록': '#3a9a5a', '회색': '#707a88', '호박색': '#c9862a', '보라': '#8a5ad0' };
-  const HAIRS = { pony: '포니테일', messybun: '앞머리 올림머리', short: '짧은 머리', crew: '스포츠 머리', bob: '단발', long: '긴 머리', bun: '올림머리', curly: '곱슬', wolf: '울프컷' };
+  const HAIRS = { pony: '포니테일', messybun: '앞머리 올림머리', short: '짧은 머리', crew: '스포츠 머리', bob: '단발', long: '긴 머리', bun: '올림머리', curly: '곱슬', wolf: '울프컷', twin: '트윈테일', braid: '옆 땋은 머리', halfup: '반묶음', pixie: '픽시컷', wave: '긴 웨이브', hime: '히메컷', lowbun: '낮은 똥머리', highpony: '하이 포니테일', twoblock: '투블럭', perm: '가르마 펌' };
   // 신체 비율
   const BODY = {
     n: { fw: 32, fh: 48, ax: 16, ay: 45, hw: 16, hh: 15, tw: 10, th: 8, aw: 2, lh: 8, lw: 4, gap: 2 },
@@ -46,9 +46,12 @@ PX.S = (() => {
       if (view === 'F') { R(lx, legTop + 8, B.lw, 2, shoe); R(rx, legTop + 8, B.lw, 2, shoe); }
     } else {
       const lOff = -Math.max(0, phase), rOff = -Math.max(0, -phase);
-      if (app.skirt) {
+      if (app.skirt || app.dress || app.robe) {
+        const sl = app.dress || app.robe ? B.lh - 1 : 6; // 원피스·가운은 무릎 아래까지
         R(lx + 1, legTop + 5 + lOff, B.lw - 1, B.lh - 2, skin); R(rx, legTop + 5 + rOff, B.lw - 1, B.lh - 2, skin);
-        R(lx - 1, legTop, B.lw * 2 + B.gap + 2, 6, bot);
+        R(lx - 1, legTop, B.lw * 2 + B.gap + 2, sl, bot);
+        if (app.dress || app.robe) { R(lx - 2, legTop + sl - 2, B.lw * 2 + B.gap + 4, 2, bot); R(lx - 1, legTop + sl - 1, B.lw * 2 + B.gap + 2, 1, shade(bot, -0.18)); }
+        if (app.robe) R(cx, legTop, 1, sl, shade(bot, -0.15));
       } else {
         R(lx, legTop + lOff, B.lw, B.lh + 1, bot); R(rx, legTop + rOff, B.lw, B.lh + 1, bot);
         R(lx, legTop + lOff, B.lw, 1, shade(bot, -0.15));
@@ -71,7 +74,11 @@ PX.S = (() => {
         R(tx + 2, tTop + 5, B.tw / 2 - 3, 1, shade(top, -0.25)); R(cx + 1, tTop + 5, B.tw / 2 - 3, 1, shade(top, -0.25));
         R(cx, tTop + 2, 1, B.th - 4, shade(top, -0.18));
       }
-      if (!sit && !app.skirt) R(tx, tTop + B.th - 2, B.tw, 2, shade(bot, -0.25)); // 벨트
+      if (!sit && !app.skirt && !app.dress && !app.robe) R(tx, tTop + B.th - 2, B.tw, 2, shade(bot, -0.25)); // 벨트
+      if (app.stripe) for (let k = 2; k < B.th - 2; k += 3) R(tx, tTop + k, B.tw, 1, app.stripe);
+      if (app.trim) { R(tx, tTop + B.th - 1, B.tw, 1, app.trim); if (view === 'F') R(cx - 2, tTop, 4, 1, app.trim); }
+      if (app.robe) { if (view === 'F') { R(cx - 1, tTop, 2, 3, skin); R(cx - 2, tTop, 1, 4, shade(top, -0.15)); R(cx + 1, tTop, 1, 4, shade(top, -0.15)); } R(tx, tTop + B.th - 3, B.tw, 2, app.robe); if (view === 'F') R(cx + 2, tTop + B.th - 1, 2, 3, app.robe); }
+      if (app.scarf) { R(tx - 1, tTop, B.tw + 2, 2, app.scarf); if (view === 'F') R(tx + 2, tTop + 2, 2, 5, app.scarf); }
       if (sit) { // 앉으면 허벅지와 신발이 몸 아래로 보인다
         const ky = tTop + B.th;
         R(lx, ky - 1, B.lw, 3, bot); R(rx, ky - 1, B.lw, 3, bot);
@@ -269,12 +276,16 @@ PX.S = (() => {
     if (app.hair === 'bob') { R(hx - 1, hy + 4, hw + 2, hh - 2, d); }
     if (app.hair === 'wolf') { R(hx - 1, hy + 4, hw + 2, hh + 2, d); }
     if (app.hair === 'pony') { R(hx + hw - 1, hy + 4, 3, 8, d); }
+    if (app.hair === 'wave' || app.hair === 'hime') { R(hx - 2, hy + 4, hw + 4, hh + 9, d); }
+    if (app.hair === 'halfup') { R(hx - 1, hy + 4, hw + 2, hh + 5, d); }
+    if (app.hair === 'twin') { R(hx - 4, hy + 3, 3, 12, d); R(hx + hw + 1, hy + 3, 3, 12, d); }
+    if (app.hair === 'highpony') { R(hx + hw - 1, hy, 3, 13, d); }
   }
   function hairDraw(R, app, hx, hy, hw, hh, col, view, B) {
     const hl = shade(col, 0.25), dk = shade(col, -0.18);
     const st = app.hair;
     if (view === 'B') { // 뒷모습: 머리 전체
-      const len = { messybun: hh - 2, short: hh - 3, crew: hh - 5, bob: hh, long: hh + 6, pony: hh - 3, bun: hh - 3, curly: hh - 2, wolf: hh + 2, slick: hh - 4 }[st] || hh - 3;
+      const len = { twin: hh - 3, braid: hh - 2, halfup: hh + 4, pixie: hh - 5, wave: hh + 8, hime: hh + 7, lowbun: hh - 3, highpony: hh - 3, twoblock: hh - 5, perm: hh - 3, messybun: hh - 2, short: hh - 3, crew: hh - 5, bob: hh, long: hh + 6, pony: hh - 3, bun: hh - 3, curly: hh - 2, wolf: hh + 2, slick: hh - 4 }[st] || hh - 3;
       if (app.big) { R(hx - 1, hy - 1, hw + 2, Math.min(len, hh) + 1, col); R(hx, hy - 2, hw, 2, col); }
       else { R(hx, hy, hw, Math.min(len, hh), col); R(hx + 2, hy - 1, hw - 4, 1, col); R(hx - 1, hy + 2, hw + 2, Math.min(len, hh) - 2, col); }
       if (len > hh) R(hx - 1, hy + hh, hw + 2, len - hh, col);
@@ -283,7 +294,13 @@ PX.S = (() => {
       if (st === 'bun') { R(hx + hw / 2 - 3, hy - 5, 6, 5, col); }
       if (st === 'messybun') { R(hx + hw / 2 - 4, hy - 4, 8, 7, col); R(hx + hw / 2 - 2, hy - 3, 3, 1, hl); R(hx - 2, hy + hh - 3, 1, 3, dk); R(hx + hw + 1, hy + hh - 4, 1, 4, dk); }
       if (st === 'slick') { R(hx + 4, hy + 1, 6, 1, hl); }
-      if (st === 'curly') for (let i = -1; i < hw + 1; i += 3) R(hx + i, hy + hh - 4, 2, 2, col);
+      if (st === 'curly' || st === 'perm' || st === 'wave') for (let i = -1; i < hw + 1; i += 3) R(hx + i, hy + Math.min(len, hh + 8) - 2, 2, 2, col);
+      if (st === 'twin') { R(hx - 3, hy + 3, 3, 12, dk); R(hx + hw, hy + 3, 3, 12, dk); R(hx - 3, hy + 3, 3, 1, '#ff8fb0'); R(hx + hw, hy + 3, 3, 1, '#ff8fb0'); }
+      if (st === 'braid') { for (let k = 0; k < 5; k++) R(hx + hw - 3 + (k % 2), hy + hh - 2 + k * 2, 3, 2, k % 2 ? dk : col); }
+      if (st === 'halfup') { R(hx + hw / 2 - 2, hy + 3, 4, 3, dk); R(hx + hw / 2 - 1, hy + 2, 2, 1, '#e8c56a'); }
+      if (st === 'lowbun') { R(hx + hw / 2 - 3, hy + hh - 4, 6, 5, dk); }
+      if (st === 'highpony') { R(hx + hw / 2 - 2, hy - 3, 4, 3, col); R(hx + hw / 2 - 2, hy, 4, 13, dk); }
+      if (st === 'twoblock') { R(hx - 1, hy + hh - 6, hw + 2, 3, shade(col, -0.3)); }
       return;
     }
     // 앞모습
@@ -308,6 +325,20 @@ PX.S = (() => {
         R(hx + hw - 1, hy + 2, 2, 2, '#ff8fb0'); R(hx + hw, hy + 4, 2, 6, dk); R(hx + hw + 1, hy + 10, 1, 2, dk); R(hx + 3, hy - 1, 4, 1, hl); break;
       case 'bun': R(hx - 1, hy + 2, 2, 4, col); R(hx + hw - 1, hy + 2, 2, 4, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + hw / 2 - 3, hy - 6, 6, 5, col); R(hx + hw / 2 - 2, hy - 5, 2, 1, hl); break;
       case 'curly': for (let i = -1; i < hw + 1; i += 2) R(hx + i, hy - 3 + (i % 4 === 1 ? 1 : 0), 2, 2, col); R(hx - 2, hy + 2, 3, 6, col); R(hx + hw - 1, hy + 2, 3, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 2, hy + 4, 2, 1, col); R(hx + hw - 4, hy + 4, 2, 1, col); break;
+      case 'twin': R(hx - 1, hy + 2, 2, 5, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 4, hy + 5, 2, 1, col); R(hx + hw - 6, hy + 5, 2, 1, col);
+        R(hx - 3, hy + 1, 3, 2, '#ff8fb0'); R(hx + hw, hy + 1, 3, 2, '#ff8fb0'); R(hx - 4, hy + 3, 3, 11, dk); R(hx + hw + 1, hy + 3, 3, 11, dk); R(hx - 4, hy + 14, 2, 1, dk); R(hx + hw + 2, hy + 14, 2, 1, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'braid': R(hx - 1, hy + 2, 2, 6, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + hw - 6, hy + 5, 3, 1, col);
+        for (let k = 0; k < 6; k++) R(hx + hw - 1 + (k % 2), hy + 6 + k * 2, 3, 2, k % 2 ? dk : col); R(hx + hw, hy + 18, 2, 1, '#e05a7a'); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'halfup': R(hx - 1, hy + 2, 2, hh + 4, col); R(hx + hw - 1, hy + 2, 2, hh + 4, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 3, hy + 4, 3, 1, col); R(hx + hw / 2 - 2, hy - 3, 4, 3, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'pixie': R(hx - 1, hy + 2, 1, 4, col); R(hx + hw, hy + 2, 1, 4, col); R(hx + 1, hy + 2, hw - 5, 2, col); R(hx + 2, hy + 4, 4, 1, col); R(hx + hw - 4, hy + 2, 2, 1, col); R(hx + 4, hy - 1, 4, 1, hl); break;
+      case 'wave': R(hx - 2, hy + 2, 3, hh + 8, col); R(hx + hw - 1, hy + 2, 3, hh + 8, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + hw - 6, hy + 5, 3, 1, col);
+        for (let k = 0; k < 4; k++) { R(hx - 3 + (k % 2), hy + 6 + k * 4, 1, 2, dk); R(hx + hw + 2 - (k % 2), hy + 8 + k * 4, 1, 2, dk); } R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'hime': R(hx - 1, hy + 2, 3, hh - 4, col); R(hx + hw - 2, hy + 2, 3, hh - 4, col); R(hx - 2, hy + hh - 2, 2, 9, col); R(hx + hw, hy + hh - 2, 2, 9, col); R(hx + 1, hy + 2, hw - 2, 4, col); R(hx + 1, hy + 6, hw - 2, 1, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'lowbun': R(hx - 1, hy + 2, 2, 6, col); R(hx + hw - 1, hy + 2, 2, 6, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 3, hy + 4, 2, 1, col); R(hx - 2, hy + 8, 1, 3, dk); R(hx + hw + 1, hy + hh - 5, 3, 4, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'highpony': R(hx, hy + 2, 2, 5, col); R(hx + hw - 2, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw - 2, 2, col); R(hx + 3, hy + 4, 3, 1, col);
+        R(hx + hw / 2 - 2, hy - 4, 4, 3, col); R(hx + hw / 2 - 1, hy - 2, 2, 1, '#ff8fb0'); R(hx + hw - 1, hy - 3, 3, 4, dk); R(hx + hw + 1, hy + 1, 2, 9, dk); R(hx + 3, hy - 1, 3, 1, hl); break;
+      case 'twoblock': R(hx - 1, hy - 1, hw + 2, 3, col); R(hx - 1, hy + 2, 1, 3, shade(col, -0.3)); R(hx + hw, hy + 2, 1, 3, shade(col, -0.3)); R(hx + 1, hy + 2, hw - 6, 2, col); R(hx + 2, hy + 4, 3, 1, col); R(hx + 4, hy - 2, 5, 1, hl); break;
+      case 'perm': for (let i = -1; i < hw + 1; i += 2) R(hx + i, hy - 2 + (i % 4 === 1 ? 1 : 0), 2, 2, col); R(hx - 1, hy + 2, 2, 5, col); R(hx + hw - 1, hy + 2, 2, 5, col); R(hx + 1, hy + 2, hw / 2 - 1, 3, col); R(hx + hw / 2 + 1, hy + 2, hw / 2 - 2, 2, col); R(hx + 2, hy + 5, 2, 1, col); R(hx + hw / 2, hy + 1, 1, 2, shade(col, -0.25)); break;
       case 'wolf': R(hx - 1, hy + 2, 2, hh + 1, col); R(hx + hw - 1, hy + 2, 2, hh + 1, col); R(hx + 1, hy + 2, hw - 2, 3, col); R(hx + 2, hy + 5, 2, 1, col); R(hx + hw - 5, hy + 5, 2, 1, col); R(hx + 3, hy - 1, 3, 1, hl); break;
     }
   }
@@ -325,12 +356,12 @@ PX.S = (() => {
 
   // 플레이어 외형 → 그리기용
   function playerApp(p, season) {
-    const o = OUTFITS[p.outfit] || OUTFITS.uniform;
-    const job = PX.JOBS[p.job];
+    const o = OUTFITS[p.bath ? 'bathrobe' : p.outfit] || OUTFITS.uniform;
+    const job = PX.JOBS[p.job], v = (x) => typeof x === 'function' ? x(job) : x;
     const a = {
       skin: SKINS[p.skin] || SKINS[1], hair: p.hair, hairColor: HAIRC[p.hairColor] || '#2a2433', eye: EYEC[p.eye] || '#2a2030',
-      top: o.top(job), bottom: o.bottom(job), shoe: o.shoe, sleeve: season === 'summer' && o.summerShort ? 'short' : o.sleeve,
-      coat: o.coat ? o.coat(job) : null, skirt: !!o.skirt, badge: o.badge ? job.color : null,
+      top: v(o.top), bottom: v(o.bottom), shoe: o.shoe, sleeve: season === 'summer' && o.summerShort ? 'short' : o.sleeve,
+      coat: o.coat ? v(o.coat) : null, skirt: !!o.skirt, dress: !!o.dress, robe: o.robe || null, stripe: o.stripe || null, trim: o.trim || null, scarf: o.scarf || null, hat: o.hat || null, vest: o.vest || null, badge: o.badge ? job.color : null,
       eyeStyle: p.gender === '남성' ? 'sharp' : 'big', brows: p.gender === '남성' ? (HAIRC[p.hairColor] || '#2a2433') : null, hood: !!o.hood,
       tag: job.military && p.outfit === 'uniform' ? 1 : 0,
     };

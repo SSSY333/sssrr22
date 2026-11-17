@@ -56,10 +56,12 @@
   it('souvenir', { name: '돔시티 스노볼', price: 25, capLike: 1, icon: '🔮', desc: '흔들면 은빛 가루가 흩날린다.' });
   it('festivalBadge', { name: '축제 기념 배지', price: 20, capLike: 0, icon: '🎗️', desc: '돔시티 행사 기념품.' });
   // 가구 아이템 (상점 구매 → 숙소 배치)
-  for (const fid of ['plant', 'bigplant', 'lamp', 'rug', 'rug_blue', 'sidetable', 'cabinet', 'chair', 'stool', 'sofa', 'sofa_green', 'table', 'desk', 'shelf', 'mirror', 'cafetable', 'aquarium', 'cooler', 'tv', 'bed', 'bigbed', 'wardrobe', 'fridge', 'kitchen', 'glassvase']) {
+  for (const fid of PX.FASHION.furniture) {
     const f = PX.FURN[fid];
     it('f_' + fid, { name: f.name, cat: 'furn', furn: fid, price: f.price || 100, icon: '🪑', desc: `숙소에 놓을 수 있는 가구 (${f.w}×${f.d})` });
   }
+  // 옷 아이템 (부티크 구매 → 옷장)
+  for (const oid of PX.FASHION.outfits) { const o = PX.S.OUTFITS[oid]; it('o_' + oid, { name: o.ko, cat: 'outfit', outfit: oid, price: o.price, icon: '👗', desc: '옷장에서 갈아입을 수 있어요' }); }
   PX.ITEMS = I;
   PX.SHOPS = {
     px: { name: '보급창고 PX', clerk: 'song', items: ['coffee', 'hotchoco', 'protein', 'ramen', 'samgyup', 'earthSnack', 'iceDessert', 'handfan', 'hotpack', 'toolkit', 'patch', 'mineral', 'f_plant', 'f_bigplant', 'f_lamp', 'f_rug', 'f_rug_blue', 'f_sidetable', 'f_cabinet', 'f_chair', 'f_stool', 'f_sofa', 'f_sofa_green', 'f_table', 'f_desk', 'f_shelf', 'f_mirror', 'f_cooler', 'f_tv', 'f_aquarium', 'f_bigbed', 'f_wardrobe'] },
@@ -74,6 +76,8 @@
     seafood: { name: '해양도시 매대', items: ['seafood', 'iceDessert', 'souvenir'] },
     mineral: { name: '광물도시 매대', items: ['mineral', 'mineralSalt', 'ring', 'protein', 'souvenir'] },
     smoked: { name: '냉훈제거리', items: ['smoked', 'hotchoco', 'iceDessert', 'souvenir'] },
+    interior: { name: '별빛 가구점', items: PX.FASHION.furniture.map(f => 'f_' + f) },
+    boutique: { name: '궤도 부티크', items: PX.FASHION.outfits.map(o => 'o_' + o) },
     vending: { name: '자판기', items: ['coffee', 'hotchoco', 'protein', 'earthSnack'] },
   };
 })();
