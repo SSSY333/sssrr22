@@ -5,7 +5,7 @@ PX.Rom = (() => {
   const G = () => PX.Game;
   const now = () => St.absMin();
   const DAY = 1440;
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   const st = () => St.S.rel.cap.stage;
 

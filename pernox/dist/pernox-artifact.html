@@ -9601,7 +9601,7 @@ PX.Act = (() => {
   const U = PX.U, St = PX.St, Cal = PX.Cal, W = PX.W;
   const G = () => PX.Game;
   const withCap = () => { const g = G(); return g.cap.map === g.mapId && ['follow', 'visit', 'stay'].includes(PX.Cap.mode); };
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   async function capSay(key, extra) {
     if (!withCap()) return;
     const pool = (PX.DLG_CAP2.activity[key] || []).concat(extra || []);
@@ -10174,7 +10174,7 @@ PX.Ruby = (() => {
   const U = PX.U, St = PX.St, W = PX.W;
   const G = () => PX.Game;
   const withCap = () => PX.Act.withCap();
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   const night = () => { const t = St.S.time.min; return t >= 18 * 60 || t < 5 * 60; };
 
@@ -10589,7 +10589,7 @@ PX.Ruby = (() => {
 PX.CapAct = (() => {
   const U = PX.U, St = PX.St, W = PX.W;
   const G = () => PX.Game;
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls, { reply: true }); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls, { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   // 하루 한 번만 호감이 오르는 행동 (같은 날 또 하면 짧은 반응)
   const today = (k) => { const S = St.S; if (S.done['ca_' + k] === S.day) return false; S.done['ca_' + k] = S.day; return true; };
@@ -11024,7 +11024,9 @@ PX.Place = (() => {
   const U = PX.U, St = PX.St;
   const G = () => PX.Game;
   const lov = () => St.S.rel.cap.stage >= 4;
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls, { reply: true }); PX.Dlg.close(); g.modal--; }
+  // 질문 뒤에 바로 고를 대답이 따로 있을 때: 일반 대답이 끼어들지 않게
+  async function quiz(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { g.modal--; } }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls, { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
   // 연인 전/후 대사 묶음 중 아직 안 한 것
   const say = (pre, love) => lines(PX.Dlg.capPick(lov() && love ? love : pre));
   // 하루에 한 번만 호감 · 처음 한 번은 추억
@@ -11050,7 +11052,7 @@ PX.Place = (() => {
     St.advance(10); reward('rw_dance', 5, ['거리의 춤', '루비웨이 버스커 앞에서 대위와 춤을 췄다. 대위는 진짜로 못 췄다.']); } });
   add('rubyway', { id: 'rw_whisper', t: '🤫 귓속말 놀이', sub: '대위가 뭐라고 했는지 맞히기', s: 3, run: async () => {
     const S = St.S;
-    await lines(['N:시끄러운 거리. 대위가 허리를 숙여 귀에 대고 뭔가 속삭인다.', 'C*:뭐라고 했게?']);
+    await quiz(['N:시끄러운 거리. 대위가 허리를 숙여 귀에 대고 뭔가 속삭인다.', 'C*:뭐라고 했게?']);
     const i = await PX.Dlg.choose([{ t: lov() ? '사랑한다고.' : '배고프다고요?' }, { t: lov() ? '집에 가자고.' : '시끄럽다고요?' }, { t: lov() ? '예쁘다고.' : '잘 안 들렸어요.' }]);
     const ans = U.pick([0, 2]);
     await lines(i === ans ? [lov() ? 'C^:정답. 상으로 한 번 더 말해 줄게. …사랑해.' : 'C^:정답. 너 나 잘 아네.'] : [lov() ? 'C*:땡. 정답은… 다시 귀 대 봐. 이번엔 크게 말할게.' : 'C*:땡. 비밀이다. 다음에 알려 줄게.']);
@@ -11069,7 +11071,7 @@ PX.Place = (() => {
       [win ? ['C;:졌네. 소원 하나 들어줄게.', 'P:{ob} 오늘 집까지 업어 줘.', 'C^:…그건 벌칙이 아니라 상인데.'] : ['C*:이겼다. 내 소원은… 다음 주말 비워 두기.', 'C^:이미 알고 있었다는 얼굴이네.']]);
     St.advance(15); reward('pb_darts', 3); } });
   add('pub', { id: 'pb_truth', t: '🃏 진실 게임', sub: '하나씩 솔직하게', s: 3, run: async () => {
-    await lines(['C*:하나씩 묻고 솔직하게 대답하기. 거짓말하면 원샷.', 'C:먼저 물어볼게. 나 처음 봤을 때 무서웠어?']);
+    await quiz(['C*:하나씩 묻고 솔직하게 대답하기. 거짓말하면 원샷.', 'C:먼저 물어볼게. 나 처음 봤을 때 무서웠어?']);
     const i = await PX.Dlg.choose([{ t: lov() ? '응, 엄청.' : '네, 솔직히요.' }, { t: lov() ? '아니, 웃겼어.' : '아뇨, 좀 웃겼어요.' }, { t: lov() ? '설렜어.' : '…설렜어요.' }]);
     await lines([['C;:…알았어. 표정 연습할게.', 'C*:웃겼다고? 문틀에 박았을 때구나.', 'C!:…', 'C~:원샷 안 해도 되는 대답이다. 내가 마실게. 기분 좋아서.'][i], lov() ? 'C:이제 네 차례. 물어봐. 다 대답할게.' : 'C:네 차례야. 아무거나 물어봐.']);
     St.advance(20); reward('pb_truth', 4); } });
@@ -11349,14 +11351,14 @@ PX.Place = (() => {
   const flavor = () => { const id = G().mapId; for (const k in FLAVOR) if (FLAVOR[k].includes(id)) return k; return 'any'; };
   const dateish = () => { const g = G(), md = PX.MAPS[g.mapId] || {}; if (g.mapId === 'base' || md.home || md.innRoom) return false; const d = PX.Rom && PX.Rom.nextDate(); return (d && d.state === 'on') || md.date || md.tour || md.kind === 'out'; };
   const DATE = {
-    photo: { pre: { any: [['C:사진? …나 사진 잘 안 찍는데.', 'N:대위가 어색하게 브이를 한다. 손가락이 너무 곧다.', 'C;:지워. 아니, 지우지 마. 한 장은 있어도 되겠다.']], water: [['N:물빛을 배경으로 단말을 든다. 대위가 화면 끝에 반쯤 걸쳐 선다.', 'C:나는 배경이야. 너 찍어.', 'N:찍고 보니 대위가 화면 속 나를 보고 웃고 있다.']], sky: [['N:별빛이 너무 어두워 화면에 둘 다 까맣게 나온다.', 'C^:…별만 잘 나왔네. 이것도 나쁘지 않다.']], neon: [['N:네온 간판 아래서 한 장. 대위 얼굴이 분홍색이다.', 'C;:이거 내 얼굴 맞아? …지우지 마. 기념이니까.']] },
-      love: { any: [['N:팔을 뻗어 둘이 같이 나오게 찍는다. 셔터 직전, 대위가 볼에 얼굴을 붙인다.', 'C*:이게 제일 잘 나온 거다. 배경 화면 해.'], ['C:셋 세면 찍어. 하나, 둘—', 'N:셋에서 대위가 고개를 돌려 볼에 입을 맞춘다. 사진엔 놀란 내 얼굴이 남았다.', 'C^:이건 내 단말에도 보내 줘.']], water: [['N:반짝이는 물을 배경으로 셀카. 대위가 뒤에서 어깨를 감싸 안는다.', 'C*:물빛보다 네가 더 반짝인다. …이건 사진엔 안 나오네.']], sky: [['N:별을 배경으로 찍으려는데 너무 어둡다. 대위가 단말 손전등을 켜서 내 얼굴만 비춘다.', 'C^:됐다. 별은 내가 볼게. 너는 찍혀.']], bloom: [['N:꽃잎이 흩날리는 길에서 대위가 단말을 뺏어 든다.', 'C:너만 찍을 거야. 움직이지 마.', 'C*:…열 장 찍었다. 다 예뻐서 못 지우겠다.']] } },
-    snack: { pre: { any: [['N:근처 노점에서 꼬치 두 개를 산다. 대위가 하나를 건넨다.', 'C:뜨거우니까 불어서 먹어.', 'C^:…맛있네. 다음엔 내가 산다.']], water: [['N:물가 벤치에 앉아 차가운 젤리 음료를 나눠 든다.', 'C:이거 색이 이상한데 맛은 괜찮다.']], neon: [['N:네온 노점에서 반짝이는 솜사탕을 산다. 대위가 한 입 뜯어 먹고 얼굴을 찡그린다.', 'C;:…설탕이 터진다. 입 안에서.', 'C^:근데 재밌다. 하나 더 사.']], food: [['C:여기 메뉴 중에 네가 안 먹어 본 거 시켜. 내가 다 먹어 줄게, 맛없으면.', 'N:대위가 정말로 남김없이 먹는다.']] },
+    photo: { pre: { any: [['C:사진? …나 사진 잘 안 찍는데.', 'N:대위가 어색하게 브이를 한다. 손가락이 너무 곧다.', 'C;:지워. 아니, 지우지 마. 한 장은 있어도 되겠다.'], ['N:지나가던 사람이 찍어 주겠다고 한다. 대위가 차렷 자세로 선다.', 'C;:…이거 신분증 사진 아니지?', 'N:셔터 직전에 대위가 웃음을 터뜨린다. 그 사진이 제일 잘 나왔다.'], ['C*:나 찍지 말고 풍경 찍어. …아니, 나도 조금 나오게.']], water: [['N:물빛을 배경으로 단말을 든다. 대위가 화면 끝에 반쯤 걸쳐 선다.', 'C:나는 배경이야. 너 찍어.', 'N:찍고 보니 대위가 화면 속 나를 보고 웃고 있다.']], sky: [['N:별빛이 너무 어두워 화면에 둘 다 까맣게 나온다.', 'C^:…별만 잘 나왔네. 이것도 나쁘지 않다.']], neon: [['N:네온 간판 아래서 한 장. 대위 얼굴이 분홍색이다.', 'C;:이거 내 얼굴 맞아? …지우지 마. 기념이니까.']] },
+      love: { any: [['N:팔을 뻗어 둘이 같이 나오게 찍는다. 셔터 직전, 대위가 볼에 얼굴을 붙인다.', 'C*:이게 제일 잘 나온 거다. 배경 화면 해.'], ['N:대위가 단말을 높이 들고 찍는다. 화면엔 대위 턱과 내 정수리만 나왔다.', 'C;:…각도 연습 좀 해야겠다.', 'C^:근데 이것도 좋다. 지우지 마.'], ['C*:이번엔 내가 찍어 줄게. 거기 서 봐.', 'N:대위가 화면을 한참 보더니 셔터를 누르지 않는다.', 'C~:…찍는 것보다 그냥 보는 게 낫다.'], ['N:셀카를 찍으려는데 대위가 계속 화면이 아니라 나를 본다.', 'C:…화면 보라고? 싫어. 너 보는 게 더 좋아.', 'N:결국 사진 속 대위는 전부 옆얼굴이다.'], ['C:셋 세면 찍어. 하나, 둘—', 'N:셋에서 대위가 고개를 돌려 볼에 입을 맞춘다. 사진엔 놀란 내 얼굴이 남았다.', 'C^:이건 내 단말에도 보내 줘.']], water: [['N:반짝이는 물을 배경으로 셀카. 대위가 뒤에서 어깨를 감싸 안는다.', 'C*:물빛보다 네가 더 반짝인다. …이건 사진엔 안 나오네.']], sky: [['N:별을 배경으로 찍으려는데 너무 어둡다. 대위가 단말 손전등을 켜서 내 얼굴만 비춘다.', 'C^:됐다. 별은 내가 볼게. 너는 찍혀.']], bloom: [['N:꽃잎이 흩날리는 길에서 대위가 단말을 뺏어 든다.', 'C:너만 찍을 거야. 움직이지 마.', 'C*:…열 장 찍었다. 다 예뻐서 못 지우겠다.']] } },
+    snack: { pre: { any: [['N:근처 노점에서 꼬치 두 개를 산다. 대위가 하나를 건넨다.', 'C:뜨거우니까 불어서 먹어.', 'C^:…맛있네. 다음엔 내가 산다.'], ['C:이거 먹어 봤어? 향열매 젤리. 수색팀 간식이야.', 'N:대위가 봉지를 뜯어 반을 덜어 준다.', 'C^:…나 원래 이런 거 안 나눠 줘. 너라서.'], ['N:대위가 핫초코 두 잔을 들고 온다. 한 잔엔 마시멜로가 하나 더 떠 있다.', 'C*:그거 네 거. 하나 더 넣어 달라고 했어.']], water: [['N:물가 벤치에 앉아 차가운 젤리 음료를 나눠 든다.', 'C:이거 색이 이상한데 맛은 괜찮다.']], neon: [['N:네온 노점에서 반짝이는 솜사탕을 산다. 대위가 한 입 뜯어 먹고 얼굴을 찡그린다.', 'C;:…설탕이 터진다. 입 안에서.', 'C^:근데 재밌다. 하나 더 사.']], food: [['C:여기 메뉴 중에 네가 안 먹어 본 거 시켜. 내가 다 먹어 줄게, 맛없으면.', 'N:대위가 정말로 남김없이 먹는다.']] },
       love: { any: [['N:노점 꼬치를 하나만 산다. 대위가 한 입 먹고 내 입에 가져다 댄다.', 'C*:반반. 이게 데이트 규칙이야.'], ['N:대위가 아이스크림을 들고 온다. 숟가락은 하나.', 'C~:…깜빡했다. 진짜야.', 'P:거짓말.', 'C^:응, 거짓말.']], water: [['N:물가에서 과일 컵을 나눠 먹는다. 대위가 제일 큰 조각을 내 쪽으로 밀어 준다.', 'C:너 이거 좋아하잖아. 다 알아.']], neon: [['N:반짝이는 솜사탕을 둘이 양쪽에서 뜯어 먹다가 가운데서 코끝이 닿는다.', 'C!:…', 'C*:이거 일부러 아니야. 근데 한 번 더 해 볼래?']], food: [['C*:먹여 줘.', 'P:손 있잖아.', 'C^:오늘은 없어. 데이트 날이라.']] } },
     ask: { pre: { any: [['C:하나씩 묻기 할래? 내가 먼저. 너 어릴 때 꿈이 뭐였어?', { q: [['별 보는 사람이요.', 2, ['C^:이뤘네. 여기 별 많잖아.']], ['기억 안 나요.', 1, ['C:나도. 지금이 더 좋으면 된 거지.']]] }, 'C*:이제 네 차례. 아무거나 물어봐.'], ['C:좋아하는 계절 있어? 여기는 계절이 돔 설정이라 좀 웃기지만.', { q: [['봄이요.', 2, ['C^:유리꽃 피는 거. 나도 그게 좋아.']], ['겨울이요.', 2, ['C*:제6행성 가면 진짜 겨울 있어. 언제 보여 줄게.']]] }]], sky: [['C:별 이름 하나 지어 줄 수 있으면 뭐라고 할 거야?', { q: [['{oc}의 별.', 3, ['C!:…', 'C;:그건 반칙이야.']], ['보라별.', 2, ['C:보라색 별이 있긴 하지. 저기, 깜빡이는 거.']]] }]] },
       love: { any: [['C:하나만 물어볼게. 나 언제부터 좋았어?', { q: [['처음부터.', 4, ['C~:…거짓말. 근데 듣기 좋다.']], ['비밀.', 2, ['C*:그럼 맞힐 때까지 매일 물어볼 거야.']]] }], ['C:오늘 제일 좋았던 거 하나만 말해 봐.', { q: [['지금.', 4, ['C^:…나도. 지금.']], ['아까 그거 먹은 거.', 2, ['C*:먹는 거에 졌다. 인정.']]] }], ['C:우리 십 년 뒤엔 뭐 하고 있을까.', { q: [['여기서 이러고 있겠지.', 4, ['C^:응. 똑같이. 너랑.']], ['{ob} 흰머리 세고 있겠지.', 3, ['C;:…벌써 몇 개 있어. 세지 마.']]] }]], sky: [['C:별 하나 줄게. 저거. 이제 네 거야.', { q: [['그럼 옆에 거는 {ob} 거.', 4, ['C^:좋다. 나란히 있네, 우리 별.']], ['등기부 떼 줘.', 2, ['C*:…궤도정거장에 문의해 볼게. 진지하게.']]] }]] } },
     quiet: { pre: { any: [['N:둘 다 한동안 아무 말도 하지 않는다. 어색하지 않은 침묵이다.', 'C:…좋다. 이렇게 조용한 거.'], ['N:대위가 먼 곳을 본다. 그 옆얼굴을 본다.', 'C:뭘 그렇게 봐.', 'C*:…아니, 봐도 돼.']], water: [['N:물결 소리만 들린다. 대위가 돌멩이 하나를 주워 물수제비를 뜬다. 다섯 번.', 'C^:오늘 컨디션 좋다.']], sky: [['N:하늘이 너무 넓어서 둘 다 말을 잃는다.', 'C:…여기 오길 잘했다.']] },
-      love: { any: [['N:말없이 손만 잡고 있다. 대위 엄지가 손등을 천천히 쓸어내린다.', 'C~:…이게 제일 좋은 대화 같다.'], ['N:대위 어깨에 머리를 기댄다. 대위가 고개를 기울여 머리 위에 볼을 얹는다.', 'C*:졸리면 자도 돼. 깨워 줄게. 아마 안 깨우겠지만.']], water: [['N:물가에 앉아 발끝으로 물결을 건드린다. 대위가 내 발 옆에 발을 나란히 둔다.', 'C:발 크기 차이 봐. 웃기다.']], sky: [['N:누워서 하늘을 본다. 대위 팔이 베개 대신 머리 밑에 들어온다.', 'C*:팔 저려도 안 뺄 거야.']], neon: [['N:시끄러운 거리 한가운데, 대위가 내 귀를 두 손으로 살짝 막는다.', 'C~:…이러면 내 목소리만 들리지. 사랑해.']] } },
+      love: { any: [['N:말없이 손만 잡고 있다. 대위 엄지가 손등을 천천히 쓸어내린다.', 'C~:…이게 제일 좋은 대화 같다.'], ['N:대위가 내 손가락을 하나씩 접었다 폈다 하며 논다. 아무 말 없이.', 'C^:…심심해서 아니야. 네 손이 좋아서.'], ['N:둘이 같은 곳을 본다. 한참 뒤 대위가 작게 웃는다.', 'C*:지금 우리 생각 같았지? 아무 생각도 안 하는 거.'], ['N:대위 어깨에 머리를 기댄다. 대위가 고개를 기울여 머리 위에 볼을 얹는다.', 'C*:졸리면 자도 돼. 깨워 줄게. 아마 안 깨우겠지만.']], water: [['N:물가에 앉아 발끝으로 물결을 건드린다. 대위가 내 발 옆에 발을 나란히 둔다.', 'C:발 크기 차이 봐. 웃기다.']], sky: [['N:누워서 하늘을 본다. 대위 팔이 베개 대신 머리 밑에 들어온다.', 'C*:팔 저려도 안 뺄 거야.']], neon: [['N:시끄러운 거리 한가운데, 대위가 내 귀를 두 손으로 살짝 막는다.', 'C~:…이러면 내 목소리만 들리지. 사랑해.']] } },
   };
   const dsay = (k) => { const d = DATE[k], f = flavor(), love = lov(); const set = love ? d.love : d.pre; return lines(PX.Dlg.capPick((set[f] || []).concat(set.any))); };
   add('*', { id: 'dt_photo', t: '📸 같이 사진 찍기', sub: '데이트 기념', s: 2, when: dateish, run: async () => { await dsay('photo'); St.advance(5); reward('dt_photo', 2, ['첫 데이트 사진', '같이 찍은 사진. 대위는 그걸 배경 화면으로 했다.']); } });
@@ -12324,7 +12326,12 @@ PX.InnNight = (() => {
   const U = PX.U, St = PX.St;
   const G = () => PX.Game;
   const lines = async (ls) => { await PX.Dlg.runLines(ls); };
-  const pick = (arr) => PX.Dlg.capPick(arr);
+  // 첫 밤을 보낸 뒤엔 조심스러운 확인 대사("괜찮아?" "아프면 말해" "처음…")는 거의 안 나오게 — 익숙한 연인의 대사 위주로
+  const CAUTIOUS = /괜찮아\?|괜찮지\?|아프면|아픈 데|멈출게|멈추라면|무섭지 않아|마지막으로 물을게|처음 온|처음엔|처음 맞아|긴장돼|손 떨|떨려|떨리는|싫으면|후회|무리했나|고개만 끄덕|천천히 할게|위험해|참고 있|머리가 안 돌아가/;
+  const familiar = () => { const S = St.S; return !!(S.done.innNightMem || S.done.homeNightMem); };
+  const X = (...bs) => bs.map(b => Object.assign(b, { exp: 1 })); // 첫 밤 이후에만 나오는 대사
+  const tame = (arr) => { const fam = familiar(); const a = arr.filter(b => fam || !b.exp); if (!fam) return a; const f = a.filter(b => !CAUTIOUS.test(JSON.stringify(b))); return f.length ? f : a; };
+  const pick = (arr) => PX.Dlg.capPick(tame(arr));
 
   // ===== 입장 전: 루비웨이 거리 (밤) =====
   const STREET = [
@@ -12337,6 +12344,7 @@ PX.InnNight = (() => {
     ['N:바람이 분다. 대위가 코트 안으로 끌어당기며 귀에 대고 속삭인다.', 'C:…오늘 밤, 나랑 있어 줄래?'],
     ['C:다이스키스에서 이겼잖아. 소원 써도 돼?', 'C*:…오늘 밤 같이 있기. 그게 소원이야.'],
   ];
+  STREET.push(...X(['C*:오늘도 저기 갈 거지? 표정 보니까 알겠다.', 'C^:나도 하루 종일 그 생각만 했어.'], ['N:대위가 말없이 은밀숙소 쪽으로 방향을 튼다. 잡은 손에 힘이 들어간다.', 'C~:…길 외웠어. 눈 감고도 가.']));
   // ===== 입장 전: 은밀숙소 로비 =====
   const LOBBY = [
     ['N:프런트 직원이 아무렇지 않게 키를 내민다. 대위만 아무렇지 않지 않다.', 'C;:…키 받는 손 떨리는 거 봤어?', 'C*:못 본 걸로 해 줘.'],
@@ -12346,6 +12354,7 @@ PX.InnNight = (() => {
     ['C;:처음 온 척해야 하나. 아니, 처음 맞아. 너랑은.', 'P:{ob} 귀 빨개.', 'C:응. 계속 빨갈 예정이야.'],
     ['N:복도 끝 객실 앞. 대위가 키를 꽂다 말고 멈춘다.', 'C:마지막으로 물을게. 괜찮아?', 'P:응.', 'C^:…좋아. 그럼 문 연다.'],
   ];
+  LOBBY.push(...X(['N:프런트 직원이 눈인사를 한다. 대위가 익숙하게 키를 받는다.', 'C*:…단골 됐다. 부끄러운데 하나도 안 부끄러워.'], ['C^:오늘은 내가 방 고를게. 지난번엔 네가 골랐으니까.', 'C*:…아니다. 네가 골라. 네가 고른 방이 다 좋았어.']));
   // ===== 객실 입장 직후 =====
   const ENTER = [
     ['N:문이 닫히는 소리. 루비웨이의 소음이 한꺼번에 사라진다.', 'C;:…이상하다. 작전 때보다 긴장돼.', 'P:{ob} 손 떨려.', 'C*:응. 네가 너무 가까워서.'],
@@ -12362,6 +12371,7 @@ PX.InnNight = (() => {
     ['N:대위가 머리끈을 조심스럽게 풀어 준다. 머리카락이 어깨로 쏟아진다.', 'C:…이게 보고 싶었어. 근무 중엔 못 보는 거.'],
     ['C:오늘 하루 고생했지. 이리 와. 오늘은 내가 다 해 줄게.', 'C*:…다라는 게 어디까지인지는 네가 정해.'],
   ];
+  ENTER.push(...X(['N:문이 닫히자마자 대위가 웃으며 안아 든다.', 'C^:오늘은 기다린 시간이 너무 길었어.'], ['C*:이 방 냄새, 이제 너 생각나는 냄새야.', 'N:대위가 재킷을 아무렇게나 던지고 팔을 벌린다.'], ['N:대위가 신발도 벗기 전에 이마에 입을 맞춘다.', 'C~:…일단 인사부터. 보고 싶었어.']));
   // ===== 분위기가 오르는 장면 (방마다 + 공통) =====
   const DURING = {
     any: [
@@ -12452,6 +12462,7 @@ PX.InnNight = (() => {
     ['C*:…힘들면 쉬었다 할까?', { q: [['조금만 쉬자.', 2, ['N:대위가 이불을 덮어 주고, 이마에 짧게 입을 맞춘다.', 'C:…물 가져올게.']], ['안 힘들어.', 3, ['C~:…나보다 체력 좋네. 수색팀 올래?']]] }],
     ['N:어둠 속에서 누군가 웃음을 터뜨린다. 대위다.', 'C^:…미안. 너무 좋아서 웃음이 나와.', { q: [['나도 웃겨.', 2, ['C:…우리 진짜 바보 같다.']], ['웃지 마!', 2, ['C*:…응. 대신 다른 거 할게.']]] }],
   ];
+  MURMUR.push(...X(['C~:…역시 너야.', { q: [['뭐가?', 2, ['C*:…전부 다.']], ['{ob}도.', 3, ['C^:…응. 우리 잘 맞아.']]] }], ['N:어둠 속에서 대위가 낮게 웃으며 이름을 부른다. 익숙하고, 다정한 목소리.', 'C*:…{cv}. 오늘 유난히 예쁘다.', { q: [['매일 그러잖아.', 3, ['C^:…맞아. 매일 더.']], ['오늘만?', 2, ['C~:…아니. 어제보다 오늘.']]] }]));
   // ===== 그 후 (새벽) =====
   const AFTER = [
     ['N:새벽. 창밖 네온이 꺼져 있다. 대위의 팔이 아직 허리를 감고 있다.', 'C;:…깼어? 아픈 데 없어?', 'P:{ob}는 맨날 그거부터 물어봐.', 'C*:응. 맨날 물어볼 거야.'],
@@ -12539,7 +12550,7 @@ PX.InnNight = (() => {
       : ['N:불이 꺼진다. 숨소리와 이름을 부르는 소리만 남는다.', 'N:네온 빛마저 커튼 뒤로 사라진다. 어둠 속에서 손이 손을 찾는다.', 'N:마지막으로 본 건 대위의 웃는 얼굴이었다. 그리고 어둠.', 'N:객실 무드등이 가장 낮은 단계로 떨어진다. 남은 빛은 서로의 눈동자뿐이다.'])]);
     const n = 2 + Math.floor(Math.random() * 2);
     // 이번 밤에 들릴 말: 서로 다른 것으로, 아직 안 들은 것부터
-    const MUR = MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m))); // 내 숙소엔 루비웨이 네온이 없다
+    const MUR = tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
     const fresh = MUR.filter(m => !PX.Dlg.bundleSeen({ l: m })), rest = MUR.filter(m => !fresh.includes(m));
     const order = [...fresh.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(0, n);
     for (const m of order) { St.advance(40 + Math.floor(Math.random() * 50)); const r = await PX.Dlg.runLines(m); St.addAff(Math.min(3, r.aff || 1)); }
@@ -13316,7 +13327,7 @@ PX.Op = (() => {
     { k: 'night', t: '💬 야간 대화', night: true, run: async () => { await lines(U.pick([['N:텐트 앞. 별이 쏟아진다. 대위가 옆에 앉는다.', 'C:작전 중엔 이런 말 안 하는데.', 'C*:…같이 와서 좋다. 무섭기도 하고. 네가 다칠까 봐.', { q: [['대위님 뒤에 있으면 안 다쳐요.', 4, ['C^:그 말 믿고 내일도 앞에 설게.']], ['저도 대위님 지킬게요.', 4, ['C!:…', 'C*:그 말은 반칙이다.']]] }], ['C:별 많지. 부대에선 이렇게 안 보여.', 'C:여기 오면 늘 혼자 봤는데.', 'C^:오늘은 아니네.']])); St.addAff(4); } },
     { k: 'rest', t: '😴 텐트에서 하루 마치기', always: true, run: async () => { await G().sleepUntil(6); } },
   ];
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   async function board() {
     const o = op(), d = dayIdx(), S = St.S;
     if (!inField()) return false;
@@ -13358,7 +13369,7 @@ PX.Rom = (() => {
   const G = () => PX.Game;
   const now = () => St.absMin();
   const DAY = 1440;
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   const st = () => St.S.rel.cap.stage;
 

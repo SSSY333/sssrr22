@@ -4,7 +4,7 @@ PX.Ruby = (() => {
   const U = PX.U, St = PX.St, W = PX.W;
   const G = () => PX.Game;
   const withCap = () => PX.Act.withCap();
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   const night = () => { const t = St.S.time.min; return t >= 18 * 60 || t < 5 * 60; };
 

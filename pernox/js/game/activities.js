@@ -4,7 +4,7 @@ PX.Act = (() => {
   const U = PX.U, St = PX.St, Cal = PX.Cal, W = PX.W;
   const G = () => PX.Game;
   const withCap = () => { const g = G(); return g.cap.map === g.mapId && ['follow', 'visit', 'stay'].includes(PX.Cap.mode); };
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   async function capSay(key, extra) {
     if (!withCap()) return;
     const pool = (PX.DLG_CAP2.activity[key] || []).concat(extra || []);

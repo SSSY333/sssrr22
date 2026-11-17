@@ -4,7 +4,7 @@
 PX.CapAct = (() => {
   const U = PX.U, St = PX.St, W = PX.W;
   const G = () => PX.Game;
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls, { reply: true }); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls, { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
   const once = (k) => { const S = St.S; if (S.done[k]) return false; S.done[k] = 1; return true; };
   // 하루 한 번만 호감이 오르는 행동 (같은 날 또 하면 짧은 반응)
   const today = (k) => { const S = St.S; if (S.done['ca_' + k] === S.day) return false; S.done['ca_' + k] = S.day; return true; };

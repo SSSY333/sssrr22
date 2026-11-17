@@ -366,7 +366,7 @@ PX.Op = (() => {
     { k: 'night', t: '💬 야간 대화', night: true, run: async () => { await lines(U.pick([['N:텐트 앞. 별이 쏟아진다. 대위가 옆에 앉는다.', 'C:작전 중엔 이런 말 안 하는데.', 'C*:…같이 와서 좋다. 무섭기도 하고. 네가 다칠까 봐.', { q: [['대위님 뒤에 있으면 안 다쳐요.', 4, ['C^:그 말 믿고 내일도 앞에 설게.']], ['저도 대위님 지킬게요.', 4, ['C!:…', 'C*:그 말은 반칙이다.']]] }], ['C:별 많지. 부대에선 이렇게 안 보여.', 'C:여기 오면 늘 혼자 봤는데.', 'C^:오늘은 아니네.']])); St.addAff(4); } },
     { k: 'rest', t: '😴 텐트에서 하루 마치기', always: true, run: async () => { await G().sleepUntil(6); } },
   ];
-  async function lines(ls) { const g = G(); g.modal++; await PX.Dlg.runLines(ls); PX.Dlg.close(); g.modal--; }
+  async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls); } finally { PX.Dlg.close(); g.modal--; } }
   async function board() {
     const o = op(), d = dayIdx(), S = St.S;
     if (!inField()) return false;
