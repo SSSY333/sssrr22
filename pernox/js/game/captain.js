@@ -11,7 +11,14 @@ PX.Cap = (() => {
 
   function init(actor) { cap = actor; mode = 'sched'; }
   // 휴가 중이면 주말 일정으로 지낸다
-  const capDefNow = () => { const S = St.S; return PX.Rom && PX.Rom.onLeave('cap', S.day) ? Object.assign({}, PX.NPC_BY_ID.cap, { sched: PX.NPC_BY_ID.cap.we, sched2: null }) : PX.NPC_BY_ID.cap; };
+  const capDefNow = () => {
+    const S = St.S, base = PX.NPC_BY_ID.cap;
+    if (PX.Rom && PX.Rom.onLeave('cap', S.day)) return Object.assign({}, base, { sched: base.we, sched2: null });
+    // 복귀 검진을 이미 받았으면 (내가 · 윤 중위가) 의무동에 남아 있지 않고 바로 작전동 보고로
+    const ex = S.done && S.done['capExam_' + S.day];
+    if (ex === 'me' || ex === 'nurse') { const sk = (t) => t && t.replace('17:00 med.patient', '17:00 ops.cap'); return Object.assign({}, base, { sched: sk(base.sched), sched2: sk(base.sched2) }); }
+    return base;
+  };
   // 치료 뒤 약속한 저녁 시간 (보고 → 자유 시간으로 플레이어 곁에)
   const freeNow = () => { const f = St.S.cap.freeWin, t = St.absMin(); return !!(f && t >= f.from && t < f.until); };
   const entry = () => { const e = A.schedEntry(capDefNow(), St.S); return freeNow() && e.spot !== 'cap.bed' ? Object.assign({}, e, { spot: 'free' }) : e; };
