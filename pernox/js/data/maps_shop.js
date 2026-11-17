@@ -12,12 +12,17 @@
   room('salon', { name: '은하 헤어', w: 12, h: 9, floor: 'tile', wall: '#e6eef4', exit: 6,
     furn: [['salonmirror', 1, 0, 0], ['salonchair', 1, 1, 0, 'sl.c1'], ['salonmirror', 3, 0, 0], ['salonchair', 3, 1, 0, 'sl.c2'], ['salonmirror', 5, 0, 0], ['salonchair', 5, 1, 0, 'sl.c3'], ['hairwash', 8, 0, 0], ['shopcounter', 9, 4, 0, 'sl.shop'], ['bench', 0, 6, 0], ['plant', 11, 0, 0], ['bigplant', 11, 8, 0]],
     walls: [['L', 4.4, 'window', 1.0]], crowd: [{ role: 'stylist', fixed: [2.5, 2.5, 2] }, { role: 'shopper', n: 1, x0: 1, y0: 4, x1: 8, y1: 7 }] });
-  // 광장 건물 (오른쪽 아래 잔디 쪽 상점가)
+  // 광장 상점가: 큰길(세로) 바로 옆과, 새로 낸 남쪽 상점가 길 앞에 문이 나도록 배치
   const P = M.plaza;
   P.buildings.push(
-    { id: 'p_interior', name: '별빛 가구점', to: 'interior', x: 3, y: 39, w: 8, d: 6, h: 40, wall: '#e8dccb', roof: '#8a6a4a', stripe: '#ffd166', icon: 'sofa', door: { f: 'R', u: 3 }, awning: '#c9a86a' },
-    { id: 'p_boutique', name: '궤도 부티크', to: 'boutique', x: 31, y: 40, w: 7, d: 6, h: 40, wall: '#f2e6ee', roof: '#c9b0e8', stripe: '#ff9ed2', icon: 'shirt', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
-    { id: 'p_salon', name: '은하 헤어', to: 'salon', x: 40, y: 40, w: 7, d: 6, h: 40, wall: '#e6eef4', roof: '#5a6a8a', stripe: '#7fe3ff', icon: 'scissors', door: { f: 'R', u: 3 }, glass: true, awning: '#7fe3ff' });
+    { id: 'p_interior', name: '별빛 가구점', to: 'interior', x: 15, y: 31, w: 8, d: 6, h: 40, wall: '#e8dccb', roof: '#8a6a4a', stripe: '#ffd166', icon: 'sofa', door: { f: 'R', u: 3 }, awning: '#c9a86a' },
+    { id: 'p_boutique', name: '궤도 부티크', to: 'boutique', x: 29, y: 39, w: 7, d: 7, h: 40, wall: '#f2e6ee', roof: '#c9b0e8', stripe: '#ff9ed2', icon: 'shirt', door: { f: 'L', u: 3 }, glass: true, awning: '#ff9ed2' },
+    { id: 'p_salon', name: '은하 헤어', to: 'salon', x: 38, y: 39, w: 7, d: 7, h: 40, wall: '#e6eef4', roof: '#5a6a8a', stripe: '#7fe3ff', icon: 'scissors', door: { f: 'L', u: 3 }, glass: true, awning: '#7fe3ff' });
+  for (const id of ['interior', 'boutique', 'salon']) { M[id].parent = 'plaza'; M[id].building = 'p_' + id; } // 나가면 광장 그 가게 앞으로
+  P.roads.push({ x0: 27, y0: 46, x1: 50, y1: 47, axis: 'x', walk: true }); // 남쪽 상점가 길
+  // 길을 막던 장식 옮기기: 큰길 위 유리꽃 화단 · 상점가 길 위 나무 · 가구점 자리의 축제 매대
+  const mv = (fid, x, y, nx, ny) => { const d = P.decor.find(d => d[0] === fid && d[1] === x && d[2] === y); if (d) { d[1] = nx; d[2] = ny; } };
+  mv('flowerbed', 25, 42, 12, 47); mv('tree', 33, 47, 36, 49); mv('tree', 46, 47, 48, 49);
   // 온천 · 스파 탈의실
   M.onsen.furn.push(['changebooth', 12, 4, 0]);
   M.spa.decor.push(['changebooth', 10, 16, 0]);

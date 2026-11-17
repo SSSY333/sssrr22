@@ -230,7 +230,7 @@
     { to: 'silverdesert', label: '🚙 은사막 전망대 (안정도로 40분)', mins: 40 }, { to: 'camp', label: '⛺ 안정구역 캠핑장', mins: 40 }];
   M.base.travel = [{ to: 'dome', label: '🚌 돔시티 (30분)', mins: 30 }, { to: 'outskirts', label: '🚙 외곽 수색구역 (출입 제한)', mins: 30, need: 'scout' }];
   M.plaza.travel = [{ to: 'port', label: '🚀 우주항구 (20분)', mins: 20 }, { to: 'corridor', label: '🌅 인공노을 회랑', mins: 10 }, { to: 'bridge', label: '🌉 빛먼지 산책교', mins: 10 }, { to: 'rubyway', label: '🌹 루비웨이 (성인 · 직접 선택)', mins: 10, need: 'adult' }, { to: 'dome', label: '🚶 연구·주거구역', mins: 5 }];
-  M.plaza.decor.push(['travelkiosk', 28, 46, 0]);
+  M.plaza.decor.push(['travelkiosk', 28, 49, 0]);
   M.plaza.buildings = M.plaza.buildings.filter(b => b.id !== 'p_pub' && b.id !== 'p_port');
   M.plaza.buildings.push({ id: 'p_port', name: '우주항구 · 루비웨이 방면', x: 38, y: 4, w: 8, d: 5, h: 40, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', door: { f: 'L', u: 3 }, act: { travel: true, label: '🚌 우주항구 · 루비웨이 방면 셔틀' } });
 

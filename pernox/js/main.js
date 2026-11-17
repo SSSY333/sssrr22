@@ -129,7 +129,7 @@
     const to = door.to;
     if (to === 'q_captain') {
       const capIn = Game.cap.map === 'q_captain';
-      if (!(capIn || Cap.mode === 'follow' || S.rel.cap.stage >= 4)) { UI.toast('🔒 대위 개인 막사 — 문이 잠겨 있다. 대위가 있을 때 오자.'); return; }
+      if (!(capIn || Cap.mode === 'follow' || S.rel.cap.stage >= 4)) { UI.toast('🔒 NOVA구역 A17 · 대위 막사 — 문이 잠겨 있다. 대위가 있을 때 오자.'); return; }
       if (capIn && Cap.mode !== 'follow') Game.trigger(async () => { Game.modal++; await Dlg.runLines(['N:똑똑.', 'C!:어? 너야?', 'C*:들어와. 냉각기 최저야, 춥다?']); Dlg.close(); Game.modal--; });
     }
     if (to === 'apt_player' && S.player.job !== 'researcher' || to === 'q_player' && S.player.job === 'researcher') { UI.toast('🔒 다른 사람의 숙소예요'); return; }
@@ -147,6 +147,7 @@
     const out = W.maps[m.def.parent];
     const d = out.doors.find(d => d.to === m.id);
     enterMap(out.id, d.x + 0.5, d.y + 0.5);
+    Game.doorCool = performance.now() + 1200;
     const b = d.bld.b;
     Game.player.dir = b.door.f === 'L' ? 0 : 1;
   }
@@ -902,6 +903,15 @@
     }
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
     if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
+    // 바깥: 문 앞에서 건물 쪽으로 밀면 들어간다 (나온 직후엔 잠깐 쉬었다가)
+    if (m.kind === 'out' && performance.now() > (Game.doorCool || 0)) {
+      const tx = Math.floor(p.x + dx * 0.7), ty = Math.floor(p.y + dy * 0.7);
+      for (const d of m.doors || []) {
+        const o = d.bld; if (!o || !d.to || d.closed) continue;
+        const near = Math.abs(p.x - (d.x + 0.5)) < 0.9 && Math.abs(p.y - (d.y + 0.5)) < 0.9;
+        if (near && tx >= o.x && tx < o.x + o.fw && ty >= o.y && ty < o.y + o.fd) { Game.doorCool = performance.now() + 1500; Game.joyEnd && Game.joyEnd(); enterBuilding(d); return; }
+      }
+    }
     for (const l of m.links || []) if (Math.floor(p.y) === l.y0 && Math.floor(p.x) >= l.x0 && Math.floor(p.x) <= l.x1) { goLink(l); break; }
   }
   function actionBtn() {

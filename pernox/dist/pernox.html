@@ -2159,9 +2159,9 @@ PX.S = (() => {
     ['table', 8, 4, 0], ['chair', 7, 5, 3], ['chair', 10, 4, 1], ['plant', 11, 9, 0],
   ];
   const homeWalls = [['B', 2.5, 'window', 1.0], ['B', 6.6, 'poster', 0.7], ['L', 4.2, 'window', 1.0], ['L', 7.6, 'clock', 0.5]];
-  room('q_player', { name: '내 숙소 (간부 숙소동)', w: 12, h: 10, floor: 'wood', wall: '#e9dcc8', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
-  room('apt_player', { name: '내 숙소 (민간 주거구역)', w: 12, h: 10, floor: 'cafe', wall: '#dfe8f0', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
-  room('q_captain', { name: '대위 개인 막사', w: 13, h: 11, floor: 'darkwood', wall: '#5f6b5a', exit: 9, lowDoor: true,
+  room('q_player', { name: '내 막사 · BETA구역 C15', w: 12, h: 10, floor: 'wood', wall: '#e9dcc8', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('apt_player', { name: '내 집 · 돔시티 민간 주거구역', w: 12, h: 10, floor: 'cafe', wall: '#dfe8f0', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('q_captain', { name: '대위 막사 · NOVA구역 A17', w: 13, h: 11, floor: 'darkwood', wall: '#5f6b5a', exit: 9, lowDoor: true,
     furn: [['cooler', 0, 0, 0], ['bigbed', 1, 0, 0, 'cap.bed'], ['sidetable', 3, 0, 0], ['weaponrack', 4, 0, 0], ['alienbench', 6, 0, 0], ['@', 6, 1, 2, 'cap.craft', 'work'], ['stool', 7, 1, 0], ['fridge', 10, 0, 0], ['cooler', 11, 0, 0], ['bigplant', 12, 0, 0],
       ['kitchen', 0, 4, 3], ['tv', 0, 6, 3], ['rug_blue', 1, 6, 0], ['sofa_green', 4, 6, 1, 'cap.sofa'], ['table', 6, 4, 0], ['chair', 5, 4, 3], ['chair', 8, 5, 1],
       ['weights', 12, 4, 1], ['@', 11, 5, 1, 'cap.gym', 'workout'], ['benchpress', 10, 7, 0], ['lamp', 12, 7, 0], ['punchbag', 7, 8, 0], ['crates', 11, 10, 0]],
@@ -2236,13 +2236,13 @@ PX.S = (() => {
   base.buildings = [
     { id: 'b_ops', name: '수색팀 작전동', to: 'ops', x: 16, y: 5, w: 13, d: 10, h: 58, wall: '#8a9468', roof: '#5f6847', stripe: '#c9a227', icon: 'star', door: { f: 'R', u: 6 }, roofDeco: ['antenna', 'ac'] },
     { id: 'b_comms', name: '통신실', to: 'comms', x: 5, y: 5, w: 8, d: 9, h: 50, wall: '#7f8a96', roof: '#56606b', stripe: '#5fa8ff', icon: 'antenna', door: { f: 'R', u: 4 }, roofDeco: ['dish', 'antenna'] },
-    { id: 'b_cap', name: '대위 개인 막사', to: 'q_captain', x: 6, y: 18, w: 8, d: 7, h: 46, wall: '#6b7a5c', roof: '#4a5640', stripe: '#d0563b', icon: 'home', door: { f: 'L', u: 3 }, roofDeco: ['ac', 'ac'] },
+    { id: 'b_cap', name: 'NOVA구역 A17 · 대위 막사', to: 'q_captain', x: 6, y: 18, w: 8, d: 7, h: 46, wall: '#6b7a5c', roof: '#4a5640', stripe: '#d0563b', icon: 'home', door: { f: 'L', u: 3 }, roofDeco: ['ac', 'ac'] },
     { id: 'b_admin', name: '행정동', to: 'admin', x: 17, y: 18, w: 11, d: 9, h: 54, wall: '#b9ad92', roof: '#7f7560', stripe: '#2f5a3a', icon: 'doc', door: { f: 'L', u: 5 }, roofDeco: ['ac'] },
     { id: 'b_mess', name: '식당동', to: 'mess', x: 34, y: 6, w: 14, d: 12, h: 52, wall: '#c9b48c', roof: '#8a7552', stripe: '#d36b4a', icon: 'fork', door: { f: 'L', u: 6 }, roofDeco: ['vents', 'ac'] },
     { id: 'b_med', name: '의무동', to: 'med', x: 50, y: 6, w: 9, d: 10, h: 50, wall: '#e6ecee', roof: '#a9b4bc', stripe: '#d64545', icon: 'cross', door: { f: 'L', u: 4 }, roofDeco: ['ac'] },
     { id: 'b_shower', name: '샤워실', to: 'shower', x: 34, y: 22, w: 7, d: 6, h: 40, wall: '#a9c3cc', roof: '#6f8a94', stripe: '#5fc8e8', icon: 'drop', door: { f: 'R', u: 2 }, roofDeco: ['vents'] },
     { id: 'b_lounge', name: '휴게실', to: 'lounge', x: 50, y: 20, w: 8, d: 7, h: 42, wall: '#b8a6c9', roof: '#7a6a8a', stripe: '#ff8bea', icon: 'controller', door: { f: 'L', u: 3 }, roofDeco: ['ac'] },
-    { id: 'b_quarters', name: '간부 숙소동', to: 'q_player', x: 18, y: 36, w: 11, d: 8, h: 56, wall: '#c2b49a', roof: '#857a62', stripe: '#3b7dd8', icon: 'bed', door: { f: 'R', u: 4 }, roofDeco: ['ac', 'solar'] },
+    { id: 'b_quarters', name: 'BETA구역 간부 막사 (C15)', to: 'q_player', x: 18, y: 36, w: 11, d: 8, h: 56, wall: '#c2b49a', roof: '#857a62', stripe: '#3b7dd8', icon: 'bed', door: { f: 'R', u: 4 }, roofDeco: ['ac', 'solar'] },
     { id: 'b_barracks', name: '병사 생활관', to: 'barracks', x: 18, y: 48, w: 11, d: 8, h: 50, wall: '#a8b08e', roof: '#6f7758', stripe: '#c9a227', icon: 'bed', door: { f: 'R', u: 4 }, roofDeco: ['ac'] },
     { id: 'b_px', name: '보급창고 (PX)', to: 'px', x: 5, y: 36, w: 9, d: 8, h: 46, wall: '#b3a37a', roof: '#7a6c4b', stripe: '#7fb86a', icon: 'box', door: { f: 'L', u: 4 }, roofDeco: ['vents'] },
     { id: 'b_hangar', name: '정비격납고', to: 'hangar', x: 36, y: 35, w: 14, d: 11, h: 66, wall: '#8d98a3', roof: '#5d666f', stripe: '#e8c56a', icon: 'wrench', door: { f: 'L', u: 6, wide: true }, roofDeco: ['vents', 'vents', 'antenna'] },
@@ -2255,16 +2255,16 @@ PX.S = (() => {
   // 광장
   D.push(['flagpole', 35, 35, 0], ['benchout', 26, 34, 2], ['benchout', 25, 28, 0], ['planter', 27, 28, 0], ['benchout', 35, 28, 0], ['planter', 25, 33, 0], ['kiosk', 33, 28, 0], ['planter', 37, 33, 1], ['benchout', 34, 37, 2]);
   // 나무와 화단
-  const trees = [[4, 16], [4, 26], [15, 27], [15, 16], [44, 21], [46, 27], [59, 18], [59, 28], [33, 4], [48, 4], [4, 45], [15, 46], [4, 57], [30, 57], [51, 33], [45, 32], [6, 31], [12, 33], [40, 28], [56, 46]];
+  const trees = [[4, 16], [4, 26], [15, 27], [15, 16], [44, 21], [46, 27], [59, 18], [59, 28], [33, 4], [48, 4], [4, 45], [15, 46], [4, 57], [35, 57], [51, 33], [45, 35], [6, 35], [12, 33], [40, 28], [56, 46]];
   trees.forEach(([x, y], i) => D.push([i % 3 === 2 ? 'tree2' : 'tree', x, y, 0]));
-  [[3, 30], [8, 34], [43, 30], [55, 31], [14, 58], [9, 49], [16, 33]].forEach(([x, y]) => D.push(['bush', x, y, 0]));
+  [[3, 27], [8, 34], [43, 27], [55, 35], [14, 58], [9, 49], [16, 33]].forEach(([x, y]) => D.push(['bush', x, y, 0]));
   [[5, 28], [7, 28], [42, 24], [48, 24], [10, 46], [3, 47], [24, 45], [47, 19]].forEach(([x, y]) => D.push(['glowflower', x, y, 0]));
   // 정문
   D.push(['guardpost', 34, 58, 0], ['barrier', 29, 60, 0], ['sandbags', 26, 59, 0], ['sandbags', 34, 56, 1], ['shuttlestop', 24, 57, 0], ['kiosk', 23, 56, 0]);
   // 통신 · 시설
   D.push(['radar', 6, 15, 0], ['watertank', 3, 20, 0], ['solar', 3, 33, 0], ['solar', 3, 35, 0], ['solar', 3, 37, 0]);
   // 격납고 앞 계류장 · 차량
-  D.push(['truck', 38, 48, 0], ['crates', 44, 48, 0], ['crate', 47, 48, 0], ['crates', 53, 47, 1], ['rover', 30, 47, 0]);
+  D.push(['truck', 38, 48, 0], ['crates', 44, 48, 0], ['crate', 47, 48, 0], ['crates', 53, 47, 1], ['rover', 25, 47, 0]);
   // 훈련장
   D.push(['hurdle', 40, 52, 0], ['hurdle', 44, 52, 0], ['hurdle', 48, 52, 0], ['climbwall', 52, 51, 0], ['sandbags', 40, 56, 0], ['sandbags', 44, 56, 0], ['benchout', 37, 55, 1]);
   // 식당 앞 벤치 · 자판기
@@ -2298,10 +2298,10 @@ PX.S = (() => {
   ];
   const DD = dome.decor;
   DD.push(['fountain', 20, 20, 0], ['benchout', 16, 18, 0], ['benchout', 26, 18, 0], ['benchout', 16, 25, 2], ['benchout', 26, 25, 2]);
-  for (const [x, y] of [[17, 16], [27, 16], [17, 27], [27, 27], [16, 10], [24, 8], [24, 14], [14, 33], [24, 33], [24, 40], [38, 22], [30, 22]]) DD.push(['streetlamp', x, y, 0]);
-  for (const [x, y] of [[2, 18], [6, 18], [10, 18], [2, 22], [7, 23], [11, 22], [36, 16], [42, 16], [44, 21], [44, 26], [16, 42], [10, 42], [4, 42], [40, 41]]) DD.push(['tree', x, y, 0]);
+  for (const [x, y] of [[17, 16], [27, 16], [17, 27], [27, 27], [16, 10], [24, 8], [24, 14], [14, 33], [24, 33], [24, 40], [38, 23], [30, 23]]) DD.push(['streetlamp', x, y, 0]);
+  for (const [x, y] of [[2, 18], [6, 18], [10, 18], [2, 24], [7, 24], [11, 25], [36, 16], [42, 16], [34, 25], [44, 26], [16, 42], [10, 42], [4, 42], [40, 41]]) DD.push(['tree', x, y, 0]);
   for (const [x, y] of [[4, 20], [9, 20], [12, 24], [38, 19], [41, 24], [13, 40], [7, 44]]) DD.push(['glowflower', x, y, 0]);
-  DD.push(['shuttlestop', 22, 42, 0], ['kiosk', 26, 42, 0], ['parasol', 14, 30, 0], ['parasol', 14, 35, 0], ['flowerbed', 30, 41, 0], ['benchout', 36, 42, 0], ['arch', 20, 1, 0], ['planter', 30, 15, 0], ['planter', 38, 15, 0], ['kiosk', 19, 15, 0], ['bush', 3, 26, 0], ['bush', 44, 18, 0], ['vending', 28, 37, 0]);
+  DD.push(['shuttlestop', 23, 43, 0], ['kiosk', 26, 42, 0], ['parasol', 14, 30, 0], ['parasol', 14, 35, 0], ['flowerbed', 30, 41, 0], ['benchout', 36, 42, 0], ['arch', 20, 1, 0], ['planter', 30, 15, 0], ['planter', 38, 15, 0], ['kiosk', 19, 15, 0], ['bush', 3, 26, 0], ['bush', 44, 18, 0], ['vending', 28, 37, 0]);
   dome.zones = [
     { t: 'plaza', x0: 15, y0: 15, x1: 29, y1: 29 }, { t: 'domegrass', x0: 1, y0: 16, x1: 14, y1: 27 }, { t: 'domegrass', x0: 34, y0: 16, x1: 46, y1: 28 }, { t: 'domegrass', x0: 1, y0: 39, x1: 18, y1: 46 },
     { t: 'cafe', x0: 13, y0: 29, x1: 17, y1: 38 }, { t: 'water', x0: 34, y0: 44, x1: 46, y1: 46 },
@@ -2318,22 +2318,22 @@ PX.S = (() => {
   plaza.buildings = [
     { id: 'p_deck', name: '관람데크 · 별비 투영실', to: 'starroom', x: 28, y: 14, w: 8, d: 7, h: 40, wall: '#3a3f6a', roof: '#d9dde2', stripe: '#9fe6ff', icon: 'star', door: { f: 'L', u: 3 }, roofDeco: ['dish'], glass: true },
     { id: 'p_samgyup', name: '냉삼집 (문성호네)', to: 'samgyup', x: 4, y: 13, w: 8, d: 8, h: 44, wall: '#d9c7a8', roof: '#8a5a3c', stripe: '#d0563b', icon: 'fork', door: { f: 'R', u: 3 }, roofDeco: ['vents', 'ac'], awning: '#d0563b' },
-    { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 26, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
+    { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 27, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
     { id: 'p_flower', name: '유리돔 꽃시장', to: 'flower', x: 15, y: 39, w: 8, d: 7, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
     { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목은 루비웨이 쪽에서 들어가요' },
     { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구는 돔시티 외곽 항구구역에서 가요' },
   ];
   const PD = plaza.decor;
   PD.push(['fountain', 18, 18, 0], ['benchout', 16, 22, 2], ['benchout', 20, 22, 2], ['benchout', 16, 15, 0], ['kiosk', 23, 27, 0], ['arch', 24, 50, 0]);
-  for (const [x, y] of [[14, 14], [22, 14], [14, 36], [36, 36], [36, 23], [22, 30], [28, 30], [13, 24]]) PD.push(['streetlamp', x, y, 0]);
-  for (let x = 14; x <= 36; x += 4) PD.push(['lantern', x, 10, 0]);
-  for (let y = 14; y <= 46; y += 4) PD.push(['lantern', 27, y, 0]);
+  for (const [x, y] of [[14, 14], [22, 14], [14, 36], [36, 36], [36, 23], [22, 30], [28, 30], [13, 23]]) PD.push(['streetlamp', x, y, 0]);
+  for (let x = 14; x <= 36; x += 4) if (x !== 26) PD.push(['lantern', x, 10, 0]);
+  for (let y = 14; y <= 46; y += 4) if (y !== 26 && y !== 46) PD.push(['lantern', 27, y, 0]);
   for (const [x, y] of [[2, 23], [2, 36], [9, 36], [14, 48], [33, 47], [46, 47], [49, 40], [49, 13]]) PD.push(['tree', x, y, 0]);
   // 투명수로 정원
   for (const [x, y] of [[40, 17], [40, 25], [40, 32], [47, 20], [47, 29]]) PD.push(['glowflower', x, y, 0]);
   PD.push(['benchout', 44, 16, 0], ['benchout', 44, 34, 2], ['tree2', 48, 24, 0], ['flowerbed', 25, 42, 0]);
   // 축제 · 야시장 매대 (행사가 열릴 때만 나타남)
-  for (const [x, y] of [[29, 25], [29, 28], [33, 25], [33, 28], [16, 31], [19, 31]]) PD.push(['stall', x, y, 0, ['LB02', 'LB04', 'LB05', 'LB09', 'LB12', 'LB13', 'LB11']]);
+  for (const [x, y] of [[29, 34], [29, 28], [33, 34], [33, 28], [29, 31], [33, 31]]) PD.push(['stall', x, y, 0, ['LB02', 'LB04', 'LB05', 'LB09', 'LB12', 'LB13', 'LB11']]);
   plaza.zones = [
     { t: 'plaza', x0: 13, y0: 13, x1: 37, y1: 37 }, { t: 'glassfloor', x0: 39, y0: 15, x1: 49, y1: 35 }, { t: 'water', x0: 42, y0: 17, x1: 42, y1: 33 }, { t: 'water', x0: 46, y0: 17, x1: 46, y1: 33 },
     { t: 'domegrass', x0: 1, y0: 34, x1: 13, y1: 50 }, { t: 'domegrass', x0: 30, y0: 39, x1: 50, y1: 50 }, { t: 'cafe', x0: 2, y0: 9, x1: 50, y1: 11 },
@@ -2614,7 +2614,7 @@ PX.S = (() => {
     { to: 'silverdesert', label: '🚙 은사막 전망대 (안정도로 40분)', mins: 40 }, { to: 'camp', label: '⛺ 안정구역 캠핑장', mins: 40 }];
   M.base.travel = [{ to: 'dome', label: '🚌 돔시티 (30분)', mins: 30 }, { to: 'outskirts', label: '🚙 외곽 수색구역 (출입 제한)', mins: 30, need: 'scout' }];
   M.plaza.travel = [{ to: 'port', label: '🚀 우주항구 (20분)', mins: 20 }, { to: 'corridor', label: '🌅 인공노을 회랑', mins: 10 }, { to: 'bridge', label: '🌉 빛먼지 산책교', mins: 10 }, { to: 'rubyway', label: '🌹 루비웨이 (성인 · 직접 선택)', mins: 10, need: 'adult' }, { to: 'dome', label: '🚶 연구·주거구역', mins: 5 }];
-  M.plaza.decor.push(['travelkiosk', 28, 46, 0]);
+  M.plaza.decor.push(['travelkiosk', 28, 49, 0]);
   M.plaza.buildings = M.plaza.buildings.filter(b => b.id !== 'p_pub' && b.id !== 'p_port');
   M.plaza.buildings.push({ id: 'p_port', name: '우주항구 · 루비웨이 방면', x: 38, y: 4, w: 8, d: 5, h: 40, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', door: { f: 'L', u: 3 }, act: { travel: true, label: '🚌 우주항구 · 루비웨이 방면 셔틀' } });
 
@@ -2713,12 +2713,17 @@ PX.S = (() => {
   room('salon', { name: '은하 헤어', w: 12, h: 9, floor: 'tile', wall: '#e6eef4', exit: 6,
     furn: [['salonmirror', 1, 0, 0], ['salonchair', 1, 1, 0, 'sl.c1'], ['salonmirror', 3, 0, 0], ['salonchair', 3, 1, 0, 'sl.c2'], ['salonmirror', 5, 0, 0], ['salonchair', 5, 1, 0, 'sl.c3'], ['hairwash', 8, 0, 0], ['shopcounter', 9, 4, 0, 'sl.shop'], ['bench', 0, 6, 0], ['plant', 11, 0, 0], ['bigplant', 11, 8, 0]],
     walls: [['L', 4.4, 'window', 1.0]], crowd: [{ role: 'stylist', fixed: [2.5, 2.5, 2] }, { role: 'shopper', n: 1, x0: 1, y0: 4, x1: 8, y1: 7 }] });
-  // 광장 건물 (오른쪽 아래 잔디 쪽 상점가)
+  // 광장 상점가: 큰길(세로) 바로 옆과, 새로 낸 남쪽 상점가 길 앞에 문이 나도록 배치
   const P = M.plaza;
   P.buildings.push(
-    { id: 'p_interior', name: '별빛 가구점', to: 'interior', x: 3, y: 39, w: 8, d: 6, h: 40, wall: '#e8dccb', roof: '#8a6a4a', stripe: '#ffd166', icon: 'sofa', door: { f: 'R', u: 3 }, awning: '#c9a86a' },
-    { id: 'p_boutique', name: '궤도 부티크', to: 'boutique', x: 31, y: 40, w: 7, d: 6, h: 40, wall: '#f2e6ee', roof: '#c9b0e8', stripe: '#ff9ed2', icon: 'shirt', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
-    { id: 'p_salon', name: '은하 헤어', to: 'salon', x: 40, y: 40, w: 7, d: 6, h: 40, wall: '#e6eef4', roof: '#5a6a8a', stripe: '#7fe3ff', icon: 'scissors', door: { f: 'R', u: 3 }, glass: true, awning: '#7fe3ff' });
+    { id: 'p_interior', name: '별빛 가구점', to: 'interior', x: 15, y: 31, w: 8, d: 6, h: 40, wall: '#e8dccb', roof: '#8a6a4a', stripe: '#ffd166', icon: 'sofa', door: { f: 'R', u: 3 }, awning: '#c9a86a' },
+    { id: 'p_boutique', name: '궤도 부티크', to: 'boutique', x: 29, y: 39, w: 7, d: 7, h: 40, wall: '#f2e6ee', roof: '#c9b0e8', stripe: '#ff9ed2', icon: 'shirt', door: { f: 'L', u: 3 }, glass: true, awning: '#ff9ed2' },
+    { id: 'p_salon', name: '은하 헤어', to: 'salon', x: 38, y: 39, w: 7, d: 7, h: 40, wall: '#e6eef4', roof: '#5a6a8a', stripe: '#7fe3ff', icon: 'scissors', door: { f: 'L', u: 3 }, glass: true, awning: '#7fe3ff' });
+  for (const id of ['interior', 'boutique', 'salon']) { M[id].parent = 'plaza'; M[id].building = 'p_' + id; } // 나가면 광장 그 가게 앞으로
+  P.roads.push({ x0: 27, y0: 46, x1: 50, y1: 47, axis: 'x', walk: true }); // 남쪽 상점가 길
+  // 길을 막던 장식 옮기기: 큰길 위 유리꽃 화단 · 상점가 길 위 나무 · 가구점 자리의 축제 매대
+  const mv = (fid, x, y, nx, ny) => { const d = P.decor.find(d => d[0] === fid && d[1] === x && d[2] === y); if (d) { d[1] = nx; d[2] = ny; } };
+  mv('flowerbed', 25, 42, 12, 47); mv('tree', 33, 47, 36, 49); mv('tree', 46, 47, 48, 49);
   // 온천 · 스파 탈의실
   M.onsen.furn.push(['changebooth', 12, 4, 0]);
   M.spa.decor.push(['changebooth', 10, 16, 0]);
@@ -2901,7 +2906,7 @@ PX.S = (() => {
 
   add({ id: 'cap', name: '(사용자 지정)', age: 35, job: '606부대 수색팀 대위 · 팀장', team: '수색팀',
     look: { big: 1, skin: '#e8b48e', hair: 'slick', hairColor: '#17141d', eye: '#2a2228', top: '#232129', jacket: '#56603f', bottom: '#3d3f47', shoe: '#1f1c22', sleeve: 'short', scar: 1, brows: '#17141d', eyeStyle: 'sharp', tag: 1 },
-    personality: '능글맞고 직설적. 플레이어에게 첫눈에 반했다. 일은 성실하게 한다.', work: '수색팀 작전동', home: '대위 개인 막사',
+    personality: '능글맞고 직설적. 플레이어에게 첫눈에 반했다. 일은 성실하게 한다.', work: '수색팀 작전동', home: 'NOVA구역 A17 막사',
     sched: '06:00 cap.bed|06:30 gym.bp|07:30 mess.b01a/1|08:00 ops.b1|09:00 ops.cap|12:00 mess.b01a/1|13:00 field|17:00 med.patient|17:30 ops.cap|18:00 mess.b01a/1|19:00 free|22:00 cap.sofa/0|23:00 cap.bed',
     sched2: '06:00 cap.bed|06:30 hg.drone|07:30 mess.b01a/1|08:00 ops.b1|09:00 hg.w2|12:00 mess.b01a/1|13:00 field|17:00 med.patient|17:30 ops.cap|18:00 mess.b01a/1|19:00 free|22:00 cap.sofa/0|23:00 cap.bed',
     we: '07:30 cap.bed|08:30 mess.b01a/1|09:30 cap.craft|12:00 mess.b01a/1|13:00 free|18:00 mess.b01a/1|19:00 free|22:00 cap.sofa/0|23:30 cap.bed',
@@ -2914,7 +2919,7 @@ PX.S = (() => {
     lines: { g: ['오늘도 별일 없지? 별일 없어야지.', '전선 행성이라고 매일 싸우는 건 아니야. 관리하는 거지.', '보고서는 짧고 정확하게. 그게 다다.', '{c} 대위? 실력은 내가 보증하지. 입이 문제지만.'],
       m: ['일찍 나왔군. 좋아.'], e: ['늦게까지 고생 많다. 들어가 쉬어.'], cap: ['그 녀석이 요즘 표정이 밝아. 누구 덕인지는 알 것 같고.', '{c} 녀석 문틀에 머리 박는 소리, 행정동까지 들려.'] } });
   add({ banmal: true, id: 'park', name: '박도현', age: 38, job: '수색팀 중사', team: '수색팀', look: look(2, 'crew', '흑발', '갈색', { brows: '#2a2433' }),
-    personality: '대위의 오랜 동료. 묵묵하고 믿음직하다.', work: '수색팀 작전동', home: '간부 숙소동',
+    personality: '대위의 오랜 동료. 묵묵하고 믿음직하다.', work: '수색팀 작전동', home: 'BETA구역 간부 막사',
     sched: '06:30 base.train1|07:30 mess.b01a/0|08:00 ops.b2|09:00 ops.d1|12:00 mess.b01a/0|13:00 field|17:30 ops.d1|18:00 mess.b01b/0|19:00 lng.g1|22:00 -', we: '08:00 -|09:30 gym.wt|11:30 mess.b01b/0|13:00 lng.sofa3/0|17:00 -',
     likesFood: '김치찌개', likesGift: '정밀 공구 세트',
     lines: { g: ['대위님이랑 같이 산 게 벌써 칠 년째야. 저 사람 원래 저래.', '외곽은 조용해. 조용할 때가 제일 조심해야 하지만.', '장비 점검은 두 번. 습관이야.', '…응. 수고했어.'],
@@ -2938,13 +2943,13 @@ PX.S = (() => {
     lines: { g: ['아, 안녕하십니까! …아니 안녕하세요!', '외곽 소리는 아직도 무서워요. 그래도 나가야죠.', '오늘 보고서 세 번 고쳐 썼어요.', '대위님이 저한테 "잘했다"고 하셨어요. 하루 종일 그 생각만 나요.'],
       night: ['밤엔 통신탑 쪽 소리가 더 크게 들려요… 기분 탓이겠죠?'], cap: ['대위님 처음엔 무서웠는데 지금은 덜 무서워요. 조금요.'] } });
   add({ id: 'han', name: '한도윤', age: 34, job: '작전장교 대위', team: '작전통제팀', look: look(0, 'short', '흑발', '회색', { top: '#4f5a3d', bottom: '#3f4a30', brows: '#2a2433' }),
-    personality: '냉정하고 꼼꼼하다.', work: '수색팀 작전동 · 행정동', home: '간부 숙소동',
+    personality: '냉정하고 꼼꼼하다.', work: '수색팀 작전동 · 행정동', home: 'BETA구역 간부 막사',
     sched: '07:00 -|07:40 mess.b00a/2|08:00 ops.b5|09:00 adm.c2|12:00 mess.b00a/2|13:00 ops.d4|18:00 mess.b00b/2|19:00 -', we: '10:00 adm.c2|12:00 -',
     likesFood: '블랙커피', likesGift: '정리된 서류',
     lines: { g: ['보고서는 오늘 18시까지.', '일정 변경은 최소 하루 전에 공유해 주세요.', '감정은 일 끝나고.', '…괜찮은 판단이었습니다.'],
       cap: ['{c} 대위의 작전 성공률은 높습니다. 보고서 제출률은 낮고요.', '그 사람이 보고서를 일찍 낸 날은 대개 {pf} 씨랑 약속이 있는 날이더군요.'] } });
   add({ id: 'yoon', name: '윤서진', age: 31, job: '의무팀 간호장교', team: '의무팀', look: look(0, 'pony', '갈색', '갈색', { top: '#e9eef2', bottom: '#4a5a6a', coat: '#ffffff', badge: '#d64545' }),
-    personality: '친절하고 똑 부러진다.', work: '의무동', home: '간부 숙소동',
+    personality: '친절하고 똑 부러진다.', work: '의무동', home: 'BETA구역 간부 막사',
     sched: '07:00 -|07:30 mess.b02a/0|08:30 med.nurse|12:00 mess.b02a/0|13:00 med.nurse|18:00 mess.b02b/0|19:00 lng.sofa1/0|21:00 -', we: '09:00 -|10:00 med.nurse|14:00 lng.sofa1/0|17:00 -',
     likesFood: '향열매 차', likesGift: '향열매 향수',
     lines: { g: ['물 많이 드세요. 인공대기는 생각보다 건조해요.', '아픈 데 있으면 참지 말고 오세요.', '수색팀은 왜 다 다치고도 괜찮다고 할까요.', '오늘 검진 일정 확인하셨죠?'],
@@ -2956,19 +2961,19 @@ PX.S = (() => {
     lines: { g: ['소문 하나 들으실래요? 공짜예요.', '통신탑 쪽에서 이상한 신호가 잡혔대요. 아니래요. 또 맞대요.', '헌병 중사님 오늘 기분 안 좋아요. 피하세요.', '휴게실 새 오락기 들어온대요! …아마도요.'],
       cap: ['부대에 대위님이 {pf} 님한테 프러포즈한다는 소문이 돌아요. 아직은 소문이에요.', '대위님이 의무동 올 때마다 아픈 척하는 거, 저만 아는 거 아니에요.'], rain: ['비 오는 날엔 소문도 축축해요. 무슨 말인지 모르겠죠? 저도요.'] } });
   add({ banmal: true, id: 'oh', name: '오지훈', age: 45, job: '정비팀 상사', team: '기술정비팀', look: look(3, 'crew', '흑발', '갈색', { top: '#3d5a7a', bottom: '#34506e', brows: '#2a2433' }),
-    personality: '장비에 집착하는 기술자.', work: '정비격납고', home: '간부 숙소동',
+    personality: '장비에 집착하는 기술자.', work: '정비격납고', home: 'BETA구역 간부 막사',
     sched: '06:30 -|07:30 mess.b03a/0|08:00 hg.w1|12:00 mess.b03a/0|13:00 hg.w1|18:30 mess.b03b/0|19:30 hg.w1|21:00 -', we: '09:00 hg.w1|12:00 mess.b03a/0|13:00 hg.w1|17:00 -',
     likesFood: '라면', likesGift: '정밀 공구 세트',
     lines: { g: ['드론은 거짓말 안 해. 사람이 대충 고치지.', '이 나사 하나가 목숨을 살려.', '공구는 제자리에. 세 번 말 안 한다.', '외계 광물 부품은 열 받으면 색이 변해. 재밌지.'],
       cap: ['{c} 대위가 또 잔해로 뭘 만들었더라. 솜씨는 인정한다.', '그 양반이 장비를 너한테 맞춰 개조해 달라더라. 무슨 사이야?'], job: { engineer: ['중위님, 3번 드론 회로 좀 봐 줘요.'] } } });
   add({ id: 'kimh', name: '김하린', age: 29, job: '정비팀 중위', team: '기술정비팀', look: look(0, 'bun', '흑발', '갈색', { top: '#3d5a7a', bottom: '#34506e' }),
-    personality: '침착하고 손재주가 좋다.', work: '정비격납고', home: '간부 숙소동',
+    personality: '침착하고 손재주가 좋다.', work: '정비격납고', home: 'BETA구역 간부 막사',
     sched: '07:00 -|07:40 mess.b03a/1|08:30 hg.w3|12:00 mess.b03a/1|13:00 hg.drone|18:00 mess.b03b/1|19:00 lng.g2|21:00 -', we: '10:00 hg.w3|12:30 mess.b03a/1|14:00 lng.g2|17:00 -',
     likesFood: '향열매 빙수', likesGift: '유리꽃 모조 장식',
     lines: { g: ['천천히 하면 빨라요.', '방호복 봉제선 점검은 제가 할게요.', '오늘 드론 세 대 살렸어요.', '손 다치지 않게 장갑 끼세요.'],
       cap: ['대위님이 만든 장비, 설계는 엉망인데 이상하게 잘 돌아가요.'] } });
   add({ banmal: true, id: 'song', name: '송재민', age: 36, job: '보급담당 중사', team: '보급팀', look: look(2, 'short', '갈색', '갈색', { top: '#6b6a45', bottom: '#4a5240' }),
-    personality: '간식과 물자 관리의 달인.', work: '보급창고', home: '간부 숙소동',
+    personality: '간식과 물자 관리의 달인.', work: '보급창고', home: 'BETA구역 간부 막사',
     sched: '07:00 -|07:30 mess.b10a/0|08:30 px.clerk|12:00 mess.b10a/0|13:00 px.clerk|19:00 mess.b10a/0|19:40 -', we: '10:00 px.clerk|12:00 mess.b10a/0|13:00 px.clerk|18:00 -',
     likesFood: '지구산 과자', likesGift: '지구산 커피',
     lines: { g: ['어서 와. 오늘 냉삼 도시락 들어왔어.', '재고는 거짓말 안 해. 근데 과자는 자꾸 사라지지.', '보급선 둘째 주말에 와. 장터 열리면 놓치지 마.', '외상은 안 돼. …대위는 예외고.'],
@@ -2980,19 +2985,19 @@ PX.S = (() => {
     lines: { g: ['많이 먹어. 페르녹스는 배고프면 더 추워.', '오늘은 김치찌개야. 국물 넉넉히 줄게.', '남기면 내가 슬퍼.', '보급 늦으면 라면이야. 그래도 맛있게 끓여 줄게.'],
       cap: ['그 큰 대위 놈이 요즘 두 그릇씩 가져가. 하나는 누구 주는 거냐?'], m: ['아침 꼭 먹어. 꼭.'] } });
   add({ id: 'seo', name: '서유진', age: 30, job: '통신담당 중위', team: '통신팀', look: look(0, 'long', '흑발', '갈색', { top: '#4f5a3d', bottom: '#3f4a30' }),
-    personality: '정보에 밝다.', work: '통신실', home: '간부 숙소동',
+    personality: '정보에 밝다.', work: '통신실', home: 'BETA구역 간부 막사',
     sched: '07:30 -|08:00 com.1|12:00 mess.b02a/2|13:00 com.1|18:00 mess.b02b/2|19:00 com.4|22:00 -', we: '10:00 com.1|13:00 -',
     likesFood: '아이스커피', likesGift: '향열매 향수',
     lines: { g: ['통신 상태 양호. 오늘은요.', '외곽 통신은 날씨 따라 끊겨요. 특히 모래바람.', '첫째 주 목요일 밤엔 야간 음소거예요. 잊지 마세요.', '메시지 지연이 생기면 보통 통신탑 탓이에요.'],
       cap: ['작전 중에 {c} 대위가 보내는 개인 메시지 양이… 통신 기록에 다 남는다는 거, 알려 줘야 할까요.'] } });
   add({ id: 'lim', name: '임현우', age: 33, job: '헌병 중사', team: '경계팀', look: look(1, 'crew', '흑발', '회색', { top: '#3a4a3a', bottom: '#2f3a2f', hat: '#3a4a3a', badge: '#ffffff' }),
-    personality: '규정에 엄격하다.', work: '정문 · 순찰', home: '간부 숙소동',
+    personality: '규정에 엄격하다.', work: '정문 · 순찰', home: 'BETA구역 간부 막사',
     sched: '06:00 -|07:00 base.gate|12:00 mess.b10b/1|13:00 base.gate|18:00 mess.b10b/1|19:00 base.plaza2|22:00 base.gate|23:00 -', we: '08:00 base.gate|12:00 mess.b10b/1|13:00 base.gate|20:00 base.plaza2|22:00 -',
     likesFood: '된장국', likesGift: '수제 부대 패치',
     lines: { g: ['출입 기록은 정확하게.', '야간 외출은 22시까지 복귀.', '규정은 사람을 지키라고 있는 겁니다.', '…수고하십니다.'],
       cap: ['{c} 대위님 막사 출입 기록에 {pf} 님 이름이 자주 보이네요. 규정 위반은 아닙니다.'] } });
   add({ id: 'bae', name: '배수아', age: 26, job: '행정담당 하사', team: '행정지원팀', look: look(0, 'bob', '분홍', '갈색', { top: '#8a8a5a', bottom: '#5a5a3a' }),
-    personality: '행사와 근무표 담당. 꼼꼼하고 다정하다.', work: '행정동', home: '간부 숙소동',
+    personality: '행사와 근무표 담당. 꼼꼼하고 다정하다.', work: '행정동', home: 'BETA구역 간부 막사',
     sched: '07:00 -|07:30 mess.b02a/1|08:30 adm.c1|12:00 mess.b02a/1|13:00 adm.c1|18:00 mess.b02b/1|19:00 lng.sofa1/1|21:00 -', we: '10:00 lng.sofa1/1|12:00 mess.b02a/1|13:00 base.plaza1|17:00 -',
     likesFood: '향열매 빙수', likesGift: '유리꽃 모조 장식',
     lines: { g: ['이번 달 행사 일정은 단말 일정표에 다 올려 뒀어요!', '근무표 바꾸고 싶으면 하루 전에 말해 주세요.', '휴가 신청서는 저한테요. 도장은 중령님한테요.', '행사 준비는 힘들어도 다들 웃으면 좋아요.'],
@@ -4203,6 +4208,8 @@ PX.NPC_ACT = {
   A({ home: 'p', s: SOME }, 'C:네 방 구경은 처음이네. 생각보다 깔끔하다.', 'C*:내 방은 보여 줄 수 없어. 냉각기만 네 대야.');
   A({ home: 'p', s: ALL, t: [19, 23] }, 'C:차 한 잔만 마시고 갈게. 약속.', 'C^:근데 이 컵 너무 작다. 두 잔 마셔야겠다.');
   A({ home: 'p', s: LOV }, 'C^:여기 오면 이상하게 편해. 네 냄새 나서 그런가.', 'P:{ob} 변태 같아.', 'C*:칭찬으로 들을게.');
+  A({ home: 'p', m: ['q_player'], s: SOME }, 'C:BETA구역 C15. 처음 왔을 때부터 외웠어. 왜 외웠는지는 묻지 마.');
+  A({ home: 'p', m: ['q_player'], s: LOV }, 'C:NOVA구역 A17에서 여기까지 걸어서 칠 분. 뛰면 삼 분.', 'C*:오늘은 뛰어왔어.');
   A({ home: 'p', s: LOV, seat: 'sit' }, 'C:발 이리 줘. 오늘 많이 걸었지.', 'N:대위가 소파 끝에 앉아 발을 주물러 준다. 손이 커서 발이 다 감싸진다.', 'C*:간지러워? 참아. 효과 있는 거야.');
   A({ home: 'p', s: LOV, seat: 'bed', tz: 1 }, 'C*:침대가 좁다.', 'P:그럼 {ob}가 바닥에서 자.', 'C:싫어. 좁으면 붙으면 되지.', { q: [['…붙어.', 5, ['N:대위가 조심스럽게 팔을 내민다. 그 팔을 베고 눕는다. 숨소리가 가까워진다.', 'C^:…이대로 아침까지.']], ['오늘은 그냥 가.', 1, ['C:응. 문 잠그고 자. 내일 아침에 데리러 올게.']]] });
   A({ home: 'p', s: LOV, t: [22, 3] }, 'C;:가기 싫다.', 'P:그럼 가지 마.', 'C!:…진짜?', 'C*:한 번만 더 말해 줘. 녹음하고 싶어.');
@@ -13673,7 +13680,7 @@ ${memLine(S)}`;
     const to = door.to;
     if (to === 'q_captain') {
       const capIn = Game.cap.map === 'q_captain';
-      if (!(capIn || Cap.mode === 'follow' || S.rel.cap.stage >= 4)) { UI.toast('🔒 대위 개인 막사 — 문이 잠겨 있다. 대위가 있을 때 오자.'); return; }
+      if (!(capIn || Cap.mode === 'follow' || S.rel.cap.stage >= 4)) { UI.toast('🔒 NOVA구역 A17 · 대위 막사 — 문이 잠겨 있다. 대위가 있을 때 오자.'); return; }
       if (capIn && Cap.mode !== 'follow') Game.trigger(async () => { Game.modal++; await Dlg.runLines(['N:똑똑.', 'C!:어? 너야?', 'C*:들어와. 냉각기 최저야, 춥다?']); Dlg.close(); Game.modal--; });
     }
     if (to === 'apt_player' && S.player.job !== 'researcher' || to === 'q_player' && S.player.job === 'researcher') { UI.toast('🔒 다른 사람의 숙소예요'); return; }
@@ -13691,6 +13698,7 @@ ${memLine(S)}`;
     const out = W.maps[m.def.parent];
     const d = out.doors.find(d => d.to === m.id);
     enterMap(out.id, d.x + 0.5, d.y + 0.5);
+    Game.doorCool = performance.now() + 1200;
     const b = d.bld.b;
     Game.player.dir = b.door.f === 'L' ? 0 : 1;
   }
@@ -14446,6 +14454,15 @@ ${memLine(S)}`;
     }
     p.dir = A.vecDir(dx, dy, p.dir); p.kbMoving = true;
     if (m.kind === 'in' && Math.floor(p.x) === m.exit.x && Math.floor(p.y) === m.exit.y) leaveRoom();
+    // 바깥: 문 앞에서 건물 쪽으로 밀면 들어간다 (나온 직후엔 잠깐 쉬었다가)
+    if (m.kind === 'out' && performance.now() > (Game.doorCool || 0)) {
+      const tx = Math.floor(p.x + dx * 0.7), ty = Math.floor(p.y + dy * 0.7);
+      for (const d of m.doors || []) {
+        const o = d.bld; if (!o || !d.to || d.closed) continue;
+        const near = Math.abs(p.x - (d.x + 0.5)) < 0.9 && Math.abs(p.y - (d.y + 0.5)) < 0.9;
+        if (near && tx >= o.x && tx < o.x + o.fw && ty >= o.y && ty < o.y + o.fd) { Game.doorCool = performance.now() + 1500; Game.joyEnd && Game.joyEnd(); enterBuilding(d); return; }
+      }
+    }
     for (const l of m.links || []) if (Math.floor(p.y) === l.y0 && Math.floor(p.x) >= l.x0 && Math.floor(p.x) <= l.x1) { goLink(l); break; }
   }
   function actionBtn() {

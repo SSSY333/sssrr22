@@ -15,9 +15,9 @@
     ['table', 8, 4, 0], ['chair', 7, 5, 3], ['chair', 10, 4, 1], ['plant', 11, 9, 0],
   ];
   const homeWalls = [['B', 2.5, 'window', 1.0], ['B', 6.6, 'poster', 0.7], ['L', 4.2, 'window', 1.0], ['L', 7.6, 'clock', 0.5]];
-  room('q_player', { name: '내 숙소 (간부 숙소동)', w: 12, h: 10, floor: 'wood', wall: '#e9dcc8', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
-  room('apt_player', { name: '내 숙소 (민간 주거구역)', w: 12, h: 10, floor: 'cafe', wall: '#dfe8f0', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
-  room('q_captain', { name: '대위 개인 막사', w: 13, h: 11, floor: 'darkwood', wall: '#5f6b5a', exit: 9, lowDoor: true,
+  room('q_player', { name: '내 막사 · BETA구역 C15', w: 12, h: 10, floor: 'wood', wall: '#e9dcc8', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('apt_player', { name: '내 집 · 돔시티 민간 주거구역', w: 12, h: 10, floor: 'cafe', wall: '#dfe8f0', exit: 8, home: true, furn: playerRoom.map(a => a.slice()), walls: homeWalls });
+  room('q_captain', { name: '대위 막사 · NOVA구역 A17', w: 13, h: 11, floor: 'darkwood', wall: '#5f6b5a', exit: 9, lowDoor: true,
     furn: [['cooler', 0, 0, 0], ['bigbed', 1, 0, 0, 'cap.bed'], ['sidetable', 3, 0, 0], ['weaponrack', 4, 0, 0], ['alienbench', 6, 0, 0], ['@', 6, 1, 2, 'cap.craft', 'work'], ['stool', 7, 1, 0], ['fridge', 10, 0, 0], ['cooler', 11, 0, 0], ['bigplant', 12, 0, 0],
       ['kitchen', 0, 4, 3], ['tv', 0, 6, 3], ['rug_blue', 1, 6, 0], ['sofa_green', 4, 6, 1, 'cap.sofa'], ['table', 6, 4, 0], ['chair', 5, 4, 3], ['chair', 8, 5, 1],
       ['weights', 12, 4, 1], ['@', 11, 5, 1, 'cap.gym', 'workout'], ['benchpress', 10, 7, 0], ['lamp', 12, 7, 0], ['punchbag', 7, 8, 0], ['crates', 11, 10, 0]],
@@ -92,13 +92,13 @@
   base.buildings = [
     { id: 'b_ops', name: '수색팀 작전동', to: 'ops', x: 16, y: 5, w: 13, d: 10, h: 58, wall: '#8a9468', roof: '#5f6847', stripe: '#c9a227', icon: 'star', door: { f: 'R', u: 6 }, roofDeco: ['antenna', 'ac'] },
     { id: 'b_comms', name: '통신실', to: 'comms', x: 5, y: 5, w: 8, d: 9, h: 50, wall: '#7f8a96', roof: '#56606b', stripe: '#5fa8ff', icon: 'antenna', door: { f: 'R', u: 4 }, roofDeco: ['dish', 'antenna'] },
-    { id: 'b_cap', name: '대위 개인 막사', to: 'q_captain', x: 6, y: 18, w: 8, d: 7, h: 46, wall: '#6b7a5c', roof: '#4a5640', stripe: '#d0563b', icon: 'home', door: { f: 'L', u: 3 }, roofDeco: ['ac', 'ac'] },
+    { id: 'b_cap', name: 'NOVA구역 A17 · 대위 막사', to: 'q_captain', x: 6, y: 18, w: 8, d: 7, h: 46, wall: '#6b7a5c', roof: '#4a5640', stripe: '#d0563b', icon: 'home', door: { f: 'L', u: 3 }, roofDeco: ['ac', 'ac'] },
     { id: 'b_admin', name: '행정동', to: 'admin', x: 17, y: 18, w: 11, d: 9, h: 54, wall: '#b9ad92', roof: '#7f7560', stripe: '#2f5a3a', icon: 'doc', door: { f: 'L', u: 5 }, roofDeco: ['ac'] },
     { id: 'b_mess', name: '식당동', to: 'mess', x: 34, y: 6, w: 14, d: 12, h: 52, wall: '#c9b48c', roof: '#8a7552', stripe: '#d36b4a', icon: 'fork', door: { f: 'L', u: 6 }, roofDeco: ['vents', 'ac'] },
     { id: 'b_med', name: '의무동', to: 'med', x: 50, y: 6, w: 9, d: 10, h: 50, wall: '#e6ecee', roof: '#a9b4bc', stripe: '#d64545', icon: 'cross', door: { f: 'L', u: 4 }, roofDeco: ['ac'] },
     { id: 'b_shower', name: '샤워실', to: 'shower', x: 34, y: 22, w: 7, d: 6, h: 40, wall: '#a9c3cc', roof: '#6f8a94', stripe: '#5fc8e8', icon: 'drop', door: { f: 'R', u: 2 }, roofDeco: ['vents'] },
     { id: 'b_lounge', name: '휴게실', to: 'lounge', x: 50, y: 20, w: 8, d: 7, h: 42, wall: '#b8a6c9', roof: '#7a6a8a', stripe: '#ff8bea', icon: 'controller', door: { f: 'L', u: 3 }, roofDeco: ['ac'] },
-    { id: 'b_quarters', name: '간부 숙소동', to: 'q_player', x: 18, y: 36, w: 11, d: 8, h: 56, wall: '#c2b49a', roof: '#857a62', stripe: '#3b7dd8', icon: 'bed', door: { f: 'R', u: 4 }, roofDeco: ['ac', 'solar'] },
+    { id: 'b_quarters', name: 'BETA구역 간부 막사 (C15)', to: 'q_player', x: 18, y: 36, w: 11, d: 8, h: 56, wall: '#c2b49a', roof: '#857a62', stripe: '#3b7dd8', icon: 'bed', door: { f: 'R', u: 4 }, roofDeco: ['ac', 'solar'] },
     { id: 'b_barracks', name: '병사 생활관', to: 'barracks', x: 18, y: 48, w: 11, d: 8, h: 50, wall: '#a8b08e', roof: '#6f7758', stripe: '#c9a227', icon: 'bed', door: { f: 'R', u: 4 }, roofDeco: ['ac'] },
     { id: 'b_px', name: '보급창고 (PX)', to: 'px', x: 5, y: 36, w: 9, d: 8, h: 46, wall: '#b3a37a', roof: '#7a6c4b', stripe: '#7fb86a', icon: 'box', door: { f: 'L', u: 4 }, roofDeco: ['vents'] },
     { id: 'b_hangar', name: '정비격납고', to: 'hangar', x: 36, y: 35, w: 14, d: 11, h: 66, wall: '#8d98a3', roof: '#5d666f', stripe: '#e8c56a', icon: 'wrench', door: { f: 'L', u: 6, wide: true }, roofDeco: ['vents', 'vents', 'antenna'] },
@@ -111,16 +111,16 @@
   // 광장
   D.push(['flagpole', 35, 35, 0], ['benchout', 26, 34, 2], ['benchout', 25, 28, 0], ['planter', 27, 28, 0], ['benchout', 35, 28, 0], ['planter', 25, 33, 0], ['kiosk', 33, 28, 0], ['planter', 37, 33, 1], ['benchout', 34, 37, 2]);
   // 나무와 화단
-  const trees = [[4, 16], [4, 26], [15, 27], [15, 16], [44, 21], [46, 27], [59, 18], [59, 28], [33, 4], [48, 4], [4, 45], [15, 46], [4, 57], [30, 57], [51, 33], [45, 32], [6, 31], [12, 33], [40, 28], [56, 46]];
+  const trees = [[4, 16], [4, 26], [15, 27], [15, 16], [44, 21], [46, 27], [59, 18], [59, 28], [33, 4], [48, 4], [4, 45], [15, 46], [4, 57], [35, 57], [51, 33], [45, 35], [6, 35], [12, 33], [40, 28], [56, 46]];
   trees.forEach(([x, y], i) => D.push([i % 3 === 2 ? 'tree2' : 'tree', x, y, 0]));
-  [[3, 30], [8, 34], [43, 30], [55, 31], [14, 58], [9, 49], [16, 33]].forEach(([x, y]) => D.push(['bush', x, y, 0]));
+  [[3, 27], [8, 34], [43, 27], [55, 35], [14, 58], [9, 49], [16, 33]].forEach(([x, y]) => D.push(['bush', x, y, 0]));
   [[5, 28], [7, 28], [42, 24], [48, 24], [10, 46], [3, 47], [24, 45], [47, 19]].forEach(([x, y]) => D.push(['glowflower', x, y, 0]));
   // 정문
   D.push(['guardpost', 34, 58, 0], ['barrier', 29, 60, 0], ['sandbags', 26, 59, 0], ['sandbags', 34, 56, 1], ['shuttlestop', 24, 57, 0], ['kiosk', 23, 56, 0]);
   // 통신 · 시설
   D.push(['radar', 6, 15, 0], ['watertank', 3, 20, 0], ['solar', 3, 33, 0], ['solar', 3, 35, 0], ['solar', 3, 37, 0]);
   // 격납고 앞 계류장 · 차량
-  D.push(['truck', 38, 48, 0], ['crates', 44, 48, 0], ['crate', 47, 48, 0], ['crates', 53, 47, 1], ['rover', 30, 47, 0]);
+  D.push(['truck', 38, 48, 0], ['crates', 44, 48, 0], ['crate', 47, 48, 0], ['crates', 53, 47, 1], ['rover', 25, 47, 0]);
   // 훈련장
   D.push(['hurdle', 40, 52, 0], ['hurdle', 44, 52, 0], ['hurdle', 48, 52, 0], ['climbwall', 52, 51, 0], ['sandbags', 40, 56, 0], ['sandbags', 44, 56, 0], ['benchout', 37, 55, 1]);
   // 식당 앞 벤치 · 자판기
@@ -154,10 +154,10 @@
   ];
   const DD = dome.decor;
   DD.push(['fountain', 20, 20, 0], ['benchout', 16, 18, 0], ['benchout', 26, 18, 0], ['benchout', 16, 25, 2], ['benchout', 26, 25, 2]);
-  for (const [x, y] of [[17, 16], [27, 16], [17, 27], [27, 27], [16, 10], [24, 8], [24, 14], [14, 33], [24, 33], [24, 40], [38, 22], [30, 22]]) DD.push(['streetlamp', x, y, 0]);
-  for (const [x, y] of [[2, 18], [6, 18], [10, 18], [2, 22], [7, 23], [11, 22], [36, 16], [42, 16], [44, 21], [44, 26], [16, 42], [10, 42], [4, 42], [40, 41]]) DD.push(['tree', x, y, 0]);
+  for (const [x, y] of [[17, 16], [27, 16], [17, 27], [27, 27], [16, 10], [24, 8], [24, 14], [14, 33], [24, 33], [24, 40], [38, 23], [30, 23]]) DD.push(['streetlamp', x, y, 0]);
+  for (const [x, y] of [[2, 18], [6, 18], [10, 18], [2, 24], [7, 24], [11, 25], [36, 16], [42, 16], [34, 25], [44, 26], [16, 42], [10, 42], [4, 42], [40, 41]]) DD.push(['tree', x, y, 0]);
   for (const [x, y] of [[4, 20], [9, 20], [12, 24], [38, 19], [41, 24], [13, 40], [7, 44]]) DD.push(['glowflower', x, y, 0]);
-  DD.push(['shuttlestop', 22, 42, 0], ['kiosk', 26, 42, 0], ['parasol', 14, 30, 0], ['parasol', 14, 35, 0], ['flowerbed', 30, 41, 0], ['benchout', 36, 42, 0], ['arch', 20, 1, 0], ['planter', 30, 15, 0], ['planter', 38, 15, 0], ['kiosk', 19, 15, 0], ['bush', 3, 26, 0], ['bush', 44, 18, 0], ['vending', 28, 37, 0]);
+  DD.push(['shuttlestop', 23, 43, 0], ['kiosk', 26, 42, 0], ['parasol', 14, 30, 0], ['parasol', 14, 35, 0], ['flowerbed', 30, 41, 0], ['benchout', 36, 42, 0], ['arch', 20, 1, 0], ['planter', 30, 15, 0], ['planter', 38, 15, 0], ['kiosk', 19, 15, 0], ['bush', 3, 26, 0], ['bush', 44, 18, 0], ['vending', 28, 37, 0]);
   dome.zones = [
     { t: 'plaza', x0: 15, y0: 15, x1: 29, y1: 29 }, { t: 'domegrass', x0: 1, y0: 16, x1: 14, y1: 27 }, { t: 'domegrass', x0: 34, y0: 16, x1: 46, y1: 28 }, { t: 'domegrass', x0: 1, y0: 39, x1: 18, y1: 46 },
     { t: 'cafe', x0: 13, y0: 29, x1: 17, y1: 38 }, { t: 'water', x0: 34, y0: 44, x1: 46, y1: 46 },
@@ -174,22 +174,22 @@
   plaza.buildings = [
     { id: 'p_deck', name: '관람데크 · 별비 투영실', to: 'starroom', x: 28, y: 14, w: 8, d: 7, h: 40, wall: '#3a3f6a', roof: '#d9dde2', stripe: '#9fe6ff', icon: 'star', door: { f: 'L', u: 3 }, roofDeco: ['dish'], glass: true },
     { id: 'p_samgyup', name: '냉삼집 (문성호네)', to: 'samgyup', x: 4, y: 13, w: 8, d: 8, h: 44, wall: '#d9c7a8', roof: '#8a5a3c', stripe: '#d0563b', icon: 'fork', door: { f: 'R', u: 3 }, roofDeco: ['vents', 'ac'], awning: '#d0563b' },
-    { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 26, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
+    { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 27, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
     { id: 'p_flower', name: '유리돔 꽃시장', to: 'flower', x: 15, y: 39, w: 8, d: 7, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
     { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목은 루비웨이 쪽에서 들어가요' },
     { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구는 돔시티 외곽 항구구역에서 가요' },
   ];
   const PD = plaza.decor;
   PD.push(['fountain', 18, 18, 0], ['benchout', 16, 22, 2], ['benchout', 20, 22, 2], ['benchout', 16, 15, 0], ['kiosk', 23, 27, 0], ['arch', 24, 50, 0]);
-  for (const [x, y] of [[14, 14], [22, 14], [14, 36], [36, 36], [36, 23], [22, 30], [28, 30], [13, 24]]) PD.push(['streetlamp', x, y, 0]);
-  for (let x = 14; x <= 36; x += 4) PD.push(['lantern', x, 10, 0]);
-  for (let y = 14; y <= 46; y += 4) PD.push(['lantern', 27, y, 0]);
+  for (const [x, y] of [[14, 14], [22, 14], [14, 36], [36, 36], [36, 23], [22, 30], [28, 30], [13, 23]]) PD.push(['streetlamp', x, y, 0]);
+  for (let x = 14; x <= 36; x += 4) if (x !== 26) PD.push(['lantern', x, 10, 0]);
+  for (let y = 14; y <= 46; y += 4) if (y !== 26 && y !== 46) PD.push(['lantern', 27, y, 0]);
   for (const [x, y] of [[2, 23], [2, 36], [9, 36], [14, 48], [33, 47], [46, 47], [49, 40], [49, 13]]) PD.push(['tree', x, y, 0]);
   // 투명수로 정원
   for (const [x, y] of [[40, 17], [40, 25], [40, 32], [47, 20], [47, 29]]) PD.push(['glowflower', x, y, 0]);
   PD.push(['benchout', 44, 16, 0], ['benchout', 44, 34, 2], ['tree2', 48, 24, 0], ['flowerbed', 25, 42, 0]);
   // 축제 · 야시장 매대 (행사가 열릴 때만 나타남)
-  for (const [x, y] of [[29, 25], [29, 28], [33, 25], [33, 28], [16, 31], [19, 31]]) PD.push(['stall', x, y, 0, ['LB02', 'LB04', 'LB05', 'LB09', 'LB12', 'LB13', 'LB11']]);
+  for (const [x, y] of [[29, 34], [29, 28], [33, 34], [33, 28], [29, 31], [33, 31]]) PD.push(['stall', x, y, 0, ['LB02', 'LB04', 'LB05', 'LB09', 'LB12', 'LB13', 'LB11']]);
   plaza.zones = [
     { t: 'plaza', x0: 13, y0: 13, x1: 37, y1: 37 }, { t: 'glassfloor', x0: 39, y0: 15, x1: 49, y1: 35 }, { t: 'water', x0: 42, y0: 17, x1: 42, y1: 33 }, { t: 'water', x0: 46, y0: 17, x1: 46, y1: 33 },
     { t: 'domegrass', x0: 1, y0: 34, x1: 13, y1: 50 }, { t: 'domegrass', x0: 30, y0: 39, x1: 50, y1: 50 }, { t: 'cafe', x0: 2, y0: 9, x1: 50, y1: 11 },
