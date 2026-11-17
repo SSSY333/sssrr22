@@ -194,7 +194,7 @@ PX.Ruby = (() => {
     } else PX.UI.toast('📸 혼자 찍은 네 컷. 꽤 잘 나왔다');
   };
   H.busk = async () => {
-    if (!night()) { PX.UI.toast('🎸 버스커는 밤에 나와요'); return; }
+    if (!night() && G().mapId !== 'plaza') { PX.UI.toast('🎸 버스커는 밤에 나와요'); return; }
     const it = await PX.UI.menu('🎸 버스킹', [{ t: '🎧 듣기', k: 'listen' }, { t: '💰 팁 주기 (₢5)', k: 'tip' }, ...(withCap() ? [{ t: '🎵 대위가 신청곡 넣기', k: 'req' }] : [])]);
     if (!it) return;
     St.advance(15);

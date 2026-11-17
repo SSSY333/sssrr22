@@ -175,16 +175,16 @@
     { id: 'p_deck', name: '관람데크 · 별비 투영실', to: 'starroom', x: 28, y: 14, w: 8, d: 7, h: 40, wall: '#3a3f6a', roof: '#d9dde2', stripe: '#9fe6ff', icon: 'star', door: { f: 'L', u: 3 }, roofDeco: ['dish'], glass: true },
     { id: 'p_samgyup', name: '냉삼집 (문성호네)', to: 'samgyup', x: 4, y: 13, w: 8, d: 8, h: 44, wall: '#d9c7a8', roof: '#8a5a3c', stripe: '#d0563b', icon: 'fork', door: { f: 'R', u: 3 }, roofDeco: ['vents', 'ac'], awning: '#d0563b' },
     { id: 'p_arcade', name: '오락실', to: 'arcade', x: 4, y: 27, w: 8, d: 7, h: 46, wall: '#3a2a6a', roof: '#2a1f4f', stripe: '#ff6bd5', icon: 'controller', door: { f: 'R', u: 3 }, roofDeco: ['ac'] },
-    { id: 'p_flower', name: '유리돔 꽃시장', to: 'flower', x: 15, y: 39, w: 8, d: 7, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
+    { id: 'p_flower', name: '유리돔 꽃시장', to: 'flower', x: 4, y: 42, w: 8, d: 7, h: 40, wall: '#e8f4f0', roof: '#9fd8e8', stripe: '#ff9ed2', icon: 'heart', door: { f: 'R', u: 3 }, glass: true, awning: '#ff9ed2' },
     { id: 'p_pub', name: '술집 골목 입구', x: 4, y: 3, w: 9, d: 6, h: 48, wall: '#4a3a40', roof: '#2a2025', stripe: '#ffb070', icon: 'cup', closed: true, closedMsg: '🍺 술집 골목은 루비웨이 쪽에서 들어가요' },
     { id: 'p_port', name: '우주항구 방면 터미널', x: 38, y: 3, w: 10, d: 6, h: 52, wall: '#9fb0c0', roof: '#5d666f', stripe: '#3b5fa8', icon: 'bus', closed: true, closedMsg: '🚀 우주항구는 돔시티 외곽 항구구역에서 가요' },
   ];
   const PD = plaza.decor;
   PD.push(['fountain', 18, 18, 0], ['benchout', 16, 22, 2], ['benchout', 20, 22, 2], ['benchout', 16, 15, 0], ['kiosk', 23, 27, 0], ['arch', 24, 50, 0]);
-  for (const [x, y] of [[14, 14], [22, 14], [14, 36], [36, 36], [36, 23], [22, 30], [28, 30], [13, 23]]) PD.push(['streetlamp', x, y, 0]);
+  for (const [x, y] of [[14, 14], [22, 14], [14, 36], [36, 36], [36, 23], [22, 30], [28, 30], [14, 23]]) PD.push(['streetlamp', x, y, 0]);
   for (let x = 14; x <= 36; x += 4) if (x !== 26) PD.push(['lantern', x, 10, 0]);
   for (let y = 14; y <= 46; y += 4) if (y !== 26 && y !== 46) PD.push(['lantern', 27, y, 0]);
-  for (const [x, y] of [[2, 23], [2, 36], [9, 36], [14, 48], [33, 47], [46, 47], [49, 40], [49, 13]]) PD.push(['tree', x, y, 0]);
+  for (const [x, y] of [[2, 23], [2, 34], [2, 41], [2, 49], [33, 47], [46, 47], [49, 40], [49, 13]]) PD.push(['tree', x, y, 0]);
   // 투명수로 정원
   for (const [x, y] of [[40, 17], [40, 25], [40, 32], [47, 20], [47, 29]]) PD.push(['glowflower', x, y, 0]);
   PD.push(['benchout', 44, 16, 0], ['benchout', 44, 34, 2], ['tree2', 48, 24, 0], ['flowerbed', 25, 42, 0]);
