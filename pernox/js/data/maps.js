@@ -7,7 +7,7 @@
 
   // ---------------- 실내 (Alpha 0.3: 아담하게 줄임) ----------------
   function room(id, o) {
-    M[id] = Object.assign({ id, kind: 'in', wallH: 52 }, o);
+    M[id] = Object.assign({ id, kind: 'in', wallH: 84 }, o);
   }
   const playerRoom = [
     ['plant', 0, 0, 0], ['bed', 1, 0, 0, 'home.bed'], ['sidetable', 2, 0, 0], ['terminal', 3, 0, 0], ['chair', 4, 1, 2], ['cooler', 5, 0, 0], ['photo', 6, 0, 0], ['fridge', 7, 0, 0], ['kitchen', 8, 0, 0], ['bigplant', 10, 0, 0],
@@ -40,7 +40,7 @@
       ['medbed', 8, 0, 0, 'med.bed1'], ['curtain', 9, 0, 1], ['medbed', 10, 0, 0, 'med.bed2'], ['curtain', 11, 0, 1], ['medbed', 12, 0, 0, 'med.bed3'], ['curtain', 13, 0, 1], ['medbed', 14, 0, 0, 'med.bed4'],
       ['bench', 0, 5, 3, 'med.wait'], ['opsdesk', 5, 5, 0], ['chair', 6, 6, 2, 'med.nurse'], ['sink', 14, 4, 1], ['vending', 14, 6, 1], ['plant', 0, 10, 0], ['bigplant', 14, 10, 0]],
     walls: [['B', 7.2, 'cross', 0.7], ['L', 3.6, 'window', 1.0], ['L', 8.6, 'window', 1.0]] });
-  room('hangar', { name: '정비격납고', w: 19, h: 14, floor: 'hangar', wall: '#6b737e', exit: 9, wallH: 64,
+  room('hangar', { name: '정비격납고', w: 19, h: 14, floor: 'hangar', wall: '#6b737e', exit: 9, wallH: 92,
     furn: [['workbench', 5, 0, 0, 'hg.work'], ['@', 5, 1, 2, 'hg.w1', 'work'], ['workbench', 8, 0, 0], ['@', 8, 1, 2, 'hg.w2', 'work'], ['workbench', 11, 0, 0], ['@', 11, 1, 2, 'hg.w3', 'work'],
       ['crates', 14, 0, 0], ['crate', 16, 0, 0], ['crate', 17, 0, 0], ['rover', 1, 3, 0], ['rover', 1, 7, 0], ['drone', 7, 4, 0], ['drone', 9, 4, 0], ['drone', 11, 4, 0], ['@', 8, 5, 0, 'hg.drone', 'work'],
       ['truck', 13, 6, 0], ['locker', 0, 11, 3], ['locker', 0, 12, 3], ['crates', 14, 12, 0], ['crate', 17, 12, 0], ['bench', 4, 11, 0, 'hg.rest']],
@@ -214,7 +214,7 @@
     walls: [['B', 5.4, 'poster', 0.7], ['B', 11.0, 'screen', 1.2], ['L', 6.8, 'poster', 0.7]] });
   const st = [['projector', 7, 2, 0, 'star.proj'], ['bigplant', 0, 0, 0], ['bigplant', 15, 0, 0]];
   for (const ty of [6, 10]) for (let tx = 1; tx <= 14; tx++) if (tx !== 7 && tx !== 8) st.push(['theaterseat', tx, ty, 2, `star.s${tx}_${ty}`]);
-  room('starroom', { name: '별비 투영실', w: 16, h: 13, floor: 'darktile', wall: '#141028', exit: 8, wallH: 60, date: true, stars: true, furn: st,
+  room('starroom', { name: '별비 투영실', w: 16, h: 13, floor: 'darktile', wall: '#141028', exit: 8, wallH: 88, date: true, stars: true, furn: st,
     walls: [['B', 1.4, 'screen', 2.6], ['B', 9.6, 'screen', 2.6], ['L', 3.0, 'screen', 3.4]] });
 
   // 바깥 건물을 줄여 길과 마당이 보이게 (문 쪽 면은 그대로 두고 반대편을 줄임)

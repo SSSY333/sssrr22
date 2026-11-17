@@ -13,7 +13,7 @@
     M[id] = m;
     return m;
   }
-  function room(id, o) { M[id] = Object.assign({ id, kind: 'in', wallH: 52 }, o); }
+  function room(id, o) { M[id] = Object.assign({ id, kind: 'in', wallH: 84 }, o); }
   const DOME = (mins = 20) => ({ to: 'dome', label: '🚌 돔시티 연구·주거구역', mins });
   const PORT = (mins) => ({ to: 'port', label: '🚀 페르녹스 우주항구', mins });
 
