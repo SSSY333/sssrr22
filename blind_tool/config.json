@@ -1,0 +1,35 @@
+{
+  "_설명": "이 파일을 메모장으로 열어 항목·사유·옵션을 기관 기준에 맞게 바꿀 수 있습니다. 실행 파일과 같은 폴더에 두세요.",
+
+  "categories": [
+    "친생부 성명(성 제외)",
+    "친생모 성명(성 제외)",
+    "친생부모 연령",
+    "친생부모 주소·출신지",
+    "친생부모 학력·직업",
+    "연락처",
+    "주민등록번호 등 식별번호",
+    "제3자 정보",
+    "기타 개인정보"
+  ],
+
+  "delete_reasons": [
+    "제3자 개인정보가 대부분인 문서",
+    "비공개 대상 문서",
+    "중복 문서",
+    "기타"
+  ],
+
+  "status_labels": {
+    "public": "공개",
+    "partial": "부분공개",
+    "deleted": "비공개(삭제)"
+  },
+
+  "pdf_dpi": 300,
+  "box_padding_px": 2,
+  "jpeg_quality": 90,
+  "require_all_confirmed": true,
+  "lock_pdf_permissions": true,
+  "attach_table_to_pdf": "none"
+}

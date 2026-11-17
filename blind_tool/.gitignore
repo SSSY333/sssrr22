@@ -1,0 +1,6 @@
+__pycache__/
+build/
+dist/
+*.spec
+_비식별작업.json*
+_비식별결과_*/

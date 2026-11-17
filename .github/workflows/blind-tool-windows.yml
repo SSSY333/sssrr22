@@ -1,0 +1,38 @@
+name: 비식별 도구 Windows 빌드
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "blind_tool/**"
+      - ".github/workflows/blind-tool-windows.yml"
+
+env:
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: "1"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: blind_tool
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 의존성 설치
+        run: python -m pip install -r requirements.txt pyinstaller
+      - name: 테스트
+        run: python test_core.py
+      - name: 실행 파일 만들기
+        run: |
+          python -m PyInstaller --noconfirm --windowed --name BlindTool --add-data "config.json;." app.py
+          copy config.json dist\BlindTool\config.json
+          copy 사용설명서.md dist\BlindTool\사용설명서.md
+        shell: cmd
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BlindTool-windows
+          path: blind_tool/dist/BlindTool
