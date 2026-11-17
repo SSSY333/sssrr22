@@ -49,7 +49,7 @@ PX.LateNight = (() => {
       else if (pick === 'bye') { await run(pickL(LINES.bye[lov ? 'lov' : 'mid'])); }
       else if (pick === 'escort') { /* 아래에서 */ }
       else if (pick === 'home') await run(pickL(LINES.home));
-      else if (pick === 'inn') await run([pickL([['C!:…', 'C~:…응. 가자. 지금.'], ['C*:엘리베이터에서 손 놓지 마.'], ['C^:카드키는 내가 받을게.']])]);
+      else if (pick === 'inn') await run(pickL([['C!:…', 'C~:…응. 가자. 지금.'], ['C*:엘리베이터에서 손 놓지 마.'], ['C^:카드키는 내가 받을게.']]));
     } finally { PX.Dlg.close(); g.modal--; }
     if (pick === 'inn' || pick === 'home' || pick === 'escort') { S.done['late_' + S.day] = 99; S.done.lateMore = (S.time.min < 6 * 60 ? S.day : S.day + 1) * 1440 + 7 * 60; } // 정했으면 오늘 밤은 다시 안 묻고 같이 있는다
     if (pick === 'bye') { PX.Cap.release(null, 30); if (PX.Mind) PX.Mind.notePart(30); return; }

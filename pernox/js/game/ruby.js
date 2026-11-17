@@ -186,7 +186,7 @@ PX.Ruby = (() => {
     const g = G(); if (cap) PX.Cap.sitNear(g);
     for (let i = 0; i < 4; i++) { g.fade(); await U.sleep(320); }
     if (cap) {
-      await lines([PX.Dlg.capPick([['C:한 장 더 찍자. 나 눈 감았어.'], ['C*:이거 내 단말 배경으로 한다.'], ['C^:네 컷 중에 네가 제일 예쁜 컷은… 네 장 다.']])]);
+      await lines(PX.Dlg.capPick([['C:한 장 더 찍자. 나 눈 감았어.'], ['C*:이거 내 단말 배경으로 한다.'], ['C^:네 컷 중에 네가 제일 예쁜 컷은… 네 장 다.']]));
       St.addAff(3);
       const key = 'booth_' + it.k.k;
       if (once(key)) g.memory('네온 포토부스 · ' + it.k.t.replace(/^\S+\s/, ''), it.k.txt, true);
@@ -216,7 +216,7 @@ PX.Ruby = (() => {
     if (!it || !it.k) return;
     S.done.likedNote = it.k[0];
     await lines([`N:종이 시향지에 한 방울. ${it.k[1]}가 난다.`.replace('가 난다', U.hasBatchim(it.k[1]) ? '이 난다' : '가 난다')]);
-    if (withCap()) await lines([U.pick([[`C:${it.k[0]}… 이거 좋아하는구나. 기억해 둘게.`], ['C*:난 잘 모르겠는데, 네가 좋아하는 얼굴은 알겠어.'], ['N:대위가 시향지를 받아 코에 대더니 주머니에 넣는다.', 'C:가져갈게. 작전 나가서 꺼내 보게.']])]);
+    if (withCap()) await lines(U.pick([[`C:${it.k[0]}… 이거 좋아하는구나. 기억해 둘게.`], ['C*:난 잘 모르겠는데, 네가 좋아하는 얼굴은 알겠어.'], ['N:대위가 시향지를 받아 코에 대더니 주머니에 넣는다.', 'C:가져갈게. 작전 나가서 꺼내 보게.']]));
   };
   // 가면 (LB88)
   const MASKS = Object.entries(PX.S.MASKS).map(([k, m]) => ({ t: `${m.icon} ${m.name}`, c: k }));
@@ -306,7 +306,7 @@ PX.Ruby = (() => {
     if (!withCap()) return;
     if (it.k === 'mine') await lines(['C:…이거. 퍼퓸덴에서 네가 만든 거지.', 'C*:기억한다고 했잖아. 이 냄새 나면 너 생각난다고.']);
     else if (it.k === 'liked') await lines([`C:${S.done.likedNote}. 너 그거 좋다고 했잖아.`, 'C^:난 네가 좋다고 한 건 다 외워.']);
-    else await lines([PX.Dlg.capPick([['C:향 좋다. 근데 난 네 샴푸 냄새가 더 좋아.'], ['C*:이러다 졸겠다. 졸면 깨워 줘. 아니, 깨우지 마.']])]);
+    else await lines(PX.Dlg.capPick([['C:향 좋다. 근데 난 네 샴푸 냄새가 더 좋아.'], ['C*:이러다 졸겠다. 졸면 깨워 줘. 아니, 깨우지 마.']]));
   };
   // 다이스키스 카드 하이로우 (LB87)
   H.cards = async () => {

@@ -41,7 +41,7 @@ PX.Rom = (() => {
       await PX.Dlg.runLines(['C;:아, 그때 근무야. …아니면 작전.', 'C:저녁이나 주말이면 무조건 비울게. 다시 정하자.']);
       PX.Dlg.close(); g.modal--; return;
     }
-    await PX.Dlg.runLines([PX.Dlg.capPick([['C!:…데이트 신청이야, 이거?', 'C^:받았다. 취소 불가.'], ['C*:네가 먼저 하자고 해 주니까 좋네.', 'C:그날 일 다 미리 끝내 놓을게.'], ['C:좋아. 십 분 일찍 가 있을게. 늘 그래.']])].flat());
+    await PX.Dlg.runLines(PX.Dlg.capPick([['C!:…데이트 신청이야, 이거?', 'C^:받았다. 취소 불가.'], ['C*:네가 먼저 하자고 해 주니까 좋네.', 'C:그날 일 다 미리 끝내 놓을게.'], ['C:좋아. 십 분 일찍 가 있을게. 늘 그래.']]).flat());
     PX.Dlg.close(); g.modal--;
     dates().push({ id: now(), day: dy.k, min: tm.k, map: pl.k.map, name: pl.k.name, state: 'planned', by: 'p' });
     PX.UI.toast(`📅 약속: ${dayKo(dy.k)} ${Cal.fmtTime(tm.k)} · ${pl.k.name}`, 3500);
@@ -69,10 +69,20 @@ PX.Rom = (() => {
     const at = d.day * DAY + d.min, t = now();
     if (d.state === 'planned') {
       if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; if (PX.Op.together && PX.Op.together()) sendMsg(U.pick([`두 시간 뒤에 ${d.name} 가기로 한 거, 잊은 거 아니지?`, `이따 ${Cal.fmtTime(d.min)}에 ${d.name}. 이렇게 같이 있으니까 그냥 같이 가면 되겠다.`]), [['응, 같이 가요.', 2, '좋아. 시간 되면 내가 손 잡고 간다.'], ['설레요.', 3, '…나도. 옆에 있는데도 설레.']]); else sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
+      // 약속 시간에 이미 같이 있으면: 바람맞은 걸로 치지 않고, 같이 가거나 여기서 데이트하거나
+      const withMe = ['follow', 'visit', 'stay'].includes(PX.Cap.mode) && g.cap.map === g.mapId;
+      if (withMe && t >= at - 15 && t < at + 60) d.together = true;
+      if (withMe && t >= at - 5 && t < at + 60 && !d.capThere && !d.asked && !g.modal && !g.transition) {
+        d.asked = true;
+        if (g.mapId === d.map) { d.state = 'on'; d.started = t; g.trigger(() => startDate(d, true)); return; }
+        g.trigger(() => togetherAsk(d));
+        return;
+      }
       if (t >= at - 15 && t < at + 60 && !d.capThere) { // 대위가 먼저 가서 기다린다 (보이지 않는 이동)
         if (PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay' && PX.Cap.mode !== 'op') { d.capThere = true; PX.Cap.mode = 'date'; if (g.cap.map !== d.map) { PX.Cap.moveTo(d.map); const m = W.maps[d.map]; const a = m.def.arrive ? [m.def.arrive[0] + 1.5, m.def.arrive[1] - 1.5] : m.exit ? [m.exit.x + 0.5, m.exit.y - 2.5] : null; const tt = a && PX.Path.nearestWalkable(m, a[0], a[1], 4); if (tt) { g.cap.x = tt[0] + 0.5; g.cap.y = tt[1] + 0.5; } } }
       }
       if (d.capThere && g.mapId === d.map && g.cap.map === d.map && U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) < 6 && !g.modal) { d.state = 'on'; d.started = t; g.trigger(() => startDate(d)); }
+      if (t >= at + 60 && d.together) { d.state = 'skipped'; return; } // 같이 있었으면 바람맞은 게 아니다
       if (t >= at + 60) { // 바람맞음: 탓하지 않는다
         d.state = 'missed'; if (PX.Cap.mode === 'date') PX.Cap.mode = 'sched';
         sendMsg(U.pick(['오늘 무슨 일 있었어? 괜찮으면 됐어. 다음에 또 잡자.', '바빴구나. 괜찮아. 무사하면 됐어.']), [['미안해요. 다음엔 꼭 갈게요.', 1, '응. 사과 안 해도 돼. 다음엔 내가 데리러 갈게.']]);
@@ -81,12 +91,32 @@ PX.Rom = (() => {
     }
     if (d.state === 'on' && (t - d.started > 180 || g.mapId !== d.map && !PX.MAPS[g.mapId].date && PX.MAPS[g.mapId].kind === 'in' && PX.MAPS[g.mapId].home)) endDate(d);
   }
-  async function startDate(d) {
+  // 같이 있을 때 약속 시간이 되면
+  async function togetherAsk(d) {
+    const g = G();
+    g.modal++;
+    let k;
+    try {
+      g.cap.setDirTo(g.player.x, g.player.y);
+      await PX.Dlg.runLines(PX.Dlg.capPick([['C:어, 벌써 약속 시간이다.', `C*:${d.name}. 같이 갈래? 아니면 여기서 그냥 데이트할까.`], ['C^:이미 같이 있는데 약속 시간 됐네.', `C:${d.name} 갈까? 너 하고 싶은 대로.`]]));
+      const opts = [{ t: `🚶 ${d.name} 같이 가기`, k: 'go' }, { t: '💕 여기서 데이트하기', k: 'here' }, { t: '🌙 오늘은 다음에 하자', k: 'later' }];
+      const i = await PX.Dlg.choose(opts); k = opts[i].k;
+      await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, ''));
+      if (k === 'later') await PX.Dlg.runLines(PX.Dlg.capPick([['C:응. 오늘은 이렇게 같이 있는 걸로 충분해.'], ['C^:좋아. 약속은 다음에 다시 잡자. 대신 지금 손은 내 거.']]));
+    } finally { PX.Dlg.close(); g.modal--; }
+    if (k === 'later') { d.state = 'skipped'; return; }
+    if (k === 'here') { d.map = g.mapId; }
+    else if (PX.Act && PX.Act.travel && g.mapId !== d.map) await PX.Act.travel(d.map, 15);
+    d.state = 'on'; d.started = now();
+    await startDate(d, true);
+  }
+  async function startDate(d, together) {
     const S = St.S, g = G();
     PX.Cap.startFollow(); g.cap.setDirTo(g.player.x, g.player.y);
     if (d.kind === 'proposal') return proposal(d);
     const late = now() - (d.day * DAY + d.min);
-    await lines([late > 10 ? PX.Dlg.capPick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : PX.Dlg.capPick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
+    if (together) await lines(PX.Dlg.capPick([['C^:같이 오니까 기다릴 필요도 없고 좋다.', 'C*:오늘 데이트 시작.'], ['C:원래는 먼저 와서 기다리려고 했는데.', 'C~:같이 걸어온 게 더 좋았어.']]));
+    else await lines([late > 10 ? PX.Dlg.capPick(['C:왔다. 늦은 거 아니야. 나도 방금 왔어. …거짓말이야.', 'C^:왔네. 기다리는 동안 열 번 시계 봤어.']) : PX.Dlg.capPick(['C:정확하네. 나는 십 분 일찍 왔어. 습관이야.', 'C*:딱 맞춰 왔다. 오늘 예쁘게 하고 왔네.'])]);
     if (PX.Mind) { PX.Mind.noteMeet(); PX.Mind.noteTalk('dateStart'); }
     St.addAff(4);
   }
