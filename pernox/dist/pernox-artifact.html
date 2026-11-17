@@ -330,6 +330,8 @@ canvas.thumb { image-rendering: pixelated; background: radial-gradient(circle at
 .chatcomp .msgch { justify-content: flex-start; max-height: 116px; overflow-y: auto; }
 .chatnote { color: var(--muted); font-size: 12px; }
 .chatempty { text-align: center; margin: 18px 0; }
+.chatclear { align-self: flex-end; margin: 0 0 -4px; padding: 4px 10px; border-radius: 9px; border: 2px solid var(--line); background: var(--panel2); color: var(--muted); font: inherit; font-size: 12px; }
+.sheet { isolation: isolate; } /* 창 안의 고정 영역(z-index)이 위에 뜬 다른 창을 덮지 않게 */
 
 </style>
 <canvas id="game"></canvas>
@@ -6335,7 +6337,7 @@ PX.St = (() => {
         npc: {},
       },
       homeLayout: null, // 꾸미기 저장 [[fid,x,y,r], ...]
-      album: [], recent: {}, history: [], done: {}, messages: [], workLog: {},
+      album: [], recent: {}, history: [], done: { msgClean1: 1 }, messages: [], workLog: {},
       cap: { stay: false, lastVisitDay: -1, lastStayAskDay: -1, lastMsgMin: 0, follow: false, holding: false },
       day: 0, stats: { days: 1, work: 0, talks: 0 },
       settings: { speed: 'normal', sound: true },
@@ -6421,6 +6423,9 @@ PX.St = (() => {
   }
   function migrate(d) {
     if (!d.v) d.v = 1;
+    // 메신저 형식으로 바꾸면서 예전 메시지 기록은 한 번 비운다
+    d.done = d.done || {};
+    if (!d.done.msgClean1) { d.messages = []; d.outbox = []; if (d.cap && d.cap.op) d.cap.op.outbox = []; d.done.msgClean1 = 1; }
     if (d.v < 2) { // v1 → v2: 설정·메시지 필드 추가
       d.settings = d.settings || { speed: d.speed || 'normal', sound: true };
       d.messages = d.messages || [];
@@ -8909,6 +8914,11 @@ PX.UI = (() => {
           sb.onclick = go; inp.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) go(); };
           fr.append(inp, sb); comp.append(fr);
         }
+      }
+      if (S.messages.length) { // 대화 비우기 (입력창 맨 위 오른쪽)
+        const clr = el('button', { class: 'chatclear' }, '🧹 대화 비우기');
+        clr.onclick = async () => { if (!(await ask('대화 비우기', `${S.capName}와(과) 주고받은 메시지를 모두 지울까요?`, '모두 지우기'))) return; S.messages = []; S.outbox = []; if (S.cap.op) S.cap.op.outbox = []; St.save(); badge(); rerender(); };
+        comp.prepend(clr);
       }
       p.append(comp);
       badge();

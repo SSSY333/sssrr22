@@ -477,6 +477,11 @@ PX.UI = (() => {
           fr.append(inp, sb); comp.append(fr);
         }
       }
+      if (S.messages.length) { // 대화 비우기 (입력창 맨 위 오른쪽)
+        const clr = el('button', { class: 'chatclear' }, '🧹 대화 비우기');
+        clr.onclick = async () => { if (!(await ask('대화 비우기', `${S.capName}와(과) 주고받은 메시지를 모두 지울까요?`, '모두 지우기'))) return; S.messages = []; S.outbox = []; if (S.cap.op) S.cap.op.outbox = []; St.save(); badge(); rerender(); };
+        comp.prepend(clr);
+      }
       p.append(comp);
       badge();
       requestAnimationFrame(() => { const sc = p.closest('.sheet-body') || p; sc.scrollTop = sc.scrollHeight; });

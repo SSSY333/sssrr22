@@ -26,7 +26,7 @@ PX.St = (() => {
         npc: {},
       },
       homeLayout: null, // 꾸미기 저장 [[fid,x,y,r], ...]
-      album: [], recent: {}, history: [], done: {}, messages: [], workLog: {},
+      album: [], recent: {}, history: [], done: { msgClean1: 1 }, messages: [], workLog: {},
       cap: { stay: false, lastVisitDay: -1, lastStayAskDay: -1, lastMsgMin: 0, follow: false, holding: false },
       day: 0, stats: { days: 1, work: 0, talks: 0 },
       settings: { speed: 'normal', sound: true },
@@ -112,6 +112,9 @@ PX.St = (() => {
   }
   function migrate(d) {
     if (!d.v) d.v = 1;
+    // 메신저 형식으로 바꾸면서 예전 메시지 기록은 한 번 비운다
+    d.done = d.done || {};
+    if (!d.done.msgClean1) { d.messages = []; d.outbox = []; if (d.cap && d.cap.op) d.cap.op.outbox = []; d.done.msgClean1 = 1; }
     if (d.v < 2) { // v1 → v2: 설정·메시지 필드 추가
       d.settings = d.settings || { speed: d.speed || 'normal', sound: true };
       d.messages = d.messages || [];
