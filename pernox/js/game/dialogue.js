@@ -180,6 +180,8 @@ PX.Dlg = (() => {
 
   // 대사 줄 실행 → { aff, tags }
   async function runLines(lines, opt = {}) {
+    // 대사 묶음이 배열 안에 한 번 더 들어와도 (['C:…','P:…'] 를 [ ] 로 또 감싼 경우) 한 줄씩 풀어서 말한다
+    lines = [].concat(lines || []).flat(Infinity).filter(l => l != null);
     const others = lines.some(l => typeof l === 'string' && /^[SX]:/.test(l));
     const prevNpc = npcActive; if (others && !npcActive) npcActive = 'scene';
     try { return await runLines0(lines, opt); } finally { npcActive = prevNpc; }

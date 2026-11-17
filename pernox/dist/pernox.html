@@ -6921,6 +6921,8 @@ PX.Dlg = (() => {
 
   // 대사 줄 실행 → { aff, tags }
   async function runLines(lines, opt = {}) {
+    // 대사 묶음이 배열 안에 한 번 더 들어와도 (['C:…','P:…'] 를 [ ] 로 또 감싼 경우) 한 줄씩 풀어서 말한다
+    lines = [].concat(lines || []).flat(Infinity).filter(l => l != null);
     const others = lines.some(l => typeof l === 'string' && /^[SX]:/.test(l));
     const prevNpc = npcActive; if (others && !npcActive) npcActive = 'scene';
     try { return await runLines0(lines, opt); } finally { npcActive = prevNpc; }
@@ -11989,6 +11991,7 @@ PX.CapFavor = (() => {
       if (near(5) && withMe && mins() > (p.nag || 0)) { p.nag = mins() + 90; g.bubble(g.cap, U.pickFresh('favnag', ['부탁한 거, 기억하지?', `${todo(f)}. 부탁해.`, '그 부탁, 언제든 괜찮아.']), 2.8); }
     }
     if (PX.Plan && PX.Plan.cur()) return; // 약속 하러 가는 중엔 새 부탁 안 함
+    { const md = PX.MAPS[g.mapId] || {}, t2 = S.time.min; if (md.innRoom || md.adult || (md.home && (t2 >= 21 * 60 || t2 < 6 * 60)) || t2 >= 22 * 60 || t2 < 6 * 60) return; } // 은밀숙소 · 루비웨이 · 밤에 방에서는 일 부탁 안 함
     if (mins() < (S.cap.favorNext || 0) || !near(3.2)) return;
     if (PX.Cap.onDuty && PX.Cap.onDuty()) return;
     const atWork = g.mapId === PX.JOBS[S.player.job].work;
@@ -12862,11 +12865,11 @@ PX.Mind = (() => {
     { id: 'hand', ask: [['C:손. 이리 줘.', 'C*:싫으면 안 줘도 돼. 대신 표정으로 말해 줘.'], ['C:사람 많다. 손 잡을까?'], ['C*:손이 심심하다. 네 손도 심심해 보이고.'], ['C:잃어버리면 안 되니까. 손.'], ['C^:손 시렵지? 아니어도 잡자.'], ['C:…손 잡고 걸어도 돼?']] },
     { id: 'armlink', ask: [['C:팔 내줄게. 잡을래?'], ['C*:팔짱 껴 볼래? 내 팔 튼튼해.'], ['C:여기 걸어. 내 팔에. 안 넘어지게.']] },
     { id: 'waist', ask: [['C:허리 좀 감아도 돼? 사람 많아서… 아니, 그냥 하고 싶어서.'], ['C*:이쪽으로 붙어. 허리 잡을게. 괜찮지?'], ['C:…허리에 손 올려도 돼?']] },
-    { id: 'fronthug', ask: [['C:안아도 돼?', 'C*:지금 좀 안고 싶어. 이유는 안아 보고 말할게.'], ['C:…잠깐 이리 와 봐. 안아 보게.'], ['C;:오늘 좀 힘들었어. 한 번만 안아도 돼?'], ['C^:충전 필요해. 안아 줘.'], ['C*:이리 와. 꽉 안고 싶다.']] },
+    { id: 'fronthug', priv: [['C*:문 닫혔다. 이제 아무도 없어. …안아도 돼?'], ['C:하루 종일 참았어. 이리 와.', 'C~:꽉 안고 싶어. 오늘 제일 하고 싶었던 거야.'], ['N:대위가 침대 끝에 앉아 두 팔을 벌린다.', 'C^:이리 와. 여기.']], ask: [['C:안아도 돼?', 'C*:지금 좀 안고 싶어. 이유는 안아 보고 말할게.'], ['C:…잠깐 이리 와 봐. 안아 보게.'], ['C;:오늘 좀 힘들었어. 한 번만 안아도 돼?'], ['C^:충전 필요해. 안아 줘.'], ['C*:이리 와. 꽉 안고 싶다.']] },
     { id: 'pat', ask: [['C:머리 이리 내밀어. 쓰다듬게.'], ['C^:잘했어. 머리 줘. 상이야.'], ['C*:머리 높이가 딱 내 손 높이네. 쓰다듬어도 돼?']] },
     { id: 'kisscheek', ask: [['C:볼 좀 빌려줘. 금방 돌려줄게.'], ['C*:볼에 하나만. 딱 하나.'], ['C^:오늘 수고했다는 뜻으로… 볼에 해도 돼?']] },
-    { id: 'kissforehead', ask: [['C:이마 좀. …이마에 하는 건 괜찮지?'], ['C:앞머리 좀 올려 봐. 이마에 하나 하게.'], ['C^:잘 자라는 인사. 이마에.']] },
-    { id: 'kiss', ask: [['C:…해도 돼?', 'C*:뭘 하냐고 묻지 마. 알잖아.'], ['C;:지금 엄청 참고 있어. 해도 돼?'], ['C*:눈 감아 볼래? 싫으면 안 감아도 돼.'], ['C:…가까이 가도 돼?']] },
+    { id: 'kissforehead', priv: [['N:대위가 앞머리를 손가락으로 쓸어 넘긴다.', 'C:이마에 하나. 오늘 고생했다는 뜻.']], ask: [['C:이마 좀. …이마에 하는 건 괜찮지?'], ['C:앞머리 좀 올려 봐. 이마에 하나 하게.'], ['C^:잘 자라는 인사. 이마에.']] },
+    { id: 'kiss', priv: [['C*:여기선 아무도 안 봐. …해도 돼?'], ['N:대위가 이마를 맞대고 눈을 가만히 들여다본다.', 'C~:…지금 키스해도 돼?'], ['C:불빛이 좋다. 네 얼굴 잘 보여서.', 'C*:가까이 가도 돼?']], ask: [['C:…해도 돼?', 'C*:뭘 하냐고 묻지 마. 알잖아.'], ['C;:지금 엄청 참고 있어. 해도 돼?'], ['C*:눈 감아 볼래? 싫으면 안 감아도 돼.'], ['C:…가까이 가도 돼?']] },
   ];
   async function capAsk() {
     const g = G(), S = St.S, m = mem();
@@ -12874,7 +12877,13 @@ PX.Mind = (() => {
     if (g.transition || St.absMin() - (g.enteredAt || -1e9) < 5 || !g.cap || g.cap.map !== g.mapId || g.cap.atDoor) return false;
     if (St.absMin() - (m.danceAt || -1e9) < 30) return false; // 방금 같이 춤췄으면 따로 안 묻는다
     if (St.absMin() - (m.playerSkinAt || -1e9) < 120) return false; // 내가 먼저 했으면 대위는 안 묻는다
-    const list = ASKS.filter(x => { const a = BY[x.id]; return check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6); });
+    // 장소 · 지금 스킨십에 맞게: 둘만 있는 방(은밀숙소 · 막사 · 숙소)에선 손잡기 · 팔짱 대신 더 가까운 것, 이미 하는 것보다 낮은 단계는 묻지 않는다
+    const md = PX.MAPS[g.mapId] || {}, priv = !!(md.innRoom || md.home || g.mapId === 'q_captain');
+    const RANK = { hand: 1, sithand: 1, armlink: 1, waist: 2, pat: 2, kissforehead: 3, kisscheek: 3, fronthug: 3, kiss: 4 };
+    const CR = { HAND_HOLD: 1, SIT_HAND: 1, ARM_LINK: 1, WAIST_HOLD: 2, SHOULDER_HOLD: 2, SIDE_HUG: 2, SIT_LEAN: 2, LAP_REST: 2, FRONT_HUG: 3, BACK_HUG: 3, EMBRACE: 3, CUDDLE: 3, SLEEP_CUDDLE: 3 }[contact()] || 0;
+    let list = ASKS.filter(x => { const a = BY[x.id]; return a && check(a).ok && !refused(x.id) && !usedRecently('ask_' + x.id, 6) && (RANK[x.id] || 1) >= Math.min(CR, 3) && !(priv && ['hand', 'armlink'].includes(x.id)); });
+    if (priv && S.rel.cap.stage >= 4 && list.some(x => (RANK[x.id] || 1) >= 3)) list = list.filter(x => (RANK[x.id] || 1) >= 3);
+    list = list.map(x => { let ask = x.ask.filter(b => !(priv && [].concat(b).some(l => /사람 많|잃어버리면|걸어/.test(l)))); if (priv && x.priv) ask = x.priv.concat(ask); return ask.length ? Object.assign({}, x, { ask }) : null; }).filter(Boolean);
     if (!list.length) return false;
     const ln = (b) => (Array.isArray(b) ? b : [b]).find(y => typeof y === 'string' && /^C/.test(y)) || '';
     const fresh = list.filter(x => x.ask.some(b => !PX.Dlg.capSaid(ln(b).replace(/^C[*^;!~]?:/, ''))));

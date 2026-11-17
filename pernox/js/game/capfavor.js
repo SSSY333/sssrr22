@@ -95,6 +95,7 @@ PX.CapFavor = (() => {
       if (near(5) && withMe && mins() > (p.nag || 0)) { p.nag = mins() + 90; g.bubble(g.cap, U.pickFresh('favnag', ['부탁한 거, 기억하지?', `${todo(f)}. 부탁해.`, '그 부탁, 언제든 괜찮아.']), 2.8); }
     }
     if (PX.Plan && PX.Plan.cur()) return; // 약속 하러 가는 중엔 새 부탁 안 함
+    { const md = PX.MAPS[g.mapId] || {}, t2 = S.time.min; if (md.innRoom || md.adult || (md.home && (t2 >= 21 * 60 || t2 < 6 * 60)) || t2 >= 22 * 60 || t2 < 6 * 60) return; } // 은밀숙소 · 루비웨이 · 밤에 방에서는 일 부탁 안 함
     if (mins() < (S.cap.favorNext || 0) || !near(3.2)) return;
     if (PX.Cap.onDuty && PX.Cap.onDuty()) return;
     const atWork = g.mapId === PX.JOBS[S.player.job].work;
