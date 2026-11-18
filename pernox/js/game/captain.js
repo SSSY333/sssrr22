@@ -42,7 +42,7 @@ PX.Cap = (() => {
     const O = PX.Op && PX.Op.op();
     if (O && O.phase === 'away') return O.joint ? '합동작전 중 (함께)' : '장기작전 중';
     if (O && O.phase === 'return') return { '부대 도착': '부대 도착', '복귀 보고': '작전 복귀 보고 중', '장비 반납': '장비 반납 중', '의료 확인': '복귀 검진 중', '샤워·환복': '씻는 중', '찾아가기': '나를 찾는 중' }[O.retStep] || '작전 복귀 중';
-    if (mode === 'linger') return '가기 전에 아쉬워하는 중';
+    if (mode === 'linger') return St.S.cap.arriving ? '약속대로 찾아오는 중' : '가기 전에 아쉬워하는 중';
     if (mode === 'date') return '약속 장소에서 기다리는 중';
     if (mode === 'waitOut') return '밖에서 기다리는 중';
     if (mode === 'paused') return '그 자리에서 기다리는 중';

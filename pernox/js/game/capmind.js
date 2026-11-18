@@ -348,10 +348,10 @@ PX.Mind = (() => {
     g.modal++;
     g.cap.setDirTo(g.player.x, g.player.y);
     await PX.Dlg.runLines(bd);
-    const i = await PX.Dlg.choose([{ t: '좋아요.' }, { t: '지금은 싫어요.' }]);
+    const i = await PX.Dlg.choose([{ t: '좋아요.' }, { t: '지금 말고 이따가요.' }]);
     if (i === 0) { await PX.Dlg.say('player', '좋아요.'); PX.Dlg.close(); g.modal--; await perform(x.id, true); return true; }
-    await PX.Dlg.say('player', '지금은 싫어요.');
-    await PX.Dlg.say('cap', U.pickFresh('backoff', ['응, 알았어.', '그래. 싫으면 안 하는 거야.', '알았어. 대신 옆에서 걷는 건 돼?', '응. 물어본 거야. 조른 거 아니고.', '알았어. 다음엔 네가 먼저 하고 싶을 때까지 기다릴게.']), 'smile');
+    await PX.Dlg.say('player', '지금 말고 이따가요.');
+    await PX.Dlg.say('cap', U.pickFresh('backoff', ['응, 알았어.', '그래. 네가 내킬 때 하자.', '알았어. 대신 옆에서 걷는 건 돼?', '응. 물어본 거야. 조른 거 아니고.', '알았어. 다음엔 네가 먼저 하고 싶을 때까지 기다릴게.']), 'smile');
     PX.Dlg.close(); g.modal--;
     noteRefuse(x.id, 240);
     return true;

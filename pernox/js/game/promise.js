@@ -46,8 +46,8 @@ PX.Promise = (() => {
     if (PX.Cap.onDuty() || (S.cap.op && S.cap.op.phase === 'away')) { PX.Op.send({ t: '미안, 갑자기 근무가 잡혔어. 끝나면 바로 연락할게.', r: [] }); return; }
     if (here && d.map === homeId) { // 노크하고 들어온다
       if (g.cap.leaveSeat) g.cap.leaveSeat();
-      { PX.Cap.moveTo(homeId, PX.MAPS[homeId].parent); const hm = PX.W.maps[homeId]; g.cap.x = hm.exit.x + 0.5; g.cap.y = hm.exit.y - 0.5; g.cap.setDirTo(g.player.x, g.player.y); PX.Cap.mode = 'linger'; } // 문 앞에 선다
-      g.trigger(async () => { g.modal++; try { await PX.Dlg.runLines([PX.Dlg.capPick(S.rel.cap.stage >= 4 ? [['N:똑똑. 문이 열리기도 전에 익숙한 목소리가 들린다.', 'C^:왔어. 약속대로.'], ['N:노크 두 번. 문틀을 피해 고개를 숙이며 대위가 들어온다.', 'C*:보고 싶어서 뛰어왔어. 진짜로.']] : [['N:똑똑.', 'C:왔어. 들어가도 되지?'], ['N:노크 소리. 대위가 문틈으로 고개를 내민다.', 'C^:약속 지키러 왔다.']])]); } finally { PX.Dlg.close(); g.modal--; } PX.Cap.startVisit(); }); // 노크 → 들어와서 방문
+      { PX.Cap.moveTo(homeId, PX.MAPS[homeId].parent); const hm = PX.W.maps[homeId]; g.cap.x = hm.exit.x + 0.5; g.cap.y = hm.exit.y - 0.5; g.cap.setDirTo(g.player.x, g.player.y); PX.Cap.mode = 'linger'; S.cap.arriving = true; } // 문 앞에 선다
+      g.trigger(async () => { g.modal++; try { await PX.Dlg.runLines([PX.Dlg.capPick(S.rel.cap.stage >= 4 ? [['N:똑똑. 문이 열리기도 전에 익숙한 목소리가 들린다.', 'C^:왔어. 약속대로.'], ['N:노크 두 번. 문틀을 피해 고개를 숙이며 대위가 들어온다.', 'C*:보고 싶어서 뛰어왔어. 진짜로.']] : [['N:똑똑.', 'C:왔어. 들어가도 되지?'], ['N:노크 소리. 대위가 문틈으로 고개를 내민다.', 'C^:약속 지키러 왔다.']])]); } finally { PX.Dlg.close(); g.modal--; } S.cap.arriving = false; if (PX.Cap.mode === 'linger') PX.Cap.startVisit(); }); // 노크 → 들어와서 방문
       return;
     }
     if (here) { // 바깥 · 다른 곳: 입구에서 걸어와 합류
