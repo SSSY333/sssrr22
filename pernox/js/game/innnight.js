@@ -220,15 +220,14 @@ PX.InnNight = (() => {
     // 2) 분위기가 오르는 장면 (방 전용이 있으면 반반)
     const pool = DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
     await lines(pick(pool));
-    const go = U.pick(GO);
+    const go = U.pickFresh('innGo', GO);
     const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
     await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
     if (i !== 0) { await lines(pick(STOP)); return false; }
     // 챙기기: 불 끄기 전에
     await lines(pick(PREP[where === 'home' ? 'home' : 'inn']));    // 3) 암전: 사이사이 들리는 말
     PX.Dlg.close(); fade(true); await U.sleep(700);
-    await lines([U.pick(where === 'home' ? ['N:스탠드 불이 꺼진다. 숨소리와 이름을 부르는 소리만 남는다.', 'N:창밖 부대 가로등 불빛이 블라인드 틈으로 가늘게 들어온다. 어둠 속에서 손이 손을 찾는다.', 'N:마지막으로 본 건 대위의 웃는 얼굴이었다. 그리고 어둠.', 'N:좁은 침대가 삐걱 소리를 낸다. 둘 다 웃음을 참다가, 이내 조용해진다.']
-      : ['N:불이 꺼진다. 숨소리와 이름을 부르는 소리만 남는다.', 'N:네온 빛마저 커튼 뒤로 사라진다. 어둠 속에서 손이 손을 찾는다.', 'N:마지막으로 본 건 대위의 웃는 얼굴이었다. 그리고 어둠.', 'N:객실 무드등이 가장 낮은 단계로 떨어진다. 남은 빛은 서로의 눈동자뿐이다.'])]);
+    { const X2 = PX.INN_MORE || {}, pool = where === 'home' ? X2.dark_home : X2.dark_inn; await lines([U.pickFresh('innDark_' + where, pool)]); } // 암전 (안 본 것부터)
     const n = 2 + Math.floor(Math.random() * 2);
     // 이번 밤에 들릴 말: 서로 다른 것으로, 아직 안 들은 것부터
     const MUR = tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
@@ -350,7 +349,7 @@ PX.InnNight = (() => {
     try {
       await lines(pick(DAY_START[where].filter(b => base || !/배식|막사|연병장/.test(JSON.stringify(b)))));
       await lines(pick(DAY_DURING));
-      const go = U.pick(DAY_GO);
+      const go = U.pickFresh('innDayGo', DAY_GO);
       const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
       await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
       if (i !== 0) { await lines(pick(DAY_STOP)); return false; }
@@ -370,6 +369,13 @@ PX.InnNight = (() => {
       return true;
     } finally { PX.Dlg.close(); g.modal--; }
   }
-  const counts = () => ({ street: STREET.length, lobby: LOBBY.length, enter: ENTER.length, during: Object.values(DURING).reduce((a, b) => a + b.length, 0), murmur: MURMUR.length, after: AFTER.length, morning: MORNING.length, stop: STOP.length, prep: PREP.inn.length + PREP.home.length, home: HOME_ENTER.length });
+  { // 보강 대사 합치기 (data/inn_more*.js)
+    const X2 = PX.INN_MORE || {};
+    STREET.push(...(X2.street || [])); LOBBY.push(...(X2.lobby || [])); ENTER.push(...(X2.enter || []));
+    DURING.any.push(...(X2.during || [])); for (const id in (X2.roomDuring || {})) DURING[id] = (DURING[id] || []).concat(X2.roomDuring[id]);
+    GO.push(...(X2.go || [])); STOP.push(...(X2.stop || [])); PREP.inn.push(...(X2.prep_inn || []));
+    MURMUR.push(...(X2.murmur || [])); AFTER.push(...(X2.after || [])); AFTER_INN.push(...(X2.after_inn || [])); MORNING.push(...(X2.morning || []));
+  }
+  const counts = () => ({ street: STREET.length, lobby: LOBBY.length, enter: ENTER.length, during: Object.values(DURING).reduce((a, b) => a + b.length, 0), murmur: MURMUR.length, after: AFTER.length, afterInn: AFTER_INN.length, go: GO.length, prepInn: PREP.inn.length, duringAny: DURING.any.length, morning: MORNING.length, stop: STOP.length, prep: PREP.inn.length + PREP.home.length, home: HOME_ENTER.length });
   return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime };
 })();

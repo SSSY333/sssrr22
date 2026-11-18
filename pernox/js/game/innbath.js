@@ -5,6 +5,12 @@ PX.InnBath = (() => {
   const U = PX.U, St = PX.St, W = PX.W;
   const G = () => PX.Game;
   const D = () => PX.INN_BATH;
+  { const B = PX.INN_BATH, X2 = PX.INN_MORE || {};
+    for (const k of ['goTogether', 'capWait', 'back', 'toilet', 'brush', 'robeAmb']) B[k].push(...(X2[k] || []));
+    if (PX.DLG_V2 && X2.rubyOut) PX.DLG_V2.rubyOut.push(...X2.rubyOut.map(l => ({ s: [4, 7], l })));
+    const A2 = PX.DLG_CAP2 && PX.DLG_CAP2.placeAmb; if (A2) for (const id in (X2.roomAmb || {})) A2[id] = (A2[id] || []).concat(X2.roomAmb[id]);
+    for (const id in (X2.roomTalk || {})) for (const l of X2.roomTalk[id]) PX.SITU.push({ m: [id], s: [4, 7], tz: 1, l });
+  }
   const ROBE = '#efe7e1';
   const inRoom = () => !!(PX.MAPS[G().mapId] || {}).innRoom;
   const inBath = () => G().mapId === 'inn_bathroom';

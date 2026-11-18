@@ -454,12 +454,8 @@ PX.Act = (() => {
     PX.Cap.sitNear(g);
     if (it.k === 'talk') {
       await U.sleep(600);
-      await lines([U.pick([
-        ...(g.mapId === 'inn_mirror' ? [['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:응? 왜요?', 'C^:너만 보느라 잠 못 자지.']] : []),
-        ['C:…이렇게 가만히 누워 있는 거, 작전 나가면 제일 생각나.', 'C*:별거 아닌데. 옆에 네가 숨 쉬는 소리.'],
-        ['C*:팔 베고 누울래? 저려도 말 안 할게.', { q: [['그럼 실례할게요.', 4, ['C^:실례는 무슨. 원래 네 자리야.']], ['조금만 이대로 있어요.', 3, ['C:응. 조금만. …아니, 많이.']]] }],
-        ['C:우리 처음 만났을 때 기억나? 너 나 엄청 경계했잖아.', 'C*:지금은 내 옆에서 하품하고. 많이 컸다, 우리.'],
-      ]).concat(water ? ['N:침대가 둘의 숨에 맞춰 천천히 출렁인다.'] : [])]);
+      const pool = (g.mapId === 'inn_mirror' ? [['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:응? 왜?', 'C^:너만 보느라 잠 못 자지.']] : []).concat(PX.INN_MORE.bedTalk, (PX.INN_MORE.roomTalk[g.mapId] || []));
+      await lines(PX.Dlg.capPick(pool).concat(water ? ['N:침대가 둘의 숨에 맞춰 천천히 출렁인다.'] : []));
       St.addAff(4); St.advance(30);
       if (once('innTalk')) g.memory('은밀숙소의 밤', '같이 누워 천장을 보며 아무 얘기나 했다.', true);
       return;
