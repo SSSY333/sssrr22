@@ -47,6 +47,7 @@ PX.Cap = (() => {
     if (mode === 'waitOut') return '밖에서 기다리는 중';
     if (mode === 'paused') return '그 자리에서 기다리는 중';
     if (mode === 'follow' && PX.Plan && PX.Plan.label()) return `약속: ${PX.Plan.label()}`;
+    if (mode === 'follow' && St.S.cap.hosting) return '막사에서 나랑 쉬는 중';
     if (mode === 'follow') return cap.holding ? '손잡고 동행 중' : '동행 중';
     if (mode === 'visit') return '내 숙소 방문 중';
     if (mode === 'stay') return '내 숙소에서 쉬는 중';
@@ -110,8 +111,8 @@ PX.Cap = (() => {
         if (PX.W.walkable(m, Math.floor(ox), Math.floor(oy))) { cap.path = []; const k = Math.min(1, dt * 10); cap.x += (ox - cap.x) * k; cap.y += (oy - cap.y) * k; cap.dir = p.dir; cap.moving = p.moving; }
         else if (repathT <= 0) { repathT = 0.4; cap.goTo(m, Math.floor(p.x), Math.floor(p.y)); }
         cap.holdSide = -1; p.holdSide = 1;
-      } else if (cap.seat || (cap.toSeat && cap.path.length)) {
-        // 앉아 있거나 자리로 가는 중엔 따라가기를 멈춘다
+      } else if (cap.wander || cap.seat || (cap.toSeat && cap.path.length)) {
+        // 앉아 있거나 자리로 가는 중 · 방을 둘러보는 중엔 따라가기를 멈춘다
       } else if (d > 1.9 && repathT <= 0) {
         repathT = 0.35;
         const m = PX.W.maps[cap.map];
@@ -124,8 +125,16 @@ PX.Cap = (() => {
       if (!cap.path.length && !cap.holding && d < 2.5 && !cap.seat) cap.setDirTo(p.x, p.y);
       // 플레이어가 앉으면 옆자리, 일어나면 같이 일어난다
       if (cap.toSeat && cap.path.length) { toSeatT += dt; if (toSeatT > 2) { toSeatT = 0; cap.stop(); cap.toSeat = false; sitT = 0; } } else toSeatT = 0; // 자리로 가다 막히면 다시 판단
-      if (p.seat && !cap.seat && !cap.path.length && sitT <= 0) { sitT = 2; sitNear(g); }
+      if (p.seat && !cap.seat && !cap.path.length && !cap.wander && sitT <= 0) { sitT = 2; sitNear(g); }
       if (!p.seat && cap.seat) cap.leaveSeat();
+      sitT -= dt;
+    }
+    // 내 방에 놀러 왔을 때: 소파에만 붙어 있지 않는다 (내가 앉으면 옆자리로, 멀리 돌아다니면 일어나서 온다)
+    if (mode === 'visit' && cap.map === g.mapId && g.mapId === homeId() && !g.modal && !cap.wander) {
+      const d = U.dist(cap.x, cap.y, p.x, p.y);
+      if (p.seat && (!cap.seat || U.dist(cap.seat.x, cap.seat.y, p.x, p.y) > 3.6) && !cap.path.length && sitT <= 0 && (p.seat.obj && (p.seat.obj.use || (p.seat.obj.f && p.seat.obj.f.use)) !== 'bed')) { sitT = 3; if (cap.seat) cap.leaveSeat(); sitNear(g); }
+      else if (!p.seat && cap.seat && !cap.seat.virt && d > 3.4 && !p.moving) { farT += dt; if (farT > 5) { farT = 0; cap.leaveSeat(); const m = PX.W.maps[cap.map]; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1], () => cap.setDirTo(p.x, p.y)); } }
+      else farT = 0;
       sitT -= dt;
     }
     thinkT -= dt;
@@ -141,6 +150,7 @@ PX.Cap = (() => {
     if (O && O.phase === 'away' && !O.joint) { if (mode !== 'op' || cap.map) { cap.map = null; cap.stop && cap.stop(); mode = 'op'; } return; } // 작전 중엔 어디에도 없다 (불러오기 직후 포함)
     if (O && O.phase === 'away' && O.joint) { if (mode !== 'follow' && cap.map === g.mapId) mode = 'follow'; if (mode === 'follow' && cap.map !== g.mapId && !g.transition) followIntoMap(); return; }
     if (mode === 'op') mode = 'sched';
+    if (S.cap.hosting && mode !== 'follow') S.cap.hosting = false;
     if (mode === 'date') { const d = PX.Rom && PX.Rom.nextDate(); if (!d || d.state !== 'planned') mode = 'sched'; else { cap.stop(); return; } }
     if (O && O.phase === 'return') { mode = 'sched'; schedule(S, g); return; }
     const k = spotKind();
@@ -176,6 +186,7 @@ PX.Cap = (() => {
     if (mode === 'waitOut') { if (k === 'duty' || k === 'field' || St.absMin() > (waitOut ? waitOut.until : 0)) { release(); return; } waitOutTick(); return; }
     // 동행 해제 조건: 근무·작전 시간
     if (mode === 'follow') {
+      if (S.cap.hosting && g.mapId !== 'q_captain' && cap.map === 'q_captain' && !g.transition) { S.cap.hosting = false; release(null, 20); cap.wander = false; if (cap.seat) cap.leaveSeat(); return; } // 막사에 놀러 왔다 혼자 나가면: 대위는 막사에 남는다
       if (k === 'duty' || k === 'field') { startFarewell(k); return; } // 칼같이 가지 않는다: 아쉬워하다 간다
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30 && PX.LateNight && PX.LateNight.check()) { if (cap.map !== g.mapId && !g.transition) followIntoMap(); return; } // 데이트 중이면 밤을 어디서 보낼지 묻는다 · 같이 다닌다
       if (k === 'sleep' && S.time.min >= 23 * 60 + 30) { release('늦었다. 잘 자, ' + U.josa(U.givenName(S.player.name), '아') + '.'); return; }
@@ -190,6 +201,12 @@ PX.Cap = (() => {
         mode = 'seek';
       } else if (knockedToday !== S.day && !g.modal) { knockedToday = S.day; g.trigger(knock); }
       if (k !== 'free' || !playerAvailable()) release();
+      return;
+    }
+    // 내가 대위 막사에 찾아왔을 때: 쉬는 시간이면 나를 맞는다 (같이 있는 상태)
+    if (g.mapId === 'q_captain' && cap.map === 'q_captain' && ['sched', 'seek'].includes(mode) && !['duty', 'field', 'sleep'].includes(k) && r.stage >= 1 && !g.sleeping && !g.inMini && S.time.min >= 6 * 60 + 30 && S.time.min < 23 * 60 && !g.modal && !g.transition && !g.queue.length) { // 내가 직접 찾아온 거라 '나중에' 거절과 상관없이 맞는다
+      mode = 'follow'; S.cap.hosting = true; St.S.cap.follow = true; waitOut = null;
+      if (S.done.hostGreet !== S.day + ':' + Math.floor(S.time.min / 120)) { S.done.hostGreet = S.day + ':' + Math.floor(S.time.min / 120); cap.setDirTo(g.player.x, g.player.y); cap.showEmote('heart', 1.4); g.bubble(cap, U.pickFresh('hostHi', r.stage >= 4 ? ['왔어? 들어와. 여기 앉아.', '내 방에 네가 있으니까 이상하게 좋다.', '마침 보고 싶었어. 진짜로.', '왔네. 뭐 할까? 아무거나.'] : ['어, 왔어? 들어와. 좀 어질러져 있어.', '여기까지 찾아왔네. 앉아. 뭐 마실래?', '내 방은 좁아도 냉각기는 최고야. 들어와.']), 2.8); }
       return;
     }
     // 자유 시간: 플레이어 찾기
@@ -265,7 +282,7 @@ PX.Cap = (() => {
   }
   // 플레이어 옆 빈자리에 앉기
   // 내 옆에 와서 앉을 때 한마디 (10분에 한 번 이하 · 시간·장소에 맞는 말 · 안 한 말부터)
-  let lastSitLine = -1e9, toSeatT = 0;
+  let lastSitLine = -1e9, toSeatT = 0, farT = 0;
   const SIT_B = ['여기 앉아도 되지? 이미 앉았지만.', '다리 좀 쉬자.', '옆자리 비어 있길래.', '자리 좋다. 너 옆이라.', '조금만 쉬었다 가자.', '앉으니까 살 것 같다.', '여기 앉으면 네 얼굴 잘 보여.', '천천히 쉬어. 급할 거 없어.',
     '나 무거워서 의자가 삐걱거린다. 못 들은 걸로 해.', '여기 경치 괜찮네.', '좁아? 내가 좀 비켜 앉을게.', '이렇게 나란히 앉는 거 좋아.', '오늘 많이 걸었지. 발 아프지 않아?', '밤공기 좋다.', '아침부터 앉아 있으니까 사치 같다.', '점심 먹고 앉으니까 졸리네.'];
   const SIT_BL = ['어깨 빌려줄게.', '손 이리 줘.', '좀 더 붙어 앉아.', '자기 옆이 제일 편해.', '여기 내 지정석이다.', '기대도 돼. 아니, 기대.', '오늘은 여기서 안 움직일 거야.', '한 뼘도 멀다.'];

@@ -583,6 +583,7 @@
     if (S.rel.cap.stage >= 4) items.push({ t: '💞 부르는 말 바꾸기', k: 'call', sub: `지금: ${S.player.callCap || '오빠'}` });
     if (!duty) items.push({ t: '🤝 스킨십', k: 'skin', sub: M.contact() !== 'NONE' ? `지금: ${M.NAME[M.contact()]}` : '손잡기 · 포옹 · 입맞춤 …' });
     for (const a of PX.CapAct.list()) items.push({ t: a.t, sub: a.sub, k: 'act', run: a.fn }); // run: 메뉴가 자동 실행하지 않게 (두 번 실행 방지)
+    if (PX.Home && PX.Home.here()) { const hl = PX.Home.list(); items.push({ t: Game.mapId === 'q_captain' ? '🏠 막사에서 같이 하기' : '🏠 방에서 같이 하기', sub: hl.slice(0, 4).map(x => x.t.replace(/^\S+\s/, '')).join(' · ') + ' …', k: 'home' }); items.push({ t: '🚪 같이 나가기', sub: '식당 · 산책 · 돔시티 …', k: 'out', off: S.time.min >= 23 * 60 || S.time.min < 6 * 60, offMsg: '너무 늦은 시간이에요' }); }
     if (PX.Place) { const pl = PX.Place.list(); if (pl.length) items.push({ t: `📍 ${PX.MAPS[Game.mapId].name.split(' · ').pop()}에서 같이 하기`, sub: pl.slice(0, 3).map(x => x.t.replace(/^\S+\s/, '')).join(' · ') + (pl.length > 3 ? ' …' : ''), k: 'place' }); }
     if (Cap.mode === 'follow') items.push({ t: '🧭 동행 관리', k: 'comp', sub: `지금: ${M.NAME[M.contact()] === '접촉 없음' ? '함께 걷기' : M.NAME[M.contact()]}` });
     else if (Cap.mode !== 'visit' && Cap.mode !== 'stay') items.push({ t: '🚶 같이 다녀요', k: 'follow', off: duty, offMsg: '지금은 근무 중이라 같이 다닐 수 없어요' });
@@ -599,6 +600,8 @@
     if (!it) return;
     if (it.k === 'act') { cap.setDirTo(Game.player.x, Game.player.y); return it.run(); }
     if (it.k === 'place') { const pl = PX.Place.list(); const c = await UI.menu(`📍 ${S.capName}와(과) 여기서`.replace('와(과)', U.hasBatchim(S.capName) ? '과' : '와'), pl.map(x => ({ t: x.t, sub: x.sub, k: x }))); if (c) { cap.setDirTo(Game.player.x, Game.player.y); await c.k.run(); } return; }
+    if (it.k === 'home') return PX.Home.menu();
+    if (it.k === 'out') return PX.Home.outMenu();
     if (it.k === 'topic') return PX.CapAct.askTopic();
     if (it.k === 'date') return PX.Rom.askDate();
     if (it.k === 'dateEnd') { const d = PX.Rom.nextDate(); if (d) { d.started = -1e9; } return; }
@@ -984,6 +987,7 @@
   $('capChip').onclick = () => { if (Game.modal) return; if (Cap.mode === 'follow' && Game.cap.map === Game.mapId) compMenu(); else UI.terminal('rel'); };
   $('talkBtn').onclick = () => { if (!Game.modal && capNear()) { Game.player.setDirTo(Game.cap.x, Game.cap.y); capMenu(); } };
   $('skinBtn').onclick = () => { if (!Game.modal && capNear()) skinMenu(); };
+  $('homeBtn').onclick = () => { if (!Game.modal && PX.Home.here()) PX.Home.menu(); };
   $('moreBtn').onclick = () => { if (!Game.modal) pickNearby(); };
 
   // ---------- 루프 ----------
@@ -1062,7 +1066,7 @@
   let stuckT = 0;
   function watchdog(dt) {
     if (!Game.modal || Game.sleeping) { stuckT = 0; return; }
-    const shown = !$('dlg').classList.contains('hidden') || document.querySelector('.sheet-wrap') || !$('mini').classList.contains('hidden') || !$('chatbar').classList.contains('hidden') || $('fade').classList.contains('on') || PX.Decor.active;
+    const shown = !$('dlg').classList.contains('hidden') || document.querySelector('.sheet-wrap') || !$('mini').classList.contains('hidden') || !$('chatbar').classList.contains('hidden') || $('fade').classList.contains('on') || PX.Decor.active || Game.cutscene;
     stuckT = shown ? 0 : stuckT + dt;
     if (stuckT > 3) { stuckT = 0; recover('stuck', `modal ${Game.modal}`); }
   }
@@ -1087,6 +1091,7 @@
     if (PX.CapAct) PX.CapAct.tick(dt);
     if (PX.Plan) PX.Plan.tick(dt);
     if (PX.CapFavor) PX.CapFavor.tick(dt);
+    if (PX.Home) PX.Home.tick(dt);
     if (PX.Bday) PX.Bday.tick(dt);
     if (PX.Mind) { PX.Mind.tick(dt); stareTick(dt); }
     capCommentT -= dt; if (capCommentT <= 0) { capCommentT = 45 + Math.random() * 45; PX.Act.placeComment(false); }
@@ -1231,6 +1236,7 @@
     const l = nearby(), it = nearest();
     if (it) { if (btn.textContent !== it.label) btn.textContent = it.label; btn.classList.remove('hidden'); } else btn.classList.add('hidden');
     $('capBtns').classList.toggle('hidden', !capNear() || PX.Cap.onDuty() && Cap.mode !== 'follow' && !capNear());
+    $('homeBtn').classList.toggle('hidden', !PX.Home.here());
     $('moreBtn').classList.toggle('hidden', l.length < 2);
   }
 

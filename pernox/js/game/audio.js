@@ -20,5 +20,16 @@ PX.Audio = (() => {
     heart: () => { tone(660, 0.1, 'sine', 0.05); setTimeout(() => tone(990, 0.16, 'sine', 0.05), 90); },
     thud: () => tone(120, 0.18, 'triangle', 0.08, 0.5),
     step: () => tone(90 + Math.random() * 20, 0.03, 'triangle', 0.015),
+    // 방에서 트는 음악: 짧은 루프 (stop()으로 끈다)
+    melody(kind = 'up') {
+      const SONG = {
+        up: [[523, .2], [659, .2], [784, .2], [659, .2], [698, .2], [880, .2], [784, .4], [659, .2], [587, .2], [659, .2], [523, .4], [0, .2]],
+        slow: [[392, .6], [440, .3], [494, .6], [440, .3], [392, .9], [330, .6], [349, .3], [392, .9], [0, .3]],
+      }[kind] || [];
+      let on = true, i = 0;
+      const next = () => { if (!on || !SONG.length) return; const [f, d] = SONG[i % SONG.length]; i++; if (f) { tone(f, d * 0.9, 'sine', 0.035); tone(f / 2, d * 0.9, 'triangle', 0.02); } setTimeout(next, d * 1000); };
+      next();
+      return { stop() { on = false; } };
+    },
   };
 })();

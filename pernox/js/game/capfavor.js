@@ -92,7 +92,8 @@ PX.CapFavor = (() => {
     const mode = PX.Cap.mode, withMe = ['follow', 'visit', 'stay'].includes(mode);
     if (p) {
       const f = byId(p.id);
-      if (near(3) && ready(f) && (withMe || f.item && !f.go)) { finish(p); return; }
+      const sameRoom = g.cap.map === g.mapId && !PX.Cap.onDuty() && PX.Cap.spotKind() !== 'sleep'; // 대위 막사처럼 대위가 쉬고 있는 곳에 내가 찾아가도 된다
+      if (near(3) && ready(f) && (withMe || sameRoom || f.item && !f.go)) { finish(p); return; }
       if (near(5) && withMe && mins() > (p.nag || 0)) { p.nag = mins() + 90; g.bubble(g.cap, U.pickFresh('favnag', ['부탁한 거, 기억하지?', `${todo(f)}. 부탁해.`, '그 부탁, 언제든 괜찮아.']), 2.8); }
     }
     if (PX.Plan && PX.Plan.cur()) return; // 약속 하러 가는 중엔 새 부탁 안 함

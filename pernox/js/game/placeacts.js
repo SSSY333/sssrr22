@@ -267,10 +267,7 @@ PX.Place = (() => {
 
   // ===================== 내 숙소 · 대위 막사 =====================
   for (const home of ['q_player', 'apt_player']) {
-    add(home, { id: 'hm_cook', t: '🍳 같이 요리하기', sub: '기력 +25', s: 2, run: async () => {
-      await say([['C:재료 썰기는 내가. 칼은 자신 있어.', 'N:대위가 채소를 군인답게 일정한 간격으로 썬다. 각이 살아 있다.', 'C*:간은 네가. 나 맛 감각 없대, 다들.']],
-        [['N:좁은 부엌에서 자꾸 어깨가 부딪친다.', 'C*:좁아서 그래. 일부러 아니야.', 'P:{ob} 세 번째야.', 'C^:…네 번째는 일부러.']]);
-      St.S.energy = Math.min(100, St.S.energy + 25); St.advance(45); reward('hm_cook', 3, ['같이 만든 저녁', '숙소에서 대위와 같이 저녁을 만들었다. 채소가 각이 잡혀 있었다.']); } });
+    // 같이 요리하기는 PX.Home (부엌에 나란히 서서 실제로 한다)
     add(home, { id: 'hm_nap', t: '😴 소파에서 같이 낮잠', sub: '1시간', s: 4, when: () => St.S.time.min >= 12 * 60 && St.S.time.min < 18 * 60, run: async () => {
       await say(null, [['N:소파에 나란히 기대 눈을 감는다. 대위의 숨소리가 금방 느려진다.', 'C:…오 분만. …삼십 분만.', 'N:한 시간 뒤. 둘 다 같은 자세로 깬다.']]);
       St.S.energy = Math.min(100, St.S.energy + 20); St.advance(60); reward('hm_nap', 3); } });
