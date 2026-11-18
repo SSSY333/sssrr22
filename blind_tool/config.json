@@ -1,24 +1,99 @@
 {
-  "_설명": "이 파일을 메모장으로 열어 항목·사유·옵션을 기관 기준에 맞게 바꿀 수 있습니다. 실행 파일과 같은 폴더에 두세요.",
+  "_설명": "메모장으로 열어 기관 기준에 맞게 고칠 수 있습니다. 실행 파일과 같은 폴더에 두세요. rules 는 비식별 기준표(Redaction Summary Table)의 각 행이고, box_categories / delete_reasons 의 rule 값이 어느 행에 쪽수가 기록될지 정합니다.",
 
-  "categories": [
-    "친생부 성명(성 제외)",
-    "친생모 성명(성 제외)",
-    "친생부모 연령",
-    "친생부모 주소·출신지",
-    "친생부모 학력·직업",
-    "연락처",
-    "주민등록번호 등 식별번호",
-    "제3자 정보",
-    "기타 개인정보"
+  "rules": [
+    {"id": "R1", "group": "친생부모 서류\n(Birth Parent Documents)",
+     "items": "친생부모 호적등본부 (Birth Parents' Family Register)\n친생부모 주민등록표 등본 (Birth Parents' Resident Registration Certificate)\n친생부모 주민등록증 (Birth Parent ID)\n인감증명서 (Certificate of Seal Impression)",
+     "method": "whole"},
+    {"id": "R2", "group": "친생부모 서류\n(Birth Parent Documents)",
+     "items": "친권포기서류 (Relinquishment of Parental Rights)\n입양동의서 (Consent for Adoption)\n친생부모 이름, 출생 월일, 세부 주소 * (Birth Parent First Name, Birth Month and Day, Detailed Address)\n친생부모 외 친가족 정보 ** (Other Family Information)",
+     "method": "partial"},
+    {"id": "R3", "group": "양부모 서류\n(Adoptive Parent Documents)",
+     "items": "양부모 조사서 (Adoptive Parent Home Studies)\n입양 행정 서류 일체 (Administrative Documents Related to Adoption)\n입양 전 양부모 사진 (Pre-adoption Adoptive Parent Pictures)",
+     "method": "whole"},
+    {"id": "R4", "group": "위탁 가정\n(Foster Family)",
+     "items": "사진 (Photos)",
+     "method": "whole"},
+    {"id": "R5", "group": "위탁 가정\n(Foster Family)",
+     "items": "개인정보 (Personal Information)\n- 이름 (Name), 주민등록번호 (Resident Registration Number), 주소 (Address) etc...",
+     "method": "partial"},
+    {"id": "R6", "group": "입양 종사자\n(Adoption Officials)\n- 기관장 및 종사자 (Heads of Adoption Agencies and Workers)\n- 공무원 (Public Servants)\n- 의료관계자 (Medical Personnel)",
+     "items": "민감정보 (Sensitive Personal Information)\n- 주민등록번호 (Resident Registration Number)\n- 본적 (Permanent Address)",
+     "method": "partial"},
+    {"id": "R7", "group": "기관내 및 기관간 서류\n(Intra/Inter Organization Documents)",
+     "items": "수/발신인에 입양인 미포함 문서 (Communications where Adoptee is neither Addresser nor Addressee)\n- 기관내외부 소통 문서 (이메일, 메모, 공문 등) Intra/Inter Org. Communications (E-mails, Memos, Documents)",
+     "method": "whole"},
+    {"id": "R8", "group": "타 입양인 및 제3자\n(Other Adoptees and Third Parties)",
+     "items": "개인정보 (Personal Information)\n- 이름 (Name), 주민등록번호 (Resident Registration Number), 주소 (Address) etc...",
+     "method": "whole"},
+    {"id": "R9", "group": "타 입양인 및 제3자\n(Other Adoptees and Third Parties)",
+     "items": "개인정보 (Personal Information)\n- 이름 (Name), 주민등록번호 (Resident Registration Number), 주소 (Address) etc...",
+     "method": "partial"},
+    {"id": "R10", "group": "미아 발견자 ***\n(Discoverer of Lost Child)",
+     "items": "이름을 제외한 개인정보 (Personal Information Except the Name)",
+     "method": "partial"}
+  ],
+
+  "method_labels": {
+    "whole": "일체 삭제\n(Whole Page Deletion)",
+    "partial": "부분 삭제\n(Partial Deletion)"
+  },
+
+  "footnotes": [
+    "* 입양인의 주소와 친생부모 주소가 일치할 때 공개. 단, 일치 여부 공개 불가. (If the address of the baby adoptee coincides with any of the birth parent's addresses, this does not prevent the disclosure of the baby adoptee's address. However, the coincidence itself may not be disclosed)",
+    "** 친생부모를 제외한 친가족 및 제3자의 경우 아동과의 관계 공개. (For family members other than birth parents and other third parties, the relation to the adoptee is disclosed.)",
+    "*** 미아 발견자의 주소가 기아 발견 장소와 일치할 때 공개. 단, 일치 여부 공개 불가. (If the location of the discovery of a foundling is the same as the address of the Discoverer of the Lost Child, this does not prevent the disclosure of the discovery location. However, the coincidence itself may not be disclosed)"
+  ],
+
+  "box_categories": [
+    {"name": "친생부모 이름(성 제외)", "rule": "R2", "auto": "name",
+     "guide": "성(family name)은 공개하고 이름(given name)만 가립니다.\n예) Koh, ■■■ / 김■■\n본문에 다시 나오는 이름도 가립니다."},
+    {"name": "친생부모 출생 월·일", "rule": "R2", "auto": "birth",
+     "guide": "출생 연도는 공개하고 월·일(출생 시각 포함)만 가립니다.\n예) 1955. ■■ / ■■■■ 1955\n나이는 기준표상 가림 대상이 아닙니다."},
+    {"name": "친생부모 세부 주소", "rule": "R2", "auto": "addr",
+     "guide": "시·군·구까지 공개하고 그 아래(동·리·번지·호 등)만 가립니다.\n예) 서울 종로구 ■■■■\n* 입양인 주소와 같으면 공개하되, 같다는 사실은 드러내지 않습니다."},
+    {"name": "친생부모 외 친가족 정보", "rule": "R2",
+     "guide": "조부모·형제 등 친생부모 외 친가족의 개인정보를 가립니다.\n** 아동과의 관계(예: 외조모, 오빠)는 공개합니다."},
+    {"name": "위탁가정 개인정보", "rule": "R5",
+     "guide": "위탁모 등 위탁가정의 이름, 주민등록번호, 주소 등을 가립니다.\n위탁가정 사진이 있는 면은 페이지 삭제(일체 삭제)로 처리합니다."},
+    {"name": "입양 종사자 민감정보", "rule": "R6",
+     "guide": "기관장·종사자·공무원·의료관계자의 주민등록번호, 본적만 가립니다.\n이름·직위는 가림 대상이 아닙니다."},
+    {"name": "타 입양인·제3자 개인정보", "rule": "R9",
+     "guide": "다른 입양인, 제3자의 이름, 주민등록번호, 주소 등을 가립니다.\n** 아동과의 관계는 공개합니다.\n대부분이 제3자 정보인 면은 페이지 삭제(일체 삭제)를 검토합니다."},
+    {"name": "미아 발견자 개인정보(이름 제외)", "rule": "R10",
+     "guide": "미아·기아 발견자의 이름은 공개하고 그 외 개인정보(주소, 연락처 등)를 가립니다.\n*** 발견 장소가 발견자 주소와 같으면 발견 장소는 공개하되, 같다는 사실은 드러내지 않습니다."},
+    {"name": "기타(비고에 사유 기재)", "rule": "",
+     "guide": "기준표에 없는 항목입니다. 비고에 사유를 꼭 적으세요.\n안내표의 기준표에는 표시되지 않고 내부 처리내역에만 남습니다."}
   ],
 
   "delete_reasons": [
-    "제3자 개인정보가 대부분인 문서",
-    "비공개 대상 문서",
-    "중복 문서",
-    "기타"
+    {"name": "친생부모 서류 (호적·주민등록·신분증·인감)", "rule": "R1",
+     "guide": "친생부모 호적등본부, 주민등록표 등본, 주민등록증, 인감증명서는 면 전체를 삭제합니다."},
+    {"name": "양부모 서류 (조사서·행정서류·입양 전 사진)", "rule": "R3",
+     "guide": "양부모 조사서, 입양 행정 서류 일체, 입양 전 양부모 사진은 면 전체를 삭제합니다."},
+    {"name": "위탁가정 사진", "rule": "R4",
+     "guide": "위탁가정 사진이 있는 면은 전체를 삭제합니다."},
+    {"name": "기관내·기관간 서류 (입양인 수/발신 아님)", "rule": "R7",
+     "guide": "입양인이 수신인·발신인이 아닌 기관 내외부 이메일, 메모, 공문 등은 면 전체를 삭제합니다."},
+    {"name": "타 입양인·제3자 개인정보 문서", "rule": "R8",
+     "guide": "다른 입양인·제3자의 개인정보가 중심인 문서는 면 전체를 삭제합니다."},
+    {"name": "기타 (비고에 사유 기재)", "rule": "",
+     "guide": "기준표에 없는 사유입니다. 비고에 사유를 꼭 적으세요."}
   ],
+
+  "notice_title": "[Notice] Scope of Disclosure for Adoption Records",
+  "notice_text": [
+    "Greetings from the National Center for the Rights of the Child (NCRC).",
+    "We are committed to making every effort to uphold adoptees' right to know. However, adoption records contain not only information about the adoptee but also personal information relating to other individuals, such as the adoptive parents and foster mother. Therefore, we are required to protect both the adoptee's right to know and the privacy rights of third parties. As a result, certain documents within the adoption records may be withheld or partially redacted.",
+    "For example, with respect to birth parent information, we may disclose the family name, year of birth, and the city/county/district (si/gun/gu) of residence. Additional information may be disclosed in the future if the birth parent provides consent for the release of adoption information.",
+    "Information relating to the adoptive parents and foster mother cannot be disclosed under the current law and has therefore been excluded from the records provided to you.",
+    "We have made every effort to locate and provide every available piece of information related to your adoption. We kindly ask for your understanding that we are only able to disclose information within the limits permitted by applicable law.",
+    "For detailed information regarding the redactions and the applicable disclosure criteria, please refer to the attached Redaction Summary Table on the following page.",
+    "Thank you.",
+    "",
+    "National Center for the Rights of the Child (NCRC)"
+  ],
+  "include_notice": true,
 
   "status_labels": {
     "public": "공개",
@@ -26,6 +101,7 @@
     "deleted": "비공개(삭제)"
   },
 
+  "auto_guide": true,
   "pdf_dpi": 300,
   "box_padding_px": 2,
   "jpeg_quality": 90,

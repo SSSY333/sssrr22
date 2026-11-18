@@ -29,10 +29,10 @@ def main():
         pr = core.Project(tmp)
         pr.user = "테스트"
         a, b, c = pr.pages
-        cat = pr.config["categories"][0]
+        cat = core.cat_list(pr.config)[0]["name"]
         pr.add_box(a, 150, 95, 400, 120, cat)
         pr.add_box(b, 150, 135, 400, 160, cat)
-        pr.set_deleted(c, True, pr.config["delete_reasons"][0])
+        pr.set_deleted(c, True, core.reason_list(pr.config)[0]["name"])
 
         pr.lock(a)
         try:
@@ -53,7 +53,11 @@ def main():
         assert [len(p.boxes) for p in pr.pages] == [1, 1, 0]
         assert all(p.locked for p in pr.pages)
 
-        res = core.export(pr, attach_table="back")
+        rr = {r["id"]: r["pages"] for r in core.build_rule_rows(pr)}
+        assert rr["R2"] == "p. 1-2", rr
+        assert rr["R1"].startswith("1면 삭제") and "p. 3" in rr["R1"], rr
+        assert core.build_rule_rows(pr, 2)[1]["pages"] == "p. 3-4"
+        res = core.export(pr, attach_table="front")
         assert not res["problems"], res["problems"]
         with pymupdf.open(res["pdf"]) as doc:
             assert doc.page_count >= 2

@@ -7,14 +7,17 @@
 from __future__ import annotations
 
 import os
+import queue
 import subprocess
 import sys
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from PIL import Image, ImageTk
 
 import core
+import guide
 
 APP_TITLE = "기록물 비식별 처리 도구"
 MARK = {"todo": "○", "done": "●", "deleted": "✕"}
@@ -24,7 +27,22 @@ class App:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.cfg = core.load_config()
+        self.cats = core.cat_list(self.cfg)[:9]
+        self.reasons = core.reason_list(self.cfg)
         self.project: core.Project | None = None
+        # 자동 인식(OCR) 제안
+        self.sugg: dict[str, list] = {}          # 페이지 key → 제안 목록
+        self.dismissed: dict[str, set] = {}      # 페이지 key → 무시한 제안 번호
+        self.found_names: set[str] = set()
+        self.selected_sugg: int | None = None
+        self.ocr_q: queue.Queue = queue.Queue()
+        self.ocr_busy = False
+        self.ocr_gen = 0
+        self.auto = bool(self.cfg.get("auto_guide", True)) and guide.available()
+        self.sugg_var = tk.StringVar()
+        self.ocr_cache: dict[str, list] = {}     # 페이지 key → OCR 결과(메모리에만 보관)
+        self.ocr_results: queue.Queue = queue.Queue()
+        self.ocr_seq = 0
         self.cur = 0
         self.scale = 1.0
         self.fit_mode = True
@@ -45,6 +63,13 @@ class App:
         self._build_ui()
         self._bind_keys()
         root.protocol("WM_DELETE_WINDOW", self.on_close)
+        if self.auto:
+            threading.Thread(target=self._ocr_worker, daemon=True).start()
+            root.after(200, self._poll_ocr)
+        self.sugg_var.set("" if self.auto else (
+            "자동 인식 꺼짐: OCR(Tesseract)이 설치되어 있지 않습니다." if not guide.available()
+            else "자동 인식 꺼짐 (config.json 의 auto_guide)"))
+        self.show_cat_guide()
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self):
@@ -113,20 +138,67 @@ class App:
         pw.add(mid, weight=1)
 
         # 오른쪽: 작업 패널
-        right = ttk.Frame(pw, padding=6, width=300)
-        self.page_title = ttk.Label(right, text="-", font=("", 11, "bold"), wraplength=280)
+        outer = ttk.Frame(pw, padding=(6, 6, 0, 0))
+        head = ttk.Frame(outer)
+        head.pack(fill=tk.X, padx=(0, 6))
+        self.page_title = ttk.Label(head, text="-", font=("", 11, "bold"), wraplength=330)
         self.page_title.pack(anchor="w", pady=(0, 2))
-        self.page_state = ttk.Label(right, text="", foreground="#555", wraplength=280)
-        self.page_state.pack(anchor="w", pady=(0, 6))
+        self.page_state = ttk.Label(head, text="", foreground="#555", wraplength=330)
+        self.page_state.pack(anchor="w", pady=(0, 4))
+        lr = ttk.Frame(head)
+        lr.pack(fill=tk.X, pady=(0, 6))
+        self.btn_lock = ttk.Button(lr, text="페이지 확정 후 다음 (Enter)", style="Big.TButton",
+                                   command=self.lock_and_next)
+        self.btn_lock.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.btn_unlock = ttk.Button(lr, text="확정 해제", command=self.unlock)
+        self.btn_unlock.pack(side=tk.LEFT, fill=tk.Y, padx=(4, 0))
 
-        cf = ttk.LabelFrame(right, text="가릴 항목 (숫자키 1~9)", padding=4)
+        # 나머지는 화면이 작아도 다 보이도록 스크롤 영역에 넣는다
+        sc = tk.Canvas(outer, width=345, highlightthickness=0)
+        ssb = ttk.Scrollbar(outer, orient=tk.VERTICAL, command=sc.yview)
+        sc.configure(yscrollcommand=ssb.set)
+        ssb.pack(side=tk.RIGHT, fill=tk.Y)
+        sc.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        right = ttk.Frame(sc, padding=(0, 0, 6, 6))
+        win = sc.create_window(0, 0, window=right, anchor="nw")
+        right.bind("<Configure>", lambda _e: sc.configure(scrollregion=sc.bbox("all")))
+        sc.bind("<Configure>", lambda e: sc.itemconfigure(win, width=e.width))
+        right.bind("<Enter>", lambda _e: right.bind_all("<MouseWheel>", lambda e: sc.yview_scroll(
+            -1 if e.delta > 0 else 1, "units")))
+        right.bind("<Leave>", lambda _e: right.unbind_all("<MouseWheel>"))
+
+        cf = ttk.LabelFrame(right, text="가릴 항목 (숫자키 1~9)", padding=(4, 0))
         cf.pack(fill=tk.X)
-        for i, c in enumerate(self.cfg["categories"][:9]):
-            ttk.Radiobutton(cf, text=f"{i + 1}. {c}", value=i, variable=self.cat_var).pack(anchor="w")
+        for i, c in enumerate(self.cats):
+            rid = f" [{c['rule']}]" if c.get("rule") else ""
+            ttk.Radiobutton(cf, text=f"{i + 1}. {c['name']}{rid}", value=i, variable=self.cat_var,
+                            command=self.show_cat_guide).pack(anchor="w")
+
+        gf = ttk.LabelFrame(right, text="비식별 기준 가이드", padding=4)
+        gf.pack(fill=tk.X, pady=(4, 0))
+        self.guide_text = tk.Text(gf, height=5, wrap="word", font=("", 9), relief=tk.FLAT,
+                                  background="#fffbe6", padx=4, pady=2)
+        self.guide_text.pack(fill=tk.X)
+        self.guide_text.config(state="disabled")
+
+        sf = ttk.LabelFrame(right, text="자동 인식 제안 (타이핑된 친생부모 정보)", padding=4)
+        sf.pack(fill=tk.X, pady=(4, 0))
+        ttk.Label(sf, textvariable=self.sugg_var, foreground="#0a5", wraplength=320).pack(anchor="w")
+        self.sugg_list = tk.Listbox(sf, height=4, exportselection=False, font=("", 9))
+        self.sugg_list.pack(fill=tk.X)
+        self.sugg_list.bind("<<ListboxSelect>>", self._on_sugg_select)
+        sr = ttk.Frame(sf)
+        sr.pack(fill=tk.X, pady=(2, 0))
+        self.btn_apply = ttk.Button(sr, text="선택 적용 (A)", command=self.apply_selected_sugg)
+        self.btn_apply.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        self.btn_apply_all = ttk.Button(sr, text="모두 적용", command=self.apply_all_sugg)
+        self.btn_apply_all.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        self.btn_dismiss = ttk.Button(sr, text="무시", command=self.dismiss_sugg)
+        self.btn_dismiss.pack(side=tk.LEFT, expand=True, fill=tk.X)
 
         bf = ttk.LabelFrame(right, text="이 페이지의 블라인드 박스", padding=4)
-        bf.pack(fill=tk.BOTH, expand=True, pady=6)
-        self.box_list = tk.Listbox(bf, height=8, exportselection=False, font=("", 10))
+        bf.pack(fill=tk.BOTH, expand=True, pady=4)
+        self.box_list = tk.Listbox(bf, height=3, exportselection=False, font=("", 9))
         self.box_list.pack(fill=tk.BOTH, expand=True)
         self.box_list.bind("<<ListboxSelect>>", self._on_box_select)
         r = ttk.Frame(bf)
@@ -139,28 +211,23 @@ class App:
         df = ttk.LabelFrame(right, text="페이지 삭제", padding=4)
         df.pack(fill=tk.X)
         self.reason_box = ttk.Combobox(df, textvariable=self.reason_var, state="readonly",
-                                       values=self.cfg["delete_reasons"])
+                                       values=[r["name"] for r in self.reasons])
         self.reason_box.pack(fill=tk.X)
+        self.reason_box.bind("<<ComboboxSelected>>", lambda _e: self.show_reason_guide())
         self.btn_delete_page = ttk.Button(df, text="이 페이지 삭제", command=self.toggle_delete_page)
         self.btn_delete_page.pack(fill=tk.X, pady=(4, 0))
 
-        nf = ttk.LabelFrame(right, text="비고 (안내표에 기록)", padding=4)
-        nf.pack(fill=tk.X, pady=6)
+        nf = ttk.LabelFrame(right, text="비고 (내부 처리내역에 기록)", padding=4)
+        nf.pack(fill=tk.X, pady=4)
         self.note_entry = ttk.Entry(nf, textvariable=self.note_var)
         self.note_entry.pack(fill=tk.X)
         self.note_entry.bind("<FocusOut>", lambda _e: self.save_note())
         self.note_entry.bind("<Return>", lambda _e: (self.save_note(), self.canvas.focus_set()))
 
-        self.btn_lock = ttk.Button(right, text="페이지 확정 후 다음 (Enter)", style="Big.TButton",
-                                   command=self.lock_and_next)
-        self.btn_lock.pack(fill=tk.X, pady=(4, 2))
-        self.btn_unlock = ttk.Button(right, text="확정 해제", command=self.unlock)
-        self.btn_unlock.pack(fill=tk.X)
-
-        ttk.Label(right, foreground="#666", justify=tk.LEFT, wraplength=280, font=("", 9), text=(
+        ttk.Label(right, foreground="#666", justify=tk.LEFT, wraplength=320, font=("", 9), text=(
             "드래그=박스 추가 (이동·크기 변경 불가) · 확정 페이지는 수정 불가\n"
             "PgDn/PgUp 다음/이전 · Ctrl+휠 확대/축소")).pack(anchor="w", pady=(6, 0))
-        pw.add(right, weight=0)
+        pw.add(outer, weight=0)
 
     def _bind_keys(self):
         r = self.root
@@ -174,12 +241,13 @@ class App:
             return h
 
         for i in range(9):
-            r.bind(str(i + 1), guard(lambda _e, i=i: i < len(self.cfg["categories"]) and self.cat_var.set(i)))
+            r.bind(str(i + 1), guard(lambda _e, i=i: self.select_cat(i)))
         r.bind("<Return>", guard(lambda _e: self.lock_and_next()))
         r.bind("<Next>", guard(lambda _e: self.goto(self.cur + 1)))
         r.bind("<Prior>", guard(lambda _e: self.goto(self.cur - 1)))
         r.bind("<Delete>", guard(lambda _e: self.delete_selected_box()))
         r.bind("<Control-z>", guard(lambda _e: self.undo_last()))
+        r.bind("a", guard(lambda _e: self.apply_selected_sugg()))
         r.bind("<Control-plus>", guard(lambda _e: self.zoom(1.25)))
         r.bind("<Control-equal>", guard(lambda _e: self.zoom(1.25)))
         r.bind("<Control-minus>", guard(lambda _e: self.zoom(0.8)))
@@ -235,6 +303,11 @@ class App:
             return
         self.project = proj
         proj.user = self.user_var.get().strip()
+        self.ocr_gen += 1
+        self.sugg.clear()
+        self.dismissed.clear()
+        self.ocr_cache.clear()
+        self.found_names.clear()
         if proj.missing_pages:
             messagebox.showwarning(APP_TITLE, "작업 기록에는 있으나 원본이 없는 페이지가 있습니다:\n"
                                    + "\n".join(proj.missing_pages[:10]), parent=self.root)
@@ -245,6 +318,10 @@ class App:
             self._color_item(i)
         first_todo = next((i for i, p in enumerate(proj.pages) if not p.locked), 0)
         self.goto(first_todo)
+        if self.auto:  # 나머지 페이지도 뒤에서 차례로 미리 분석
+            for i, p in enumerate(proj.pages):
+                if not p.locked and not p.deleted:
+                    self._enqueue(i, 5)
         self.info(f"{len(proj.pages)}쪽을 불러왔습니다. 작업 내용은 자동 저장됩니다 ({core.PROJECT_FILENAME}).")
 
     def _list_text(self, i: int) -> str:
@@ -291,6 +368,12 @@ class App:
         p = self.page
         self.note_var.set(p.note)
         self.reason_var.set(p.delete_reason)
+        self.selected_sugg = None
+        if p.deleted:
+            self.show_reason_guide()
+        else:
+            self.show_cat_guide()
+        self.request_ocr(i)
         self.fit_mode = True
         self.render()
         self.refresh_panel()
@@ -337,6 +420,14 @@ class App:
                                fill="black", outline=outline, width=3 if sel else 1, tags="box")
             c.create_text(ox + b.x0 * s + 2, oy + b.y0 * s - 2, anchor="sw", text=f"#{b.id}",
                           fill=outline, font=("", 9, "bold"), tags="box")
+        if not p.deleted and not p.locked:
+            for i, sg in self._pending_sugg():
+                sel = i == self.selected_sugg
+                col = "#ff2a2a" if sel else "#00b7ff"
+                c.create_rectangle(ox + sg.x0 * s, oy + sg.y0 * s, ox + sg.x1 * s, oy + sg.y1 * s,
+                                   outline=col, width=3 if sel else 2, dash=(6, 3), tags="box")
+                c.create_text(ox + sg.x0 * s, oy + sg.y1 * s + 2, anchor="nw", text=f"제안{i + 1}",
+                              fill=col, font=("", 9, "bold"), tags="box")
         if p.deleted:
             img = self.project.page_image(p)
             c.create_rectangle(ox, oy, ox + img.width * s, oy + img.height * s, fill="#888888",
@@ -394,7 +485,7 @@ class App:
             return
         ox, oy = self.offset
         s = self.scale
-        cat = self.cfg["categories"][self.cat_var.get()]
+        cat = self.cats[self.cat_var.get()]["name"]
         b = self._try(self.project.add_box, p, (x0 - ox) / s, (y0 - oy) / s,
                       (x1 - ox) / s, (y1 - oy) / s, cat)
         if b:
@@ -407,6 +498,11 @@ class App:
         x, y = (cx - ox) / self.scale, (cy - oy) / self.scale
         hit = [b for b in self.page.boxes if b.x0 <= x <= b.x1 and b.y0 <= y <= b.y1]
         self.selected_box = hit[-1].id if hit else None
+        self.selected_sugg = None
+        if not hit:
+            for i, sg in self._pending_sugg():
+                if sg.x0 <= x <= sg.x1 and sg.y0 <= y <= sg.y1:
+                    self.selected_sugg = i
         self._draw_boxes()
         self.refresh_panel()
 
@@ -438,6 +534,7 @@ class App:
             if b.id == self.selected_box:
                 self.box_list.selection_set(tk.END)
 
+        self._refresh_sugg_panel()
         editable = not p.locked
         for w in (self.btn_del_box, self.btn_undo, self.btn_delete_page, self.note_entry):
             w.state(["!disabled"] if editable else ["disabled"])
@@ -525,6 +622,11 @@ class App:
             return
         if not self._need_user():
             return
+        pend = [] if p.deleted else self._pending_sugg()
+        if pend and not messagebox.askyesno(
+                APP_TITLE, f"적용하지 않은 자동 인식 제안이 {len(pend)}개 있습니다.\n"
+                "제안을 확인하지 않고 확정할까요?\n(아니요를 누르면 돌아가서 확인합니다)", parent=self.root):
+            return
         self.save_note()
         self.project.lock(p)
         self._refresh_list_item(self.cur)
@@ -552,6 +654,203 @@ class App:
         self.project.unlock(p, reason.strip())
         self._draw_boxes()
         self._refresh_list_item(self.cur)
+        self.refresh_panel()
+
+    # ------------------------------------------------------------ guide text
+    def select_cat(self, i: int):
+        if i < len(self.cats):
+            self.cat_var.set(i)
+            self.show_cat_guide()
+
+    def _set_guide(self, title: str, body: str):
+        t = self.guide_text
+        t.config(state="normal")
+        t.delete("1.0", tk.END)
+        t.insert(tk.END, title + "\n", "title")
+        t.insert(tk.END, body)
+        t.tag_config("title", font=("", 9, "bold"))
+        t.config(state="disabled")
+
+    def _rule_line(self, rid: str) -> str:
+        r = next((r for r in self.cfg.get("rules", []) if r["id"] == rid), None)
+        if not r:
+            return "기준표 해당 없음 (내부 처리내역에만 기록)"
+        method = self.cfg.get("method_labels", {}).get(r["method"], r["method"]).split("\n")[0]
+        return f"기준표 {rid}: {r['group'].splitlines()[0]} · {method}"
+
+    def show_cat_guide(self):
+        c = self.cats[self.cat_var.get()]
+        self._set_guide(f"{c['name']}  —  {self._rule_line(c.get('rule', ''))}", c.get("guide", ""))
+
+    def show_reason_guide(self):
+        name = self.reason_var.get()
+        r = next((r for r in self.reasons if r["name"] == name), None)
+        if r:
+            self._set_guide(f"페이지 삭제: {r['name']}  —  {self._rule_line(r.get('rule', ''))}",
+                            r.get("guide", ""))
+
+    # ------------------------------------------------------------ 자동 인식(OCR)
+    def _auto_cats(self) -> dict:
+        m = {c["auto"]: c["name"] for c in self.cats if c.get("auto")}
+        fallback = self.cats[0]["name"]
+        return {k: m.get(k, fallback) for k in ("name", "birth", "addr")}
+
+    def _enqueue(self, i: int, prio: int):
+        p = self.project.pages[i]
+        if p.key in self.ocr_cache:
+            return
+        self.ocr_seq += 1
+        self.ocr_q.put((prio, self.ocr_seq, self.ocr_gen, p.key, self.project.folder, p,
+                        int(self.cfg["pdf_dpi"])))
+
+    def request_ocr(self, i: int):
+        if not self.auto or not self.project:
+            return
+        p = self.project.pages[i]
+        if p.deleted or p.locked:
+            return
+        if p.key in self.ocr_cache:
+            self._compute_sugg(p.key)
+        else:
+            self.sugg_var.set("문자 인식 중… (타이핑된 글자만 인식됩니다)")
+            self._enqueue(i, 0)
+
+    def _ocr_worker(self):
+        done = set()
+        while True:
+            prio, _seq, gen, key, folder, pg, dpi = self.ocr_q.get()
+            if gen != self.ocr_gen or (gen, key) in done:
+                continue
+            try:
+                img = core.load_page_image(folder, pg, dpi)
+                passes = guide.ocr_passes(img)
+            except Exception as ex:  # noqa: BLE001
+                passes = ex
+            done.add((gen, key))
+            self.ocr_results.put((gen, key, passes))
+
+    def _poll_ocr(self):
+        changed_cur = False
+        try:
+            while True:
+                gen, key, passes = self.ocr_results.get_nowait()
+                if gen != self.ocr_gen or not self.project:
+                    continue
+                if isinstance(passes, Exception):
+                    self.ocr_cache[key] = []
+                    if self.page and self.page.key == key:
+                        self.sugg_var.set(f"문자 인식 실패: {passes}")
+                    continue
+                self.ocr_cache[key] = passes
+                before = set(self.found_names)
+                self._compute_sugg(key)
+                if self.found_names != before:
+                    # 새로 찾은 친생부모 이름을 이미 분석한 다른 페이지에서도 다시 찾는다
+                    for k in list(self.ocr_cache):
+                        if k != key:
+                            self._compute_sugg(k)
+                    changed_cur = True
+                if self.page and self.page.key == key:
+                    changed_cur = True
+        except queue.Empty:
+            pass
+        if changed_cur and self.page:
+            self._draw_boxes()
+            self.refresh_panel()
+        self.root.after(200, self._poll_ocr)
+
+    def _compute_sugg(self, key: str):
+        passes = self.ocr_cache.get(key) or []
+        sugg, found = guide.analyze_passes(passes, self._auto_cats(), self.found_names)
+        self.found_names |= found
+        self.sugg[key] = sugg
+
+    def _pending_sugg(self):
+        p = self.page
+        if not p or p.key not in self.sugg:
+            return []
+        gone = self.dismissed.get(p.key, set())
+        return [(i, s) for i, s in enumerate(self.sugg[p.key])
+                if i not in gone and not guide.covered(s, p.boxes)]
+
+    def _refresh_sugg_panel(self):
+        p = self.page
+        self.sugg_list.delete(0, tk.END)
+        if not self.auto:
+            return
+        if p.deleted:
+            self.sugg_var.set("삭제 처리된 페이지")
+        elif p.key not in self.sugg:
+            if not p.locked:
+                self.sugg_var.set("문자 인식 중… (타이핑된 글자만 인식됩니다)")
+            else:
+                self.sugg_var.set("확정된 페이지")
+        else:
+            pend = self._pending_sugg()
+            for i, sg in pend:
+                self.sugg_list.insert(tk.END, f"제안{i + 1}  {sg.reason}")
+                if i == self.selected_sugg:
+                    self.sugg_list.selection_set(tk.END)
+            total = len(self.sugg[p.key])
+            if not total:
+                self.sugg_var.set("인식된 친생부모 정보 없음 (손글씨는 직접 확인하세요)")
+            elif not pend:
+                self.sugg_var.set(f"제안 {total}개 모두 처리됨")
+            else:
+                self.sugg_var.set(f"제안 {len(pend)}개 — 파란 점선 확인 후 적용하세요")
+        st = ["!disabled"] if (not p.locked and not p.deleted and self._pending_sugg()) else ["disabled"]
+        for w in (self.btn_apply, self.btn_apply_all, self.btn_dismiss):
+            w.state(st)
+
+    def _on_sugg_select(self, _e=None):
+        sel = self.sugg_list.curselection()
+        pend = self._pending_sugg()
+        if sel and sel[0] < len(pend):
+            self.selected_sugg = pend[sel[0]][0]
+            sg = pend[sel[0]][1]
+            idx = next((k for k, c in enumerate(self.cats) if c["name"] == sg.cat), None)
+            if idx is not None:
+                self.select_cat(idx)
+            self._draw_boxes()
+
+    def _apply(self, items):
+        p = self.page
+        if not p or p.locked or p.deleted or not items:
+            return
+        if not self._need_user():
+            return
+        for i, sg in items:
+            self._try(self.project.add_box, p, sg.x0, sg.y0, sg.x1, sg.y1, sg.cat,
+                      f"(자동 제안 적용: {sg.reason})")
+        self.selected_sugg = None
+        self.info(f"제안 {len(items)}개를 블라인드 박스로 적용했습니다.")
+        self._after_change()
+
+    def apply_selected_sugg(self):
+        pend = dict(self._pending_sugg())
+        if self.selected_sugg in pend:
+            self._apply([(self.selected_sugg, pend[self.selected_sugg])])
+        else:
+            self.info("적용할 제안을 먼저 선택하세요 (목록이나 파란 점선 클릭).")
+
+    def apply_all_sugg(self):
+        pend = self._pending_sugg()
+        if pend and messagebox.askyesno(APP_TITLE, f"제안 {len(pend)}개를 모두 블라인드 박스로 적용할까요?\n"
+                                        "적용 전에 파란 점선 위치를 꼭 확인하세요.", parent=self.root):
+            self._apply(pend)
+
+    def dismiss_sugg(self):
+        p = self.page
+        pend = dict(self._pending_sugg())
+        if not p or self.selected_sugg not in pend:
+            self.info("무시할 제안을 먼저 선택하세요.")
+            return
+        sg = pend[self.selected_sugg]
+        self.dismissed.setdefault(p.key, set()).add(self.selected_sugg)
+        self.project.log("제안 무시", p, sg.reason)
+        self.project.save()
+        self.selected_sugg = None
+        self._draw_boxes()
         self.refresh_panel()
 
     # ------------------------------------------------------------ export
@@ -602,8 +901,13 @@ class App:
         else:
             messagebox.showinfo(APP_TITLE, "내보내기 완료 (검증 통과)\n\n"
                                 f"결과 PDF: {os.path.basename(res['pdf'])}\n"
-                                f"안내표: {os.path.basename(res['xlsx'])}, {os.path.basename(res['table_pdf'])}\n"
+                                f"입양인 안내표: {os.path.basename(res['notice'])}\n"
+                                f"내부용 처리내역: {os.path.basename(res['xlsx'])}, {os.path.basename(res['detail_pdf'])}\n"
                                 f"SHA-256: {res['sha256'][:16]}...", parent=self.root)
+        if res.get("unmapped"):
+            messagebox.showwarning(APP_TITLE, "'기타'로 처리했지만 비고에 사유가 없는 페이지가 있습니다.\n"
+                                   "내부 처리내역에 사유가 남도록 비고를 적고 다시 내보내는 것을 권합니다.\n\n"
+                                   + "\n".join(res["unmapped"][:10]), parent=self.root)
         self._open_path(res["dir"])
 
     def _ask_attach(self):
@@ -612,8 +916,8 @@ class App:
         win.transient(self.root)
         win.grab_set()
         var = tk.StringVar(value=self.cfg.get("attach_table_to_pdf", "none"))
-        ttk.Label(win, text="비식별 안내표를 어떻게 만들까요?", padding=(16, 12, 16, 4)).pack(anchor="w")
-        for v, t in (("none", "별도 파일로만 (엑셀 + PDF)"),
+        ttk.Label(win, text="비식별 기준표(입양인 안내표)를 어떻게 만들까요?", padding=(16, 12, 16, 4)).pack(anchor="w")
+        for v, t in (("none", "별도 파일로만"),
                      ("front", "별도 파일 + 결과 PDF 맨 앞에도 첨부"),
                      ("back", "별도 파일 + 결과 PDF 맨 뒤에도 첨부")):
             ttk.Radiobutton(win, text=t, value=v, variable=var).pack(anchor="w", padx=24)

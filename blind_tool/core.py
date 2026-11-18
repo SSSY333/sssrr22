@@ -51,8 +51,9 @@ def bundled_dir() -> str:
 
 
 DEFAULT_CONFIG = {
-    "categories": ["친생부모 성명(성 제외)", "기타 개인정보"],
-    "delete_reasons": ["비공개 대상 문서", "기타"],
+    "box_categories": [{"name": "기타", "rule": "", "guide": ""}],
+    "delete_reasons": [{"name": "기타", "rule": "", "guide": ""}],
+    "rules": [],
     "status_labels": {"public": "공개", "partial": "부분공개", "deleted": "비공개(삭제)"},
     "pdf_dpi": 300,
     "box_padding_px": 2,
@@ -73,6 +74,24 @@ def load_config() -> dict:
             cfg.update({k: v for k, v in user.items() if not k.startswith("_")})
             break
     return cfg
+
+
+def cat_list(cfg) -> list[dict]:
+    """가릴 항목 목록(문자열만 적힌 옛 설정도 지원)."""
+    out = []
+    for c in cfg.get("box_categories") or cfg.get("categories", []):
+        out.append(c if isinstance(c, dict) else {"name": c, "rule": "", "guide": ""})
+    return out
+
+
+def reason_list(cfg) -> list[dict]:
+    return [r if isinstance(r, dict) else {"name": r, "rule": "", "guide": ""}
+            for r in cfg.get("delete_reasons", [])]
+
+
+def rule_of(cfg, name: str, kind: str) -> str:
+    items = cat_list(cfg) if kind == "box" else reason_list(cfg)
+    return next((c.get("rule", "") for c in items if c["name"] == name), "")
 
 
 def now_str() -> str:
@@ -118,6 +137,20 @@ class PageState:
     @property
     def label(self) -> str:
         return f"{self.file} p{self.index + 1}"
+
+
+def load_page_image(folder: str, pg: PageState, pdf_dpi: int = 300) -> Image.Image:
+    """원본 페이지를 읽어 RGB 이미지로 돌려준다(원본은 읽기만 함, 스레드에서 호출 가능)."""
+    path = os.path.join(folder, pg.file)
+    ext = os.path.splitext(pg.file)[1].lower()
+    if ext in PDF_EXTS:
+        with pymupdf.open(path) as doc:
+            pix = doc[pg.index].get_pixmap(dpi=pdf_dpi, alpha=False)
+            return Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+    with Image.open(path) as src:
+        if getattr(src, "n_frames", 1) > 1:
+            src.seek(pg.index)
+        return src.convert("RGB")
 
 
 class ProjectError(Exception):
@@ -235,17 +268,7 @@ class Project:
         if pg.key in self._cache:
             self._cache.move_to_end(pg.key)
             return self._cache[pg.key]
-        path = os.path.join(self.folder, pg.file)
-        ext = os.path.splitext(pg.file)[1].lower()
-        if ext in PDF_EXTS:
-            with pymupdf.open(path) as doc:
-                pix = doc[pg.index].get_pixmap(dpi=int(self.config["pdf_dpi"]), alpha=False)
-                im = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-        else:
-            with Image.open(path) as src:
-                if getattr(src, "n_frames", 1) > 1:
-                    src.seek(pg.index)
-                im = src.convert("RGB")
+        im = load_page_image(self.folder, pg, int(self.config["pdf_dpi"]))
         self._cache[pg.key] = im
         while len(self._cache) > 6:
             self._cache.popitem(last=False)
@@ -268,7 +291,7 @@ class Project:
         if pg.locked:
             raise LockedError("확정된 페이지는 수정할 수 없습니다. 먼저 '확정 해제'를 하세요.")
 
-    def add_box(self, pg: PageState, x0, y0, x1, y1, cat: str) -> Box:
+    def add_box(self, pg: PageState, x0, y0, x1, y1, cat: str, source: str = "") -> Box:
         self._check_editable(pg)
         if pg.deleted:
             raise ProjectError("삭제 처리된 페이지에는 박스를 넣을 수 없습니다.")
@@ -282,7 +305,7 @@ class Project:
         b = Box(self.next_box_id, x0, y0, x1, y1, cat, now_str(), self.user)
         self.next_box_id += 1
         pg.boxes.append(b)
-        self.log("박스 추가", pg, f"#{b.id} {cat} ({x0},{y0})-({x1},{y1})")
+        self.log("박스 추가", pg, f"#{b.id} {cat} ({x0},{y0})-({x1},{y1}){' ' + source if source else ''}")
         self.save()
         return b
 
@@ -392,25 +415,90 @@ def summarize_cats(boxes) -> str:
     return ", ".join(f"{k} {v}" for k, v in cnt.items())
 
 
-TABLE_COLUMNS = ["연번", "원본 파일", "원본 쪽", "출력 쪽", "처리 구분",
+TABLE_COLUMNS = ["연번", "원본 파일", "원본 쪽", "출력 쪽", "처리 구분", "적용 기준",
                  "비식별 항목(개수)", "가린 영역 수", "삭제 사유", "비고", "확정자", "확정 일시"]
 
 
 def build_rows(project: Project):
+    """페이지별 처리 내역(내부용)."""
     rows, out_no = [], 0
+    cfg = project.config
     for i, pg in enumerate(project.pages, 1):
         if pg.deleted:
             out_page = "-"
+            rules = rule_of(cfg, pg.delete_reason, "reason")
         else:
             out_no += 1
             out_page = out_no
+            rules = ", ".join(sorted({rule_of(cfg, b.cat, "box") or "기타" for b in pg.boxes},
+                                     key=natural_key))
         rows.append([
-            i, pg.file, pg.index + 1, out_page, project.status(pg),
+            i, pg.file, pg.index + 1, out_page, project.status(pg), rules or ("기타" if pg.deleted else ""),
             "" if pg.deleted else summarize_cats(pg.boxes),
             0 if pg.deleted else len(pg.boxes),
             pg.delete_reason, pg.note, pg.locked_by, pg.locked_at,
         ])
     return rows
+
+
+def compress_pages(nums) -> str:
+    nums = sorted(set(nums))
+    out, i = [], 0
+    while i < len(nums):
+        j = i
+        while j + 1 < len(nums) and nums[j + 1] == nums[j] + 1:
+            j += 1
+        out.append(str(nums[i]) if i == j else f"{nums[i]}-{nums[j]}")
+        i = j + 1
+    return ", ".join(out)
+
+
+def build_rule_rows(project: Project, page_offset: int = 0):
+    """비식별 기준표 각 행에 '비식별 처리 면'을 채운다.
+
+    부분 삭제: 결과 PDF의 쪽 번호(안내표를 앞에 붙이면 그만큼 밀린 번호)
+    일체 삭제: 결과물에서 빠졌으므로 원본 기록물 기준 쪽 번호와 면 수
+    """
+    cfg = project.config
+    partial: dict[str, list[int]] = {}
+    whole: dict[str, list[int]] = {}
+    out_no = 0
+    for orig_no, pg in enumerate(project.pages, 1):
+        if pg.deleted:
+            r = rule_of(cfg, pg.delete_reason, "reason")
+            if r:
+                whole.setdefault(r, []).append(orig_no)
+            continue
+        out_no += 1
+        for b in pg.boxes:
+            r = rule_of(cfg, b.cat, "box")
+            if r:
+                partial.setdefault(r, []).append(out_no + page_offset)
+    rows = []
+    for rule in cfg.get("rules", []):
+        rid = rule["id"]
+        if rule["method"] == "whole":
+            pages = whole.get(rid, [])
+            cell = f"{len(pages)}면 삭제\n(원본 p. {compress_pages(pages)})" if pages else "-"
+        else:
+            pages = partial.get(rid, [])
+            cell = f"p. {compress_pages(pages)}" if pages else "-"
+        rows.append({**rule, "pages": cell,
+                     "method_label": cfg.get("method_labels", {}).get(rule["method"], rule["method"])})
+    return rows
+
+
+def unmapped_items(project: Project):
+    """기준표에 연결되지 않은(기타) 처리 중 비고가 없는 페이지."""
+    cfg = project.config
+    out = []
+    for pg in project.pages:
+        if pg.deleted:
+            if not rule_of(cfg, pg.delete_reason, "reason") and not pg.note:
+                out.append(pg.label)
+        elif any(not rule_of(cfg, b.cat, "box") for b in pg.boxes) and not pg.note:
+            out.append(pg.label)
+    return out
 
 
 def build_summary(project: Project, pdf_name: str, digest: str, verify_msg: str):
@@ -435,80 +523,221 @@ def build_summary(project: Project, pdf_name: str, digest: str, verify_msg: str)
     ]
 
 
-def write_xlsx(path, summary, rows, events):
+def write_xlsx(path, summary, rows, events, rule_rows):
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
     wb = Workbook()
-    ws = wb.active
-    ws.title = "비식별 안내표"
     thin = Side(style="thin", color="999999")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
     head_fill = PatternFill("solid", fgColor="DDE3EA")
+    wrap_top = Alignment(vertical="top", wrap_text=True)
 
-    ws.append(["기록물 비식별 처리 안내표"])
+    def header(ws, cols):
+        ws.append(cols)
+        r = ws.max_row
+        for c in range(1, len(cols) + 1):
+            cell = ws.cell(r, c)
+            cell.font = Font(bold=True)
+            cell.fill = head_fill
+            cell.border = border
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        return r
+
+    # 1. 비식별 기준표 (입양인 안내용과 같은 내용)
+    ws = wb.active
+    ws.title = "비식별 기준표"
+    ws.append(["비식별 기준표 (Redaction Summary Table)"])
     ws["A1"].font = Font(size=14, bold=True)
     ws.append([])
-    for k, v in summary:
-        ws.append([k, v])
-        ws.cell(ws.max_row, 1).font = Font(bold=True)
-    ws.append([])
-    ws.append(TABLE_COLUMNS)
-    hr = ws.max_row
-    for c in range(1, len(TABLE_COLUMNS) + 1):
-        cell = ws.cell(hr, c)
-        cell.font = Font(bold=True)
-        cell.fill = head_fill
-        cell.border = border
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    for r in rows:
-        ws.append(r)
-        for c in range(1, len(r) + 1):
-            cell = ws.cell(ws.max_row, c)
-            cell.border = border
-            cell.alignment = Alignment(vertical="top", wrap_text=True)
-    widths = [6, 28, 8, 8, 12, 40, 10, 24, 24, 10, 19]
-    for i, w in enumerate(widths, 1):
-        ws.column_dimensions[ws.cell(1, i).column_letter].width = w
-    ws.freeze_panes = ws.cell(hr + 1, 1)
+    header(ws, ["기준", "구분 (Category)", "비식별 대상 문서 및 정보 유형 (Type of Document/Information)",
+                "비식별화 방식 (Redaction Type)", "비식별 처리 면 (Redaction Page)"])
+    for r in rule_rows:
+        ws.append([r["id"], r["group"], r["items"], r["method_label"], r["pages"]])
+        for c in range(1, 6):
+            ws.cell(ws.max_row, c).border = border
+            ws.cell(ws.max_row, c).alignment = wrap_top
+    for col, w in zip("ABCDE", [6, 28, 60, 18, 24]):
+        ws.column_dimensions[col].width = w
 
+    # 2. 페이지별 처리 내역 (내부용)
+    ws1 = wb.create_sheet("페이지별 처리내역(내부)")
+    ws1.append(["기록물 비식별 처리 내역 (내부용)"])
+    ws1["A1"].font = Font(size=14, bold=True)
+    ws1.append([])
+    for k, v in summary:
+        ws1.append([k, v])
+        ws1.cell(ws1.max_row, 1).font = Font(bold=True)
+    ws1.append([])
+    hr = header(ws1, TABLE_COLUMNS)
+    for r in rows:
+        ws1.append(r)
+        for c in range(1, len(r) + 1):
+            ws1.cell(ws1.max_row, c).border = border
+            ws1.cell(ws1.max_row, c).alignment = wrap_top
+    widths = [6, 28, 8, 8, 12, 12, 40, 10, 30, 24, 10, 19]
+    for i, w in enumerate(widths, 1):
+        ws1.column_dimensions[ws1.cell(1, i).column_letter].width = w
+    ws1.freeze_panes = ws1.cell(hr + 1, 1)
+
+    # 3. 처리 이력
     ws2 = wb.create_sheet("처리 이력")
-    ws2.append(["일시", "작업자", "동작", "페이지", "내용"])
-    for c in range(1, 6):
-        ws2.cell(1, c).font = Font(bold=True)
-        ws2.cell(1, c).fill = head_fill
+    header(ws2, ["일시", "작업자", "동작", "페이지", "내용"])
     for e in events:
         ws2.append([e["time"], e["user"], e["action"], e["page"], e["detail"]])
-    for col, w in zip("ABCDE", [19, 10, 14, 30, 50]):
+    for col, w in zip("ABCDE", [19, 10, 14, 30, 60]):
         ws2.column_dimensions[col].width = w
     wb.save(path)
 
 
-def render_table_pages(summary, rows) -> list[Image.Image]:
-    """안내표를 A4 가로 이미지 페이지(150dpi)로 그린다."""
-    W, H, M = 1754, 1240, 60
+# ---------------------------------------------------------------- 그리기 도구
+
+def _font_factory():
     font_path = find_korean_font()
 
     def F(size):
         if font_path:
             return ImageFont.truetype(font_path, size)
         return ImageFont.load_default()
+    return F
 
+
+def _wrap(text, font, width) -> list[str]:
+    """글자 단위 줄바꿈(영문은 가능하면 단어 단위). 줄바꿈 문자 유지."""
+    lines = []
+    for para in str(text).split("\n"):
+        cur = ""
+        for word in re.split(r"(\s+)", para):
+            if font.getlength(cur + word) <= width:
+                cur += word
+                continue
+            if cur.strip():
+                lines.append(cur.rstrip())
+                cur = ""
+            word = word.lstrip()
+            while font.getlength(word) > width:  # 아주 긴 단어는 글자 단위로
+                k = 1
+                while k < len(word) and font.getlength(word[:k + 1]) <= width:
+                    k += 1
+                lines.append(word[:k])
+                word = word[k:]
+            cur = word
+        lines.append(cur.rstrip())
+    return lines
+
+
+def render_notice_pages(cfg, rule_rows, include_notice=True) -> list[Image.Image]:
+    """입양인 안내용: 안내문 + 비식별 기준표(처리 면 기재). A4 세로 150dpi."""
+    W, H, M = 1240, 1754, 90
+    F = _font_factory()
+    f_title, f_body, f_cell, f_head, f_small = F(30), F(21), F(17), F(17), F(15)
+    pages = []
+
+    if include_notice and cfg.get("notice_text"):
+        page = Image.new("RGB", (W, H), "white")
+        d = ImageDraw.Draw(page)
+        y = M + 20
+        for ln in _wrap(cfg.get("notice_title", ""), f_title, W - 2 * M):
+            d.text((M, y), ln, font=f_title, fill="black")
+            y += 42
+        y += 30
+        for para in cfg["notice_text"]:
+            for ln in _wrap(para, f_body, W - 2 * M):
+                d.text((M, y), ln, font=f_body, fill="black")
+                y += 31
+            y += 16
+        pages.append(page)
+
+    cols = [("구분\n(Category)", 230),
+            ("비식별 대상 문서 및 정보 유형\n(Type of Document/Information)", 450),
+            ("비식별화 방식\n(Redaction Type)", 180),
+            ("비식별 처리 면\n(Redaction Page)", 200)]
+    tw = sum(w for _n, w in cols)
+    X0 = (W - tw) // 2
+    lh = 22
+
+    # 같은 구분(및 같은 유형)이 이어지면 셀을 합친다 (원본 표와 같은 모양)
+    def spans(key):
+        res, i = [], 0
+        while i < len(rule_rows):
+            j = i
+            while j + 1 < len(rule_rows) and key(rule_rows[j + 1]) == key(rule_rows[i]):
+                j += 1
+            res.append((i, j))
+            i = j + 1
+        return res
+
+    g_spans = spans(lambda r: r["group"])
+    i_spans = spans(lambda r: (r["group"], r["items"]))
+    heights = []
+    for r in rule_rows:
+        hs = [len(_wrap(r["method_label"], f_cell, cols[2][1] - 16)),
+              len(_wrap(r["pages"], f_cell, cols[3][1] - 16))]
+        heights.append(max(hs) * lh + 16)
+    # 합친 셀의 글이 들어가도록 행 높이 보정
+    for (a, b), col, key in [(s, 0, "group") for s in g_spans] + [(s, 1, "items") for s in i_spans]:
+        need = len(_wrap(rule_rows[a][key], f_cell, cols[col][1] - 16)) * lh + 16
+        have = sum(heights[a:b + 1])
+        if need > have:
+            extra = need - have
+            for k in range(a, b + 1):
+                heights[k] += extra // (b - a + 1) + 1
+
+    page = Image.new("RGB", (W, H), "white")
+    d = ImageDraw.Draw(page)
+    y = M
+    d.text((M, y), "비식별 기준표 (Redaction Summary Table)", font=f_title, fill="black")
+    y += 60
+    hh = 2 * lh + 16
+    x = X0
+    for name, w in cols:
+        d.rectangle([x, y, x + w, y + hh], fill=(221, 227, 234), outline="black")
+        for k, ln in enumerate(name.split("\n")):
+            tw_ = f_head.getlength(ln)
+            d.text((x + (w - tw_) / 2, y + 8 + k * lh), ln, font=f_head, fill="black")
+        x += w
+    y += hh
+    tops = []
+    for h in heights:
+        tops.append(y)
+        y += h
+
+    def cell(col, a, b, text, center=False):
+        x = X0 + sum(w for _n, w in cols[:col])
+        w = cols[col][1]
+        top, bot = tops[a], tops[b] + heights[b]
+        d.rectangle([x, top, x + w, bot], outline="black")
+        lines = _wrap(text, f_cell, w - 16)
+        ty = top + 8 if not center else top + (bot - top - len(lines) * lh) / 2
+        for k, ln in enumerate(lines):
+            tx = x + 8 if not center else x + (w - f_cell.getlength(ln)) / 2
+            d.text((tx, ty + k * lh), ln, font=f_cell, fill="black")
+
+    for a, b in g_spans:
+        cell(0, a, b, rule_rows[a]["group"], center=True)
+    for a, b in i_spans:
+        cell(1, a, b, rule_rows[a]["items"])
+    for k, r in enumerate(rule_rows):
+        cell(2, k, k, r["method_label"], center=True)
+        cell(3, k, k, r["pages"], center=True)
+    y += 24
+    for fn in cfg.get("footnotes", []):
+        for ln in _wrap(fn, f_small, W - 2 * M):
+            d.text((M, y), ln, font=f_small, fill="black")
+            y += 21
+        y += 6
+    pages.append(page)
+    return pages
+
+
+def render_detail_pages(summary, rows) -> list[Image.Image]:
+    """내부용 페이지별 처리 내역(A4 가로 150dpi)."""
+    W, H, M = 1754, 1240, 60
+    F = _font_factory()
     f_title, f_txt, f_small = F(34), F(20), F(18)
-    cols = [("연번", 60), ("원본 파일", 300), ("원본 쪽", 80), ("출력 쪽", 80),
-            ("처리 구분", 130), ("비식별 항목(개수)", 520), ("영역 수", 80), ("삭제 사유 / 비고", 384)]
-
-    def wrap(text, font, width):
-        text = str(text)
-        lines, cur = [], ""
-        for ch in text:
-            if font.getlength(cur + ch) > width - 12:
-                lines.append(cur)
-                cur = ch
-            else:
-                cur += ch
-        lines.append(cur)
-        return lines
+    cols = [("연번", 60), ("원본 파일", 280), ("원본 쪽", 75), ("출력 쪽", 75),
+            ("처리 구분", 120), ("기준", 90), ("비식별 항목(개수)", 470), ("영역 수", 70),
+            ("삭제 사유 / 비고", 394)]
 
     pages, page, d, y = [], None, None, 0
 
@@ -518,13 +747,14 @@ def render_table_pages(summary, rows) -> list[Image.Image]:
         d = ImageDraw.Draw(page)
         y = M
         if first:
-            d.text((M, y), "기록물 비식별 처리 안내표", font=f_title, fill="black")
+            d.text((M, y), "기록물 비식별 처리 내역 (내부용)", font=f_title, fill="black")
             y += 60
             for k, v in summary:
                 d.text((M, y), f"{k}", font=f_txt, fill="black")
-                for j, ln in enumerate(wrap(v, f_txt, W - 2 * M - 260)):
+                wl = _wrap(v, f_txt, W - 2 * M - 260)
+                for j, ln in enumerate(wl):
                     d.text((M + 260, y + j * 26), ln, font=f_txt, fill="black")
-                y += 26 * max(1, len(wrap(v, f_txt, W - 2 * M - 260)))
+                y += 26 * max(1, len(wl))
             y += 20
         x = M
         d.rectangle([M, y, W - M, y + 34], fill=(221, 227, 234), outline="gray")
@@ -537,9 +767,9 @@ def render_table_pages(summary, rows) -> list[Image.Image]:
 
     new_page(True)
     for r in rows:
-        cells = [r[0], r[1], r[2], r[3], r[4], r[5], r[6],
-                 " / ".join(s for s in (r[7], r[8]) if s)]
-        wrapped = [wrap(c, f_small, w) for c, (_n, w) in zip(cells, cols)]
+        cells = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7],
+                 " / ".join(s for s in (r[8], r[9]) if s)]
+        wrapped = [_wrap(c, f_small, w - 12) for c, (_n, w) in zip(cells, cols)]
         h = 10 + 24 * max(len(wl) for wl in wrapped)
         if y + h > H - M:
             new_page(False)
@@ -561,6 +791,14 @@ def _image_page(doc, img: Image.Image, dpi: float, quality: int):
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=quality, subsampling=0, optimize=True)
     page.insert_image(page.rect, stream=buf.getvalue())
+
+
+def _images_to_pdf(path, images, dpi=150):
+    doc = pymupdf.open()
+    for im in images:
+        _image_page(doc, im, dpi, 92)
+    doc.save(path, garbage=4, deflate=True)
+    doc.close()
 
 
 def verify_pdf(pdf_path: str, expected):
@@ -590,7 +828,7 @@ def verify_pdf(pdf_path: str, expected):
                 if x1 <= x0 or y1 <= y0:
                     continue
                 region = img.crop((x0, y0, min(x1, img.width), min(y1, img.height)))
-                lo, hi = region.getextrema()
+                _lo, hi = region.getextrema()
                 if hi > 60:
                     problems.append(f"{n}쪽 박스 #{b.id}: 덮이지 않은 픽셀(밝기 {hi})")
     return problems
@@ -598,7 +836,7 @@ def verify_pdf(pdf_path: str, expected):
 
 def export(project: Project, out_root: str | None = None, attach_table: str | None = None,
            progress=None):
-    """결과 PDF + 안내표(xlsx, pdf)를 만든다. 결과 파일 경로들을 반환."""
+    """결과 PDF + 안내표(입양인용 PDF, 내부용 엑셀·PDF)를 만든다."""
     cfg = project.config
     if cfg.get("require_all_confirmed", True):
         pending = [p.label for p in project.pages if not p.locked]
@@ -606,14 +844,27 @@ def export(project: Project, out_root: str | None = None, attach_table: str | No
             raise ProjectError(f"확정하지 않은 페이지가 {len(pending)}개 있습니다.\n"
                                f"예: {', '.join(pending[:5])}")
     attach_table = attach_table or cfg.get("attach_table_to_pdf", "none")
+    include_notice = bool(cfg.get("include_notice", True))
 
     stamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     name = os.path.basename(project.folder.rstrip("\\/")) or "기록물"
     out_dir = os.path.join(out_root or project.folder, f"_비식별결과_{stamp}")
     os.makedirs(out_dir, exist_ok=False)
     pdf_path = os.path.join(out_dir, f"{name}_비식별.pdf")
-    xlsx_path = os.path.join(out_dir, f"{name}_비식별안내표.xlsx")
-    table_pdf_path = os.path.join(out_dir, f"{name}_비식별안내표.pdf")
+    notice_path = os.path.join(out_dir, f"{name}_비식별안내표.pdf")
+    xlsx_path = os.path.join(out_dir, f"{name}_내부용_처리내역.xlsx")
+    detail_path = os.path.join(out_dir, f"{name}_내부용_처리내역.pdf")
+
+    # 안내표를 앞에 붙이면 기록물 쪽 번호가 그만큼 밀린다
+    offset = 0
+    if attach_table == "front":
+        for _ in range(3):
+            n = len(render_notice_pages(cfg, build_rule_rows(project, offset), include_notice))
+            if n == offset:
+                break
+            offset = n
+    rule_rows = build_rule_rows(project, offset)
+    notice_pages = render_notice_pages(cfg, rule_rows, include_notice)
 
     pad = int(cfg.get("box_padding_px", 2))
     quality = int(cfg.get("jpeg_quality", 90))
@@ -634,19 +885,17 @@ def export(project: Project, out_root: str | None = None, attach_table: str | No
                       "keywords": ""})
     doc.del_xml_metadata()
 
-    rows = build_rows(project)
     if attach_table in ("front", "back"):
-        pre = build_summary(project, os.path.basename(pdf_path), "(안내표 포함본이라 별도 산출)", "아래 참조")
-        tpages = render_table_pages(pre, rows)
         tdoc = pymupdf.open()
-        for tp in tpages:
+        for tp in notice_pages:
             _image_page(tdoc, tp, 150, 92)
+        blank = [(0, 0, [])] * len(notice_pages)
         if attach_table == "front":
             doc.insert_pdf(tdoc, start_at=0)
-            expected = [(0, 0, [])] * len(tpages) + expected
+            expected = blank + expected
         else:
             doc.insert_pdf(tdoc)
-            expected = expected + [(0, 0, [])] * len(tpages)
+            expected = expected + blank
         tdoc.close()
 
     save_kw = dict(garbage=4, deflate=True)
@@ -670,15 +919,14 @@ def export(project: Project, out_root: str | None = None, attach_table: str | No
     project.log("내보내기", None, f"{os.path.basename(out_dir)} / {verify_msg} / SHA-256 {digest}")
     project.save()
 
-    write_xlsx(xlsx_path, summary, rows, project.events)
-    tdoc = pymupdf.open()
-    for tp in render_table_pages(summary, rows):
-        _image_page(tdoc, tp, 150, 92)
-    tdoc.save(table_pdf_path, garbage=4, deflate=True)
-    tdoc.close()
+    rows = build_rows(project)
+    _images_to_pdf(notice_path, notice_pages)
+    write_xlsx(xlsx_path, summary, rows, project.events, rule_rows)
+    _images_to_pdf(detail_path, render_detail_pages(summary, rows))
 
     with open(os.path.join(out_dir, "SHA256.txt"), "w", encoding="utf-8") as f:
         f.write(f"{digest}  {os.path.basename(pdf_path)}\n")
 
-    return {"dir": out_dir, "pdf": pdf_path, "xlsx": xlsx_path, "table_pdf": table_pdf_path,
-            "sha256": digest, "problems": problems}
+    return {"dir": out_dir, "pdf": pdf_path, "notice": notice_path, "xlsx": xlsx_path,
+            "detail_pdf": detail_path, "sha256": digest, "problems": problems,
+            "unmapped": unmapped_items(project)}
