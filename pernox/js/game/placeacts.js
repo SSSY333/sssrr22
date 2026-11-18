@@ -102,9 +102,26 @@ PX.Place = (() => {
     St.advance(40); reward('sr_watch', 3); } });
 
   // ---------- 은밀숙소 객실 (연인 · 노골적 묘사 없음) ----------
-  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_window', t: '🌃 창밖 야경 같이 보기', s: 4, run: async () => {
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_jungle', 'inn_retro'], { id: 'in_window', t: '🌃 창밖 야경 같이 보기', s: 4, when: night, run: async () => {
     await say(null, [['N:창밖으로 루비웨이 네온이 흐른다. 대위가 뒤에서 안는다.', 'C:시끄러운 동네인데 여기서 보니까 조용하다.', 'C^:너 있어서 그런가.'], ['C*:오늘 하루 어땠어?', 'P:마지막이 제일 좋았어.', 'C:…아직 안 끝났어. 하루.']]);
     reward('in_window', 3); } });
+  add('inn_orbit', { id: 'in_float', t: '🪐 저중력 모드로 같이 떠 있기', sub: '침대 옆 버튼', s: 4, run: async () => {
+    await say(null, [['N:버튼을 누르자 몸이 둥실 떠오른다. 대위가 허공에서 허우적거리다 내 손을 붙잡는다.', 'C;:…균형 잡는 거 생각보다 어렵다.', 'C^:손 놓지 마. 우주 미아 되기 싫어.'],
+      ['N:천천히 떠다니며 창밖 행성을 같이 본다. 대위가 뒤에서 허리를 감는다.', 'C:…무게가 없으니까 너를 계속 안고 있을 수 있겠다.', 'C*:중력 돌아와도 안 내려놓을 거지만.']]);
+    St.advance(30); reward('in_float', 4, ['궤도 객실', '저중력 객실에서 대위와 허공에 떠서 행성을 봤다.']); } });
+  add('inn_jungle', { id: 'in_rain', t: '🌧️ 빗소리 크게 틀고 누워 있기', s: 4, run: async () => {
+    await say(null, [['N:빗소리가 방을 가득 채운다. 대위가 팔베개를 하고 천장의 반딧불을 센다.', 'C:…열둘, 열셋. 너 세는 거 방해하지 마.', 'C^:몇 개였는지 까먹었다. 너 때문에.'],
+      ['C:외곽에서 비 맞으며 매복할 때 이런 상상 했어.', 'C*:지붕 있는 데서, 너랑, 빗소리만 듣는 거.']]);
+    St.advance(40); reward('in_rain', 3); } });
+  add('inn_retro', { id: 'in_arcade', t: '🕹️ 오락기 한 판 · 진 사람이 동전', s: 4, run: async () => {
+    const win = Math.random() < 0.5;
+    await say(null, [win ? ['N:대위가 진지하게 레버를 잡는다. 결과는 대위의 완패.', 'C;:…이 기계 고장 났어.', 'P:동전 넣어.', 'C*:…알았어. 침대에 넣으라는 거지?', 'N:침대가 덜덜 흔들린다. 둘 다 배를 잡고 웃는다.']
+      : ['N:대위가 이긴다. 오락기 화면에 "NEW RECORD"가 깜빡인다.', 'C^:수색팀 반사 신경 무시하지 마.', 'C*:벌칙. 주크박스에서 내가 고른 노래 들으면서 춤추기.']]);
+    St.advance(20); reward('in_arcade', 3); } });
+  add('inn_glacier', { id: 'in_ice', t: '🧊 얼음 벽에 이름 새기기', s: 4, run: async () => {
+    await say(null, [['N:대위가 얼음 벽에 손가락으로 두 사람의 이름을 쓴다. 금방 김이 서려 흐려진다.', 'C:…녹으면 다시 쓰면 돼. 매번.', 'C*:그러니까 또 오자.'],
+      ['N:얼음 조각 하나를 떼어 대위가 내 입에 넣어 준다. 이가 시리다.', 'C^:이게 내 행복의 맛이야. 이제 너도 알지.', 'P:…{ob}는 이상해.', 'C~:응. 근데 너도 이상한 나 좋아하잖아.']]);
+    St.advance(20); reward('in_ice', 3, ['빙하 동굴 객실', '얼음 벽에 대위가 둘의 이름을 썼다. 녹으면 또 쓰자고 했다.']); } });
   add('inn_bath', { id: 'in_hair', t: '💨 머리 말려 주기', sub: '대위가 말려 준다', s: 4, run: async () => {
     await say(null, [['N:대위가 수건으로 머리를 조심조심 눌러 말린다. 큰 손이 의외로 섬세하다.', 'C:뜨거우면 말해. 드라이기 처음 써 봐.', 'C*:…거짓말이야. 연습했어. 너 해 주려고.']]);
     reward('in_hair', 4); } });
@@ -346,9 +363,9 @@ PX.Place = (() => {
 
   const held = (fn) => async () => { const g = G(); g.modal++; try { await fn(); } finally { PX.Dlg.close(); g.modal--; } };
   add('rubyway', { id: 'rw_inn', t: '🗝️ 은밀숙소 가자고 하기', sub: '밤 · 연인', s: 4, when: night, run: held(() => PX.InnNight.suggest('street')) });
-  add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, run: held(() => PX.InnNight.suggest('lobby')) });
-  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
-  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
+  add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, when: () => !PX.Act.innLeaving(), run: held(() => PX.InnNight.suggest('lobby')) });
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_orbit', 'inn_jungle', 'inn_retro', 'inn_glacier'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_orbit', 'inn_jungle', 'inn_retro', 'inn_glacier'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
 
   // ---------- 지금 할 수 있는 것 ----------
   function list() {

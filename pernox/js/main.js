@@ -92,6 +92,7 @@
   function enterMap(id, x, y, silent) {
     if (id !== 'mask' && PX.Ruby) PX.Ruby.unmask();
     Game.prevMap = Game.mapId;
+    { const S = St.S, pm = PX.MAPS[Game.prevMap] || {}; if (PX.MAPS[id] && PX.MAPS[id].innRoom) S.cap.innLeftAt = 0; else if (pm.innRoom && id === 'inn') S.cap.innLeftAt = St.absMin(); } // 은밀숙소: 막 나온 길인지
     Game.mapId = id; Game.enteredAt = St.absMin(); Game.enteredReal = performance.now();
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;

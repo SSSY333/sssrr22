@@ -358,8 +358,9 @@ PX.Cap = (() => {
     const cand = [[1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1]].map(([dx, dy]) => [px + dx, py + dy]).filter(([x, y]) => PX.W.walkable(m, x, y));
     if (cand.length) { cap.x = cand[0][0] + 0.5; cap.y = cand[0][1] + 0.5; }
     if (M) M.apply(); // 손잡기·팔짱은 문을 지나도 이어진다
-    if (to === 'inn' && S.rel.cap.stage >= 4 && !(PX.Plan && PX.Plan.cur() && PX.Plan.cur().id === 'inn')) setTimeout(() => g.trigger(() => PX.Act.innDesk(true)), 900); // 같이 들어오면 프런트가 바로 방을 묻는다
-    if (to === 'rubyway' && V.ruby && S.done.rubyLine !== S.day) { S.done.rubyLine = S.day; const bd = PX.Dlg.pick('v_ruby', V.ruby); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
+    if (to === 'inn' && S.rel.cap.stage >= 4 && !PX.Act.innLeaving() && !(PX.Plan && PX.Plan.cur() && PX.Plan.cur().id === 'inn')) setTimeout(() => g.trigger(() => PX.Act.innDesk(true)), 900); // 같이 들어오면 프런트가 바로 방을 묻는다
+    if (to === 'rubyway' && from === 'inn' && PX.Act.innLeaving() && V.rubyOut) { const bd = PX.Dlg.pick('v_rubyOut', V.rubyOut); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
+    else if (to === 'rubyway' && V.ruby && S.done.rubyLine !== S.day) { S.done.rubyLine = S.day; const been = Object.keys(S.done).some(k => /^inn_inn_/.test(k)) || S.done.innNightMem; const bd = PX.Dlg.pick('v_ruby', been ? V.ruby.filter(x => !/처음/.test(JSON.stringify(x))) : V.ruby); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
     if (to === 'q_captain' && V.capHome && S.done.capHomeLine !== S.day) { S.done.capHomeLine = S.day; const bd = PX.Dlg.pick('v_capHome', V.capHome); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
   }
   // 밖에서 기다리던 대위: 플레이어가 나오면 다시 동행

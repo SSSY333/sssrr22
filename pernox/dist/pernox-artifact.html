@@ -2618,6 +2618,18 @@ PX.S = (() => {
   room('inn_water', Object.assign({}, INN, { name: '은밀숙소 · 물침대 객실', floor: 'neonfloor', wall: '#1f2a4a', stars: true,
     furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 8, 0, 0], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
     walls: [['B', 2.0, 'window', 1.4], ['B', 7.0, 'window', 1.4]] }));
+  room('inn_orbit', Object.assign({}, INN, { name: '은밀숙소 · 궤도 정거장 객실', floor: 'void', wall: '#161c33', stars: true,
+    furn: [['bigbed', 4, 0, 0, 'inno.bed'], ['sidetable', 3, 0, 0], ['sidetable', 6, 0, 0], ['console', 0, 0, 0], ['telescope', 8, 0, 0], ['moodlamp', 9, 3, 0], ['candles', 7, 3, 0], ['sofa', 0, 5, 3]],
+    walls: [['B', 1.4, 'screen', 1.4], ['B', 7.2, 'screen', 1.4], ['L', 2.2, 'screen', 1.6]] }));
+  room('inn_jungle', Object.assign({}, INN, { name: '은밀숙소 · 비 내리는 정글 객실', floor: 'domegrass', wall: '#2a4f3c',
+    furn: [['bigbed', 4, 0, 0, 'innj.bed'], ['sidetable', 6, 0, 0], ['bigplant', 0, 0, 0], ['bigplant', 9, 0, 0], ['plant', 3, 0, 0], ['glowflower', 0, 3, 0], ['aquarium', 8, 4, 0], ['candles', 2, 3, 0], ['sofa', 0, 6, 3]],
+    walls: [['B', 1.0, 'window', 1.6], ['B', 7.0, 'window', 1.6]] }));
+  room('inn_retro', Object.assign({}, INN, { name: '은밀숙소 · 지구 레트로 모텔 객실', floor: 'carpet', wall: '#5c2740',
+    furn: [['roundbed', 4, 0, 0, 'innr.bed'], ['sidetable', 3, 0, 0], ['sidetable', 6, 0, 0], ['jukebox', 8, 0, 0], ['arcade', 9, 3, 1], ['tv', 0, 2, 3], ['sofa', 0, 5, 3], ['rug', 4, 3, 0], ['moodlamp', 0, 0, 0]],
+    walls: [['B', 2.0, 'poster', 1.0], ['B', 7.0, 'poster', 1.0], ['L', 1.0, 'window', 1.2]] }));
+  room('inn_glacier', Object.assign({}, INN, { name: '은밀숙소 · 빙하 동굴 객실', floor: 'ice', wall: '#9cc9dc',
+    furn: [['bigbed', 4, 0, 0, 'inng.bed'], ['sidetable', 6, 0, 0], ['cooler', 3, 0, 0], ['icesculpture', 0, 0, 0], ['crystalcluster', 9, 0, 0], ['crystalcluster', 0, 4, 0], ['rug', 4, 3, 0], ['candles', 7, 3, 0], ['moodlamp', 9, 4, 0], ['sofa', 0, 6, 3]],
+    walls: [['B', 1.4, 'window', 1.4], ['L', 2.5, 'mirrorw', 1.2]] }));
   room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.5, adult: true,
     furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0], ['velvetrope', 2, 4, 0], ['velvetrope', 9, 4, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 12, 0, 0]], walls: [],
     crowd: [{ role: 'usher', fixed: [2.5, 8.5, 2] }, { role: 'audience', n: 2, x0: 2, y0: 5, x1: 10, y1: 7 }] });
@@ -3552,6 +3564,10 @@ PX.S = (() => {
     q_captain: ['냉각기 소리 시끄럽지? 꺼 줄까.', '내 방 구경 그만해. 볼 거 없어.', '…여기 너 있으니까 좀 방 같다.', '그 돌들 만지지 마. …아니, 만져도 돼. 너는.'],
     inn_mirror: ['거울이 너무 많다. 어딜 봐도 너야.', '조명 하나 더 낮출까?', '거울 속 너도 예쁘다. 진짜가 더.'],
     inn_bath: ['욕조에 물 받아 둘까?', '캔들 냄새 좋다. 네가 고른 방다워.', '수건 따뜻하게 데워져 있대.'],
+    inn_orbit: ['창밖 행성 또 돌았다. 하루가 4분이래.', '저중력 버튼 또 누를까?', '우주복 걸이에 내 재킷 걸어도 되나.'],
+    inn_jungle: ['빗소리 좋다. 작전 때 비는 싫었는데.', '저 발광초, 외곽 늪지대에도 피어.', '덩굴에 머리 걸렸다. …웃지 마.'],
+    inn_retro: ['이 노래 계속 틀어 둘까.', '오락기 한 판 하자. 진 사람이 동전 넣기.', '지구 사람들 취향 독특하다. 좋은 쪽으로.'],
+    inn_glacier: ['여기 살고 싶다. 진심이야.', '너 입술 파래졌어. 담요 더 덮어.', '얼음 벽 만지지 마. 손 붙는다.'],
     inn_water: ['앉을 때마다 출렁인다. 아직 적응 중.', '천장 별빛 봐. 우주 같다.', '물침대 위에선 내가 중심을 못 잡겠어.'],
     base: ['부대 안에서 데이트라니. 다들 쳐다본다.', '저기 헌병 중사가 째려본다. 신경 쓰지 마.', '훈련장 저 끝, 별 잘 보여.', '식당 냄새 난다. 오늘 김치찌개다.'],
     dome: ['돔 안은 공기가 달라. 덜 덥다. 그래도 덥다.', '연구소 근처 오면 꽃냄새 나네.', '여기 사는 거 괜찮아? 불편한 거 있으면 말해.'],
@@ -4132,6 +4148,12 @@ PX.NPC_ACT = {
     b(LOVE, ['C*:여기 처음 와 보는 척하는 거 힘들다. …진짜 처음이야. 믿어 줘.']), b(MID, ['C:손 잡아. 사람 많다. 핑계 아니고 진짜로.']), b(LOVE, ['C^:오늘 밤은 네가 하자는 대로 할게.']),
     b(MID, ['C:구경만 하자. 구경만. …네가 원하면 구경 이상도.']), b(LOVE, ['C*:여기 오자고 한 거 너다. 기억해. 나중에 딴소리하기 없기.']), b(MID, ['C;:심장이 좀 빨리 뛰네. 사람이 많아서 그래. 아마.']),
   ];
+  // 은밀숙소에서 막 나왔을 때 (루비웨이로)
+  V.rubyOut = [
+    b(LOVE, ['C:…밖 공기 차다. 좋다.', 'C*:손 줘. 아직 놓기 싫어.']), b(LOVE, ['C^:다들 우리 어디서 나왔는지 아는 얼굴이다.', 'C*:…상관없어. 자랑하고 싶은 기분이야.']),
+    b(LOVE, ['N:대위가 기지개를 켠다. 어젯밤보다 얼굴이 훨씬 편안하다.', 'C:…배고프다. 뭐 먹으러 갈까.']), b(LOVE, ['C;:목에 그거, 스카프로 좀 가려. …내 탓이야. 미안. 안 미안해.']),
+    b(LOVE, ['C:다음엔 다른 방 가 보자. 궁금한 방 많더라.', 'C^:근데 오늘 방도 좋았어. 엄청.']), b(LOVE, ['N:루비웨이 거리를 나란히 걷는다. 잡은 손이 아직 따뜻하다.', 'C*:…집에 바로 가기 아깝다. 조금만 걷자.']),
+  ];
   // 카페 · 냉삼집 · 관광지 · 여행 (장소 대화 보강: X.place 에 붙인다)
   const P = (k, list) => { PX.DLG_CAP2.place[k] = (PX.DLG_CAP2.place[k] || []).concat(list); };
   P('cafe', [b(MID, ['C*:빨대 두 개 꽂을까? 하나로 같이 마시는 거 해 보고 싶었어.']), b(ANY, ['C:네 거 한 입만. 나 단 거 안 좋아하는데 네 건 맛있어 보여.']), b(LOVE, ['C^:카페에서 마주 앉으면 데이트 같네. 아, 데이트 맞구나.']), b(ANY, ['C:빨대 소리 시끄럽지. 다 마셨다는 신호야.', 'C*:더우면 다 씹어 먹어.']), b(MID, ['C:여기 창가 자리 좋다. 너 얼굴에 빛 들어와.'])]);
@@ -4484,9 +4506,13 @@ PX.NPC_ACT = {
   A({ m: ['dice'], s: LOV, tz: 1 }, 'C*:주사위 던져서 짝수면 내가 소원 들어주고, 홀수면 네가 들어주기.', 'C:…홀수다. 소원 말해.', 'P:{ob}가 먼저 말해.', 'C^:뽀뽀. 지금. 여기서. …농담. 반쯤.');
   A({ m: ['mask'], s: LOV }, 'C^:가면 써도 다 알아봐. 이 덩치가 어디 숨어.', 'C*:근데 너는 가면 쓰니까 더 신비롭다. 반칙이야.');
   A({ m: ['midnight'], s: LOV, tz: 1 }, 'N:낮은 조명. 느린 음악. 대위가 손을 내민다.', 'C:춤 못 춰. 근데 너랑 서서 흔들리는 건 할 수 있어.', 'P:발 밟지 마.', 'C*:밟으면 업어 줄게. 남은 노래 내내.');
-  A({ m: ['inn', 'inn_mirror', 'inn_bath', 'inn_water'], s: LOV, tz: 1 }, 'C*:…방 키 받았어.', 'P:{ob} 손 떨려.', 'C:긴장해서 그래. 작전 때보다 더.', 'C^:싫으면 지금 말해. 그냥 가도 돼. 진짜로.');
+  A({ m: ['inn'], s: LOV, tz: 1, arr: 1 }, 'C*:…방 키 받았어.', 'P:{ob} 손 떨려.', 'C:긴장해서 그래. 작전 때보다 더.', 'C^:싫으면 지금 말해. 그냥 가도 돼. 진짜로.');
   A({ m: ['inn_water'], s: LOV, seat: 'bed', tz: 1 }, 'C!:…침대가 출렁인다.', 'C*:내가 누우니까 파도가 쳐. 너 튕겨 나가겠다. 이리 와. 잡아 줄게.');
   A({ m: ['inn_mirror'], s: LOV, tz: 1 }, 'C*:거울이 많네. 어디 봐도 네가 있어.', 'C:…좋다. 이 방 고른 거 잘했어, 나.');
+  A({ m: ['inn_orbit'], s: LOV, tz: 1 }, 'C:창밖 행성, 하루가 4분이래. 금방 밤이 오고 금방 아침이 와.', 'C*:…여기선 시간이 빨리 가겠다. 아껴 쓰자.');
+  A({ m: ['inn_jungle'], s: LOV, tz: 1 }, 'C:빗소리 들으면 늪지대 매복 생각났는데.', 'C^:이제 너 생각날 것 같다. 비 올 때마다.');
+  A({ m: ['inn_retro'], s: LOV, tz: 1 }, 'C;:이 벽지 무늬 보면 어지러워. 지구 사람들 대단하다.', 'C*:근데 너랑 있으니까 이 촌스러운 게 좋다.');
+  A({ m: ['inn_glacier'], s: LOV, tz: 1 }, 'C~:영하 3도. 숨 쉴 때마다 행복해.', 'C*:너는 내 품에서 나오지 마. 감기 걸려.');
   A({ m: ['inn_bath'], s: LOV, tz: 1 }, 'C:욕조 크다. 내가 들어가도 넘치진 않겠다.', 'C*:같이 들어가면 넘치겠지만. 그건 관리인한테 사과하면 되고.');
   A({ m: ['dawnshower'], s: LOV }, 'C:새벽 샤워실은 비어 있어서 좋아. 물 온도는 최저로.', 'C*:넌 따뜻하게 해. 우리 온도 차이 나는 거 알잖아. 그래서 좋은 거지만.');
 })();
@@ -7821,6 +7847,7 @@ PX.Situ = (() => {
       en: S.energy < 35 ? 'low' : 'ok', se: St.season(), job: S.player.job,
       af: PX.CapAct && PX.CapAct.postField && PX.CapAct.postField() ? 'field' : (o && o.phase === 'done' && St.absMin() - o.end < 720 ? 'op' : null),
       home: g.mapId === PX.JOBS[S.player.job].home ? 'p' : g.mapId === 'q_captain' ? 'c' : null,
+      innOut: !!(PX.Act.innLeaving && PX.Act.innLeaving()), innBooked: !!(S.done.innBook && St.absMin() < S.done.innBook.until),
     };
   }
   const inT = (t, h) => t[0] <= t[1] ? h >= t[0] && h < t[1] : h >= t[0] || h < t[1];
@@ -7838,6 +7865,7 @@ PX.Situ = (() => {
     if (b.af && b.af !== c.af) return false;
     if (b.home && b.home !== c.home) return false;
     if (b.job && b.job !== c.job) return false;
+    if (b.arr && (c.innOut || !c.innBooked)) return false; // 들어가는 길에만 (방금 나온 길이면 안 함)
     if (b.ev) { const S = St.S, lb = PX.LORE_BY_ID && PX.LORE_BY_ID[b.ev]; if (!lb || !PX.Cal.openAt(lb, S.time, S.time.min)) return false; } // 행사 중일 때만
     return true;
   }
@@ -8238,8 +8266,9 @@ PX.Cap = (() => {
     const cand = [[1, -1], [-1, 1], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, -1]].map(([dx, dy]) => [px + dx, py + dy]).filter(([x, y]) => PX.W.walkable(m, x, y));
     if (cand.length) { cap.x = cand[0][0] + 0.5; cap.y = cand[0][1] + 0.5; }
     if (M) M.apply(); // 손잡기·팔짱은 문을 지나도 이어진다
-    if (to === 'inn' && S.rel.cap.stage >= 4 && !(PX.Plan && PX.Plan.cur() && PX.Plan.cur().id === 'inn')) setTimeout(() => g.trigger(() => PX.Act.innDesk(true)), 900); // 같이 들어오면 프런트가 바로 방을 묻는다
-    if (to === 'rubyway' && V.ruby && S.done.rubyLine !== S.day) { S.done.rubyLine = S.day; const bd = PX.Dlg.pick('v_ruby', V.ruby); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
+    if (to === 'inn' && S.rel.cap.stage >= 4 && !PX.Act.innLeaving() && !(PX.Plan && PX.Plan.cur() && PX.Plan.cur().id === 'inn')) setTimeout(() => g.trigger(() => PX.Act.innDesk(true)), 900); // 같이 들어오면 프런트가 바로 방을 묻는다
+    if (to === 'rubyway' && from === 'inn' && PX.Act.innLeaving() && V.rubyOut) { const bd = PX.Dlg.pick('v_rubyOut', V.rubyOut); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
+    else if (to === 'rubyway' && V.ruby && S.done.rubyLine !== S.day) { S.done.rubyLine = S.day; const been = Object.keys(S.done).some(k => /^inn_inn_/.test(k)) || S.done.innNightMem; const bd = PX.Dlg.pick('v_ruby', been ? V.ruby.filter(x => !/처음/.test(JSON.stringify(x))) : V.ruby); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
     if (to === 'q_captain' && V.capHome && S.done.capHomeLine !== S.day) { S.done.capHomeLine = S.day; const bd = PX.Dlg.pick('v_capHome', V.capHome); if (bd) g.trigger(async () => { g.modal++; await PX.Dlg.runLines(bd.l); PX.Dlg.close(); g.modal--; }); }
   }
   // 밖에서 기다리던 대위: 플레이어가 나오면 다시 동행
@@ -10043,7 +10072,12 @@ PX.Act = (() => {
     { id: 'inn_mirror', t: '🪞 거울 객실', sub: '거울 벽 · 원형 침대 · 무드등', price: 120 },
     { id: 'inn_bath', t: '🛁 큰 욕조 객실', sub: '거품 욕조 · 캔들 · 큰 침대', price: 140 },
     { id: 'inn_water', t: '🌊 물침대 객실', sub: '물침대 · 별빛 창 · 냉장고', price: 160 },
+    { id: 'inn_orbit', t: '🚀 궤도 정거장 객실', sub: '저중력 침대 · 창밖 행성 홀로그램', price: 180 },
+    { id: 'inn_jungle', t: '🌿 비 내리는 정글 객실', sub: '빗소리 조절 · 발광초 · 반딧불 조명', price: 150 },
+    { id: 'inn_retro', t: '📼 지구 레트로 모텔 객실', sub: '하트 원형 침대 · 주크박스 · 오락기', price: 110 },
+    { id: 'inn_glacier', t: '❄️ 빙하 동굴 객실', sub: '얼음 벽 · 영하 3도 · 모피 담요', price: 170 },
   ];
+  const leaving = () => { const t = St.S.cap.innLeftAt; return !!(t && St.absMin() - t < 180); }; // 객실에서 로비·거리로 막 나온 뒤 3시간
   const innBooked = () => { const b = St.S.done.innBook; return b && St.absMin() < b.until ? b : null; };
   async function goInnRoom(id) {
     const g = G(), m = W.maps[id];
@@ -10055,9 +10089,23 @@ PX.Act = (() => {
   }
   async function innDesk(auto) {
     const S = St.S, b = innBooked();
+    if (auto && leaving()) return; // 방에서 막 내려온 길: 다시 올라가자고 하지 않는다
     if (b) {
       if (b.phone && withCap() && !b.greeted) { b.greeted = 1; G().cap.setDirTo(G().player.x, G().player.y); await lines([PX.Dlg.capPick(['C*:예약자 이름이 너로 돼 있더라. …내가 할 걸 그랬다.', 'C^:네가 예약했다는 메시지 받고 하루 종일 일이 손에 안 잡혔어.', 'C~:카드키 받았다. 이번엔 네가 앞장서.'])]); }
-      const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return;
+      const cur = INN_ROOMS.find(r => r.id === b.room) || { price: 0 };
+      const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 예약한 방으로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '🔁 다른 방으로 바꾸기', k: 2, sub: '방을 직접 골라요 · 더 비싼 방이면 차액만' }, ...(leaving() ? [{ t: '🧾 체크아웃', k: 3, sub: '키 반납하기' }] : []), { t: '그만두기', k: 0 }]);
+      if (!it || !it.k) return;
+      if (it.k === 3) { S.done.innBook = null; S.cap.innLeftAt = 0; await lines(withCap() ? [PX.Dlg.capPick(['C:키 반납했어. …아쉽다.', 'C^:다음에 또 오자. 다른 방으로.', 'C*:체크아웃. 근데 나는 아직 체크아웃 안 하고 싶다.'])] : ['N:카드키를 반납했다.']); return; }
+      if (it.k === 2) {
+        const r = await PX.UI.menu('🔁 방 바꾸기', INN_ROOMS.filter(x => x.id !== b.room).map(x => ({ t: `${x.t}${x.price > cur.price ? ` · +₢${x.price - cur.price}` : ''}`, sub: x.sub, k: x })));
+        if (!r) return;
+        if (r.k.price > cur.price && !St.spend(r.k.price - cur.price)) { PX.UI.toast('돈이 모자라요'); return; }
+        b.room = r.k.id;
+        if (withCap()) await lines([PX.Dlg.capPick(['C^:바꿨어? 좋아. 거기도 궁금했어.', 'C*:네가 고른 방이면 어디든.'])]);
+      }
+      await goInnRoom(b.room);
+      if (once('inn_' + b.room)) setTimeout(() => G().trigger(() => lines(!St.isNight() && INN_ARRIVE_DAY[b.room] || INN_ARRIVE[b.room])), 600);
+      return;
     }
     if (auto && !(withCap() && S.rel.cap.stage >= 4)) return;
     if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
@@ -10104,6 +10152,12 @@ PX.Act = (() => {
     inn_bath: ['N:캔들 불빛이 욕조 물 위에서 흔들린다.', 'C*:욕조 진짜 크네. 둘이 들어가도 남겠다.', 'C:물 받아 놓을까? 온도는 네가 정해.'],
     inn_water: ['N:창밖으로 루비웨이 불빛이 별처럼 번진다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'],
   };
+  Object.assign(INN_ARRIVE, {
+    inn_orbit: ['N:문이 열리자 낮게 깔린 엔진음이 들린다. 둥근 창 너머로 거대한 행성 홀로그램이 천천히 돈다.', 'C!:…이거 진짜 궤도 같네. 수송선보다 낫다.', 'C*:우주에서 너랑 단둘이라. 구조 신호는 안 보낼 거야.'],
+    inn_jungle: ['N:천장에서 인공 빗소리가 쏟아진다. 발광초가 풀숲 사이에서 푸르게 깜빡인다.', 'C:…외곽 늪지대 같은데, 하나도 안 무섭다.', 'C^:모기도 없고, 너도 있고. 완벽한 정글이다.'],
+    inn_retro: ['N:분홍 네온 하트가 지직거린다. 원형 침대 머리맡에 "동전 넣으면 흔들림"이라고 쓰여 있다.', 'C;:…이건 뭐야. 지구 사람들은 이런 데서 잤어?', 'C^:동전 있어? …아니, 궁금해서 그래. 진짜 궁금해서.'],
+    inn_glacier: ['N:숨을 쉬자 입김이 하얗게 번진다. 얼음 벽 안에서 푸른빛이 은은하게 새어 나온다.', 'C~:…여기가 천국이구나.', 'C*:너는 춥지? 이리 와. 모피 담요랑 나, 둘 중에 골라. 둘 다 골라도 돼.'],
+  });
   const INN_ARRIVE_DAY = { inn_water: ['N:창밖으로 네온이 꺼진 한낮의 루비웨이가 내려다보인다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'] }; // 낮엔 불빛 얘기 대신
   // 객실 침대: 같이 눕기 / 아침까지 (화면은 암전, 묘사는 하지 않음)
   async function innBed(o) {
@@ -10118,7 +10172,7 @@ PX.Act = (() => {
     if (it.k === 'talk') {
       await U.sleep(600);
       await lines([U.pick([
-        ['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:응? 왜요?', 'C^:너만 보느라 잠 못 자지.'],
+        ...(g.mapId === 'inn_mirror' ? [['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:응? 왜요?', 'C^:너만 보느라 잠 못 자지.']] : []),
         ['C:…이렇게 가만히 누워 있는 거, 작전 나가면 제일 생각나.', 'C*:별거 아닌데. 옆에 네가 숨 쉬는 소리.'],
         ['C*:팔 베고 누울래? 저려도 말 안 할게.', { q: [['그럼 실례할게요.', 4, ['C^:실례는 무슨. 원래 네 자리야.']], ['조금만 이대로 있어요.', 3, ['C:응. 조금만. …아니, 많이.']]] }],
         ['C:우리 처음 만났을 때 기억나? 너 나 엄청 경계했잖아.', 'C*:지금은 내 옆에서 하품하고. 많이 컸다, 우리.'],
@@ -10251,7 +10305,7 @@ PX.Act = (() => {
     return false;
   }
   const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
-  return { shuttle, innDesk, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
+  return { shuttle, innDesk, innLeaving: leaving, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();
 
 </script>
@@ -11238,9 +11292,26 @@ PX.Place = (() => {
     St.advance(40); reward('sr_watch', 3); } });
 
   // ---------- 은밀숙소 객실 (연인 · 노골적 묘사 없음) ----------
-  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_window', t: '🌃 창밖 야경 같이 보기', s: 4, run: async () => {
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_jungle', 'inn_retro'], { id: 'in_window', t: '🌃 창밖 야경 같이 보기', s: 4, when: night, run: async () => {
     await say(null, [['N:창밖으로 루비웨이 네온이 흐른다. 대위가 뒤에서 안는다.', 'C:시끄러운 동네인데 여기서 보니까 조용하다.', 'C^:너 있어서 그런가.'], ['C*:오늘 하루 어땠어?', 'P:마지막이 제일 좋았어.', 'C:…아직 안 끝났어. 하루.']]);
     reward('in_window', 3); } });
+  add('inn_orbit', { id: 'in_float', t: '🪐 저중력 모드로 같이 떠 있기', sub: '침대 옆 버튼', s: 4, run: async () => {
+    await say(null, [['N:버튼을 누르자 몸이 둥실 떠오른다. 대위가 허공에서 허우적거리다 내 손을 붙잡는다.', 'C;:…균형 잡는 거 생각보다 어렵다.', 'C^:손 놓지 마. 우주 미아 되기 싫어.'],
+      ['N:천천히 떠다니며 창밖 행성을 같이 본다. 대위가 뒤에서 허리를 감는다.', 'C:…무게가 없으니까 너를 계속 안고 있을 수 있겠다.', 'C*:중력 돌아와도 안 내려놓을 거지만.']]);
+    St.advance(30); reward('in_float', 4, ['궤도 객실', '저중력 객실에서 대위와 허공에 떠서 행성을 봤다.']); } });
+  add('inn_jungle', { id: 'in_rain', t: '🌧️ 빗소리 크게 틀고 누워 있기', s: 4, run: async () => {
+    await say(null, [['N:빗소리가 방을 가득 채운다. 대위가 팔베개를 하고 천장의 반딧불을 센다.', 'C:…열둘, 열셋. 너 세는 거 방해하지 마.', 'C^:몇 개였는지 까먹었다. 너 때문에.'],
+      ['C:외곽에서 비 맞으며 매복할 때 이런 상상 했어.', 'C*:지붕 있는 데서, 너랑, 빗소리만 듣는 거.']]);
+    St.advance(40); reward('in_rain', 3); } });
+  add('inn_retro', { id: 'in_arcade', t: '🕹️ 오락기 한 판 · 진 사람이 동전', s: 4, run: async () => {
+    const win = Math.random() < 0.5;
+    await say(null, [win ? ['N:대위가 진지하게 레버를 잡는다. 결과는 대위의 완패.', 'C;:…이 기계 고장 났어.', 'P:동전 넣어.', 'C*:…알았어. 침대에 넣으라는 거지?', 'N:침대가 덜덜 흔들린다. 둘 다 배를 잡고 웃는다.']
+      : ['N:대위가 이긴다. 오락기 화면에 "NEW RECORD"가 깜빡인다.', 'C^:수색팀 반사 신경 무시하지 마.', 'C*:벌칙. 주크박스에서 내가 고른 노래 들으면서 춤추기.']]);
+    St.advance(20); reward('in_arcade', 3); } });
+  add('inn_glacier', { id: 'in_ice', t: '🧊 얼음 벽에 이름 새기기', s: 4, run: async () => {
+    await say(null, [['N:대위가 얼음 벽에 손가락으로 두 사람의 이름을 쓴다. 금방 김이 서려 흐려진다.', 'C:…녹으면 다시 쓰면 돼. 매번.', 'C*:그러니까 또 오자.'],
+      ['N:얼음 조각 하나를 떼어 대위가 내 입에 넣어 준다. 이가 시리다.', 'C^:이게 내 행복의 맛이야. 이제 너도 알지.', 'P:…{ob}는 이상해.', 'C~:응. 근데 너도 이상한 나 좋아하잖아.']]);
+    St.advance(20); reward('in_ice', 3, ['빙하 동굴 객실', '얼음 벽에 대위가 둘의 이름을 썼다. 녹으면 또 쓰자고 했다.']); } });
   add('inn_bath', { id: 'in_hair', t: '💨 머리 말려 주기', sub: '대위가 말려 준다', s: 4, run: async () => {
     await say(null, [['N:대위가 수건으로 머리를 조심조심 눌러 말린다. 큰 손이 의외로 섬세하다.', 'C:뜨거우면 말해. 드라이기 처음 써 봐.', 'C*:…거짓말이야. 연습했어. 너 해 주려고.']]);
     reward('in_hair', 4); } });
@@ -11482,9 +11553,9 @@ PX.Place = (() => {
 
   const held = (fn) => async () => { const g = G(); g.modal++; try { await fn(); } finally { PX.Dlg.close(); g.modal--; } };
   add('rubyway', { id: 'rw_inn', t: '🗝️ 은밀숙소 가자고 하기', sub: '밤 · 연인', s: 4, when: night, run: held(() => PX.InnNight.suggest('street')) });
-  add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, run: held(() => PX.InnNight.suggest('lobby')) });
-  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
-  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
+  add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, when: () => !PX.Act.innLeaving(), run: held(() => PX.InnNight.suggest('lobby')) });
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_orbit', 'inn_jungle', 'inn_retro', 'inn_glacier'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_orbit', 'inn_jungle', 'inn_retro', 'inn_glacier'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
 
   // ---------- 지금 할 수 있는 것 ----------
   function list() {
@@ -12908,6 +12979,26 @@ PX.InnNight = (() => {
       ['C;:이 침대 위에선 내가 중심을 못 잡겠어.', 'C*:그러니까 꼭 잡고 있어. 나도 꼭 잡을게.'],
       ['N:천장의 별빛 조명이 물결에 맞춰 일렁인다. 마치 우주 한가운데 떠 있는 것 같다.', 'C:…제5행성 궤도에서 보는 별이 이랬어. 근데 그땐 혼자였어.', 'C*:지금은 아니네.'],
       ['N:대위가 일부러 몸을 굴린다. 물결에 실려 둘이 한쪽으로 쏠린다.', 'C^:…또 물리 법칙.', 'P:거짓말.', 'C~:응. 거짓말. 붙고 싶었어.'],
+    ],
+    inn_orbit: [
+      ['N:대위가 침대 옆 버튼을 누르자 몸이 살짝 떠오른다. 저중력 모드다.', 'C!:…어, 어. 잡아.', 'N:허공에서 서로를 붙잡고 천천히 돈다. 대위가 웃음을 참지 못한다.', 'C^:우주에서 안는 거, 이런 느낌이구나.'],
+      ['N:창밖 행성이 둘을 푸르게 비춘다. 대위가 이마를 맞댄다.', 'C:…궤도 작전 때 매일 이 행성 봤어. 혼자서.', 'C*:이제 혼자 안 봐도 되네.'],
+      ['C*:관제탑, 여기는 객실. 지금부터 교신 끊는다.', 'P:왜?', 'C~:방해받기 싫어서. 이제부터 너랑만 있을 거야.'],
+    ],
+    inn_jungle: [
+      ['N:빗소리가 굵어진다. 대위가 빗소리 다이얼을 끝까지 올린다.', 'C*:이러면 우리 소리도 안 들려.', 'P:{ob} 그거 노린 거지.', 'C^:작전명 폭우.'],
+      ['N:반딧불 조명이 둘 사이를 날아다닌다. 대위가 하나를 손바닥에 받아 내 머리 위에 올린다.', 'C:…왕관. 정글의 여왕님.', 'C~:여왕님, 명령만 내려.'],
+      ['N:대위가 나를 안아 들고 덩굴 커튼을 젖힌다. 잎사귀가 어깨에 걸린다.', 'C;:…정글 침투 훈련보다 어렵다. 심장이 너무 뛰어서.'],
+    ],
+    inn_retro: [
+      ['N:주크박스에서 오래된 지구 사랑 노래가 흘러나온다. 대위가 어색하게 손을 내민다.', 'C:…이 노래 가사 무슨 뜻이야?', 'P:평생 너만 사랑하겠다는 뜻.', 'C*:…그럼 이거 우리 노래 하자.'],
+      ['N:동전 넣는 소리. 침대가 덜덜 흔들리기 시작한다. 둘 다 웃음이 터진다.', 'C;:…이걸 왜 만든 거야, 지구 사람들은.', 'C^:근데 너 웃는 거 보니까 동전 하나 더 넣고 싶다.'],
+      ['N:분홍 네온이 대위의 얼굴을 반쯤 물들인다.', 'C~:이 조명 반칙이다. 너 너무 예뻐 보여.', 'C*:…원래 예쁜데, 더.'],
+    ],
+    inn_glacier: [
+      ['N:얼음 벽에 등을 기댄 대위가 행복한 얼굴로 눈을 감는다. 나는 이가 딱딱 부딪힌다.', 'C!:…아, 미안. 너 춥지.', 'N:대위가 모피 담요째로 나를 감싸 안는다.', 'C*:이제 따뜻하지? 오늘은 내가 난로 할게.'],
+      ['N:입김 두 개가 하나로 섞인다. 대위의 입술은 차갑고, 숨은 뜨겁다.', 'C~:…차가운 데서 너 안으니까 너만 따뜻하다. 세상에 너만.'],
+      ['C:여기 영하 3도래.', 'P:{ob}한텐 딱이네.', 'C*:응. 근데 이상하게 덥다. 너 때문에.'],
     ],
   };
   // ===== 불 끄기 직전: 피임 챙기기 (자연스럽게 · 서로 확인) =====
@@ -14794,6 +14885,7 @@ ${memLine(S)}`;
   function enterMap(id, x, y, silent) {
     if (id !== 'mask' && PX.Ruby) PX.Ruby.unmask();
     Game.prevMap = Game.mapId;
+    { const S = St.S, pm = PX.MAPS[Game.prevMap] || {}; if (PX.MAPS[id] && PX.MAPS[id].innRoom) S.cap.innLeftAt = 0; else if (pm.innRoom && id === 'inn') S.cap.innLeftAt = St.absMin(); } // 은밀숙소: 막 나온 길인지
     Game.mapId = id; Game.enteredAt = St.absMin(); Game.enteredReal = performance.now();
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;

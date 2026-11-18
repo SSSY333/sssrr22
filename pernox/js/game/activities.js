@@ -359,7 +359,12 @@ PX.Act = (() => {
     { id: 'inn_mirror', t: '🪞 거울 객실', sub: '거울 벽 · 원형 침대 · 무드등', price: 120 },
     { id: 'inn_bath', t: '🛁 큰 욕조 객실', sub: '거품 욕조 · 캔들 · 큰 침대', price: 140 },
     { id: 'inn_water', t: '🌊 물침대 객실', sub: '물침대 · 별빛 창 · 냉장고', price: 160 },
+    { id: 'inn_orbit', t: '🚀 궤도 정거장 객실', sub: '저중력 침대 · 창밖 행성 홀로그램', price: 180 },
+    { id: 'inn_jungle', t: '🌿 비 내리는 정글 객실', sub: '빗소리 조절 · 발광초 · 반딧불 조명', price: 150 },
+    { id: 'inn_retro', t: '📼 지구 레트로 모텔 객실', sub: '하트 원형 침대 · 주크박스 · 오락기', price: 110 },
+    { id: 'inn_glacier', t: '❄️ 빙하 동굴 객실', sub: '얼음 벽 · 영하 3도 · 모피 담요', price: 170 },
   ];
+  const leaving = () => { const t = St.S.cap.innLeftAt; return !!(t && St.absMin() - t < 180); }; // 객실에서 로비·거리로 막 나온 뒤 3시간
   const innBooked = () => { const b = St.S.done.innBook; return b && St.absMin() < b.until ? b : null; };
   async function goInnRoom(id) {
     const g = G(), m = W.maps[id];
@@ -371,9 +376,23 @@ PX.Act = (() => {
   }
   async function innDesk(auto) {
     const S = St.S, b = innBooked();
+    if (auto && leaving()) return; // 방에서 막 내려온 길: 다시 올라가자고 하지 않는다
     if (b) {
       if (b.phone && withCap() && !b.greeted) { b.greeted = 1; G().cap.setDirTo(G().player.x, G().player.y); await lines([PX.Dlg.capPick(['C*:예약자 이름이 너로 돼 있더라. …내가 할 걸 그랬다.', 'C^:네가 예약했다는 메시지 받고 하루 종일 일이 손에 안 잡혔어.', 'C~:카드키 받았다. 이번엔 네가 앞장서.'])]); }
-      const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 객실로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '그만두기', k: 0 }]); if (it && it.k) await goInnRoom(b.room); return;
+      const cur = INN_ROOMS.find(r => r.id === b.room) || { price: 0 };
+      const it = await PX.UI.menu('은밀숙소 프런트', [{ t: '🔑 예약한 방으로 올라가기', k: 1, sub: PX.MAPS[b.room].name }, { t: '🔁 다른 방으로 바꾸기', k: 2, sub: '방을 직접 골라요 · 더 비싼 방이면 차액만' }, ...(leaving() ? [{ t: '🧾 체크아웃', k: 3, sub: '키 반납하기' }] : []), { t: '그만두기', k: 0 }]);
+      if (!it || !it.k) return;
+      if (it.k === 3) { S.done.innBook = null; S.cap.innLeftAt = 0; await lines(withCap() ? [PX.Dlg.capPick(['C:키 반납했어. …아쉽다.', 'C^:다음에 또 오자. 다른 방으로.', 'C*:체크아웃. 근데 나는 아직 체크아웃 안 하고 싶다.'])] : ['N:카드키를 반납했다.']); return; }
+      if (it.k === 2) {
+        const r = await PX.UI.menu('🔁 방 바꾸기', INN_ROOMS.filter(x => x.id !== b.room).map(x => ({ t: `${x.t}${x.price > cur.price ? ` · +₢${x.price - cur.price}` : ''}`, sub: x.sub, k: x })));
+        if (!r) return;
+        if (r.k.price > cur.price && !St.spend(r.k.price - cur.price)) { PX.UI.toast('돈이 모자라요'); return; }
+        b.room = r.k.id;
+        if (withCap()) await lines([PX.Dlg.capPick(['C^:바꿨어? 좋아. 거기도 궁금했어.', 'C*:네가 고른 방이면 어디든.'])]);
+      }
+      await goInnRoom(b.room);
+      if (once('inn_' + b.room)) setTimeout(() => G().trigger(() => lines(!St.isNight() && INN_ARRIVE_DAY[b.room] || INN_ARRIVE[b.room])), 600);
+      return;
     }
     if (auto && !(withCap() && S.rel.cap.stage >= 4)) return;
     if (!withCap() || S.rel.cap.stage < 4) { await lines(['N:예약제 테마형 숙박시설. 거울 객실, 큰 욕조 객실, 물침대 객실…', 'N:(대위와 연인 사이이고 함께 왔을 때 예약할 수 있어요)']); return; }
@@ -420,6 +439,12 @@ PX.Act = (() => {
     inn_bath: ['N:캔들 불빛이 욕조 물 위에서 흔들린다.', 'C*:욕조 진짜 크네. 둘이 들어가도 남겠다.', 'C:물 받아 놓을까? 온도는 네가 정해.'],
     inn_water: ['N:창밖으로 루비웨이 불빛이 별처럼 번진다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'],
   };
+  Object.assign(INN_ARRIVE, {
+    inn_orbit: ['N:문이 열리자 낮게 깔린 엔진음이 들린다. 둥근 창 너머로 거대한 행성 홀로그램이 천천히 돈다.', 'C!:…이거 진짜 궤도 같네. 수송선보다 낫다.', 'C*:우주에서 너랑 단둘이라. 구조 신호는 안 보낼 거야.'],
+    inn_jungle: ['N:천장에서 인공 빗소리가 쏟아진다. 발광초가 풀숲 사이에서 푸르게 깜빡인다.', 'C:…외곽 늪지대 같은데, 하나도 안 무섭다.', 'C^:모기도 없고, 너도 있고. 완벽한 정글이다.'],
+    inn_retro: ['N:분홍 네온 하트가 지직거린다. 원형 침대 머리맡에 "동전 넣으면 흔들림"이라고 쓰여 있다.', 'C;:…이건 뭐야. 지구 사람들은 이런 데서 잤어?', 'C^:동전 있어? …아니, 궁금해서 그래. 진짜 궁금해서.'],
+    inn_glacier: ['N:숨을 쉬자 입김이 하얗게 번진다. 얼음 벽 안에서 푸른빛이 은은하게 새어 나온다.', 'C~:…여기가 천국이구나.', 'C*:너는 춥지? 이리 와. 모피 담요랑 나, 둘 중에 골라. 둘 다 골라도 돼.'],
+  });
   const INN_ARRIVE_DAY = { inn_water: ['N:창밖으로 네온이 꺼진 한낮의 루비웨이가 내려다보인다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'] }; // 낮엔 불빛 얘기 대신
   // 객실 침대: 같이 눕기 / 아침까지 (화면은 암전, 묘사는 하지 않음)
   async function innBed(o) {
@@ -434,7 +459,7 @@ PX.Act = (() => {
     if (it.k === 'talk') {
       await U.sleep(600);
       await lines([U.pick([
-        ['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:응? 왜요?', 'C^:너만 보느라 잠 못 자지.'],
+        ...(g.mapId === 'inn_mirror' ? [['C*:천장에도 거울 있었으면 큰일 날 뻔했다.', 'P:응? 왜요?', 'C^:너만 보느라 잠 못 자지.']] : []),
         ['C:…이렇게 가만히 누워 있는 거, 작전 나가면 제일 생각나.', 'C*:별거 아닌데. 옆에 네가 숨 쉬는 소리.'],
         ['C*:팔 베고 누울래? 저려도 말 안 할게.', { q: [['그럼 실례할게요.', 4, ['C^:실례는 무슨. 원래 네 자리야.']], ['조금만 이대로 있어요.', 3, ['C:응. 조금만. …아니, 많이.']]] }],
         ['C:우리 처음 만났을 때 기억나? 너 나 엄청 경계했잖아.', 'C*:지금은 내 옆에서 하품하고. 많이 컸다, 우리.'],
@@ -567,5 +592,5 @@ PX.Act = (() => {
     return false;
   }
   const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
-  return { shuttle, innDesk, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
+  return { shuttle, innDesk, innLeaving: leaving, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();

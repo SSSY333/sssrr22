@@ -217,6 +217,18 @@
   room('inn_water', Object.assign({}, INN, { name: '은밀숙소 · 물침대 객실', floor: 'neonfloor', wall: '#1f2a4a', stars: true,
     furn: [['waterbed', 4, 1, 0, 'innw.bed'], ['sidetable', 3, 1, 0], ['sidetable', 6, 1, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 9, 0, 0], ['fridge', 8, 0, 0], ['sofa', 0, 5, 3], ['candles', 7, 4, 0], ['vanity', 1, 0, 0]],
     walls: [['B', 2.0, 'window', 1.4], ['B', 7.0, 'window', 1.4]] }));
+  room('inn_orbit', Object.assign({}, INN, { name: '은밀숙소 · 궤도 정거장 객실', floor: 'void', wall: '#161c33', stars: true,
+    furn: [['bigbed', 4, 0, 0, 'inno.bed'], ['sidetable', 3, 0, 0], ['sidetable', 6, 0, 0], ['console', 0, 0, 0], ['telescope', 8, 0, 0], ['moodlamp', 9, 3, 0], ['candles', 7, 3, 0], ['sofa', 0, 5, 3]],
+    walls: [['B', 1.4, 'screen', 1.4], ['B', 7.2, 'screen', 1.4], ['L', 2.2, 'screen', 1.6]] }));
+  room('inn_jungle', Object.assign({}, INN, { name: '은밀숙소 · 비 내리는 정글 객실', floor: 'domegrass', wall: '#2a4f3c',
+    furn: [['bigbed', 4, 0, 0, 'innj.bed'], ['sidetable', 6, 0, 0], ['bigplant', 0, 0, 0], ['bigplant', 9, 0, 0], ['plant', 3, 0, 0], ['glowflower', 0, 3, 0], ['aquarium', 8, 4, 0], ['candles', 2, 3, 0], ['sofa', 0, 6, 3]],
+    walls: [['B', 1.0, 'window', 1.6], ['B', 7.0, 'window', 1.6]] }));
+  room('inn_retro', Object.assign({}, INN, { name: '은밀숙소 · 지구 레트로 모텔 객실', floor: 'carpet', wall: '#5c2740',
+    furn: [['roundbed', 4, 0, 0, 'innr.bed'], ['sidetable', 3, 0, 0], ['sidetable', 6, 0, 0], ['jukebox', 8, 0, 0], ['arcade', 9, 3, 1], ['tv', 0, 2, 3], ['sofa', 0, 5, 3], ['rug', 4, 3, 0], ['moodlamp', 0, 0, 0]],
+    walls: [['B', 2.0, 'poster', 1.0], ['B', 7.0, 'poster', 1.0], ['L', 1.0, 'window', 1.2]] }));
+  room('inn_glacier', Object.assign({}, INN, { name: '은밀숙소 · 빙하 동굴 객실', floor: 'ice', wall: '#9cc9dc',
+    furn: [['bigbed', 4, 0, 0, 'inng.bed'], ['sidetable', 6, 0, 0], ['cooler', 3, 0, 0], ['icesculpture', 0, 0, 0], ['crystalcluster', 9, 0, 0], ['crystalcluster', 0, 4, 0], ['rug', 4, 3, 0], ['candles', 7, 3, 0], ['moodlamp', 9, 4, 0], ['sofa', 0, 6, 3]],
+    walls: [['B', 1.4, 'window', 1.4], ['L', 2.5, 'mirrorw', 1.2]] }));
   room('showroom', { name: '블라인드 쇼룸', w: 13, h: 10, floor: 'neonfloor', wall: '#3a2a4a', exit: 6, amb: 0.5, adult: true,
     furn: [['stage', 4, 0, 0, 'show.stage'], ['curtain', 4, 3, 0], ['curtain', 6, 3, 0], ['theaterseat', 3, 6, 2], ['theaterseat', 4, 6, 2], ['theaterseat', 5, 6, 2], ['theaterseat', 7, 6, 2], ['theaterseat', 8, 6, 2], ['theaterseat', 9, 6, 2], ['barcounter', 10, 8, 0], ['velvetrope', 2, 4, 0], ['velvetrope', 9, 4, 0], ['moodlamp', 0, 0, 0], ['moodlamp', 12, 0, 0]], walls: [],
     crowd: [{ role: 'usher', fixed: [2.5, 8.5, 2] }, { role: 'audience', n: 2, x0: 2, y0: 5, x1: 10, y1: 7 }] });

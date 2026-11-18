@@ -20,6 +20,7 @@ PX.Situ = (() => {
       en: S.energy < 35 ? 'low' : 'ok', se: St.season(), job: S.player.job,
       af: PX.CapAct && PX.CapAct.postField && PX.CapAct.postField() ? 'field' : (o && o.phase === 'done' && St.absMin() - o.end < 720 ? 'op' : null),
       home: g.mapId === PX.JOBS[S.player.job].home ? 'p' : g.mapId === 'q_captain' ? 'c' : null,
+      innOut: !!(PX.Act.innLeaving && PX.Act.innLeaving()), innBooked: !!(S.done.innBook && St.absMin() < S.done.innBook.until),
     };
   }
   const inT = (t, h) => t[0] <= t[1] ? h >= t[0] && h < t[1] : h >= t[0] || h < t[1];
@@ -37,6 +38,7 @@ PX.Situ = (() => {
     if (b.af && b.af !== c.af) return false;
     if (b.home && b.home !== c.home) return false;
     if (b.job && b.job !== c.job) return false;
+    if (b.arr && (c.innOut || !c.innBooked)) return false; // 들어가는 길에만 (방금 나온 길이면 안 함)
     if (b.ev) { const S = St.S, lb = PX.LORE_BY_ID && PX.LORE_BY_ID[b.ev]; if (!lb || !PX.Cal.openAt(lb, S.time, S.time.min)) return false; } // 행사 중일 때만
     return true;
   }
