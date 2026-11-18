@@ -9085,7 +9085,7 @@ PX.Cap = (() => {
       if (S.cap.homeLeft) { const away = now - S.cap.homeLeft; S.cap.homeLeft = 0; if (away >= 3 && !g.modal) setTimeout(() => g.bubble(cap, U.pickFresh('homeBack', away > 40 ? ['왔어? 오래 걸렸네. 기다렸어.', '…늦었다. 걱정했잖아.', '어디 갔다 왔어? 나 혼자 방 구경 다 했어.'] : ['왔어? 기다렸어.', '빨리 왔네.', '어, 왔다. 심심했어.']), 2.6), 600); }
       if (k === 'duty' || k === 'field') { startFarewell(k); return; }
       if (S.cap.visitShort && now > S.cap.visitShort && !g.modal) { S.cap.visitShort = 0; g.trigger(async () => { g.modal++; await PX.Dlg.runLines(PX.Dlg.capPick([['C:차 잘 마셨어. 약속대로 한 잔만.', 'C^:…한 잔 더는 다음에.'], ['C:한 시간 됐다. 약속은 지켜야지.', 'C*:붙잡으면 못 이기는 척 있을게.']])); const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('조심히 가요.') }, { t: PX.Dlg.capTone('조금만 더 있다 가요.') }]); PX.Dlg.close(); g.modal--; if (i === 0) { const m = PX.W.maps[g.mapId]; cap.leaveSeat(); release(null, 60); cap.goTo(m, m.exit.x, m.exit.y, () => moveTo(m.def.parent, m.id), { allow: (x, y) => x === m.exit.x && y === m.exit.y }); } }); return; }
-      if (S.cap.cohab && S.time.min >= 22 * 60 && !g.modal) { S.cap.stay = 'bed'; mode = 'stay'; return; } // 같이 사는 사이: 묻지 않고 함께 잔다
+      if (S.cap.cohab && S.time.min >= 22 * 60 && !g.modal) { S.cap.stay = 'bed'; mode = 'stay'; bedTogether(); return; } // 같이 사는 사이: 묻지 않고 함께 잔다
       if (S.time.min >= 22 * 60 && !g.modal) g.trigger(nightCheck);
       return;
     }
@@ -9457,6 +9457,17 @@ PX.Cap = (() => {
     }
   }
   // 방문 중 밤: 숙박 요청 또는 귀가
+  // 침대에서 같이 자기로 했을 때: 나는 침대에 눕고 대위는 옆자리(1인용이면 반씩)
+  function bedTogether() {
+    const g = G();
+    if (!PX.Bed || g.mapId !== cap.map) return false;
+    const f = document.getElementById('fade'); if (f) { f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 300); }
+    if (!PX.Bed.lieDown()) return false;
+    PX.Bed.capOnBed();
+    if (PX.Mind && St.S.rel.cap.stage >= 4) PX.Mind.setContact('CUDDLE');
+    cap.setDirTo(g.player.x, g.player.y);
+    return true;
+  }
   async function nightCheck() {
     const S = St.S, g = G(), r = S.rel.cap, D = PX.DLG_CAP;
     if (mode !== 'visit') return;
@@ -9475,10 +9486,13 @@ PX.Cap = (() => {
         await PX.Dlg.runLines(U.pick(D.stayYes));
         S.cap.stay = opts[i].k; mode = 'stay'; St.addAff(6);
         if (!S.done.firstStay) { S.done.firstStay = 1; g.memory('첫 숙박', `${PX.U.josa(S.capName, '이')} 내 숙소에서 하룻밤 머물렀다.${opts[i].k === 'bed' ? ' 좁은 침대에서 같이.' : ' 소파 밖으로 다리가 삐져나왔다.'}`, true); }
-        const m = PX.W.maps[homeId()];
-        const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa'));
-        if (sofa) cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]);
-        cap.pose = 'lie';
+        if (opts[i].k === 'bed') bedTogether(); // 침대에서 같이: 둘 다 침대로
+        else {
+          const m = PX.W.maps[homeId()];
+          const sofa = m.objs.find(o => o.kind === 'furn' && o.fid.startsWith('sofa'));
+          if (sofa) cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]);
+          cap.pose = 'lie';
+        }
       } else {
         await PX.Dlg.runLines(U.pick(D.stayNo));
         leaveHome();
@@ -14016,7 +14030,7 @@ PX.Bed = (() => {
     } finally { PX.Dlg.close(); g.modal--; }
     PX.UI.toast(`🛌 ${a.mins}분 동안 뒹굴거렸다${a.en ? ` (기력 +${a.en})` : ''}`);
   }
-  return { lounge, lieDown };
+  return { lounge, lieDown, capOnBed };
 })();
 
 </script>

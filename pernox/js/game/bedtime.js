@@ -100,5 +100,5 @@ PX.Bed = (() => {
     } finally { PX.Dlg.close(); g.modal--; }
     PX.UI.toast(`🛌 ${a.mins}분 동안 뒹굴거렸다${a.en ? ` (기력 +${a.en})` : ''}`);
   }
-  return { lounge, lieDown };
+  return { lounge, lieDown, capOnBed };
 })();
