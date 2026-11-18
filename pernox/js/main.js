@@ -141,6 +141,7 @@
   }
   function leaveRoom() {
     const m = W.maps[Game.mapId];
+    if (Game.mapId === 'inn_bathroom') return PX.InnBath.leave(); // 객실 욕실 → 들어왔던 객실
     if (m.def.exitTo) { // 은밀숙소 객실 → 로비
       const lb = W.maps[m.def.exitTo];
       enterMap(lb.id, lb.exit.x + 0.5, lb.exit.y - 2.5); Game.player.dir = 2; return;
@@ -209,6 +210,7 @@
   const MENU = ['김치찌개', '된장국과 즉석밥', '통조림 햄 볶음밥', '냉동 만두 국', '라면 (보급 지연)', '뿌리채소 카레', '냉동 삼겹살 구이'];
   function useObj(o) {
     const S = St.S, f = o.f, home = PX.MAPS[Game.mapId].home, job = PX.JOBS[S.player.job];
+    if (PX.InnBath && PX.InnBath.handles(o)) return PX.InnBath.use(o);
     try { PX.CapAct.join(o.use, o); } catch (e) { console.error(e); }
     if (PX.Act.LABEL[o.use] || (o.use === 'shop' && Game.mapId === 'inn')) { PX.Act.use(o); return; }
     switch (o.use) {
@@ -713,7 +715,7 @@
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
       }
     }
-    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
+    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: Game.mapId === 'inn_bathroom' ? '🚪 객실로 나가기' : m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
     for (const c of Game.critters || []) if (!c.hidden) list.push(c.extra ? { type: 'extra', a: c, x: c.x, y: c.y, label: `💬 ${c.name}`, fn: () => PX.Ruby.talk(c) } : { type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });

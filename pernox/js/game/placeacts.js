@@ -102,26 +102,29 @@ PX.Place = (() => {
     St.advance(40); reward('sr_watch', 3); } });
 
   // ---------- 은밀숙소 객실 (연인 · 노골적 묘사 없음) ----------
-  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_jungle', 'inn_retro'], { id: 'in_window', t: '🌃 창밖 야경 같이 보기', s: 4, when: night, run: async () => {
+  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_window', t: '🌃 창밖 야경 같이 보기', s: 4, when: night, run: async () => {
     await say(null, [['N:창밖으로 루비웨이 네온이 흐른다. 대위가 뒤에서 안는다.', 'C:시끄러운 동네인데 여기서 보니까 조용하다.', 'C^:너 있어서 그런가.'], ['C*:오늘 하루 어땠어?', 'P:마지막이 제일 좋았어.', 'C:…아직 안 끝났어. 하루.']]);
     reward('in_window', 3); } });
-  add('inn_orbit', { id: 'in_float', t: '🪐 저중력 모드로 같이 떠 있기', sub: '침대 옆 버튼', s: 4, run: async () => {
-    await say(null, [['N:버튼을 누르자 몸이 둥실 떠오른다. 대위가 허공에서 허우적거리다 내 손을 붙잡는다.', 'C;:…균형 잡는 거 생각보다 어렵다.', 'C^:손 놓지 마. 우주 미아 되기 싫어.'],
-      ['N:천천히 떠다니며 창밖 행성을 같이 본다. 대위가 뒤에서 허리를 감는다.', 'C:…무게가 없으니까 너를 계속 안고 있을 수 있겠다.', 'C*:중력 돌아와도 안 내려놓을 거지만.']]);
-    St.advance(30); reward('in_float', 4, ['궤도 객실', '저중력 객실에서 대위와 허공에 떠서 행성을 봤다.']); } });
-  add('inn_jungle', { id: 'in_rain', t: '🌧️ 빗소리 크게 틀고 누워 있기', s: 4, run: async () => {
-    await say(null, [['N:빗소리가 방을 가득 채운다. 대위가 팔베개를 하고 천장의 반딧불을 센다.', 'C:…열둘, 열셋. 너 세는 거 방해하지 마.', 'C^:몇 개였는지 까먹었다. 너 때문에.'],
-      ['C:외곽에서 비 맞으며 매복할 때 이런 상상 했어.', 'C*:지붕 있는 데서, 너랑, 빗소리만 듣는 거.']]);
-    St.advance(40); reward('in_rain', 3); } });
-  add('inn_retro', { id: 'in_arcade', t: '🕹️ 오락기 한 판 · 진 사람이 동전', s: 4, run: async () => {
-    const win = Math.random() < 0.5;
-    await say(null, [win ? ['N:대위가 진지하게 레버를 잡는다. 결과는 대위의 완패.', 'C;:…이 기계 고장 났어.', 'P:동전 넣어.', 'C*:…알았어. 침대에 넣으라는 거지?', 'N:침대가 덜덜 흔들린다. 둘 다 배를 잡고 웃는다.']
-      : ['N:대위가 이긴다. 오락기 화면에 "NEW RECORD"가 깜빡인다.', 'C^:수색팀 반사 신경 무시하지 마.', 'C*:벌칙. 주크박스에서 내가 고른 노래 들으면서 춤추기.']]);
-    St.advance(20); reward('in_arcade', 3); } });
-  add('inn_glacier', { id: 'in_ice', t: '🧊 얼음 벽에 이름 새기기', s: 4, run: async () => {
-    await say(null, [['N:대위가 얼음 벽에 손가락으로 두 사람의 이름을 쓴다. 금방 김이 서려 흐려진다.', 'C:…녹으면 다시 쓰면 돼. 매번.', 'C*:그러니까 또 오자.'],
-      ['N:얼음 조각 하나를 떼어 대위가 내 입에 넣어 준다. 이가 시리다.', 'C^:이게 내 행복의 맛이야. 이제 너도 알지.', 'P:…{ob}는 이상해.', 'C~:응. 근데 너도 이상한 나 좋아하잖아.']]);
-    St.advance(20); reward('in_ice', 3, ['빙하 동굴 객실', '얼음 벽에 대위가 둘의 이름을 썼다. 녹으면 또 쓰자고 했다.']); } });
+  add('inn_velvet', { id: 'in_wine', t: '🍷 웰컴 와인 한 잔씩', s: 4, run: async () => {
+    await say(null, [['N:얼음 버킷 속 와인을 대위가 따른다. 잔이 대위 손에선 장난감 같다.', 'C:건배. …뭘 위해서 하지.', 'P:오늘을 위해.', 'C*:오늘이랑, 내일이랑, 그다음도.'],
+      ['N:대위가 와인을 한 모금 마시고 얼굴을 찡그린다.', 'C;:…나 이거 잘 모르겠다. 너는?', 'P:달아.', 'C^:그럼 네 잔에서 한 모금만.']]);
+    St.advance(15); reward('in_wine', 3); } });
+  add('inn_whirl', { id: 'in_light', t: '💡 욕조 조명 색 바꾸기', s: 4, run: async () => {
+    await say(null, [['N:버튼을 누를 때마다 욕조 조명이 분홍, 보라, 파랑으로 바뀐다. 방 전체가 따라 물든다.', 'C:…파랑. 아니, 분홍. 너 분홍일 때 제일 예쁘다.'],
+      ['N:대위가 조명을 바꾸다 실수로 월풀 버튼을 누른다. 욕조가 요란하게 끓어오른다.', 'C;:…이건 뭐야. 끄는 거 어디 있어.', 'C^:그냥 두자. 들어가라는 뜻 같다.']]);
+    reward('in_light', 2); } });
+  add('inn_cinema', { id: 'in_movie', t: '🎬 침대에 누워 영화 보기', s: 4, run: async () => {
+    await say(null, [['N:대형 스크린에 옛날 지구 로맨스 영화가 흐른다. 대위가 팔베개를 해 준다.', 'C:…주인공이 고백을 너무 오래 끈다.', 'C*:나는 그것보다 빨랐지.', 'P:{ob}는 더 오래 끌었어.', 'C;:…그랬나.'],
+      ['N:영화 중반, 대위가 리모컨으로 화면을 끈다.', 'C~:…결말은 다음에 보자. 지금은 네 얼굴 볼래.']]);
+    St.advance(60); reward('in_movie', 3); } });
+  add('inn_cinema', { id: 'in_sing', t: '🎤 노래 한 곡씩', s: 4, run: async () => {
+    await say(null, [['N:대위가 마이크를 들고 한참 망설이다 군가를 부른다. 박자는 완벽하다.', 'P:그거 사랑 노래 아니잖아.', 'C;:…아는 노래가 이거밖에 없어.', 'C*:대신 가사를 너로 바꿔 부를게.'],
+      ['N:내가 노래를 부르는 동안 대위가 침대에 턱을 괴고 한 번도 눈을 떼지 않는다.', 'C^:…점수 100점. 기계가 안 줘도 내가 줘.']]);
+    St.advance(25); reward('in_sing', 3); } });
+  add('inn_silk', { id: 'in_panel', t: '🕯️ 조명 패널로 분위기 바꾸기', s: 4, run: async () => {
+    await say(null, [['N:패널을 쓸어 내리자 방이 금빛에서 깊은 보라색으로 가라앉는다.', 'C:…네가 고른 색이다. 좋다.', 'C*:한 칸만 더 어둡게. 아니, 그대로.'],
+      ['N:향 조절 장치를 돌리자 은은한 나무 향이 퍼진다.', 'C~:…이 냄새 너한테 배면 좋겠다. 집에 가서도 생각나게.']]);
+    reward('in_panel', 2); } });
   add('inn_bath', { id: 'in_hair', t: '💨 머리 말려 주기', sub: '대위가 말려 준다', s: 4, run: async () => {
     await say(null, [['N:대위가 수건으로 머리를 조심조심 눌러 말린다. 큰 손이 의외로 섬세하다.', 'C:뜨거우면 말해. 드라이기 처음 써 봐.', 'C*:…거짓말이야. 연습했어. 너 해 주려고.']]);
     reward('in_hair', 4); } });
@@ -364,8 +367,8 @@ PX.Place = (() => {
   const held = (fn) => async () => { const g = G(); g.modal++; try { await fn(); } finally { PX.Dlg.close(); g.modal--; } };
   add('rubyway', { id: 'rw_inn', t: '🗝️ 은밀숙소 가자고 하기', sub: '밤 · 연인', s: 4, when: night, run: held(() => PX.InnNight.suggest('street')) });
   add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, when: () => !PX.Act.innLeaving(), run: held(() => PX.InnNight.suggest('lobby')) });
-  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_orbit', 'inn_jungle', 'inn_retro', 'inn_glacier'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
-  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_orbit', 'inn_jungle', 'inn_retro', 'inn_glacier'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_velvet', 'inn_whirl', 'inn_cinema', 'inn_silk'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
+  add(['inn_mirror', 'inn_bath', 'inn_water', 'inn_velvet', 'inn_whirl', 'inn_cinema', 'inn_silk'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
 
   // ---------- 지금 할 수 있는 것 ----------
   function list() {

@@ -327,6 +327,7 @@ PX.Cap = (() => {
   function followIntoMap() {
     const g = G(), S = St.S, V = PX.DLG_V2 || {}, M = PX.Mind;
     const to = g.mapId, from = g.prevMap;
+    if (to === 'inn_bathroom' && S.cap.bathAlone) { mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 120 }; if (M) { M.mem().contact = 'NONE'; M.apply(); } return; } // 혼자 욕실: 객실에서 기다린다
     // 대위가 들어가지 않는 곳: 밖에서 기다린다 (플레이어 입장은 그대로)
     if (NO_ENTRY[to]) {
       mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 90 };
@@ -370,6 +371,7 @@ PX.Cap = (() => {
     if (g.mapId === w.inside) return;
     if (g.mapId === w.map) {
       mode = 'follow'; waitOut = null; cap.setDirTo(g.player.x, g.player.y);
+      if (w.inside === 'inn_bathroom') { St.S.cap.bathAlone = false; if (PX.InnBath) g.trigger(() => PX.InnBath.welcomeBack()); return; }
       if (/shower/.test(w.inside)) St.S.lastShower = St.absMin();
       const V = PX.DLG_V2 || {};
       const tb = V.showerOutTease && St.S.rel.cap.stage >= 2 && Math.random() < 0.7 ? PX.Dlg.pick('v_showerOT', V.showerOutTease) : null;

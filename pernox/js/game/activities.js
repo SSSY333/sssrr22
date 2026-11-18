@@ -86,6 +86,7 @@ PX.Act = (() => {
     const g = G();
     if (!withCap() || g.modal) return;
     const A2 = PX.DLG_CAP2.placeAmb, md = PX.MAPS[g.mapId] || {};
+    const S0 = St.S; if (S0.player.bath && (md.innRoom || md.innBath) && PX.INN_BATH) { if (!force && Math.random() < 0.4) return; g.bubble(g.cap, U.pickFresh('pamb_robe', PX.INN_BATH.robeAmb), 3.2); return; }
     const pool = A2[g.mapId] || (md.innRoom || md.home || g.mapId === 'q_captain' ? A2._room : md.kind === 'in' ? A2._in : A2._); // 장소별 대사가 없으면 바깥 · 실내 · 둘만의 방에 맞게
     if (!force && Math.random() < 0.4) return;
     g.bubble(g.cap, U.fmt(U.pickFresh('pamb_' + g.mapId, pool), PX.Dlg.ctx()), 3.2);
@@ -359,10 +360,10 @@ PX.Act = (() => {
     { id: 'inn_mirror', t: '🪞 거울 객실', sub: '거울 벽 · 원형 침대 · 무드등', price: 120 },
     { id: 'inn_bath', t: '🛁 큰 욕조 객실', sub: '거품 욕조 · 캔들 · 큰 침대', price: 140 },
     { id: 'inn_water', t: '🌊 물침대 객실', sub: '물침대 · 별빛 창 · 냉장고', price: 160 },
-    { id: 'inn_orbit', t: '🚀 궤도 정거장 객실', sub: '저중력 침대 · 창밖 행성 홀로그램', price: 180 },
-    { id: 'inn_jungle', t: '🌿 비 내리는 정글 객실', sub: '빗소리 조절 · 발광초 · 반딧불 조명', price: 150 },
-    { id: 'inn_retro', t: '📼 지구 레트로 모텔 객실', sub: '하트 원형 침대 · 주크박스 · 오락기', price: 110 },
-    { id: 'inn_glacier', t: '❄️ 빙하 동굴 객실', sub: '얼음 벽 · 영하 3도 · 모피 담요', price: 170 },
+    { id: 'inn_velvet', t: '🍷 레드 벨벳 스위트', sub: '장미 꽃잎 침대 · 붉은 간접 조명 · 웰컴 와인', price: 180 },
+    { id: 'inn_whirl', t: '🫧 월풀 스파 스위트', sub: '방 안 유리 벽 월풀 욕조 · 색 바뀌는 욕조 조명', price: 220 },
+    { id: 'inn_cinema', t: '🎬 프라이빗 시네마 스위트', sub: '벽 한 면 스크린 · 노래방 마이크 · 대형 침대', price: 170 },
+    { id: 'inn_silk', t: '🖤 블랙 실크 스위트', sub: '검은 실크 시트 원형 침대 · 조명 패널 · 향', price: 200 },
   ];
   const leaving = () => { const t = St.S.cap.innLeftAt; return !!(t && St.absMin() - t < 180); }; // 객실에서 로비·거리로 막 나온 뒤 3시간
   const innBooked = () => { const b = St.S.done.innBook; return b && St.absMin() < b.until ? b : null; };
@@ -439,12 +440,7 @@ PX.Act = (() => {
     inn_bath: ['N:캔들 불빛이 욕조 물 위에서 흔들린다.', 'C*:욕조 진짜 크네. 둘이 들어가도 남겠다.', 'C:물 받아 놓을까? 온도는 네가 정해.'],
     inn_water: ['N:창밖으로 루비웨이 불빛이 별처럼 번진다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'],
   };
-  Object.assign(INN_ARRIVE, {
-    inn_orbit: ['N:문이 열리자 낮게 깔린 엔진음이 들린다. 둥근 창 너머로 거대한 행성 홀로그램이 천천히 돈다.', 'C!:…이거 진짜 궤도 같네. 수송선보다 낫다.', 'C*:우주에서 너랑 단둘이라. 구조 신호는 안 보낼 거야.'],
-    inn_jungle: ['N:천장에서 인공 빗소리가 쏟아진다. 발광초가 풀숲 사이에서 푸르게 깜빡인다.', 'C:…외곽 늪지대 같은데, 하나도 안 무섭다.', 'C^:모기도 없고, 너도 있고. 완벽한 정글이다.'],
-    inn_retro: ['N:분홍 네온 하트가 지직거린다. 원형 침대 머리맡에 "동전 넣으면 흔들림"이라고 쓰여 있다.', 'C;:…이건 뭐야. 지구 사람들은 이런 데서 잤어?', 'C^:동전 있어? …아니, 궁금해서 그래. 진짜 궁금해서.'],
-    inn_glacier: ['N:숨을 쉬자 입김이 하얗게 번진다. 얼음 벽 안에서 푸른빛이 은은하게 새어 나온다.', 'C~:…여기가 천국이구나.', 'C*:너는 춥지? 이리 와. 모피 담요랑 나, 둘 중에 골라. 둘 다 골라도 돼.'],
-  });
+  Object.assign(INN_ARRIVE, PX.INN_BATH.arrive);
   const INN_ARRIVE_DAY = { inn_water: ['N:창밖으로 네온이 꺼진 한낮의 루비웨이가 내려다보인다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'] }; // 낮엔 불빛 얘기 대신
   // 객실 침대: 같이 눕기 / 아침까지 (화면은 암전, 묘사는 하지 않음)
   async function innBed(o) {
@@ -591,6 +587,6 @@ PX.Act = (() => {
     if (H[o.use]) { await H[o.use](o); return true; }
     return false;
   }
-  const LABEL = { hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
+  const LABEL = { innbath: '🚪 욕실', toilet: '🚽 화장실', robe: '🧺 가운 걸이', hang: '💪 철봉 매달리기', armwrestle: '💪 팔씨름', fish: '🎣 낚시하기', harvest: '🌱 수확하기', view: '🔭 경치 보기', tent: '⛺ 텐트', campfire: '🔥 불 쬐기', sandcastle: '🏰 모래성 쌓기', onsen: '♨️ 온천욕', salvage: '🔍 잔해 살펴보기', bath: '🛁 욕조', vanity: '🪞 거울 화장대', rail: '🚃 레일투어 (₢15)', exhibit: '🔍 전시 보기', dice: '🎲 주사위', perfume: '🧴 향 조합 (₢45)', dance: '💃 춤추기', drink: '🍹 한잔하기', perform: '🎤 무대', shoot: '🎯 사격', course: '🏃 장애물 코스', event: '🎪 부대 행사 참가', shuttle: '🧭 이동하기', stall: '🛍️ 매대' };
   return { shuttle, innDesk, innLeaving: leaving, bookByPhone, innEveningCheck, use, LABEL, innBed, travel, travelMenu, placeComment, activeBase, spawnCritters, critterThink, observe: H.observe, withCap };
 })();
