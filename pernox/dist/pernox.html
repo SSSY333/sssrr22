@@ -3731,6 +3731,82 @@ PX.S = (() => {
 })();
 
 </script>
+<script>
+/* js/data/onsen_change.js */
+// 제4 광물온천: 남녀 탈의실 (각자 들어가 갈아입고 나오면 같은 타이밍에 대위도 나온다) + 대사
+'use strict';
+(() => {
+  const F = PX.FURN, M = PX.MAPS;
+  const P = (x, y, z, w, d, h, c, o) => [x, y, z, w, d, h, c, o];
+  const def = (id, o) => { F[id] = Object.assign({ id, w: 1, d: 1, parts: [], det: [], blocks: true, use: null, seats: null, cat: 'base' }, o); };
+  // 탈의실 입구 (천 커튼 · 여: 분홍 · 남: 남색)
+  def('changedoor_f', { name: '여자 탈의실', use: 'changeroom', room: 'onsen_f', parts: [P(0.02, 0, 0, 0.96, 0.14, 44, '#6a5040'), P(0.1, 0.06, 6, 0.8, 0.1, 36, '#e7a3b4'), P(0.1, 0.06, 30, 0.8, 0.1, 8, '#f4f1ea')] });
+  def('changedoor_m', { name: '남자 탈의실', use: 'changeroom', room: 'onsen_m', parts: [P(0.02, 0, 0, 0.96, 0.14, 44, '#6a5040'), P(0.1, 0.06, 6, 0.8, 0.1, 36, '#3f5a8a'), P(0.1, 0.06, 30, 0.8, 0.1, 8, '#f4f1ea')] });
+  // 온천: 예전 공용 탈의 칸 대신 남녀 탈의실 입구 두 개
+  M.onsen.furn = M.onsen.furn.filter(e => e[0] !== 'changebooth');
+  M.onsen.furn.push(['changedoor_f', 5, 0, 0], ['changedoor_m', 7, 0, 0]);
+  M.onsen.walls = (M.onsen.walls || []).map(w => w[0] === 'B' ? ['B', 12.0, w[2], w[3]] : w);
+  const ROOM = (id, name, wall, extra) => { M[id] = Object.assign({ id, kind: 'in', wallH: 84, name, w: 7, h: 6, floor: 'tile', exit: 3, amb: 0.3, parent: M.onsen.parent, changeRoom: true,
+    furn: [['locker', 0, 0, 0], ['locker', 1, 0, 0], ['locker', 2, 0, 0], ['changebooth', 4, 0, 0], ['bench', 0, 3, 0], ['vanity', 6, 2, 1]].concat(extra || []), walls: [['L', 1.2, 'mirrorw', 1.4]], wall }); };
+  ROOM('onsen_f', '제4 광물온천 · 여자 탈의실', '#d9c2c8', [['plant', 6, 5, 0]]);
+  ROOM('onsen_m', '제4 광물온천 · 남자 탈의실', '#a9b8cc', [['plant', 6, 5, 0]]);
+
+  // ===================== 대사 =====================
+  const D = PX.ONSEN_CHANGE = {};
+  // 들어가기 전 대위 (각자 탈의실로)
+  D.split = [
+    ['C:이따 저 앞에서 보자. 먼저 나오면 기다려.'], ['C^:누가 먼저 나오나 내기할래?'], ['C*:…여기서 헤어지는 거, 잠깐인데도 아쉽다.'], ['C:가운 끈 묶는 거 어려우면… 아, 거긴 못 들어가지.'],
+    ['C;:남자 탈의실은 저쪽이구나. 이따 봐.'], ['C^:천천히 해. 나 빨라. 먼저 나와서 기다릴게.'], ['C*:머리 묶고 나와. 젖으면 안 마른다.'], ['C:사물함 열쇠 손목에 꼭 차.'],
+  ];
+  // 탈의실 안 (혼자): 가운으로
+  D.inSolo = [
+    ['N:사물함에 옷을 개어 넣는다. 보송한 온천 가운을 걸치고 허리끈을 묶는다.', 'N:거울 속 볼이 벌써 발그레하다.'],
+    ['N:탈의실엔 아무도 없다. 수증기 냄새와 비누 냄새가 섞여 있다.', 'N:가운 자락을 여미며 머리를 질끈 묶는다.'],
+    ['N:사물함 열쇠 고리를 손목에 건다. 열쇠가 짤랑거린다.', 'N:벽 너머 남자 탈의실 쪽에서 사물함 닫히는 소리가 쿵, 크게 난다.'],
+    ['N:가운 허리끈을 두 번 감아 리본으로 묶는다. 거울을 보고 깃을 한 번 더 여민다.'],
+    ['N:벽 너머에서 낮은 목소리가 들린다. "…이거 사이즈가 왜 이래."', 'N:웃음을 참으며 가운 끈을 묶는다.'],
+    ['N:바닥 타일이 따뜻하다. 맨발로 서니 발끝부터 노곤해진다.', 'N:머리를 올려 묶고, 가운 깃을 정리한다.'],
+  ];
+  // 탈의실 안 (혼자): 원래 옷으로
+  D.outSolo = [
+    ['N:젖은 머리를 수건으로 꾹꾹 눌러 말린다. 개어 둔 옷으로 갈아입는다.', 'N:피부에서 은은한 광물 냄새가 난다.'],
+    ['N:가운을 반납함에 넣고 옷을 입는다. 거울 속 얼굴이 한결 말갛다.'],
+    ['N:드라이기 바람에 머리카락이 날린다. 벽 너머에서도 드라이기 소리가 난다.', 'N:같은 타이밍이다. 괜히 웃음이 난다.'],
+    ['N:로션을 바르고 옷을 입는다. 손끝까지 따뜻하다.'],
+    ['N:사물함에서 옷을 꺼내 입는다. 단추를 채우는데 손이 아직 뜨끈하다.'],
+    ['N:벽 너머에서 사물함 문 닫히는 소리. 대위도 다 입었나 보다.', 'N:서둘러 머리를 묶는다.'],
+  ];
+  // 둘 다 가운 차림으로 나와 마주쳤을 때 (대위 외모 묘사 · 노골적이지 않게)
+  D.meetRobe = [
+    ['N:남자 탈의실 커튼이 걷히고 대위가 나온다. 가운이 작아 소매가 팔꿈치에 걸려 있고, 그 아래로 단단한 팔뚝이 드러난다.', 'C;:…사이즈가 이것뿐이래.', 'C*:너는 딱 맞네. 예쁘다.'],
+    ['N:대위가 가운 끈을 대충 묶은 채 나온다. 넓은 어깨에 가운이 팽팽하게 걸려 있다. 벌어진 깃 사이로 단단한 가슴팍이 보인다.', 'P:{ob}, 깃.', 'C:…아, 응.', 'N:대위가 깃을 여미지만 금방 다시 벌어진다.'],
+    ['N:동시에 커튼이 걷힌다. 마주친 대위가 걸음을 멈춘다.', 'C~:…같은 타이밍이네.', 'N:가운 아래로 보이는 대위의 종아리가 놀랄 만큼 단단하다.'],
+    ['N:대위의 가운 깃 사이로 쇄골 아래 길게 그어진 흉터 끝이 보인다. 대위가 시선을 알아채고 웃는다.', 'C:…무섭지?', 'P:아니.', 'C*:…다행이다. 들어가자.'],
+    ['N:대위가 수건을 목에 걸고 나온다. 가운 아래로 드러난 팔은 핏줄이 도드라져 있다.', 'C^:나 이런 거 입으니까 어때. 장군 같아?', 'P:{ob}는 레슬링 선수 같아.', 'C;:…칭찬이지?'],
+    ['N:허리끈을 꽉 묶은 대위의 허리가 의외로 날렵하다. 어깨에서 허리로 떨어지는 선이 역삼각형이다.', 'C:…왜 그렇게 봐.', 'P:{ob} 몸 좋다.', 'C*:…매일 아침 연병장 열 바퀴의 결과야. 칭찬 받았으니 내일은 열한 바퀴.'],
+    ['N:대위가 가운 소매를 걷어붙인다. 팔뚝에 작은 화상 자국과 근육이 얽혀 있다.', 'C:소매가 거슬려서.', 'C^:너도 걷어 줄까? 손 안 보이잖아.'],
+    ['N:대위가 나오다 탈의실 문틀에 머리를 박을 뻔하고 고개를 숙인다. 숙인 목덜미에서 어깨까지 근육이 팽팽하다.', 'C;:…여기도 문틀이 낮아.'],
+    ['N:커튼 너머에서 나온 대위의 젖은 앞머리가 이마에 흘러내려 있다. 평소 넘긴 머리와 딴판이다.', 'C:…샤워부터 했어. 먼저 씻고 들어가야 한대서.', 'C*:너 가운 입은 거, 생각보다 더 예쁘다.'],
+    ['N:대위가 가운 앞섶을 여미며 걸어 나온다. 걸음마다 가운 자락 아래로 탄탄한 다리가 보인다.', 'C^:맨발로 걸으니까 바닥 따뜻하다. 좋다.', 'C*:…너 발 작다. 귀엽다.'],
+    ['N:대위의 넓은 등에 가운이 꽉 낀다. 등 근육 모양이 천 너머로 그대로 드러난다.', 'P:{ob} 가운 터질 것 같아.', 'C;:…조심해서 움직일게.'],
+    ['N:대위가 탈의실에서 나와 나를 보자마자 멈춰 선다. 귀가 빨개진다.', 'C~:…가운 하나 입었을 뿐인데 왜 이렇게 예뻐.', 'P:{ob}도 멋있어.', 'C*:…나는 소매 짧은데.'],
+  ];
+  // 다 씻고 옷 입고 나와 마주쳤을 때
+  D.meetClothes = [
+    ['N:대위가 젖은 머리를 수건으로 털며 나온다. 셔츠 단추를 두 개 풀어 둔 채다.', 'C:…덥다. 너는 다 말렸어?', 'C*:머리 아직 젖었다. 이리 와.'],
+    ['N:셔츠 소매를 걷어 올린 대위의 팔뚝에 아직 물기가 남아 있다. 김이 은은하게 오른다.', 'C^:온천 다녀오니까 몸이 가볍다.'],
+    ['N:동시에 커튼이 걷힌다. 둘 다 머리가 덜 말랐다.', 'C~:…또 같은 타이밍. 우리 맞춘 것도 아닌데.'],
+    ['N:대위가 셔츠 단추를 하나 잘못 끼운 채 나온다. 셔츠가 어깨에 꽉 낀다.', 'P:{ob}, 단추.', 'C;:…탈의실 거울이 너무 낮아서 못 봤어.', 'N:단추를 고쳐 끼워 준다. 대위가 가만히 서 있다.'],
+    ['N:대위가 볼이 발그레한 채 나온다. 평소 창백한 얼굴이 온천 덕에 생기가 돈다.', 'C:…나 얼굴 빨갛지. 너도야.'],
+    ['N:대위가 목에 수건을 건 채 나온다. 젖은 목덜미에서 비누 냄새가 난다.', 'C*:우유 하나씩 하자. 차가운 걸로. 나는.', 'C^:너는 데운 걸로.'],
+    ['N:대위가 머리를 손가락으로 대충 넘기며 나온다. 물기 젖은 머리가 평소보다 까맣다.', 'C:…빗 안 챙겼어. 이대로 갈 거야.', 'P:멋있어.', 'C*:…그럼 내일도 안 챙길게.'],
+    ['N:대위가 나오며 셔츠 깃을 정리한다. 목 아래 쇄골 위로 김이 아직 피어오른다.', 'C~:…다음엔 더 오래 있자. 아쉽다.'],
+  ];
+  // 가운으로 갈아입으러 들어갈 때 안내 (혼자 왔을 때)
+  D.soloSplit = ['N:여자 탈의실 커튼을 젖히고 들어간다.'];
+})();
+
+</script>
   <script>
 /* js/data/crowds.js */
 // 맵별 사람들 (이름 없는 주민 · 병사 · 손님 · 관광객). 낮에 붐비고 밤엔 한산하다.
@@ -7800,7 +7876,7 @@ PX.Dlg = (() => {
   }
   // 대위에게 하는 말을 지금 관계에 맞는 말투로 (연인이거나 수색팀이 아니면 반말 · 수색팀 소위는 연인 전까지 존댓말)
   const capTone = (t) => !t ? t : banmal() ? lover(t) : polite(t);
-  function toCapAny() { const G = PX.Game; if (npcActive || !G || !G.cap || G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 8 || G.cap.atDoor; }
+  function toCapAny() { const G = PX.Game; if (npcActive || !G || !G.cap) return false; if (G.cap.atDoor) return true; /* 문 앞(다른 맵)에서 묻는 대위에게 하는 말도 */ if (G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 8 || G.cap.atDoor; }
 
   function portrait(speaker, face) {
     const g = portEl.getContext('2d');
@@ -8965,7 +9041,7 @@ PX.Cap = (() => {
     if (mode === 'visit' && cap.map === g.mapId && g.mapId === homeId() && !g.modal && !cap.wander) {
       const d = U.dist(cap.x, cap.y, p.x, p.y);
       if (p.seat && (!cap.seat || U.dist(cap.seat.x, cap.seat.y, p.x, p.y) > 3.6) && !cap.path.length && sitT <= 0 && (p.seat.obj && (p.seat.obj.use || (p.seat.obj.f && p.seat.obj.f.use)) !== 'bed')) { sitT = 3; if (cap.seat) cap.leaveSeat(); sitNear(g); }
-      else if (!p.seat && cap.seat && !cap.seat.virt && d > 3.4 && !p.moving) { farT += dt; if (farT > 5) { farT = 0; cap.leaveSeat(); const m = PX.W.maps[cap.map]; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1], () => cap.setDirTo(p.x, p.y)); } }
+      else if (!p.seat && cap.seat && !cap.seat.virt && d > 2.4 && !p.moving) { farT += dt; if (farT > 3) { farT = 0; cap.leaveSeat(); const m = PX.W.maps[cap.map]; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1], () => cap.setDirTo(p.x, p.y)); } }
       else farT = 0;
       sitT -= dt;
     }
@@ -9159,6 +9235,7 @@ PX.Cap = (() => {
   function followIntoMap() {
     const g = G(), S = St.S, V = PX.DLG_V2 || {}, M = PX.Mind;
     const to = g.mapId, from = g.prevMap;
+    if ((to === 'onsen_f' || to === 'onsen_m') && S.cap.onsenSplit) { mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 120 }; if (M) { M.mem().contact = 'NONE'; M.apply(); } return; } // 남자 탈의실에서 갈아입는 중
     if (to === 'inn_bathroom' && S.cap.bathAlone) { mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 120 }; if (M) { M.mem().contact = 'NONE'; M.apply(); } return; } // 혼자 욕실: 객실에서 기다린다
     // 대위가 들어가지 않는 곳: 밖에서 기다린다 (플레이어 입장은 그대로)
     if (NO_ENTRY[to]) {
@@ -9177,7 +9254,7 @@ PX.Cap = (() => {
         const bd = V.homeAsk ? PX.Dlg.pick('v_homeAsk', V.homeAsk) : null;
         await PX.Dlg.runLines(bd ? bd.l : ['C*:나도 들어가도 돼?']);
         const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('들어와요.') }, { t: PX.Dlg.capTone('차 한 잔만이에요.') }, { t: PX.Dlg.capTone('오늘은 여기까지요.') }]);
-        if (i < 2) { await PX.Dlg.say('player', i === 0 ? '들어와요.' : '차 한 잔만이에요.'); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
+        if (i < 2) { await PX.Dlg.say('player', PX.Dlg.capTone(i === 0 ? '들어와요.' : '차 한 잔만이에요.')); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
         else { await PX.Dlg.say('player', PX.Dlg.capTone('오늘은 여기까지요.')); await PX.Dlg.runLines(U.pick(V.homeNo || [['C:응, 알았어.']])); PX.Dlg.close(); g.modal--; if (M) M.noteRefuse('home', 240); release(null, 60); }
         } finally { cap.atDoor = false; }
       });
@@ -9203,6 +9280,7 @@ PX.Cap = (() => {
     if (g.mapId === w.inside) return;
     if (g.mapId === w.map) {
       mode = 'follow'; waitOut = null; cap.setDirTo(g.player.x, g.player.y);
+      if (w.inside === 'onsen_f' || w.inside === 'onsen_m') { if (PX.Bath) g.trigger(() => PX.Bath.reunite()); return; }
       if (w.inside === 'inn_bathroom') { St.S.cap.bathAlone = false; if (PX.InnBath) g.trigger(() => PX.InnBath.welcomeBack()); return; }
       if (/shower/.test(w.inside)) St.S.lastShower = St.absMin();
       const V = PX.DLG_V2 || {};
@@ -9360,7 +9438,8 @@ PX.Cap = (() => {
       PX.Dlg.close(); g.modal--;
       St.S.cap.lastVisitDay = St.S.day;
       if (!St.S.done.firstVisit) { St.S.done.firstVisit = 1; g.memory('숙소 방문', `${PX.U.josa(St.S.capName, '이')} 처음으로 내 숙소에 놀러 왔다.`, true); }
-      if (sofa) { const seat = sofa.seats.find(s => !s.by); cap.goTo(m, Math.floor(seat.x), Math.floor(seat.y + 1), () => cap.sitOn(seat)); }
+      if (sofa && Math.random() < 0.4) { const seat = sofa.seats.find(s => !s.by); cap.goTo(m, Math.floor(seat.x), Math.floor(seat.y + 1), () => cap.sitOn(seat)); }
+      else { const p = g.player; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1], () => cap.setDirTo(p.x, p.y)); } // 늘 소파로 가지 않고 내 옆에 서 있기도
     });
   }
   async function knock() {
@@ -12805,10 +12884,33 @@ PX.Home = (() => {
     if (!nextAt) { nextAt = now + 25 + Math.floor(Math.random() * 15); return; }
     if (g.cap.wander) { wanderT -= dt; if (wanderT <= 0) backToPlayer(); return; }
     if (now < nextAt || g.player.moving || g.cap.path.length) return;
-    nextAt = now + 25 + Math.floor(Math.random() * 25);
+    nextAt = now + 15 + Math.floor(Math.random() * 20);
     const asks = ASK.filter(a => (a.id === 'out' || list().some(x => x.id === a.id)) && (!a.when || a.when()) && !S.done['ha_' + a.id + '_' + S.day]);
-    if (asks.length && Math.random() < 0.5) return propose(U.pick(asks));
+    const r = Math.random();
+    if (st() >= 3 && !g.player.seat && (S.done['haff_' + S.day] || 0) < 6 && r < 0.45) return affection();
+    if (asks.length && r < 0.75) return propose(U.pick(asks));
     wander();
+  }
+  // 대위가 먼저 다가와 안거나 입을 맞춘다 (서서)
+  const AFF_HI = ['…이리 와. 잠깐만.', '그냥. 안고 싶어서.', '너 거기 서 있으니까 못 참겠다.', '아무것도 안 할게. 이것만.', '하루 종일 이러고 싶었어.', '소파에서 너 보고만 있었는데, 안 되겠다.',
+    '움직이지 마. 그대로.', '잠깐 충전 좀 하자.', '너 냄새 좋다. 가까이서 맡고 싶어.', '나 좀 봐.', '…보고 싶었어. 같은 방에 있는데도.', '방이 너무 넓다. 붙어 있자.'];
+  async function affection() {
+    const g = G(), c = g.cap, p = g.player, S = St.S, m = W.maps[g.mapId];
+    if (!PX.Mind) return wander();
+    S.done['haff_' + S.day] = (S.done['haff_' + S.day] || 0) + 1;
+    if (c.seat) c.leaveSeat();
+    c.wander = true; wanderT = 12;
+    const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => W.walkable(m, x, y));
+    if (t) await walk(c, t[0], t[1], 4000);
+    c.wander = false;
+    if (g.modal || !here() || p.seat) return;
+    c.setDirTo(p.x, p.y);
+    g.bubble(c, U.pickFresh('haffHi', AFF_HI), 2.4);
+    await U.sleep(900);
+    const ids = st() >= 4 ? ['backhug', 'fronthug', 'kissforehead', 'kisscheek', 'embrace', 'chinhead', 'kisstemple', 'rock', 'kissmany', 'sidehug'] : ['fronthug', 'sidehug', 'chinhead', 'pat', 'forehead'];
+    const order = ids.filter(id => PX.Mind.BY[id]).sort(() => Math.random() - 0.5);
+    for (const id of order) { if (PX.Mind.usedRecently && PX.Mind.usedRecently(id, 90)) continue; try { if (await PX.Mind.perform(id, true)) break; } catch (e) { console.error(e); } }
+    setTimeout(() => { if (!g.modal && PX.Mind.isHug && PX.Mind.isHug()) PX.Mind.setContact('NONE'); }, 9000); // 한참 안고 있다가 놓는다
   }
   function wander() {
     const g = G(), c = g.cap;
@@ -12863,11 +12965,14 @@ PX.Bath = (() => {
   const toast = (t) => PX.UI.toast(t);
   async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls, { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
   const pick = (pre, love) => PX.Dlg.capPick(lov() && love ? love : pre);
-  const BATH_MAPS = ['onsen', 'spa'];
+  const BATH_MAPS = ['onsen', 'spa', 'onsen_f', 'onsen_m'];
+  const C = () => PX.ONSEN_CHANGE;
+  const myRoom = () => St.S.player.gender === '남성' ? 'onsen_m' : 'onsen_f';
+  const sep = () => myRoom() === 'onsen_f'; // 대위와 다른 탈의실
   const refresh = () => { G().player.app = PX.S.playerApp(St.S.player, St.season()); };
   function capRobe(on, col) {
     const g = G();
-    if (on) { g.cap.app = Object.assign({}, PX.NPC_BY_ID.cap.look, { top: '#f4f1ea', bottom: '#f4f1ea', robe: col || '#4f6a8a', jacket: null, vest: null, coat: null, sleeve: 'short', badge: null, tag: 0, hat: null, shoe: '#e6d6c8' }); g.capRobe = true; }
+    if (on) { g.cap.app = Object.assign({}, PX.NPC_BY_ID.cap.look, { top: '#f4f1ea', bottom: '#f4f1ea', robe: col || '#4f6a8a', jacket: null, vest: null, coat: null, sleeve: 'short', badge: null, tag: 0, hat: null, shoe: '#e6d6c8' }); delete g.cap.app._k; g.capRobe = true; } // _k: 그림 캐시 키 (안 지우면 원래 옷 그림이 그대로 나온다)
     else if (g.capRobe) { g.capRobe = false; g.capOutfit(); }
   }
   const booth = () => PX.W.maps[G().mapId].objs.find(o => o.fid === 'changebooth');
@@ -12896,7 +13001,8 @@ PX.Bath = (() => {
     G().fade(); await U.sleep(200);
     S.player.bath = true; refresh(); if (wc) capRobe(true);
     St.advance(5);
-    await lines(wc ? pick(IN.pre, IN.love) : U.pickFresh('bathIn', IN.solo));
+    const cr = PX.MAPS[G().mapId] && PX.MAPS[G().mapId].changeRoom;
+    await lines(wc ? pick(IN.pre, IN.love) : cr ? U.pickFresh('chIn', C().inSolo) : U.pickFresh('bathIn', IN.solo));
     toast('🧺 온천 가운으로 갈아입었다');
   }
   async function changeOut() {
@@ -12904,7 +13010,8 @@ PX.Bath = (() => {
     G().fade(); await U.sleep(200);
     S.player.bath = false; refresh(); capRobe(false);
     St.advance(10);
-    await lines(wc ? pick(OUT.pre, OUT.love) : U.pickFresh('bathOut', OUT.solo));
+    const cr = PX.MAPS[G().mapId] && PX.MAPS[G().mapId].changeRoom;
+    await lines(wc ? pick(OUT.pre, OUT.love) : cr ? U.pickFresh('chOut', C().outSolo) : U.pickFresh('bathOut', OUT.solo));
     toast('👕 원래 옷으로 갈아입었다');
   }
   async function changing() {
@@ -12915,8 +13022,38 @@ PX.Bath = (() => {
     try { if (St.S.player.bath) await changeOut(); else await changeIn(); } finally { g.modal--; }
   }
   // 탕에 들어가기 전: 가운으로 안 갈아입었으면 탈의실부터
+  // 남녀 탈의실로 들어가기 (온천)
+  async function enterChange(o) {
+    const g = G(), S = St.S, id = (o && o.f && o.f.room) || (o && PX.FURN[o.fid] && PX.FURN[o.fid].room) || myRoom();
+    if (id !== myRoom()) { toast(id === 'onsen_m' ? '🚫 남자 탈의실이에요' : '🚫 여자 탈의실이에요'); return; }
+    const wc = withCap();
+    S.cap.onsenSplit = !!(wc && sep());
+    if (S.cap.onsenSplit) { g.cap.setDirTo(g.player.x, g.player.y); await lines(U.pickFresh('chSplit', C().split)); }
+    const m = PX.W.maps[id];
+    g.enterMap(id, m.exit.x + 0.5, m.exit.y - 1.5); g.player.dir = 2;
+  }
+  // 탈의실에서 나가기 → 온천, 내 탈의실 입구 앞
+  function leaveChange() {
+    const g = G(), on = PX.W.maps.onsen, d = on.objs.find(o => o.fid === (g.mapId === 'onsen_m' ? 'changedoor_m' : 'changedoor_f')), a = d && PX.W.accessTile(on, d);
+    g.enterMap('onsen', a ? a.x + 0.5 : on.exit.x + 0.5, a ? a.y + 0.5 : on.exit.y - 1.5); g.player.dir = 2;
+  }
+  // 대위가 남자 탈의실에서 같은 타이밍에 나온다
+  async function reunite() {
+    const g = G(), S = St.S, on = PX.W.maps.onsen, d = on.objs.find(o => o.fid === 'changedoor_m'), a = d && PX.W.accessTile(on, d);
+    S.cap.onsenSplit = false;
+    if (a) { g.cap.stop(); g.cap.x = a.x + 0.5; g.cap.y = a.y + 0.5; }
+    if (S.player.bath) capRobe(true); else capRobe(false);
+    g.cap.setDirTo(g.player.x, g.player.y);
+    await U.sleep(250);
+    await lines(PX.Dlg.capPick(S.player.bath ? C().meetRobe : C().meetClothes));
+  }
   async function ensure() {
     if (St.S.player.bath) return true;
+    if (G().mapId === 'onsen') {
+      const ok = await PX.UI.ask('♨️ 온천', '탕에는 탈의실에서 온천 가운으로 갈아입고 들어가요.', '탈의실 가기', '그만두기');
+      if (ok) await enterChange(null);
+      return false;
+    }
     if (!booth()) return true;
     const ok = await PX.UI.ask('♨️ 온천', '탕에는 탈의실에서 온천 가운으로 갈아입고 들어가요.', '탈의실 가기', '그만두기');
     if (!ok) return false;
@@ -12926,6 +13063,11 @@ PX.Bath = (() => {
   }
   // 탕에서 나온 뒤
   async function after() {
+    if (St.S.player.bath && G().mapId === 'onsen') {
+      const it = await PX.UI.menu('♨️ 탕에서 나왔다', [{ t: '🚪 탈의실에서 옷 갈아입기', k: 'out' }, { t: '🧺 가운 입은 채로 좀 더 쉬기', sub: '나중에 탈의실에서 갈아입어요', k: 'stay' }]);
+      if (it && it.k === 'out') await enterChange(null);
+      return;
+    }
     if (!St.S.player.bath || !booth()) return;
     const it = await PX.UI.menu('♨️ 탕에서 나왔다', [{ t: '🚪 탈의실에서 옷 갈아입기', k: 'out' }, { t: '🧺 가운 입은 채로 좀 더 쉬기', sub: '나중에 탈의실에서 갈아입어요', k: 'stay' }]);
     if (!it || it.k !== 'out') return;
@@ -12979,6 +13121,9 @@ PX.Bath = (() => {
   function noticeHair() {
     const S = St.S, g = G();
     const innM = (m) => !!(PX.MAPS[m] && (PX.MAPS[m].innRoom || PX.MAPS[m].innBath));
+    const robeOk = (m) => BATH_MAPS.includes(m) || innM(m) || m === 'onsen_m' || m === 'onsen_f';
+    if (S.player.bath && !robeOk(g.mapId)) { S.player.bath = false; refresh(); }
+    if (g.cap && g.cap.app && g.cap.app.robe && !(S.player.bath && robeOk(g.cap.map) && g.cap.map === g.mapId)) { g.capRobe = false; g.capOutfit(); }
     if (g.capRobe && !(withCap() && (BATH_MAPS.includes(g.cap.map) || innM(g.cap.map) && St.S.player.bath))) capRobe(false); // 대위가 온천·은밀숙소를 떠나면 원래 옷
     if (g.queue.length || g.transition) return;
     if (S.hairNew == null || S.day - S.hairNew > 3 || g.modal || g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 3) return;
@@ -12999,11 +13144,11 @@ PX.Bath = (() => {
     picnicker: { names: ['분수대에 앉은 연인', '산책 나온 가족', '도시락 먹는 직장인', '스케치하는 학생'], browse: true, talk: ['분수 물빛이 밤엔 보라색으로 바뀌어요. 그때 다시 와 보세요.', '점심은 여기서 먹어요. 실내는 답답해서요.', '분수에 동전 던지면 소원 이뤄진대요. 저는 벌써 세 개 던졌어요.', '꽃시장에서 산 유리꽃이에요. 햇빛 받으면 무지개가 떠요.'], amb: ['날씨 좋다.', '물소리 좋네.', '한 입만 줘.', '여기 앉자.'] },
   });
   // 대위가 옆에 있을 때 상점가에서 한마디
-  return { changing, ensure, after, onMap, salon, noticeHair, changeIn, changeOut, capRobe, refresh };
+  return { changing, ensure, after, onMap, salon, noticeHair, changeIn, changeOut, capRobe, refresh, enterChange, leaveChange, reunite, myRoom };
 })();
 // 탈의실 · 미용 의자 상호작용
-Object.assign(PX.Act.LABEL, { changing: '🚪 탈의실', salon: '💇 미용 의자' });
-Object.assign(PX.Ruby.H, { changing: () => PX.Bath.changing(), salon: () => PX.Bath.salon() });
+Object.assign(PX.Act.LABEL, { changing: '🧺 갈아입기', changeroom: '🚪 탈의실', salon: '💇 미용 의자' });
+Object.assign(PX.Ruby.H, { changing: () => PX.Bath.changing(), changeroom: (o) => PX.Bath.enterChange(o), salon: () => PX.Bath.salon() });
 
 </script>
 <script>
@@ -15881,7 +16026,7 @@ ${memLine(S)}`;
     if (S.cap.stay) Cap.mode = 'stay';
   }
   // 대위 복장: 여름엔 재킷 없이 군용 나시, 그 외엔 나시 위에 앞이 열린 위장 재킷
-  Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; };
+  Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; if (Game.cap.app !== base) delete Game.cap.app._k; };
   Game.startNew = (f) => {
     St.newGame(f);
     initWorld();
@@ -15997,6 +16142,7 @@ ${memLine(S)}`;
   function leaveRoom() {
     const m = W.maps[Game.mapId];
     if (Game.mapId === 'inn_bathroom') return PX.InnBath.leave(); // 객실 욕실 → 들어왔던 객실
+    if (PX.MAPS[Game.mapId].changeRoom) return PX.Bath.leaveChange(); // 온천 탈의실 → 온천
     if (m.def.exitTo) { // 은밀숙소 객실 → 로비
       const lb = W.maps[m.def.exitTo];
       enterMap(lb.id, lb.exit.x + 0.5, lb.exit.y - 2.5); Game.player.dir = 2; return;
@@ -16570,7 +16716,7 @@ ${memLine(S)}`;
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
       }
     }
-    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: Game.mapId === 'inn_bathroom' ? '🚪 객실로 나가기' : m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
+    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: PX.MAPS[Game.mapId].changeRoom ? '🚪 온천으로 나가기' : Game.mapId === 'inn_bathroom' ? '🚪 객실로 나가기' : m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
     for (const c of Game.critters || []) if (!c.hidden) list.push(c.extra ? { type: 'extra', a: c, x: c.x, y: c.y, label: `💬 ${c.name}`, fn: () => PX.Ruby.talk(c) } : { type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });

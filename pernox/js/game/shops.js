@@ -8,11 +8,14 @@ PX.Bath = (() => {
   const toast = (t) => PX.UI.toast(t);
   async function lines(ls) { const g = G(); g.modal++; try { await PX.Dlg.runLines(ls, { reply: true }); } finally { PX.Dlg.close(); g.modal--; } }
   const pick = (pre, love) => PX.Dlg.capPick(lov() && love ? love : pre);
-  const BATH_MAPS = ['onsen', 'spa'];
+  const BATH_MAPS = ['onsen', 'spa', 'onsen_f', 'onsen_m'];
+  const C = () => PX.ONSEN_CHANGE;
+  const myRoom = () => St.S.player.gender === '남성' ? 'onsen_m' : 'onsen_f';
+  const sep = () => myRoom() === 'onsen_f'; // 대위와 다른 탈의실
   const refresh = () => { G().player.app = PX.S.playerApp(St.S.player, St.season()); };
   function capRobe(on, col) {
     const g = G();
-    if (on) { g.cap.app = Object.assign({}, PX.NPC_BY_ID.cap.look, { top: '#f4f1ea', bottom: '#f4f1ea', robe: col || '#4f6a8a', jacket: null, vest: null, coat: null, sleeve: 'short', badge: null, tag: 0, hat: null, shoe: '#e6d6c8' }); g.capRobe = true; }
+    if (on) { g.cap.app = Object.assign({}, PX.NPC_BY_ID.cap.look, { top: '#f4f1ea', bottom: '#f4f1ea', robe: col || '#4f6a8a', jacket: null, vest: null, coat: null, sleeve: 'short', badge: null, tag: 0, hat: null, shoe: '#e6d6c8' }); delete g.cap.app._k; g.capRobe = true; } // _k: 그림 캐시 키 (안 지우면 원래 옷 그림이 그대로 나온다)
     else if (g.capRobe) { g.capRobe = false; g.capOutfit(); }
   }
   const booth = () => PX.W.maps[G().mapId].objs.find(o => o.fid === 'changebooth');
@@ -41,7 +44,8 @@ PX.Bath = (() => {
     G().fade(); await U.sleep(200);
     S.player.bath = true; refresh(); if (wc) capRobe(true);
     St.advance(5);
-    await lines(wc ? pick(IN.pre, IN.love) : U.pickFresh('bathIn', IN.solo));
+    const cr = PX.MAPS[G().mapId] && PX.MAPS[G().mapId].changeRoom;
+    await lines(wc ? pick(IN.pre, IN.love) : cr ? U.pickFresh('chIn', C().inSolo) : U.pickFresh('bathIn', IN.solo));
     toast('🧺 온천 가운으로 갈아입었다');
   }
   async function changeOut() {
@@ -49,7 +53,8 @@ PX.Bath = (() => {
     G().fade(); await U.sleep(200);
     S.player.bath = false; refresh(); capRobe(false);
     St.advance(10);
-    await lines(wc ? pick(OUT.pre, OUT.love) : U.pickFresh('bathOut', OUT.solo));
+    const cr = PX.MAPS[G().mapId] && PX.MAPS[G().mapId].changeRoom;
+    await lines(wc ? pick(OUT.pre, OUT.love) : cr ? U.pickFresh('chOut', C().outSolo) : U.pickFresh('bathOut', OUT.solo));
     toast('👕 원래 옷으로 갈아입었다');
   }
   async function changing() {
@@ -60,8 +65,38 @@ PX.Bath = (() => {
     try { if (St.S.player.bath) await changeOut(); else await changeIn(); } finally { g.modal--; }
   }
   // 탕에 들어가기 전: 가운으로 안 갈아입었으면 탈의실부터
+  // 남녀 탈의실로 들어가기 (온천)
+  async function enterChange(o) {
+    const g = G(), S = St.S, id = (o && o.f && o.f.room) || (o && PX.FURN[o.fid] && PX.FURN[o.fid].room) || myRoom();
+    if (id !== myRoom()) { toast(id === 'onsen_m' ? '🚫 남자 탈의실이에요' : '🚫 여자 탈의실이에요'); return; }
+    const wc = withCap();
+    S.cap.onsenSplit = !!(wc && sep());
+    if (S.cap.onsenSplit) { g.cap.setDirTo(g.player.x, g.player.y); await lines(U.pickFresh('chSplit', C().split)); }
+    const m = PX.W.maps[id];
+    g.enterMap(id, m.exit.x + 0.5, m.exit.y - 1.5); g.player.dir = 2;
+  }
+  // 탈의실에서 나가기 → 온천, 내 탈의실 입구 앞
+  function leaveChange() {
+    const g = G(), on = PX.W.maps.onsen, d = on.objs.find(o => o.fid === (g.mapId === 'onsen_m' ? 'changedoor_m' : 'changedoor_f')), a = d && PX.W.accessTile(on, d);
+    g.enterMap('onsen', a ? a.x + 0.5 : on.exit.x + 0.5, a ? a.y + 0.5 : on.exit.y - 1.5); g.player.dir = 2;
+  }
+  // 대위가 남자 탈의실에서 같은 타이밍에 나온다
+  async function reunite() {
+    const g = G(), S = St.S, on = PX.W.maps.onsen, d = on.objs.find(o => o.fid === 'changedoor_m'), a = d && PX.W.accessTile(on, d);
+    S.cap.onsenSplit = false;
+    if (a) { g.cap.stop(); g.cap.x = a.x + 0.5; g.cap.y = a.y + 0.5; }
+    if (S.player.bath) capRobe(true); else capRobe(false);
+    g.cap.setDirTo(g.player.x, g.player.y);
+    await U.sleep(250);
+    await lines(PX.Dlg.capPick(S.player.bath ? C().meetRobe : C().meetClothes));
+  }
   async function ensure() {
     if (St.S.player.bath) return true;
+    if (G().mapId === 'onsen') {
+      const ok = await PX.UI.ask('♨️ 온천', '탕에는 탈의실에서 온천 가운으로 갈아입고 들어가요.', '탈의실 가기', '그만두기');
+      if (ok) await enterChange(null);
+      return false;
+    }
     if (!booth()) return true;
     const ok = await PX.UI.ask('♨️ 온천', '탕에는 탈의실에서 온천 가운으로 갈아입고 들어가요.', '탈의실 가기', '그만두기');
     if (!ok) return false;
@@ -71,6 +106,11 @@ PX.Bath = (() => {
   }
   // 탕에서 나온 뒤
   async function after() {
+    if (St.S.player.bath && G().mapId === 'onsen') {
+      const it = await PX.UI.menu('♨️ 탕에서 나왔다', [{ t: '🚪 탈의실에서 옷 갈아입기', k: 'out' }, { t: '🧺 가운 입은 채로 좀 더 쉬기', sub: '나중에 탈의실에서 갈아입어요', k: 'stay' }]);
+      if (it && it.k === 'out') await enterChange(null);
+      return;
+    }
     if (!St.S.player.bath || !booth()) return;
     const it = await PX.UI.menu('♨️ 탕에서 나왔다', [{ t: '🚪 탈의실에서 옷 갈아입기', k: 'out' }, { t: '🧺 가운 입은 채로 좀 더 쉬기', sub: '나중에 탈의실에서 갈아입어요', k: 'stay' }]);
     if (!it || it.k !== 'out') return;
@@ -124,6 +164,9 @@ PX.Bath = (() => {
   function noticeHair() {
     const S = St.S, g = G();
     const innM = (m) => !!(PX.MAPS[m] && (PX.MAPS[m].innRoom || PX.MAPS[m].innBath));
+    const robeOk = (m) => BATH_MAPS.includes(m) || innM(m) || m === 'onsen_m' || m === 'onsen_f';
+    if (S.player.bath && !robeOk(g.mapId)) { S.player.bath = false; refresh(); }
+    if (g.cap && g.cap.app && g.cap.app.robe && !(S.player.bath && robeOk(g.cap.map) && g.cap.map === g.mapId)) { g.capRobe = false; g.capOutfit(); }
     if (g.capRobe && !(withCap() && (BATH_MAPS.includes(g.cap.map) || innM(g.cap.map) && St.S.player.bath))) capRobe(false); // 대위가 온천·은밀숙소를 떠나면 원래 옷
     if (g.queue.length || g.transition) return;
     if (S.hairNew == null || S.day - S.hairNew > 3 || g.modal || g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 3) return;
@@ -144,8 +187,8 @@ PX.Bath = (() => {
     picnicker: { names: ['분수대에 앉은 연인', '산책 나온 가족', '도시락 먹는 직장인', '스케치하는 학생'], browse: true, talk: ['분수 물빛이 밤엔 보라색으로 바뀌어요. 그때 다시 와 보세요.', '점심은 여기서 먹어요. 실내는 답답해서요.', '분수에 동전 던지면 소원 이뤄진대요. 저는 벌써 세 개 던졌어요.', '꽃시장에서 산 유리꽃이에요. 햇빛 받으면 무지개가 떠요.'], amb: ['날씨 좋다.', '물소리 좋네.', '한 입만 줘.', '여기 앉자.'] },
   });
   // 대위가 옆에 있을 때 상점가에서 한마디
-  return { changing, ensure, after, onMap, salon, noticeHair, changeIn, changeOut, capRobe, refresh };
+  return { changing, ensure, after, onMap, salon, noticeHair, changeIn, changeOut, capRobe, refresh, enterChange, leaveChange, reunite, myRoom };
 })();
 // 탈의실 · 미용 의자 상호작용
-Object.assign(PX.Act.LABEL, { changing: '🚪 탈의실', salon: '💇 미용 의자' });
-Object.assign(PX.Ruby.H, { changing: () => PX.Bath.changing(), salon: () => PX.Bath.salon() });
+Object.assign(PX.Act.LABEL, { changing: '🧺 갈아입기', changeroom: '🚪 탈의실', salon: '💇 미용 의자' });
+Object.assign(PX.Ruby.H, { changing: () => PX.Bath.changing(), changeroom: (o) => PX.Bath.enterChange(o), salon: () => PX.Bath.salon() });

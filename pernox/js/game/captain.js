@@ -133,7 +133,7 @@ PX.Cap = (() => {
     if (mode === 'visit' && cap.map === g.mapId && g.mapId === homeId() && !g.modal && !cap.wander) {
       const d = U.dist(cap.x, cap.y, p.x, p.y);
       if (p.seat && (!cap.seat || U.dist(cap.seat.x, cap.seat.y, p.x, p.y) > 3.6) && !cap.path.length && sitT <= 0 && (p.seat.obj && (p.seat.obj.use || (p.seat.obj.f && p.seat.obj.f.use)) !== 'bed')) { sitT = 3; if (cap.seat) cap.leaveSeat(); sitNear(g); }
-      else if (!p.seat && cap.seat && !cap.seat.virt && d > 3.4 && !p.moving) { farT += dt; if (farT > 5) { farT = 0; cap.leaveSeat(); const m = PX.W.maps[cap.map]; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1], () => cap.setDirTo(p.x, p.y)); } }
+      else if (!p.seat && cap.seat && !cap.seat.virt && d > 2.4 && !p.moving) { farT += dt; if (farT > 3) { farT = 0; cap.leaveSeat(); const m = PX.W.maps[cap.map]; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1], () => cap.setDirTo(p.x, p.y)); } }
       else farT = 0;
       sitT -= dt;
     }
@@ -327,6 +327,7 @@ PX.Cap = (() => {
   function followIntoMap() {
     const g = G(), S = St.S, V = PX.DLG_V2 || {}, M = PX.Mind;
     const to = g.mapId, from = g.prevMap;
+    if ((to === 'onsen_f' || to === 'onsen_m') && S.cap.onsenSplit) { mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 120 }; if (M) { M.mem().contact = 'NONE'; M.apply(); } return; } // 남자 탈의실에서 갈아입는 중
     if (to === 'inn_bathroom' && S.cap.bathAlone) { mode = 'waitOut'; waitOut = { map: from, inside: to, until: St.absMin() + 120 }; if (M) { M.mem().contact = 'NONE'; M.apply(); } return; } // 혼자 욕실: 객실에서 기다린다
     // 대위가 들어가지 않는 곳: 밖에서 기다린다 (플레이어 입장은 그대로)
     if (NO_ENTRY[to]) {
@@ -345,7 +346,7 @@ PX.Cap = (() => {
         const bd = V.homeAsk ? PX.Dlg.pick('v_homeAsk', V.homeAsk) : null;
         await PX.Dlg.runLines(bd ? bd.l : ['C*:나도 들어가도 돼?']);
         const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('들어와요.') }, { t: PX.Dlg.capTone('차 한 잔만이에요.') }, { t: PX.Dlg.capTone('오늘은 여기까지요.') }]);
-        if (i < 2) { await PX.Dlg.say('player', i === 0 ? '들어와요.' : '차 한 잔만이에요.'); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
+        if (i < 2) { await PX.Dlg.say('player', PX.Dlg.capTone(i === 0 ? '들어와요.' : '차 한 잔만이에요.')); await PX.Dlg.runLines(U.pick(V.homeYes || [['C^:고마워.']])); PX.Dlg.close(); g.modal--; startVisit(true); if (i === 1) St.S.cap.visitShort = St.absMin() + 60; }
         else { await PX.Dlg.say('player', PX.Dlg.capTone('오늘은 여기까지요.')); await PX.Dlg.runLines(U.pick(V.homeNo || [['C:응, 알았어.']])); PX.Dlg.close(); g.modal--; if (M) M.noteRefuse('home', 240); release(null, 60); }
         } finally { cap.atDoor = false; }
       });
@@ -371,6 +372,7 @@ PX.Cap = (() => {
     if (g.mapId === w.inside) return;
     if (g.mapId === w.map) {
       mode = 'follow'; waitOut = null; cap.setDirTo(g.player.x, g.player.y);
+      if (w.inside === 'onsen_f' || w.inside === 'onsen_m') { if (PX.Bath) g.trigger(() => PX.Bath.reunite()); return; }
       if (w.inside === 'inn_bathroom') { St.S.cap.bathAlone = false; if (PX.InnBath) g.trigger(() => PX.InnBath.welcomeBack()); return; }
       if (/shower/.test(w.inside)) St.S.lastShower = St.absMin();
       const V = PX.DLG_V2 || {};
@@ -528,7 +530,8 @@ PX.Cap = (() => {
       PX.Dlg.close(); g.modal--;
       St.S.cap.lastVisitDay = St.S.day;
       if (!St.S.done.firstVisit) { St.S.done.firstVisit = 1; g.memory('숙소 방문', `${PX.U.josa(St.S.capName, '이')} 처음으로 내 숙소에 놀러 왔다.`, true); }
-      if (sofa) { const seat = sofa.seats.find(s => !s.by); cap.goTo(m, Math.floor(seat.x), Math.floor(seat.y + 1), () => cap.sitOn(seat)); }
+      if (sofa && Math.random() < 0.4) { const seat = sofa.seats.find(s => !s.by); cap.goTo(m, Math.floor(seat.x), Math.floor(seat.y + 1), () => cap.sitOn(seat)); }
+      else { const p = g.player; const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => PX.W.walkable(m, x, y)); if (t) cap.goTo(m, t[0], t[1], () => cap.setDirTo(p.x, p.y)); } // 늘 소파로 가지 않고 내 옆에 서 있기도
     });
   }
   async function knock() {

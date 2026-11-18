@@ -312,10 +312,33 @@ PX.Home = (() => {
     if (!nextAt) { nextAt = now + 25 + Math.floor(Math.random() * 15); return; }
     if (g.cap.wander) { wanderT -= dt; if (wanderT <= 0) backToPlayer(); return; }
     if (now < nextAt || g.player.moving || g.cap.path.length) return;
-    nextAt = now + 25 + Math.floor(Math.random() * 25);
+    nextAt = now + 15 + Math.floor(Math.random() * 20);
     const asks = ASK.filter(a => (a.id === 'out' || list().some(x => x.id === a.id)) && (!a.when || a.when()) && !S.done['ha_' + a.id + '_' + S.day]);
-    if (asks.length && Math.random() < 0.5) return propose(U.pick(asks));
+    const r = Math.random();
+    if (st() >= 3 && !g.player.seat && (S.done['haff_' + S.day] || 0) < 6 && r < 0.45) return affection();
+    if (asks.length && r < 0.75) return propose(U.pick(asks));
     wander();
+  }
+  // 대위가 먼저 다가와 안거나 입을 맞춘다 (서서)
+  const AFF_HI = ['…이리 와. 잠깐만.', '그냥. 안고 싶어서.', '너 거기 서 있으니까 못 참겠다.', '아무것도 안 할게. 이것만.', '하루 종일 이러고 싶었어.', '소파에서 너 보고만 있었는데, 안 되겠다.',
+    '움직이지 마. 그대로.', '잠깐 충전 좀 하자.', '너 냄새 좋다. 가까이서 맡고 싶어.', '나 좀 봐.', '…보고 싶었어. 같은 방에 있는데도.', '방이 너무 넓다. 붙어 있자.'];
+  async function affection() {
+    const g = G(), c = g.cap, p = g.player, S = St.S, m = W.maps[g.mapId];
+    if (!PX.Mind) return wander();
+    S.done['haff_' + S.day] = (S.done['haff_' + S.day] || 0) + 1;
+    if (c.seat) c.leaveSeat();
+    c.wander = true; wanderT = 12;
+    const t = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => [Math.floor(p.x) + dx, Math.floor(p.y) + dy]).find(([x, y]) => W.walkable(m, x, y));
+    if (t) await walk(c, t[0], t[1], 4000);
+    c.wander = false;
+    if (g.modal || !here() || p.seat) return;
+    c.setDirTo(p.x, p.y);
+    g.bubble(c, U.pickFresh('haffHi', AFF_HI), 2.4);
+    await U.sleep(900);
+    const ids = st() >= 4 ? ['backhug', 'fronthug', 'kissforehead', 'kisscheek', 'embrace', 'chinhead', 'kisstemple', 'rock', 'kissmany', 'sidehug'] : ['fronthug', 'sidehug', 'chinhead', 'pat', 'forehead'];
+    const order = ids.filter(id => PX.Mind.BY[id]).sort(() => Math.random() - 0.5);
+    for (const id of order) { if (PX.Mind.usedRecently && PX.Mind.usedRecently(id, 90)) continue; try { if (await PX.Mind.perform(id, true)) break; } catch (e) { console.error(e); } }
+    setTimeout(() => { if (!g.modal && PX.Mind.isHug && PX.Mind.isHug()) PX.Mind.setContact('NONE'); }, 9000); // 한참 안고 있다가 놓는다
   }
   function wander() {
     const g = G(), c = g.cap;

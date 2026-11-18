@@ -26,7 +26,7 @@
     if (S.cap.stay) Cap.mode = 'stay';
   }
   // 대위 복장: 여름엔 재킷 없이 군용 나시, 그 외엔 나시 위에 앞이 열린 위장 재킷
-  Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; };
+  Game.capOutfit = () => { const base = PX.NPC_BY_ID.cap.look; Game.cap.app = St.season() === 'summer' ? Object.assign({}, base, { jacket: null, sleeve: 'none' }) : base; if (Game.cap.app !== base) delete Game.cap.app._k; };
   Game.startNew = (f) => {
     St.newGame(f);
     initWorld();
@@ -142,6 +142,7 @@
   function leaveRoom() {
     const m = W.maps[Game.mapId];
     if (Game.mapId === 'inn_bathroom') return PX.InnBath.leave(); // 객실 욕실 → 들어왔던 객실
+    if (PX.MAPS[Game.mapId].changeRoom) return PX.Bath.leaveChange(); // 온천 탈의실 → 온천
     if (m.def.exitTo) { // 은밀숙소 객실 → 로비
       const lb = W.maps[m.def.exitTo];
       enterMap(lb.id, lb.exit.x + 0.5, lb.exit.y - 2.5); Game.player.dir = 2; return;
@@ -715,7 +716,7 @@
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
       }
     }
-    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: Game.mapId === 'inn_bathroom' ? '🚪 객실로 나가기' : m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
+    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: PX.MAPS[Game.mapId].changeRoom ? '🚪 온천으로 나가기' : Game.mapId === 'inn_bathroom' ? '🚪 객실로 나가기' : m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
     for (const c of Game.critters || []) if (!c.hidden) list.push(c.extra ? { type: 'extra', a: c, x: c.x, y: c.y, label: `💬 ${c.name}`, fn: () => PX.Ruby.talk(c) } : { type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });

@@ -67,7 +67,7 @@ PX.Dlg = (() => {
   }
   // 대위에게 하는 말을 지금 관계에 맞는 말투로 (연인이거나 수색팀이 아니면 반말 · 수색팀 소위는 연인 전까지 존댓말)
   const capTone = (t) => !t ? t : banmal() ? lover(t) : polite(t);
-  function toCapAny() { const G = PX.Game; if (npcActive || !G || !G.cap || G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 8 || G.cap.atDoor; }
+  function toCapAny() { const G = PX.Game; if (npcActive || !G || !G.cap) return false; if (G.cap.atDoor) return true; /* 문 앞(다른 맵)에서 묻는 대위에게 하는 말도 */ if (G.cap.map !== G.mapId || G.cap.hidden) return false; return U.dist(G.cap.x, G.cap.y, G.player.x, G.player.y) < 8 || G.cap.atDoor; }
 
   function portrait(speaker, face) {
     const g = portEl.getContext('2d');
