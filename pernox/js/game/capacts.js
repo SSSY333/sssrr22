@@ -322,7 +322,16 @@ PX.CapAct = (() => {
     sit: { sit: true, lines: [['C:옆자리 비었지?', 'C*:비었다고 해 줘.'], ['C:잠깐 앉아 있자. 다리 쉬게.'], ['N:대위가 옆에 앉는다. 자리가 한쪽으로 살짝 기운다.', 'C^:덩치 탓이야.']] },
     workout: { pose: 'workout', lines: [['C:같이 하자. 자세는 내가 봐 줄게.'], ['C*:나랑 같이 하면 두 배로 힘들어. 각오해.'], ['C:숨 쉬는 거 잊지 마. 들 때 내쉬고.']] },
     hang: { pose: 'workout', own: true }, fish: { stand: true, own: true }, harvest: { stand: true, own: true }, campfire: { sit: true, own: true }, view: { stand: true, own: true }, onsen: { own: true }, tent: { own: true }, sandcastle: { stand: true, own: true }, shoot: { stand: true, own: true },
-    shop: { stand: true, lines: [['C:나도 하나. 차가운 걸로.'], ['C*:뭐 사? 계산은 내가 할게. …진짜로.'], ['C:그거 맛있어? 한 입만.'], ['C^:고르는 데 오래 걸리네. 귀엽다. 천천히 골라.']] },
+    shop: { stand: true, lines: [['C*:뭐 사? 계산은 내가 할게. …진짜로.'], ['C^:고르는 데 오래 걸리네. 귀엽다. 천천히 골라.']], byMap: { // 가게마다 맞는 말 (은밀숙소 프런트에서 음료 얘기 같은 건 하지 않는다)
+      inn: [['C*:…방은 네가 골라. 나는 어디든 좋아.'], ['C;:직원이 웃는다. …못 본 척하자.'], ['C^:계산은 내가 할게. 이건 양보 못 해.'], ['C~:오늘은 시간 넉넉하게 잡자.']],
+      cafe: [['C:나도 하나. 차가운 걸로. 얼음 많이.'], ['C:그거 맛있어? 한 입만.'], ['C*:뭐 마셔? 계산은 내가 할게.']], skylounge: [['C:나도 하나. 차가운 걸로.'], ['C^:여기 전망 값이 음료 값에 들어 있대.']],
+      flower: [['C:꽃은 잘 몰라. 네가 좋아하는 걸로.'], ['C*:이거 너 닮았다. 작고 향 좋은 거.']],
+      boutique: [['C:입어 봐. 기다릴게. 몇 벌이든.'], ['C*:그거 어울릴 것 같아. 아니, 다 어울려.']],
+      interior: [['C:네 방에 놓을 거야? 무거운 건 내가 옮겨 줄게.'], ['C^:이 소파 크다. 나도 앉을 수 있겠다.']],
+      salon: [['C:머리 해? 끝날 때까지 여기 앉아 있을게.'], ['C*:무슨 머리든 예쁠 거야. 그래도 기대된다.']],
+      arcade: [['C:코인 바꿔? 나도 몇 개.'], ['C^:인형 뽑기 코인이면 내가 낸다.']],
+      samgyup: [['C:냉삼은 내가 굽는다. 넌 먹기만 해.']],
+    } },
     vending: { stand: true, lines: [['C:나도. 제일 차가운 거.'], ['C*:동전 있어? 내가 넣을게.']] },
     tv: { sit: true, lines: [['C:뭐 봐? 나도 볼래.'], ['C*:영화 무서운 거면 내 팔 잡아. 내가 무서운 거 아니고.'], ['N:대위가 옆에 앉아 팔을 소파 등받이에 걸친다. 자연스럽게, 아주 자연스럽게.']] },
     show: { sit: true, own: true }, claw: { stand: true, lines: [['C:왼쪽. 아니 오른쪽. …아, 그냥 내가 뽑아 줄게.'], ['C*:인형 하나에 이렇게 진지할 일이야? 응. 진지하게 가자.']] },
@@ -366,7 +375,7 @@ PX.CapAct = (() => {
       await U.sleep(how === 'near' && !J.sit ? 1600 : 400);
       for (let i = 0; i < 20 && g.modal; i++) await U.sleep(250); // 다른 장면이 끝나길 잠깐 기다린다
       if (g.modal || g.mapId !== here || cap.map !== here) return; // 장소가 바뀌었으면 그 대사는 하지 않는다
-      const ls = U.pickFresh('join_' + kind, J.lines);
+      const pool = (J.byMap && J.byMap[here]) || J.lines, ls = U.pickFresh('join_' + kind + (J.byMap && J.byMap[here] ? '_' + here : ''), pool);
       g.modal++; await PX.Dlg.runLines(how === 'near' && !S.done[k + S.day] ? [U.pickFresh('joinHi', ['C:어, 여기 있었네.', 'C^:마침 잘 만났다.', 'C:나도 끼워 줘.', 'C*:혼자 하게 둘 리가 없지.']), ...ls] : ls, { reply: true }); PX.Dlg.close(); g.modal--;
       if (!S.done[k + S.day]) { S.done[k + S.day] = 1; St.addAff(3); }
       if (kind === 'meal' && !S.done.firstMealTogether) { S.done.firstMealTogether = 1; g.memory('같이 먹은 밥', '식판을 나란히 놓고 먹었다. 대위가 고기를 옮겨 줬다.', true); }

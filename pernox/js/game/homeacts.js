@@ -216,6 +216,13 @@ PX.Home = (() => {
     St.S.energy = Math.max(0, St.S.energy - 8); St.advance(30); reward('gym', 2);
   }) });
 
+  add({ id: 'daylove', t: '☀️ 커튼 치기', sub: '쉬는 날 낮 · 둘만의 깊은 시간 (4~5시간)', s: 4, when: () => PX.InnNight.canDay(), run: () => scene(async () => {
+    const bed = objs().find(o => useOf(o) === 'bed');
+    if (bed) { await standAt(bed); const s = (bed.seats || []).find(x => !x.by); if (s) G().player.sitOn(s); }
+    const g = G(); g.cutscene = false;
+    await PX.InnNight.daytime();
+  }) });
+
   // ---------- 같이 나가기 ----------
   const OUT = [
     { to: 'mess', t: '🍚 식당에 밥 먹으러', say: '식당 가서 같이 밥 먹어요.', mil: true, open: [[6 * 60 + 30, 9 * 60], [11 * 60, 14 * 60], [17 * 60, 20 * 60]] },

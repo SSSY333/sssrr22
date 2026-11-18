@@ -280,6 +280,7 @@
     else if (!bed && md.kind === 'out') add('👀 주변 구경하기', () => look(withCap));
     if (!bed && m.objs.some(x => x.f && x.f.use === 'tv')) add('📺 TV 보기', tv);
     if (!bed && /sofa/.test(o.fid)) add('😪 소파에서 낮잠 (30분)', () => nap(30, withCap));
+    if (bed && withCap && PX.InnNight.canDay()) add('☀️ 커튼 치기', () => PX.InnNight.daytime(), '쉬는 날 낮 · 둘만의 깊은 시간 (4~5시간)');
     if (bed) {
       if (md.home) add('😴 잠자기', sleepMenu); else add('😪 잠깐 눕기 (1시간)', () => nap(60, withCap));
     }

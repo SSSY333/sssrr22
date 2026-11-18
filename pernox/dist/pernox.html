@@ -10078,7 +10078,7 @@ PX.Act = (() => {
     S.done.innBook = { room: r.id, until };
     await lines([PX.Dlg.capPick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
     await goInnRoom(r.id);
-    if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(INN_ARRIVE[r.id])), 600);
+    if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(!St.isNight() && INN_ARRIVE_DAY[r.id] || INN_ARRIVE[r.id])), 600);
   }
   // 단말로 미리 예약 (연인부터) → 대위에게 같이 가자고 하기
   async function bookByPhone() {
@@ -10111,6 +10111,7 @@ PX.Act = (() => {
     inn_bath: ['N:캔들 불빛이 욕조 물 위에서 흔들린다.', 'C*:욕조 진짜 크네. 둘이 들어가도 남겠다.', 'C:물 받아 놓을까? 온도는 네가 정해.'],
     inn_water: ['N:창밖으로 루비웨이 불빛이 별처럼 번진다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'],
   };
+  const INN_ARRIVE_DAY = { inn_water: ['N:창밖으로 네온이 꺼진 한낮의 루비웨이가 내려다보인다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'] }; // 낮엔 불빛 얘기 대신
   // 객실 침대: 같이 눕기 / 아침까지 (화면은 암전, 묘사는 하지 않음)
   async function innBed(o) {
     const g = G(), S = St.S;
@@ -11002,7 +11003,16 @@ PX.CapAct = (() => {
     sit: { sit: true, lines: [['C:옆자리 비었지?', 'C*:비었다고 해 줘.'], ['C:잠깐 앉아 있자. 다리 쉬게.'], ['N:대위가 옆에 앉는다. 자리가 한쪽으로 살짝 기운다.', 'C^:덩치 탓이야.']] },
     workout: { pose: 'workout', lines: [['C:같이 하자. 자세는 내가 봐 줄게.'], ['C*:나랑 같이 하면 두 배로 힘들어. 각오해.'], ['C:숨 쉬는 거 잊지 마. 들 때 내쉬고.']] },
     hang: { pose: 'workout', own: true }, fish: { stand: true, own: true }, harvest: { stand: true, own: true }, campfire: { sit: true, own: true }, view: { stand: true, own: true }, onsen: { own: true }, tent: { own: true }, sandcastle: { stand: true, own: true }, shoot: { stand: true, own: true },
-    shop: { stand: true, lines: [['C:나도 하나. 차가운 걸로.'], ['C*:뭐 사? 계산은 내가 할게. …진짜로.'], ['C:그거 맛있어? 한 입만.'], ['C^:고르는 데 오래 걸리네. 귀엽다. 천천히 골라.']] },
+    shop: { stand: true, lines: [['C*:뭐 사? 계산은 내가 할게. …진짜로.'], ['C^:고르는 데 오래 걸리네. 귀엽다. 천천히 골라.']], byMap: { // 가게마다 맞는 말 (은밀숙소 프런트에서 음료 얘기 같은 건 하지 않는다)
+      inn: [['C*:…방은 네가 골라. 나는 어디든 좋아.'], ['C;:직원이 웃는다. …못 본 척하자.'], ['C^:계산은 내가 할게. 이건 양보 못 해.'], ['C~:오늘은 시간 넉넉하게 잡자.']],
+      cafe: [['C:나도 하나. 차가운 걸로. 얼음 많이.'], ['C:그거 맛있어? 한 입만.'], ['C*:뭐 마셔? 계산은 내가 할게.']], skylounge: [['C:나도 하나. 차가운 걸로.'], ['C^:여기 전망 값이 음료 값에 들어 있대.']],
+      flower: [['C:꽃은 잘 몰라. 네가 좋아하는 걸로.'], ['C*:이거 너 닮았다. 작고 향 좋은 거.']],
+      boutique: [['C:입어 봐. 기다릴게. 몇 벌이든.'], ['C*:그거 어울릴 것 같아. 아니, 다 어울려.']],
+      interior: [['C:네 방에 놓을 거야? 무거운 건 내가 옮겨 줄게.'], ['C^:이 소파 크다. 나도 앉을 수 있겠다.']],
+      salon: [['C:머리 해? 끝날 때까지 여기 앉아 있을게.'], ['C*:무슨 머리든 예쁠 거야. 그래도 기대된다.']],
+      arcade: [['C:코인 바꿔? 나도 몇 개.'], ['C^:인형 뽑기 코인이면 내가 낸다.']],
+      samgyup: [['C:냉삼은 내가 굽는다. 넌 먹기만 해.']],
+    } },
     vending: { stand: true, lines: [['C:나도. 제일 차가운 거.'], ['C*:동전 있어? 내가 넣을게.']] },
     tv: { sit: true, lines: [['C:뭐 봐? 나도 볼래.'], ['C*:영화 무서운 거면 내 팔 잡아. 내가 무서운 거 아니고.'], ['N:대위가 옆에 앉아 팔을 소파 등받이에 걸친다. 자연스럽게, 아주 자연스럽게.']] },
     show: { sit: true, own: true }, claw: { stand: true, lines: [['C:왼쪽. 아니 오른쪽. …아, 그냥 내가 뽑아 줄게.'], ['C*:인형 하나에 이렇게 진지할 일이야? 응. 진지하게 가자.']] },
@@ -11046,7 +11056,7 @@ PX.CapAct = (() => {
       await U.sleep(how === 'near' && !J.sit ? 1600 : 400);
       for (let i = 0; i < 20 && g.modal; i++) await U.sleep(250); // 다른 장면이 끝나길 잠깐 기다린다
       if (g.modal || g.mapId !== here || cap.map !== here) return; // 장소가 바뀌었으면 그 대사는 하지 않는다
-      const ls = U.pickFresh('join_' + kind, J.lines);
+      const pool = (J.byMap && J.byMap[here]) || J.lines, ls = U.pickFresh('join_' + kind + (J.byMap && J.byMap[here] ? '_' + here : ''), pool);
       g.modal++; await PX.Dlg.runLines(how === 'near' && !S.done[k + S.day] ? [U.pickFresh('joinHi', ['C:어, 여기 있었네.', 'C^:마침 잘 만났다.', 'C:나도 끼워 줘.', 'C*:혼자 하게 둘 리가 없지.']), ...ls] : ls, { reply: true }); PX.Dlg.close(); g.modal--;
       if (!S.done[k + S.day]) { S.done[k + S.day] = 1; St.addAff(3); }
       if (kind === 'meal' && !S.done.firstMealTogether) { S.done.firstMealTogether = 1; g.memory('같이 먹은 밥', '식판을 나란히 놓고 먹었다. 대위가 고기를 옮겨 줬다.', true); }
@@ -11480,6 +11490,7 @@ PX.Place = (() => {
   const held = (fn) => async () => { const g = G(); g.modal++; try { await fn(); } finally { PX.Dlg.close(); g.modal--; } };
   add('rubyway', { id: 'rw_inn', t: '🗝️ 은밀숙소 가자고 하기', sub: '밤 · 연인', s: 4, when: night, run: held(() => PX.InnNight.suggest('street')) });
   add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, run: held(() => PX.InnNight.suggest('lobby')) });
+  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
   add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
 
   // ---------- 지금 할 수 있는 것 ----------
@@ -11711,6 +11722,13 @@ PX.Home = (() => {
       [['C:플랭크 버티기. 진 사람 소원 들어주기.', 'N:대위가 옆에서 같이 버틴다. 자꾸 옆을 보며 웃는다.', 'C^:…졌다. 너 보느라. 소원 말해.'],
         ['N:대위가 팔굽혀펴기를 하며 등에 타 보라고 한다.', 'C*:올라와. 너 정도는 무게도 아니야.', 'N:등 위에서 오르락내리락. 대위가 숫자를 세다 웃음이 터진다.']]);
     St.S.energy = Math.max(0, St.S.energy - 8); St.advance(30); reward('gym', 2);
+  }) });
+
+  add({ id: 'daylove', t: '☀️ 커튼 치기', sub: '쉬는 날 낮 · 둘만의 깊은 시간 (4~5시간)', s: 4, when: () => PX.InnNight.canDay(), run: () => scene(async () => {
+    const bed = objs().find(o => useOf(o) === 'bed');
+    if (bed) { await standAt(bed); const s = (bed.seats || []).find(x => !x.by); if (s) G().player.sitOn(s); }
+    const g = G(); g.cutscene = false;
+    await PX.InnNight.daytime();
   }) });
 
   // ---------- 같이 나가기 ----------
@@ -13071,8 +13089,111 @@ PX.InnNight = (() => {
     g.cap.map = g.mapId; await U.sleep(400); fade(false);
     await lines(pick(MORNING)); PX.Dlg.close();
   }
+  // ===================== 낮의 깊은 시간 (주말 · 휴가 낮) =====================
+  // 밤보다 짧게(4~5시간) · 조금 더 급하고 진하게 · 직접적인 묘사 없이 암전으로. 장소(객실 · 내 숙소 · 대위 막사)와 낮이라는 상황에 맞는 말만.
+  const DAY_START = {
+    inn: [
+      ['N:대낮의 객실. 커튼 틈으로 햇빛이 길게 들어온다.', 'C:…밤까지 기다리려고 했어. 진짜로.', 'C*:근데 못 하겠다. 너 그 표정 하고 있으면.'],
+      ['N:문이 닫히자마자 대위가 문에 등을 기댄 채 나를 끌어안는다.', 'C~:…주말 낮에 이러는 거, 처음이다.', 'P:싫어?', 'C*:아니. 미치게 좋아.'],
+      ['C:프런트 직원이 "이 시간에요?" 하는 얼굴이었어.', 'C^:네, 이 시간에요. 라고 대답할 뻔했다.', 'N:대위가 웃으며 재킷을 벗어 의자에 던진다. 평소처럼 개지 않는다.'],
+      ['N:낮의 루비웨이는 조용하다. 네온이 꺼진 창밖 대신, 방 안의 무드등만 분홍빛이다.', 'C:…밖이 이렇게 조용하니까 네 숨소리가 다 들린다.', 'C*:나 지금 엄청 참는 중이야. 알아?'],
+    ],
+    home: [
+      ['N:블라인드 사이로 한낮의 빛이 줄무늬를 그린다. 멀리서 점심 배식 종소리가 들린다.', 'C:…다들 밥 먹으러 가는 시간이네.', 'C*:우리는 안 가도 되지. 쉬는 날이니까.'],
+      ['N:대위가 블라인드 줄을 당긴다. 방이 반쯤 어두워진다.', 'C;:이걸로 충분해? 낮이라 다 안 가려지네.', 'P:…괜찮아.', 'C~:그럼 됐다. 나도 더는 못 참아.'],
+      ['C:문 잠갔어? …나 두 번 확인했어.', 'N:대위가 침대 끝에 앉아 나를 무릎 사이로 끌어당긴다.', 'C*:낮에 보니까 네 얼굴이 너무 잘 보여서 큰일이다.'],
+      ['N:좁은 침대 위로 햇빛이 비스듬히 떨어진다. 대위가 그 빛 속에서 나를 내려다본다.', 'C~:…밤엔 이렇게 못 봤어. 아까웠다.', 'C*:오늘은 하나도 안 놓칠 거야.'],
+    ],
+    cap: [
+      ['N:막사 창으로 한낮의 햇빛이 쏟아진다. 대위가 블라인드를 내리고 냉각기를 끈다.', 'C:…냉각기 끄는 거, 나한텐 큰 결심이야.', 'C*:너 추울까 봐. …아니, 이제 안 추울 거야.'],
+      ['N:대위가 넓은 침대 위로 나를 가볍게 안아 올린다.', 'C^:이 침대 크게 산 보람이 있다. 오늘 처음으로.', 'C~:…주말 낮이 이렇게 길었나.'],
+      ['C:옆 막사는 지금 다 훈련 나갔어. 확인했어.', 'N:대위가 단말을 엎어 놓고 군화를 벗어 가지런히… 놓으려다 그냥 던진다.', 'C*:지금부터 몇 시간은 아무도 안 찾아.'],
+    ],
+  };
+  const DAY_DURING = [
+    ['N:입맞춤이 점점 깊어진다. 숨 고를 틈도 없이 대위가 다시 입술을 찾는다.', 'C;:…낮이라고 봐줄 생각 없어.', 'P:누가 봐 달래?', 'C*:…그 말, 후회 안 하지?'],
+    ['N:셔츠 단추 하나가 튕겨 나가 바닥을 구른다. 둘 다 잠깐 멈췄다가 웃음이 터진다.', 'C^:…나중에 찾자. 나중에.', 'N:웃음이 끝나기도 전에 대위가 다시 끌어당긴다.'],
+    ['N:대위가 손목을 부드럽게 붙잡아 베개 위로 올린다. 눈이 마주친다.', 'C~:…이렇게 환할 때 보니까 너 진짜 예쁘다. 다 보여.', 'P:…그렇게 보지 마.', 'C*:싫어. 오늘은 다 볼 거야.'],
+    ['C:밤엔 내가 참았지. 조심하느라.', 'N:대위의 목소리가 낮게 갈라진다.', 'C*:오늘은 조금 덜 참을게.', { q: [['…참지 마.', 4, ['C~:…알았어. 각오해.']], ['천천히, 대신 오래.', 3, ['C:응. 천천히. 아주 오래.']]] }],
+    ['N:햇빛 줄무늬가 대위의 어깨 위로 흘러내린다. 오래된 흉터까지 다 보인다.', 'C;:…흉터 많지. 낮이라 숨길 수가 없네.', 'P:다 좋아. 이것도 {ob}니까.', 'C~:…그런 말 하면 나 진짜 못 멈춰.'],
+    ['N:대위가 나를 안은 채 몸을 굴린다. 이번엔 내가 대위를 내려다본다.', 'C^:…이 각도 좋다. 명령만 내려.', 'P:가만히 있어.', 'C*:그건 좀 어려운 명령인데.'],
+    ['N:대위가 셔츠를 머리 위로 벗어 던진다. 서두르느라 팔이 소매에 걸린다.', 'C;:…아, 이거 왜 안 빠져.', 'N:결국 둘 다 웃으며 같이 소매를 잡아당긴다.', 'C~:웃지 마. …아니, 계속 웃어. 그 얼굴 좋아.'],
+  ];
+  const DAY_GO = [['…커튼 쳐.', '밤까지 기다리자.'], ['지금.', '이따 밤에.'], ['{ob}, 이리 와.', '조금만 쉬었다가.'], ['…참지 마.', '오늘은 안고만 있자.']];
+  const DAY_STOP = [['C^:응. 밤까지 기다리는 것도 좋아. 기대하면서.'], ['C:알았어. 그럼 이대로 낮잠 자자. 안고.'], ['C*:응. 대신 밤엔 안 봐준다. 농담이야. …반만.']];
+  const DAY_DARK = ['N:커튼을 쳐도 낮은 낮이다. 얇은 빛 속에서 서로의 얼굴만 보인다.', 'N:햇빛이 이불 위에 줄무늬를 그린다. 그 위로 그림자 둘이 겹친다.', 'N:시계 초침 소리가 멀어진다. 대낮인데, 세상에 둘만 남은 것 같다.'];
+  const DAY_MURMUR = [
+    ['N:커튼 틈의 햇빛이 조금씩 자리를 옮긴다. 숨소리가 거칠다.', 'C;:…{cv}. 나 좀 봐.', { q: [['보고 있어.', 3, ['C~:…계속 봐. 눈 감지 마.']], ['…{ob} 얼굴 빨개.', 3, ['C*:너 때문이야. 전부.']]] }],
+    ['N:어딘가에서 단말이 진동한다. 둘 다 무시한다. 세 번째 진동에 대위가 단말을 베개 밑으로 밀어 넣는다.', 'C:…지금은 전쟁 나도 안 받아.', { q: [['진짜?', 2, ['C*:…응. 진짜. 너만.']], ['나도 안 받아.', 3, ['C^:좋아. 그럼 계속.']]] }],
+    ['C*:…한 번만 더.', { q: [['…아까도 그랬잖아.', 3, ['C~:아까는 아까고.']], ['응.', 4, ['C;:…너 오늘 나 시험하는 거지.']]] }],
+    ['N:땀에 젖은 이마가 맞닿는다. 대위가 숨을 몰아쉬며 웃는다.', 'C^:…낮에 이러니까 이상하게 더 좋다.', { q: [['왜?', 2, ['C*:다 보이니까. 네가 나 좋아하는 게.']], ['나도.', 3, ['C:…응. 알아. 다 보여.']]] }],
+    ['N:등을 쓸던 손이 천천히, 그러다 급하게 나를 끌어당긴다.', 'C~:…너무 좋아서 미치겠다. 진짜로.', { q: [['미쳐도 돼.', 4, ['C;:…책임져.']], ['{ob}, 사랑해.', 4, ['C~:…지금 그 말은 반칙이야.']]] }],
+    ['N:창밖으로 누군가 웃으며 지나간다. 둘 다 숨을 죽인다. 발소리가 멀어지자 대위가 귓가에 웃음을 흘린다.', 'C*:…들킬 뻔했다. 근데 멈출 생각은 없었어.', { q: [['나쁜 사람.', 3, ['C^:응. 너한테만.']], ['쉿.', 2, ['C~:…응. 조용히. 대신 더 가까이.']]] }],
+    ['N:이불이 바닥으로 미끄러져 내려간다. 아무도 줍지 않는다.', 'C:…추워?', { q: [['아니. 더워.', 3, ['C*:나도. …냉각기는 나중에.']], ['{ob}가 있잖아.', 3, ['C~:…응. 내가 데워 줄게. 계속.']]] }],
+    ['N:대위가 깍지 낀 손을 베개에 꾹 누른다. 손가락 사이로 맥박이 뛴다.', 'C;:…놓기 싫다. 오늘은 해가 질 때까지.', { q: [['놓지 마.', 4, ['C~:…안 놔. 절대.']], ['해 지면?', 3, ['C*:그땐 밤이니까. 처음부터 다시.']]] }],
+  ];
+  const DAY_AFTER = {
+    any: [
+      ['N:어느새 햇빛이 오후의 주황색으로 바뀌었다. 시트가 엉망이다.', 'C;:…몇 시야? 아니, 말하지 마. 알고 싶지 않아.', 'C^:배고프다. 점심 건너뛰었네. 우리 둘 다.'],
+      ['N:대위가 대자로 누워 천장을 본다. 숨이 아직 다 돌아오지 않았다.', 'C:…수색 열두 시간보다 힘들어.', 'P:그래서 싫어?', 'C*:아니. 매주 하자. 쉬는 날마다.'],
+      ['N:바닥에 굴러간 셔츠 단추를 대위가 찾아 손바닥에 올려놓는다.', 'C^:기념품. 이건 내가 가질게.', 'C~:…오늘 낮, 평생 못 잊겠다.'],
+      ['C:씻을래? 같이?', 'P:…그럼 또 늦어지잖아.', 'C*:응. 그게 목적이야.', 'N:결국 샤워는 한참 뒤에야 끝났다.'],
+      ['N:대위가 이불째로 나를 끌어안고 목덜미에 얼굴을 묻는다.', 'C;:…좀 세게 했지. 괜찮아?', 'P:괜찮아. 좋았어.', 'C~:…다행이다. 사랑해. 밤에도, 낮에도.'],
+      ['N:대위가 헝클어진 내 머리를 손가락으로 빗어 넘긴다. 햇빛에 비친 얼굴이 나른하다.', 'C*:이 얼굴은 나만 봐야 돼. 나가기 전에 거울 꼭 봐.', 'P:왜?', 'C^:누가 봐도 알 것 같아서.'],
+    ],
+    base: [
+      ['N:창밖으로 저녁 배식 종이 울린다. 대위가 웃음을 터뜨린다.', 'C^:점심 종 들을 때 시작했는데.', 'C*:저녁은 제대로 먹자. 너 기운 차려야지. …나도.'],
+      ['N:멀리서 연병장 구보 구령이 들린다. 대위가 이불 속에서 낮게 웃는다.', 'C:…쟤네는 지금 뛰고 있는데.', 'C^:나는 오늘 운동 이걸로 끝.'],
+    ],
+    inn: [
+      ['N:퇴실 안내 전화가 울린다. 대위가 수화기를 들고 아주 침착한 목소리로 말한다.', 'C:…연장할게요. 두 시간.', 'C*:거짓말 아니야. 진짜 두 시간만 더 있을 거야.'],
+      ['N:커튼을 걷자 루비웨이의 낮 풍경이 보인다. 네온이 꺼진 거리가 낯설다.', 'C:…낮의 루비웨이는 처음 본다.', 'C^:너랑 보니까 이것도 좋다.'],
+    ],
+  };
+  const PREP_CAP = [
+    ['N:대위가 침대 옆 군용 사물함을 연다. 각 잡힌 물건들 사이에 작은 상자 하나.', 'C;:…혹시 몰라서 사 둔 거야. 혹시라니까.', 'C*:이번엔 혹시가 아니네.'],
+    ['C:잠깐.', 'N:대위가 손을 뻗어 협탁 서랍을 연다. 망설임이 없다.', 'C:이런 건 내가 챙겨. 너 지키는 일이니까.'],
+  ];
+  const outerOf = (id) => { const d = PX.MAPS[id]; return !d ? null : d.kind === 'out' ? id : outerOf(d.parent); };
+  // 낮에 깊은 시간을 보낼 수 있나: 연인 · 주말이나 내 휴가 · 낮(8~18시) · 대위가 근무가 아니고 같은 방 · 하루 한 번
+  function canDay() {
+    const g = G(), S = St.S, t = S.time.min, md = PX.MAPS[g.mapId] || {};
+    if (S.rel.cap.stage < 4 || t < 8 * 60 || t >= 18 * 60) return false;
+    if (!(St.isWeekend() || (PX.Rom && PX.Rom.onLeave('me', S.day)))) return false;
+    if (!(md.innRoom || md.home || g.mapId === 'q_captain')) return false;
+    if (PX.Cap.onDuty() || S.done['dayLove_' + S.day]) return false;
+    return !!(g.cap && g.cap.map === g.mapId && !g.cap.hidden && ['visit', 'stay', 'follow'].includes(PX.Cap.mode));
+  }
+  async function daytime() {
+    const g = G(), S = St.S, room = g.mapId, md = PX.MAPS[room] || {};
+    const where = md.innRoom ? 'inn' : room === 'q_captain' ? 'cap' : 'home';
+    const base = where !== 'inn' && outerOf(room) === 'base';
+    g.modal++;
+    try {
+      await lines(pick(DAY_START[where].filter(b => base || !/배식|막사|연병장/.test(JSON.stringify(b)))));
+      await lines(pick(DAY_DURING));
+      const go = U.pick(DAY_GO);
+      const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
+      await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
+      if (i !== 0) { await lines(pick(DAY_STOP)); return false; }
+      S.done['dayLove_' + S.day] = 1;
+      await lines(pick(where === 'cap' ? PREP_CAP : PREP[where]));
+      PX.Dlg.close(); fade(true); await U.sleep(700);
+      await lines([U.pick(DAY_DARK)]);
+      const total = 240 + Math.floor(Math.random() * 61), n = 3;
+      const fresh = DAY_MURMUR.filter(m => !PX.Dlg.bundleSeen({ l: m })), rest = DAY_MURMUR.filter(m => !fresh.includes(m));
+      const order = [...fresh.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(0, n);
+      let used = 0;
+      for (const m of order) { const a = Math.floor(total * 0.85 / n); St.advance(a); used += a; const r = await PX.Dlg.runLines(m); St.addAff(Math.min(3, r.aff || 1)); }
+      St.advance(total - used); PX.Dlg.close(); fade(false); await U.sleep(300);
+      await lines(pick(DAY_AFTER.any.concat(where === 'inn' ? DAY_AFTER.inn : base ? DAY_AFTER.base : [])));
+      St.addAff(6); S.energy = Math.max(10, (S.energy || 50) - 15); S.hunger = Math.max(0, (S.hunger || 50) - 20);
+      if (!S.done.dayLoveMem) { S.done.dayLoveMem = 1; g.memory('햇빛 아래', '쉬는 날 낮, 커튼 틈 햇빛 속에서 그는 하나도 놓치지 않겠다고 했다.', false); }
+      return true;
+    } finally { PX.Dlg.close(); g.modal--; }
+  }
   const counts = () => ({ street: STREET.length, lobby: LOBBY.length, enter: ENTER.length, during: Object.values(DURING).reduce((a, b) => a + b.length, 0), murmur: MURMUR.length, after: AFTER.length, morning: MORNING.length, stop: STOP.length, prep: PREP.inn.length + PREP.home.length, home: HOME_ENTER.length });
-  return { night, suggest, counts, homeNight, intimate, PREP };
+  return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime };
 })();
 
 </script>
@@ -14868,6 +14989,7 @@ ${memLine(S)}`;
     else if (!bed && md.kind === 'out') add('👀 주변 구경하기', () => look(withCap));
     if (!bed && m.objs.some(x => x.f && x.f.use === 'tv')) add('📺 TV 보기', tv);
     if (!bed && /sofa/.test(o.fid)) add('😪 소파에서 낮잠 (30분)', () => nap(30, withCap));
+    if (bed && withCap && PX.InnNight.canDay()) add('☀️ 커튼 치기', () => PX.InnNight.daytime(), '쉬는 날 낮 · 둘만의 깊은 시간 (4~5시간)');
     if (bed) {
       if (md.home) add('😴 잠자기', sleepMenu); else add('😪 잠깐 눕기 (1시간)', () => nap(60, withCap));
     }

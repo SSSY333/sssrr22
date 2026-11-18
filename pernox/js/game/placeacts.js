@@ -347,6 +347,7 @@ PX.Place = (() => {
   const held = (fn) => async () => { const g = G(); g.modal++; try { await fn(); } finally { PX.Dlg.close(); g.modal--; } };
   add('rubyway', { id: 'rw_inn', t: '🗝️ 은밀숙소 가자고 하기', sub: '밤 · 연인', s: 4, when: night, run: held(() => PX.InnNight.suggest('street')) });
   add('inn', { id: 'in_lobby', t: '🗝️ 객실 올라가기 전에', sub: '연인', s: 4, run: held(() => PX.InnNight.suggest('lobby')) });
+  add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_day', t: '☀️ 커튼 치고 둘만의 시간', sub: '쉬는 날 낮 · 4~5시간 · 연인', s: 4, when: () => PX.InnNight.canDay(), run: () => PX.InnNight.daytime() });
   add(['inn_mirror', 'inn_bath', 'inn_water'], { id: 'in_night', t: '🌙 오늘 밤 같이 있기', sub: '불 끄고 아침까지 · 연인', s: 4, when: () => { const m = St.S.time.min; return m >= 20 * 60 || m < 4 * 60; }, run: held(() => PX.InnNight.night()) });
 
   // ---------- 지금 할 수 있는 것 ----------

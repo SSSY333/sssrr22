@@ -387,7 +387,7 @@ PX.Act = (() => {
     S.done.innBook = { room: r.id, until };
     await lines([PX.Dlg.capPick(['C!:…진짜 고른 거다? 무르기 없다.', 'C^:카드키 받았다. 가자.', 'C*:엘리베이터 안에서 웃지 마. 나 지금 표정 관리 중이야.'])]);
     await goInnRoom(r.id);
-    if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(INN_ARRIVE[r.id])), 600);
+    if (once('inn_' + r.id)) setTimeout(() => G().trigger(() => lines(!St.isNight() && INN_ARRIVE_DAY[r.id] || INN_ARRIVE[r.id])), 600);
   }
   // 단말로 미리 예약 (연인부터) → 대위에게 같이 가자고 하기
   async function bookByPhone() {
@@ -420,6 +420,7 @@ PX.Act = (() => {
     inn_bath: ['N:캔들 불빛이 욕조 물 위에서 흔들린다.', 'C*:욕조 진짜 크네. 둘이 들어가도 남겠다.', 'C:물 받아 놓을까? 온도는 네가 정해.'],
     inn_water: ['N:창밖으로 루비웨이 불빛이 별처럼 번진다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'],
   };
+  const INN_ARRIVE_DAY = { inn_water: ['N:창밖으로 네온이 꺼진 한낮의 루비웨이가 내려다보인다. 침대가 살짝 출렁인다.', 'C!:이거… 앉으니까 흔들린다. 배 타는 거 같아.', 'C*:멀미 나면 네 탓이다.'] }; // 낮엔 불빛 얘기 대신
   // 객실 침대: 같이 눕기 / 아침까지 (화면은 암전, 묘사는 하지 않음)
   async function innBed(o) {
     const g = G(), S = St.S;
