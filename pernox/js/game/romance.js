@@ -66,6 +66,7 @@ PX.Rom = (() => {
   function tick() {
     const S = St.S, g = G(), d = nextDate();
     if (!d) return;
+    if (d.kind === 'come' && d.state === 'planned') return PX.Promise.tick(d); // 메시지로 한 '내가 갈게'
     const at = d.day * DAY + d.min, t = now();
     if (d.state === 'planned') {
       if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; if (PX.Op.together && PX.Op.together()) sendMsg(U.pick([`두 시간 뒤에 ${d.name} 가기로 한 거, 잊은 거 아니지?`, `이따 ${Cal.fmtTime(d.min)}에 ${d.name}. 이렇게 같이 있으니까 그냥 같이 가면 되겠다.`]), [['응, 같이 가요.', 2, '좋아. 시간 되면 내가 손 잡고 간다.'], ['설레요.', 3, '…나도. 옆에 있는데도 설레.']]); else sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }

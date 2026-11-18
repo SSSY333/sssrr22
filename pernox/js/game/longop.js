@@ -145,7 +145,7 @@ PX.Op = (() => {
     return Math.round(now() + (r < 0.65 ? 1 + Math.random() * 6 : 8 + Math.random() * 25));
   }
   const RE_D = [
-    [/이따|만날|볼래|시간 돼|놀/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 지금 바로 갈게. 어디야?', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
+    [/이따|만날|볼래|시간 돼|놀|와 줘|와줘|올래|방으로|와[.!~?]*$/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 지금 바로 갈게. 어디야?', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
     [/밥|먹었|배고/, { pre: ['먹었어. 너도 챙겨 먹어.', '아직. 이제 먹으러 간다. 너는?'], lov: ['먹었어. 너는? 거르면 혼난다.', '아직. 같이 먹을래? 데리러 갈게.'] }],
     [/보고 싶|생각/, { pre: ['…그런 말 받으니까 일이 손에 안 잡힌다.', '나도 방금 네 생각 했어. 진짜로.'], lov: ['나도. 지금 바로 가고 싶다.', '그 말 세 번 읽었어. 아껴 읽는 중.', '보고 싶다는 말 들으면 걸음이 빨라져. 곧 갈게.'] }],
     [/뭐 해|뭐해/, { pre: ['작전동에서 서류 보는 중. 지루해.', '장비 정리 중. 너는?'], lov: ['너 생각. 아, 일도 하고 있어. 조금.', '박 중사 잔소리 듣는 중. 구해 줘.'] }],
@@ -167,6 +167,7 @@ PX.Op = (() => {
     const hit = RE_D.find(([re]) => re.test(text)), set = hit ? hit[1] : GEN_D;
     let pool = set[lv] || set.pre;
     if (hit && hit[1].free) pool = free ? pool.filter(l => !/근무 중/.test(l)) : ['지금 근무 중이야. 끝나면 바로 연락할게.', '근무 끝나고 갈게. 조금만 기다려.'];
+    if (hit && hit[1].free && free) { const md = PX.MAPS[G().mapId] || {}; pool = md.home ? (lv === 'lov' ? ['알았어. 지금 네 숙소로 갈게. 금방 가.', '숙소지? 씻고 바로 갈게. 문 열어 둬.'] : ['숙소에 있어? 지금 갈게.', '알았어. 금방 갈게.']) : [`${md.name ? md.name + '?' : '거기?'} 알았어. 지금 갈게.`, '거기 있어. 금방 갈게.']; }
     let r = U.pickFresh('dre_' + (hit ? RE_D.indexOf(hit) : 'g') + lv, pool);
     if (k === 'duty' || k === 'field') r = U.pick(['근무 중이라 늦었어. ', '쉬는 시간에 몰래 보는 거야. ', '']) + r;
     if (now() % DAY < 7 * 60 && k !== 'free') r = U.pick(['아침에 봤다. ', '일어나자마자 본다. ']) + r;
@@ -188,7 +189,7 @@ PX.Op = (() => {
       for (const m of list) m.st = 'answered';
       S.outbox = [];
       send({ t: ans || r.text, r: [] });
-      if (r.meet && PX.Cap.mode === 'sched' && !together()) PX.Cap.mode = 'seek'; // 시간 되면 정말 찾아온다
+      if (r.meet && !together() && !(PX.Promise && PX.Promise.come(15 + Math.floor(Math.random() * 20))) && PX.Cap.mode === 'sched') PX.Cap.mode = 'seek'; // 만나자고 했으면 약속으로 저장 · 그 시간에 온다
       if (S.done.dmsgDay !== S.day) { S.done.dmsgDay = S.day; St.addAff(1); }
     } finally { dReplying = false; PX.UI.badge(); }
   }

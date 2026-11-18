@@ -117,8 +117,12 @@ ${p}(${PX.JOBS[S.player.job].ko})에게 첫눈에 반했고, 처음 만난 지 1
     const who = PX.Game.npcs.filter(n => n.map === G.mapId).slice(0, 6).map(n => `${n.def.name}(${n.def.job})`);
     return `[지금 상황]
 날짜: ${Cal.fmtDate(S.time)} ${Cal.fmtTime(S.time.min)} · ${Cal.SEASON_KO[St.season()]} · 날씨: ${w}
-장소: ${m.name}${PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay' ? ' (플레이어 숙소에 손님으로 와 있음)' : ''}
-대화 방식: ${mode === 'msg' ? '떨어져 있어서 개인 단말 메시지로 대화 중. 메시지답게 아주 짧게.' : '마주 보고 대화 중.'}
+${mode === 'msg' ? `플레이어 위치: ${m.name}${m.home ? ' (자기 숙소)' : ''}
+${S.capName} 위치: ${(PX.MAPS[G.cap.map] || {}).name || '이동 중'} — 둘은 떨어져 있다. 같은 곳에 있는 것처럼 말하지 않는다.
+대화 방식: 개인 단말 메시지(문자). 메시지답게 짧게 1~2문장. 괄호 행동 묘사 "(…)"는 절대 쓰지 않는다. 플레이어가 방금 한 말에 바로 답한다.
+[최근 메시지 (오래된 것 → 최근)]
+${S.messages.slice(0, 8).reverse().map(x => x.out ? `나: ${x.mine}` : `${S.capName}: ${x.t}`).join('\n') || '-'}` : `장소: ${m.name}${PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay' ? ' (플레이어 숙소에 손님으로 와 있음)' : ''}
+대화 방식: 마주 보고 대화 중.`}
 ${S.capName} 지금 하는 일: ${PX.Cap.status()}${PX.Cap.onDuty() ? ' (근무 중)' : ''}
 관계 단계: ${St.stageName(r.stage)} (호감도 ${r.aff}/1000)${r.loverSince != null ? `, 연인 ${S.day - r.loverSince + 1}일째` : ''}
 호칭·말투: 플레이어는 대위보다 어리다(연하). ${r.stage >= 4 ? `연인이라 서로 반말. 플레이어는 대위를 '${S.player.callCap || '오빠'}'라고 부르고, 대위는 플레이어를 '자기' 또는 이름으로 부른다.` : '플레이어는 대위에게 존댓말(대위님)을 쓴다.'}
@@ -156,7 +160,11 @@ ${memLine(S)}`;
     if (npc) return askNpc(text, npc);
     const log = hist(S);
     const rules = bible(S) + '\n\n[페르녹스의 장소와 행사 — 로어북]\n' + loreIndex() + '\n\n[606부대와 돔시티 사람들]\n' + roster(S) + '\n대위와의 관계: 박도현 중사는 7년 지기 동료, 문성호는 단골 냉삼집 사장, 강태욱 중령은 상관.\n\n' + FORMAT.replace('${C}', S.capName);
-    const turns = [{ role: 'user', content: rules + '\n\n' + situation(S, mode) + '\n\n이제부터 플레이어의 말이 이어진다. 위 형식의 JSON으로만 답해.' }];
+    const PLAN = mode === 'msg' ? `\n\n[약속] 메시지에서 둘이 만나기로 확실히 정했을 때만 JSON에 "plan"을 넣는다. 정하지 않았으면 넣지 않는다.
+- 대위가 플레이어가 있는 곳(숙소 등)으로 가기로 했으면: "plan":{"type":"come","in":도착까지 분(10~120)}
+- 특정 장소에서 만나기로 했으면: "plan":{"type":"meet","place":"장소 이름(예: 향열매 카페, 냉삼집, 은하 국수당, 인공호수 공원, 중앙광장)","time":"HH:MM"}
+- 근무 · 작전 중이라 지금 못 가면, 근무가 끝난 뒤 시간으로 잡는다.` : '';
+    const turns = [{ role: 'user', content: rules + PLAN + '\n\n' + situation(S, mode) + '\n\n이제부터 플레이어의 말이 이어진다. 위 형식의 JSON으로만 답해.' }];
     for (const t of log.slice(-16)) turns.push({ role: t.r === 'p' ? 'user' : 'assistant', content: t.r === 'p' ? t.t : JSON.stringify({ lines: [{ face: 'normal', text: t.t }] }) });
     turns.push({ role: 'user', content: `${S.player.name}: ${text}` });
     // 연속된 user 턴은 그대로 둬도 된다 (런타임이 하나로 읽음)
@@ -166,7 +174,7 @@ ${memLine(S)}`;
     log.push({ r: 'p', t: text, d: S.day });
     log.push({ r: 'c', t: lines.map(l => l.text).join(' '), d: S.day });
     if (log.length > 24) log.splice(0, log.length - 24);
-    return { lines, action: String(out.action || 'none'), aff: U.clamp(Math.round(Number(out.aff) || 0), -3, 5) };
+    return { lines, action: String(out.action || 'none'), aff: U.clamp(Math.round(Number(out.aff) || 0), -3, 5), plan: mode === 'msg' && out.plan && typeof out.plan === 'object' ? out.plan : null };
   }
   async function askNpc(text, npc) {
     const S = St.S;
@@ -276,7 +284,10 @@ ${memLine(S)}`;
     if (!available()) throw { code: 'not_granted' };
     const res = await ask(`(메시지 "${m.t}"에 대한 답장) ${text}`, 'msg');
     St.addAff(U.clamp(res.aff, -2, 3));
-    return res.lines.map(l => l.text).join(' ');
+    // 문자에는 행동 묘사를 넣지 않는다
+    const t = res.lines.filter(l => !/^\(.*\)$/.test(l.text.trim())).map(l => l.text.replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()).filter(Boolean).join(' ');
+    if (res.plan && PX.Promise) PX.Promise.fromAI(res.plan, text); // 만나기로 했으면 약속으로
+    return t || res.lines.map(l => l.text).join(' ');
   }
   // 질문에 대한 직접 대답: 한 번 주고받기 (대위 또는 NPC)
   async function answer(who, q, text) {

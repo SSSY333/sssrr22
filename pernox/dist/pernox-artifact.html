@@ -13203,7 +13203,7 @@ PX.Op = (() => {
     return Math.round(now() + (r < 0.65 ? 1 + Math.random() * 6 : 8 + Math.random() * 25));
   }
   const RE_D = [
-    [/이따|만날|볼래|시간 돼|놀/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 지금 바로 갈게. 어디야?', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
+    [/이따|만날|볼래|시간 돼|놀|와 줘|와줘|올래|방으로|와[.!~?]*$/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 지금 바로 갈게. 어디야?', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
     [/밥|먹었|배고/, { pre: ['먹었어. 너도 챙겨 먹어.', '아직. 이제 먹으러 간다. 너는?'], lov: ['먹었어. 너는? 거르면 혼난다.', '아직. 같이 먹을래? 데리러 갈게.'] }],
     [/보고 싶|생각/, { pre: ['…그런 말 받으니까 일이 손에 안 잡힌다.', '나도 방금 네 생각 했어. 진짜로.'], lov: ['나도. 지금 바로 가고 싶다.', '그 말 세 번 읽었어. 아껴 읽는 중.', '보고 싶다는 말 들으면 걸음이 빨라져. 곧 갈게.'] }],
     [/뭐 해|뭐해/, { pre: ['작전동에서 서류 보는 중. 지루해.', '장비 정리 중. 너는?'], lov: ['너 생각. 아, 일도 하고 있어. 조금.', '박 중사 잔소리 듣는 중. 구해 줘.'] }],
@@ -13225,6 +13225,7 @@ PX.Op = (() => {
     const hit = RE_D.find(([re]) => re.test(text)), set = hit ? hit[1] : GEN_D;
     let pool = set[lv] || set.pre;
     if (hit && hit[1].free) pool = free ? pool.filter(l => !/근무 중/.test(l)) : ['지금 근무 중이야. 끝나면 바로 연락할게.', '근무 끝나고 갈게. 조금만 기다려.'];
+    if (hit && hit[1].free && free) { const md = PX.MAPS[G().mapId] || {}; pool = md.home ? (lv === 'lov' ? ['알았어. 지금 네 숙소로 갈게. 금방 가.', '숙소지? 씻고 바로 갈게. 문 열어 둬.'] : ['숙소에 있어? 지금 갈게.', '알았어. 금방 갈게.']) : [`${md.name ? md.name + '?' : '거기?'} 알았어. 지금 갈게.`, '거기 있어. 금방 갈게.']; }
     let r = U.pickFresh('dre_' + (hit ? RE_D.indexOf(hit) : 'g') + lv, pool);
     if (k === 'duty' || k === 'field') r = U.pick(['근무 중이라 늦었어. ', '쉬는 시간에 몰래 보는 거야. ', '']) + r;
     if (now() % DAY < 7 * 60 && k !== 'free') r = U.pick(['아침에 봤다. ', '일어나자마자 본다. ']) + r;
@@ -13246,7 +13247,7 @@ PX.Op = (() => {
       for (const m of list) m.st = 'answered';
       S.outbox = [];
       send({ t: ans || r.text, r: [] });
-      if (r.meet && PX.Cap.mode === 'sched' && !together()) PX.Cap.mode = 'seek'; // 시간 되면 정말 찾아온다
+      if (r.meet && !together() && !(PX.Promise && PX.Promise.come(15 + Math.floor(Math.random() * 20))) && PX.Cap.mode === 'sched') PX.Cap.mode = 'seek'; // 만나자고 했으면 약속으로 저장 · 그 시간에 온다
       if (S.done.dmsgDay !== S.day) { S.done.dmsgDay = S.day; St.addAff(1); }
     } finally { dReplying = false; PX.UI.badge(); }
   }
@@ -13527,6 +13528,7 @@ PX.Rom = (() => {
   function tick() {
     const S = St.S, g = G(), d = nextDate();
     if (!d) return;
+    if (d.kind === 'come' && d.state === 'planned') return PX.Promise.tick(d); // 메시지로 한 '내가 갈게'
     const at = d.day * DAY + d.min, t = now();
     if (d.state === 'planned') {
       if (!d.reminded && t >= at - 120 && t < at) { d.reminded = true; if (PX.Op.together && PX.Op.together()) sendMsg(U.pick([`두 시간 뒤에 ${d.name} 가기로 한 거, 잊은 거 아니지?`, `이따 ${Cal.fmtTime(d.min)}에 ${d.name}. 이렇게 같이 있으니까 그냥 같이 가면 되겠다.`]), [['응, 같이 가요.', 2, '좋아. 시간 되면 내가 손 잡고 간다.'], ['설레요.', 3, '…나도. 옆에 있는데도 설레.']]); else sendMsg(U.pick([`이따 ${Cal.fmtTime(d.min)}, ${d.name}. 잊지 마.`, `두 시간 뒤에 ${d.name}. 나 벌써 옷 고르는 중.`]), [['곧 갈게요.', 2, '응. 먼저 가 있을게.'], ['설레요.', 3, '…나도.']]); }
@@ -13807,6 +13809,73 @@ PX.Rom = (() => {
 
 </script>
   <script>
+/* js/game/promise.js */
+// 메시지로 한 약속을 실제 약속으로: "내가 갈게" → 그 시간에 내가 있는 곳으로 온다 · "어디서 만나" → 데이트 약속
+'use strict';
+PX.Promise = (() => {
+  const U = PX.U, St = PX.St, Cal = PX.Cal;
+  const G = () => PX.Game;
+  const DAY = 1440, now = () => St.absMin();
+  const dates = () => (St.S.dates = St.S.dates || []);
+  const busy = () => dates().some(d => d.state === 'planned' || d.state === 'on');
+  const homeOf = () => PX.JOBS[St.S.player.job].home;
+  // 장소 이름 → 맵 (데이트할 만한 곳 우선)
+  function findMap(name) {
+    if (!name) return null;
+    const n = String(name).replace(/\s/g, '');
+    const hit = Object.entries(PX.MAPS).filter(([id, m]) => m.name && !m.innRoom && (n.includes(m.name.replace(/\s|\(.*\)/g, '').slice(0, 4)) || m.name.replace(/\s/g, '').includes(n.slice(0, 4))));
+    hit.sort((a, b) => (b[1].date ? 1 : 0) - (a[1].date ? 1 : 0));
+    return hit.length ? hit[0][0] : null;
+  }
+  function add(d) { dates().push(Object.assign({ id: now() + Math.random(), state: 'planned', by: 'c', reminded: true }, d)); PX.UI.toast(`📅 약속: ${PX.Rom.dayKo(d.day)} ${Cal.fmtTime(d.min)} · ${d.name}`, 3600); if (PX.UI.badge) PX.UI.badge(); }
+  // 대위가 내가 있는 곳으로 온다
+  function come(mins) {
+    if (busy()) return false;
+    const g = G(), S = St.S, at = now() + U.clamp(Math.round(Number(mins) || 30), 10, 180);
+    const md = PX.MAPS[g.mapId] || {}, map = md.home ? g.mapId : (md.kind === 'out' ? g.mapId : md.parent || g.mapId);
+    add({ day: Math.floor(at / DAY), min: at % DAY, map, name: md.home ? '대위가 내 숙소로 오기' : `${PX.MAPS[map].name}에서 만나기`, kind: 'come' });
+    return true;
+  }
+  function meet(place, time) {
+    if (busy()) return false;
+    const map = findMap(place); if (!map) return false;
+    const S = St.S, m = /(\d{1,2})\s*[:시]\s*(\d{2})?/.exec(String(time || '')); let min = m ? (+m[1]) * 60 + (+(m[2] || 0)) : S.time.min + 60;
+    if (m && +m[1] < 12 && S.time.min > 12 * 60 && (+m[1] + 12) * 60 > S.time.min) min += 12 * 60; // "7시" → 저녁 7시
+    let day = S.day; if (min <= S.time.min + 10) day += 1;
+    add({ day, min: min % DAY, map, name: PX.MAPS[map].name });
+    return true;
+  }
+  function fromAI(plan) {
+    try { if (plan.type === 'come') return come(plan.in); if (plan.type === 'meet') return meet(plan.place, plan.time); } catch (e) { /* 무시 */ }
+    return false;
+  }
+  // 약속 시간: 'come'은 내가 있는 곳으로 찾아온다
+  function tick(d) {
+    const S = St.S, g = G(), at = d.day * DAY + d.min, t = now();
+    if (t < at) return;
+    d.state = 'done';
+    const here = g.mapId === d.map, homeId = homeOf();
+    if (PX.Cap.onDuty() || (S.cap.op && S.cap.op.phase === 'away')) { PX.Op.send({ t: '미안, 갑자기 근무가 잡혔어. 끝나면 바로 연락할게.', r: [] }); return; }
+    if (here && d.map === homeId) { // 노크하고 들어온다
+      if (g.cap.leaveSeat) g.cap.leaveSeat();
+      { PX.Cap.moveTo(homeId, PX.MAPS[homeId].parent); const hm = PX.W.maps[homeId]; g.cap.x = hm.exit.x + 0.5; g.cap.y = hm.exit.y - 0.5; g.cap.setDirTo(g.player.x, g.player.y); PX.Cap.mode = 'linger'; } // 문 앞에 선다
+      g.trigger(async () => { g.modal++; try { await PX.Dlg.runLines([PX.Dlg.capPick(S.rel.cap.stage >= 4 ? [['N:똑똑. 문이 열리기도 전에 익숙한 목소리가 들린다.', 'C^:왔어. 약속대로.'], ['N:노크 두 번. 문틀을 피해 고개를 숙이며 대위가 들어온다.', 'C*:보고 싶어서 뛰어왔어. 진짜로.']] : [['N:똑똑.', 'C:왔어. 들어가도 되지?'], ['N:노크 소리. 대위가 문틈으로 고개를 내민다.', 'C^:약속 지키러 왔다.']])]); } finally { PX.Dlg.close(); g.modal--; } PX.Cap.startVisit(); }); // 노크 → 들어와서 방문
+      return;
+    }
+    if (here) { // 바깥 · 다른 곳: 입구에서 걸어와 합류
+      const m = PX.W.maps[d.map]; PX.Cap.moveTo(d.map); const a = m.kind === 'in' ? [m.exit.x + 0.5, m.exit.y - 0.5] : m.def.arrive ? [m.def.arrive[0] + 0.5, m.def.arrive[1] + 0.5] : [g.player.x + 2, g.player.y];
+      g.cap.x = a[0]; g.cap.y = a[1]; PX.Cap.startFollow();
+      setTimeout(() => g.bubble(g.cap, U.pickFresh('promiseCome', ['왔다. 오래 기다렸지?', '약속대로 왔어.', '찾았다. 가자.'])), 900);
+      return;
+    }
+    PX.Op.send({ t: U.pick(['도착했는데 없네? 어디야? 내가 찾으러 갈게.', '약속 장소 왔어. 너 어디야? 그쪽으로 갈게.']), r: [['미안, 잠깐 나왔어.', 1, '괜찮아. 거기 있어. 금방 가.']] });
+    if (PX.Cap.mode === 'sched') PX.Cap.mode = 'seek';
+  }
+  return { come, meet, fromAI, tick, findMap };
+})();
+
+</script>
+  <script>
 /* js/game/ai.js */
 // AI 자유 대화 (claude.ai 아티팩트에서만 동작 — 아티팩트 런타임의 sample 기능 사용)
 // 다른 곳(HTML 파일 · 로컬)에서는 기능이 숨겨지고 고정 대사만 쓴다.
@@ -13927,8 +13996,12 @@ ${p}(${PX.JOBS[S.player.job].ko})에게 첫눈에 반했고, 처음 만난 지 1
     const who = PX.Game.npcs.filter(n => n.map === G.mapId).slice(0, 6).map(n => `${n.def.name}(${n.def.job})`);
     return `[지금 상황]
 날짜: ${Cal.fmtDate(S.time)} ${Cal.fmtTime(S.time.min)} · ${Cal.SEASON_KO[St.season()]} · 날씨: ${w}
-장소: ${m.name}${PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay' ? ' (플레이어 숙소에 손님으로 와 있음)' : ''}
-대화 방식: ${mode === 'msg' ? '떨어져 있어서 개인 단말 메시지로 대화 중. 메시지답게 아주 짧게.' : '마주 보고 대화 중.'}
+${mode === 'msg' ? `플레이어 위치: ${m.name}${m.home ? ' (자기 숙소)' : ''}
+${S.capName} 위치: ${(PX.MAPS[G.cap.map] || {}).name || '이동 중'} — 둘은 떨어져 있다. 같은 곳에 있는 것처럼 말하지 않는다.
+대화 방식: 개인 단말 메시지(문자). 메시지답게 짧게 1~2문장. 괄호 행동 묘사 "(…)"는 절대 쓰지 않는다. 플레이어가 방금 한 말에 바로 답한다.
+[최근 메시지 (오래된 것 → 최근)]
+${S.messages.slice(0, 8).reverse().map(x => x.out ? `나: ${x.mine}` : `${S.capName}: ${x.t}`).join('\n') || '-'}` : `장소: ${m.name}${PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay' ? ' (플레이어 숙소에 손님으로 와 있음)' : ''}
+대화 방식: 마주 보고 대화 중.`}
 ${S.capName} 지금 하는 일: ${PX.Cap.status()}${PX.Cap.onDuty() ? ' (근무 중)' : ''}
 관계 단계: ${St.stageName(r.stage)} (호감도 ${r.aff}/1000)${r.loverSince != null ? `, 연인 ${S.day - r.loverSince + 1}일째` : ''}
 호칭·말투: 플레이어는 대위보다 어리다(연하). ${r.stage >= 4 ? `연인이라 서로 반말. 플레이어는 대위를 '${S.player.callCap || '오빠'}'라고 부르고, 대위는 플레이어를 '자기' 또는 이름으로 부른다.` : '플레이어는 대위에게 존댓말(대위님)을 쓴다.'}
@@ -13966,7 +14039,11 @@ ${memLine(S)}`;
     if (npc) return askNpc(text, npc);
     const log = hist(S);
     const rules = bible(S) + '\n\n[페르녹스의 장소와 행사 — 로어북]\n' + loreIndex() + '\n\n[606부대와 돔시티 사람들]\n' + roster(S) + '\n대위와의 관계: 박도현 중사는 7년 지기 동료, 문성호는 단골 냉삼집 사장, 강태욱 중령은 상관.\n\n' + FORMAT.replace('${C}', S.capName);
-    const turns = [{ role: 'user', content: rules + '\n\n' + situation(S, mode) + '\n\n이제부터 플레이어의 말이 이어진다. 위 형식의 JSON으로만 답해.' }];
+    const PLAN = mode === 'msg' ? `\n\n[약속] 메시지에서 둘이 만나기로 확실히 정했을 때만 JSON에 "plan"을 넣는다. 정하지 않았으면 넣지 않는다.
+- 대위가 플레이어가 있는 곳(숙소 등)으로 가기로 했으면: "plan":{"type":"come","in":도착까지 분(10~120)}
+- 특정 장소에서 만나기로 했으면: "plan":{"type":"meet","place":"장소 이름(예: 향열매 카페, 냉삼집, 은하 국수당, 인공호수 공원, 중앙광장)","time":"HH:MM"}
+- 근무 · 작전 중이라 지금 못 가면, 근무가 끝난 뒤 시간으로 잡는다.` : '';
+    const turns = [{ role: 'user', content: rules + PLAN + '\n\n' + situation(S, mode) + '\n\n이제부터 플레이어의 말이 이어진다. 위 형식의 JSON으로만 답해.' }];
     for (const t of log.slice(-16)) turns.push({ role: t.r === 'p' ? 'user' : 'assistant', content: t.r === 'p' ? t.t : JSON.stringify({ lines: [{ face: 'normal', text: t.t }] }) });
     turns.push({ role: 'user', content: `${S.player.name}: ${text}` });
     // 연속된 user 턴은 그대로 둬도 된다 (런타임이 하나로 읽음)
@@ -13976,7 +14053,7 @@ ${memLine(S)}`;
     log.push({ r: 'p', t: text, d: S.day });
     log.push({ r: 'c', t: lines.map(l => l.text).join(' '), d: S.day });
     if (log.length > 24) log.splice(0, log.length - 24);
-    return { lines, action: String(out.action || 'none'), aff: U.clamp(Math.round(Number(out.aff) || 0), -3, 5) };
+    return { lines, action: String(out.action || 'none'), aff: U.clamp(Math.round(Number(out.aff) || 0), -3, 5), plan: mode === 'msg' && out.plan && typeof out.plan === 'object' ? out.plan : null };
   }
   async function askNpc(text, npc) {
     const S = St.S;
@@ -14086,7 +14163,10 @@ ${memLine(S)}`;
     if (!available()) throw { code: 'not_granted' };
     const res = await ask(`(메시지 "${m.t}"에 대한 답장) ${text}`, 'msg');
     St.addAff(U.clamp(res.aff, -2, 3));
-    return res.lines.map(l => l.text).join(' ');
+    // 문자에는 행동 묘사를 넣지 않는다
+    const t = res.lines.filter(l => !/^\(.*\)$/.test(l.text.trim())).map(l => l.text.replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()).filter(Boolean).join(' ');
+    if (res.plan && PX.Promise) PX.Promise.fromAI(res.plan, text); // 만나기로 했으면 약속으로
+    return t || res.lines.map(l => l.text).join(' ');
   }
   // 질문에 대한 직접 대답: 한 번 주고받기 (대위 또는 NPC)
   async function answer(who, q, text) {
