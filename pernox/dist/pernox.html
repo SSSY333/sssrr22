@@ -2790,6 +2790,17 @@ PX.S = (() => {
   // 길을 막던 장식 옮기기: 큰길 위 유리꽃 화단 · 상점가 길 위 나무 · 가구점 자리의 축제 매대
   const mv = (fid, x, y, nx, ny) => { const d = P.decor.find(d => d[0] === fid && d[1] === x && d[2] === y); if (d) { d[1] = nx; d[2] = ny; } };
   mv('flowerbed', 25, 42, 34, 49); mv('tree', 33, 47, 36, 49); mv('tree', 46, 47, 48, 49);
+  // ---------- 정리: 냉삼집은 북서쪽 빈터로 (국수당과 떨어지게) · 기물 줄이기 ----------
+  { const sg = P.buildings.find(b => b.id === 'p_samgyup'); if (sg) { sg.x = 4; sg.y = 3; } }
+  P.roads.push({ x0: 12, y0: 1, x1: 13, y1: 11, axis: 'y', walk: true }); // 냉삼집 앞 산책길을 북쪽까지
+  const rm = (fid, x, y) => drop(d => d[0] === fid && d[1] === x && d[2] === y);
+  [['benchout', 15, 35], ['benchout', 21, 35], // 무대 객석 6 → 4
+    ['planter', 19, 10], ['planter', 28, 10], ['glowflower', 17, 10], ['glowflower', 22, 10], ['glowflower', 31, 10], ['glowflower', 36, 10], // 북쪽 길가
+    ['glowflower', 27, 30], ['glowflower', 27, 38], ['glowflower', 27, 42], ['glowflower', 40, 25], // 큰길가
+    ['glowflower', 16, 38], ['glowflower', 21, 38], ['planter', 21, 43], ['flowerbed', 21, 40], // 분수 주변
+    ['glowflower', 17, 7], ['glowflower', 21, 7], ['glowflower', 28, 6], // 북쪽 정원
+    ['streetlamp', 22, 30], ['streetlamp', 15, 39]].forEach(([f, x, y]) => rm(f, x, y));
+  P.decor.push(['tree2', 2, 2, 0], ['benchout', 6, 10, 0]); // 냉삼집 옆 작은 쉼터
   // 온천 · 스파 탈의실
   M.onsen.furn.push(['changebooth', 12, 4, 0]);
   M.spa.decor.push(['changebooth', 10, 16, 0]);
