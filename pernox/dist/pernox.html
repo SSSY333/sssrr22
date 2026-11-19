@@ -11157,7 +11157,7 @@ PX.Act = (() => {
     PX.UI.toast('🗝️ 예약 완료 · 대위에게 같이 가자고 했어요');
     const reply = U.pick(['…지금 그거 보고 심장 떨어질 뻔했어. 당연히 가지.', '갈게. 일 끝나자마자 바로. 아니, 일 빨리 끝낼게.', '예약을 네가 했다고? …나 지금 엄청 웃고 있어. 간다.', '좋아. 그날은 내가 데리러 갈게.']);
     if (PX.Op.together && PX.Op.together()) { const g = G(); g.modal++; try { await PX.Dlg.say('player', ask); await PX.Dlg.say('cap', reply, 'blush'); } finally { PX.Dlg.close(); g.modal--; } }
-    else { S.messages.unshift({ id: St.absMin() + Math.random(), t: reply, r: [], day: S.day, min: S.time.min, reply: 'none', mine: ask }); S.messages.unshift({ id: St.absMin(), out: true, mine: ask, t: '', r: [], day: S.day, min: S.time.min, reply: 'none', st: 'answered' }); S.messages = S.messages.slice(0, 50); PX.UI.badge(); }
+    else { S.messages.unshift({ id: St.absMin(), out: true, mine: ask, t: '', r: [], day: S.day, min: S.time.min, reply: 'none', st: 'answered' }); S.messages.unshift({ id: St.absMin() + 0.5, t: reply, r: [], day: S.day, min: S.time.min, reply: 'none', mine: ask }); /* 최신이 앞: 내 메시지 → 대위 답장 순 */ S.messages = S.messages.slice(0, 50); PX.UI.badge(); }
   }
   // 예약한 날 저녁에 같이 있으면: 대위가 먼저 "가자" → 약속(📌)으로
   function innEveningCheck() {
