@@ -442,6 +442,8 @@ PX.UI = (() => {
     msg(p) {
       // 메신저처럼: 오래된 메시지가 위, 새 메시지가 아래 · 입력은 맨 아래 · 대위가 보낸 메시지에 답하면 새 말풍선으로 이어진다
       const S = St.S, rerender = () => { p.innerHTML = ''; PANES.msg(p); };
+      for (let i = 0; i + 1 < S.messages.length; i++) { const a = S.messages[i], b = S.messages[i + 1]; // 최신이 앞: [내 메시지, 답장] 순이면 거꾸로 저장된 것
+        if (a.out && !b.out && b.mine && b.mine === a.mine && a.day === b.day && a.min === b.min) { S.messages[i] = b; S.messages[i + 1] = a; if (!(b.id > a.id)) b.id = a.id + 0.5; } }
       for (const m of S.messages) { if (!m.out) m.seen = 1; if (!m.out && m.reply == null && !(m.r && m.r.length)) m.reply = 'none'; }
       const capWithMe = PX.Op.together && PX.Op.together();
       const book = S.done.innBook && St.absMin() < S.done.innBook.until ? S.done.innBook : null;

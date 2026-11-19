@@ -144,6 +144,20 @@ PX.Op = (() => {
     if (k === 'duty' || k === 'field') return Math.round(now() + (r < 0.35 ? 12 + Math.random() * 30 : 45 + Math.random() * 110)); // 쉬는 시간에 몰래
     return Math.round(now() + (r < 0.65 ? 1 + Math.random() * 6 : 8 + Math.random() * 25));
   }
+  const INN_BOOK = [ // {room} 방 이름 · {when} 오늘/내일
+    '…지금 그거 보고 심장 떨어질 뻔했어. 당연히 가지.', '갈게. 일 끝나자마자 바로. 아니, 일 빨리 끝낼게.', '예약을 네가 했다고? …나 지금 엄청 웃고 있어. 간다.', '좋아. 그날은 내가 데리러 갈게.',
+    '{room}? 너 그 방 고른 이유 나중에 자세히 들어야겠다.', '{when} 밤까지 시간이 너무 안 간다. 벌써부터.', '이거 데이트 신청이야, 선전포고야? 둘 다 받을게.', '…브리핑 중에 이거 봐서 표정 관리 실패했어. 박 중사가 봤어.',
+    '{room}이면 나도 궁금했던 방이야. 우리 취향 맞네.', '예약자 이름 너지? 그럼 오늘 밤 주인공도 너야. 나는 따라가는 사람.', '좋아. 대신 체크아웃까지 안 보내 준다. 알지?', '{when} 밤? 그 전에 근무 다 끝내 놓을게. 무조건.',
+    '내가 먼저 하자고 하려고 했는데. 선수 뺏겼다.', '잘했어. 아주 잘했어. 칭찬 백 번 해 줄게. 직접.', '…지금 단말 들고 혼자 웃는 거 누가 볼까 봐 화장실 왔어.', '그 방 욕조 크대. 미리 말해 두는 거야. 그냥.',
+    '알겠어. {when} 밤엔 다른 약속 다 취소다. 원래 없었지만.', '예약 확인 문자 캡처했어. 증거 보관.', '나 이제 하루 종일 그 생각만 할 텐데 책임져.', '응. 가자. 이번엔 내가 손 놓지 말아야지.',
+    '{room}… 이름만 들어도 벌써 덥다. 냉각기 최저로 해 놔야겠다.', '좋다. 근데 이거 답장을 몇 번 고쳐 썼는지 알아? 일곱 번.', '그날은 셔츠 다려 입고 갈게. 단추 날아가도 되는 걸로.', '너 이런 거 먼저 해 주는 거, 나 엄청 좋아하는 거 알지.',
+    '가자. 대신 이번엔 아침밥도 방에서 먹자. 침대에서.', '…답장 늦은 거 아니야. 심호흡하느라 그랬어.', '{when}까지 몇 시간 남았는지 세기 시작했다.', '받았어. 출동 준비 완료.',
+  ];
+  function innBookReply(text) {
+    const room = (text.match(/은밀숙소 (.+?) 예약/) || [])[1] || '그 방', when = /내일/.test(text) ? '내일' : '오늘';
+    const r = U.pickFresh('innBookR', INN_BOOK).replace(/\{room\}/g, room).replace(/\{when\}/g, when);
+    return r.replace(room + '이면', room + (U.hasBatchim(room) ? '이면' : '면'));
+  }
   const RE_D = [
     [/이따|만날|볼래|시간 돼|놀|와 줘|와줘|올래|방으로|와[.!~?]*$/, { pre: ['지금 근무 중. 끝나면 연락할게.', '좋아. 어디서 볼까?'], lov: ['당연하지. 지금 바로 갈게. 어디야?', '볼래가 아니라 봐야 돼. 어디야?'], free: true }],
     [/밥|먹었|배고/, { pre: ['먹었어. 너도 챙겨 먹어.', '아직. 이제 먹으러 간다. 너는?'], lov: ['먹었어. 너는? 거르면 혼난다.', '아직. 같이 먹을래? 데리러 갈게.'] }],
@@ -162,6 +176,7 @@ PX.Op = (() => {
   }
   const GEN_D = { pre: ['응, 봤어. 고마워.', '확인했어. 이따 얘기하자.'], lov: ['응응. 네 메시지 오면 그냥 좋다.', '봤어. 답장 고르느라 오래 걸렸어.'] };
   function dailyReply(text) {
+    if (/은밀숙소.*예약/.test(text)) { let r = innBookReply(text); if (now() % DAY < 7 * 60) r = '일어나자마자 봤다. ' + r; return { text: r, meet: false }; }
     const lv = St.S.rel.cap.stage >= 4 ? 'lov' : 'pre', k = PX.Cap.spotKind(), free = !['duty', 'field', 'sleep'].includes(k);
     if (/어디/.test(text)) { let r = whereReply(free); if (now() % DAY < 7 * 60 && k !== 'free') r = '일어나자마자 본다. ' + r; return { text: r, meet: free }; }
     const hit = RE_D.find(([re]) => re.test(text)), set = hit ? hit[1] : GEN_D;
@@ -185,7 +200,7 @@ PX.Op = (() => {
     try {
       const all = list.map(m => m.mine).join(' / ');
       let r = dailyReply(all), ans = null;
-      if (PX.AI && PX.AI.available() && !together()) { try { ans = await PX.AI.replyMsg({ t: `(평소 · 대위는 지금 ${{ duty: '근무 중', field: '외곽 근무 중', sleep: '자다 깬 참', meal: '밥 먹는 중', rest: '막사에서 쉬는 중' }[PX.Cap.spotKind()] || '쉬는 시간'} · 플레이어가 보낸 메시지에 답장)` }, all); } catch (e) { ans = null; } }
+      if (PX.AI && PX.AI.available() && !together()) { try { ans = await PX.AI.replyMsg({ t: `(평소 · 대위는 지금 ${{ duty: '근무 중', field: '외곽 근무 중', sleep: '자다 깬 참', meal: '밥 먹는 중', rest: '막사에서 쉬는 중' }[PX.Cap.spotKind()] || '쉬는 시간'} · 플레이어가 보낸 메시지에 답장${/은밀숙소.*예약/.test(all) ? ' · 플레이어가 은밀숙소(연인 숙박업소) 방을 예약하고 같이 가자고 함: 설레고 능글맞게, 노골적이지 않게, 한두 문장' : ''})` }, all); } catch (e) { ans = null; } }
       for (const m of list) m.st = 'answered';
       S.outbox = [];
       send({ t: ans || r.text, r: [] });
@@ -396,5 +411,5 @@ PX.Op = (() => {
     g.memory('함께 귀환', `${o.days}일간의 ${o.area} 작전을 마치고 함께 돌아왔다.`, true);
   }
 
-  return { together, canMsg, canText, sendToCap, quick, maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
+  return { innBookReply, together, canMsg, canText, sendToCap, quick, maybeSchedule, plan, tick, isAway, inField, dayIdx, board, schedOverride, photo, send, op, jointReturn, depart };
 })();

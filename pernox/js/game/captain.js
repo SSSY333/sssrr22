@@ -638,6 +638,7 @@ PX.Cap = (() => {
     if (now - lastMsgCheck < 20) return; lastMsgCheck = now;
     if (r.stage < 1 || mode === 'follow' || mode === 'visit' || mode === 'stay' || mode === 'waitOut' || cap.map === g.mapId) return;
     if (PX.Mind && PX.Mind.justParted(20)) return;
+    if (S.outbox && S.outbox.length) return; // 내가 보낸 메시지에 아직 답장 안 했으면 딴소리 먼저 하지 않는다
     if (S.time.min < 8 * 60 || S.time.min > 23 * 60 + 30) return;
     if (now - (S.cap.lastMsgMin || 0) < 150 || Math.random() > 0.3) return;
     if (r.noFollowUntil > now && S.time.min > 21 * 60) return;
