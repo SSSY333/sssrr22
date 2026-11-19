@@ -76,6 +76,22 @@
     ['glowflower', 17, 7], ['glowflower', 21, 7], ['glowflower', 28, 6], // 북쪽 정원
     ['streetlamp', 22, 30], ['streetlamp', 15, 39]].forEach(([f, x, y]) => rm(f, x, y));
   P.decor.push(['tree2', 2, 2, 0], ['benchout', 6, 10, 0]); // 냉삼집 옆 작은 쉼터
+  // ---------- 광장 정리 2: 동쪽 투명수로(애매한 유리 바닥) 없애고 공원으로 · 건물 간격 · 동선 ----------
+  P.zones = P.zones.filter(z => z.t !== 'glassfloor' && z.t !== 'water');
+  P.zones.push({ t: 'domegrass', x0: 39, y0: 13, x1: 50, y1: 23 }, { t: 'domegrass', x0: 39, y0: 27, x1: 50, y1: 37 }); // 동쪽 공원 (가운데로 길)
+  P.zones = P.zones.map(z => z.t === 'domegrass' && z.x0 === 1 && z.y0 === 34 ? Object.assign({}, z, { y0: 28 }) : z); // 서쪽 잔디: 가구점까지
+  drop(d => (d[0] === 'glowflower' && ((d[1] === 40 && [17, 32].includes(d[2])) || (d[1] === 47 && [20, 29].includes(d[2])))) || (d[0] === 'benchout' && d[1] === 44 && (d[2] === 16 || d[2] === 34)) || (d[0] === 'tree2' && d[1] === 48 && d[2] === 24) || (d[0] === 'icesculpture'));
+  P.roads.forEach(r => { if (r.axis === 'x' && r.y0 === 24 && r.x1 === 38) r.x1 = 50; }); // 동서 큰길을 동쪽 끝까지
+  P.decor.push(['tree', 40, 14, 0], ['tree', 48, 15, 0], ['tree2', 44, 19, 0], ['benchout', 42, 21, 2], ['benchout', 46, 21, 2],
+    ['tree', 40, 36, 0], ['tree', 48, 35, 0], ['tree2', 44, 31, 0], ['benchout', 42, 28, 0], ['benchout', 46, 28, 0]);
+  if (P.spots) P.spots['plaza.water'] = [44, 23, 2, 'stand'];
+  // 서쪽 가게 줄: 일정한 간격 (냉삼집 3~8 · 오락실 14~18 · 가구점 29~34 · 꽃시장 41~45)
+  const B = (id) => P.buildings.find(b => b.id === id);
+  if (B('p_arcade')) B('p_arcade').y = 14;
+  if (B('p_interior')) B('p_interior').y = 29;
+  if (B('p_flower')) B('p_flower').y = 41;
+  // 관람데크: 큰길 건너 국수당과 같은 줄로
+  if (B('p_deck')) B('p_deck').y = 14;
   // 온천 · 스파 탈의실
   M.onsen.furn.push(['changebooth', 12, 4, 0]);
   M.spa.decor.push(['changebooth', 10, 16, 0]);
