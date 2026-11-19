@@ -16,7 +16,7 @@
   set('ops', [D('clerkmil', 1, { from: 8, to: 18 })]);
   // 돔시티
   set('dome', [D('citizen', 10, { to: 23 })]);
-  set('plaza', [D('citizen', 12, { to: 24 }), D('tourist', 4, { from: 9, to: 22 })]);
+  set('plaza', [D('citizen', 6, { to: 24 }), D('tourist', 2, { from: 9, to: 22 })]);
   set('lab', [D('researcher', 2, { from: 8, to: 19 })]);
   set('cafe', [D('cafeguest', 3, { from: 8, to: 22 })]);
   set('samgyup', [D('diner', 3, { from: 11, to: 24 })]);

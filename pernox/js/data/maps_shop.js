@@ -38,9 +38,9 @@
   P.spots = Object.assign(P.spots || {}, { 'plaza.stage': [18, 32, 2, 'stand'], 'plaza.fountain2': [20, 42, 3, 'stand'] });
   P.crowd = (P.crowd || []).concat([
     { role: 'busker', fixed: [17.5, 29.5, 0], busy: 'day', from: 11, to: 23 },
-    { role: 'audience', n: 4, busy: 'day', from: 11, to: 23, x0: 14, y0: 32, x1: 23, y1: 37 },
-    { role: 'picnicker', n: 4, busy: 'day', from: 9, to: 22, x0: 14, y0: 38, x1: 23, y1: 47 },
-    { role: 'citizen', n: 4, busy: 'day', to: 24, x0: 27, y0: 27, x1: 38, y1: 38 }]);
+    { role: 'audience', n: 3, busy: 'day', from: 11, to: 23, x0: 14, y0: 32, x1: 23, y1: 37 },
+    { role: 'picnicker', n: 3, busy: 'day', from: 9, to: 22, x0: 14, y0: 38, x1: 23, y1: 47 },
+    { role: 'citizen', n: 2, busy: 'day', to: 24, x0: 27, y0: 27, x1: 38, y1: 38 }]);
   // ---------- 북쪽: 은하 국수당 · 유리꽃 정원 (조명만 줄지어 있던 자리) ----------
   P.buildings.push({ id: 'p_noodle', name: '은하 국수당', to: 'noodle', x: 14, y: 13, w: 8, d: 7, h: 42, wall: '#f2e2c8', roof: '#b8543a', stripe: '#ffd166', icon: 'cup', door: { f: 'R', u: 3 }, roofDeco: ['vents'], awning: '#e07a5f' });
   const drop = (f) => { for (let i = P.decor.length - 1; i >= 0; i--) if (f(P.decor[i])) P.decor.splice(i, 1); };
@@ -54,11 +54,11 @@
     ['starmonument', 31, 3, 0], ['benchout', 29, 6, 2], ['benchout', 33, 6, 2], ['flowerbed', 28, 2, 0], ['flowerbed', 34, 2, 0], ['tree2', 36, 6, 0], ['glowflower', 28, 6, 0], ['glowflower', 36, 3, 0],
     // 길가 화단 (항로등 대신)
     ['planter', 14, 10, 0], ['planter', 19, 10, 0], ['glowflower', 17, 10, 0], ['glowflower', 22, 10, 0], ['planter', 28, 10, 0], ['planter', 33, 10, 0], ['glowflower', 31, 10, 0], ['glowflower', 36, 10, 0],
-    ['glowflower', 27, 30, 0], ['glowflower', 27, 34, 0], ['glowflower', 27, 38, 0], ['glowflower', 27, 42, 0], ['flowerarch', 12, 11, 0], ['flowerarch', 28, 45, 0],
+    ['glowflower', 27, 30, 0], ['glowflower', 27, 34, 0], ['glowflower', 27, 38, 0], ['glowflower', 27, 42, 0], ['flowerarch', 12, 11, 0],
     // 국수당 앞 야식 수레
     ['foodcart', 15, 21, 0], ['foodcart', 19, 21, 0], ['streetlamp', 22, 21, 0]);
   P.shops = Object.assign(P.shops || {}, { stall: 'streetfood' });
-  P.crowd.push({ role: 'picnicker', n: 3, busy: 'day', from: 9, to: 22, x0: 14, y0: 1, x1: 37, y1: 8 }, { role: 'diner', n: 2, busy: 'day', from: 11, to: 23, x0: 14, y0: 21, x1: 22, y1: 23 });
+  P.crowd.push({ role: 'picnicker', n: 2, busy: 'day', from: 9, to: 22, x0: 14, y0: 1, x1: 37, y1: 8 }, { role: 'diner', n: 2, busy: 'day', from: 11, to: 23, x0: 14, y0: 21, x1: 22, y1: 23 });
   M.noodle.parent = 'plaza'; M.noodle.building = 'p_noodle';
   for (const id of ['interior', 'boutique', 'salon']) { M[id].parent = 'plaza'; M[id].building = 'p_' + id; } // 나가면 광장 그 가게 앞으로
   P.roads.push({ x0: 27, y0: 46, x1: 50, y1: 47, axis: 'x', walk: true }); // 남쪽 상점가 길

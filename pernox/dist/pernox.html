@@ -2763,9 +2763,9 @@ PX.S = (() => {
   P.spots = Object.assign(P.spots || {}, { 'plaza.stage': [18, 32, 2, 'stand'], 'plaza.fountain2': [20, 42, 3, 'stand'] });
   P.crowd = (P.crowd || []).concat([
     { role: 'busker', fixed: [17.5, 29.5, 0], busy: 'day', from: 11, to: 23 },
-    { role: 'audience', n: 4, busy: 'day', from: 11, to: 23, x0: 14, y0: 32, x1: 23, y1: 37 },
-    { role: 'picnicker', n: 4, busy: 'day', from: 9, to: 22, x0: 14, y0: 38, x1: 23, y1: 47 },
-    { role: 'citizen', n: 4, busy: 'day', to: 24, x0: 27, y0: 27, x1: 38, y1: 38 }]);
+    { role: 'audience', n: 3, busy: 'day', from: 11, to: 23, x0: 14, y0: 32, x1: 23, y1: 37 },
+    { role: 'picnicker', n: 3, busy: 'day', from: 9, to: 22, x0: 14, y0: 38, x1: 23, y1: 47 },
+    { role: 'citizen', n: 2, busy: 'day', to: 24, x0: 27, y0: 27, x1: 38, y1: 38 }]);
   // ---------- 북쪽: 은하 국수당 · 유리꽃 정원 (조명만 줄지어 있던 자리) ----------
   P.buildings.push({ id: 'p_noodle', name: '은하 국수당', to: 'noodle', x: 14, y: 13, w: 8, d: 7, h: 42, wall: '#f2e2c8', roof: '#b8543a', stripe: '#ffd166', icon: 'cup', door: { f: 'R', u: 3 }, roofDeco: ['vents'], awning: '#e07a5f' });
   const drop = (f) => { for (let i = P.decor.length - 1; i >= 0; i--) if (f(P.decor[i])) P.decor.splice(i, 1); };
@@ -2779,11 +2779,11 @@ PX.S = (() => {
     ['starmonument', 31, 3, 0], ['benchout', 29, 6, 2], ['benchout', 33, 6, 2], ['flowerbed', 28, 2, 0], ['flowerbed', 34, 2, 0], ['tree2', 36, 6, 0], ['glowflower', 28, 6, 0], ['glowflower', 36, 3, 0],
     // 길가 화단 (항로등 대신)
     ['planter', 14, 10, 0], ['planter', 19, 10, 0], ['glowflower', 17, 10, 0], ['glowflower', 22, 10, 0], ['planter', 28, 10, 0], ['planter', 33, 10, 0], ['glowflower', 31, 10, 0], ['glowflower', 36, 10, 0],
-    ['glowflower', 27, 30, 0], ['glowflower', 27, 34, 0], ['glowflower', 27, 38, 0], ['glowflower', 27, 42, 0], ['flowerarch', 12, 11, 0], ['flowerarch', 28, 45, 0],
+    ['glowflower', 27, 30, 0], ['glowflower', 27, 34, 0], ['glowflower', 27, 38, 0], ['glowflower', 27, 42, 0], ['flowerarch', 12, 11, 0],
     // 국수당 앞 야식 수레
     ['foodcart', 15, 21, 0], ['foodcart', 19, 21, 0], ['streetlamp', 22, 21, 0]);
   P.shops = Object.assign(P.shops || {}, { stall: 'streetfood' });
-  P.crowd.push({ role: 'picnicker', n: 3, busy: 'day', from: 9, to: 22, x0: 14, y0: 1, x1: 37, y1: 8 }, { role: 'diner', n: 2, busy: 'day', from: 11, to: 23, x0: 14, y0: 21, x1: 22, y1: 23 });
+  P.crowd.push({ role: 'picnicker', n: 2, busy: 'day', from: 9, to: 22, x0: 14, y0: 1, x1: 37, y1: 8 }, { role: 'diner', n: 2, busy: 'day', from: 11, to: 23, x0: 14, y0: 21, x1: 22, y1: 23 });
   M.noodle.parent = 'plaza'; M.noodle.building = 'p_noodle';
   for (const id of ['interior', 'boutique', 'salon']) { M[id].parent = 'plaza'; M[id].building = 'p_' + id; } // 나가면 광장 그 가게 앞으로
   P.roads.push({ x0: 27, y0: 46, x1: 50, y1: 47, axis: 'x', walk: true }); // 남쪽 상점가 길
@@ -3827,7 +3827,7 @@ PX.S = (() => {
   set('ops', [D('clerkmil', 1, { from: 8, to: 18 })]);
   // 돔시티
   set('dome', [D('citizen', 10, { to: 23 })]);
-  set('plaza', [D('citizen', 12, { to: 24 }), D('tourist', 4, { from: 9, to: 22 })]);
+  set('plaza', [D('citizen', 6, { to: 24 }), D('tourist', 2, { from: 9, to: 22 })]);
   set('lab', [D('researcher', 2, { from: 8, to: 19 })]);
   set('cafe', [D('cafeguest', 3, { from: 8, to: 22 })]);
   set('samgyup', [D('diner', 3, { from: 11, to: 24 })]);
@@ -10617,9 +10617,31 @@ PX.Decor = (() => {
     W.rebuildWalk(map);
     if (St.S) W.updateEvents(map, St.S.time, St.S.time.min);
   }
-  function applyAll() { // 저장된 맵 편집 모두 적용
-    const S = St.S;
-    for (const id in (S.mapEdits || {})) if (W.maps[id]) applyLayout(W.maps[id], S.mapEdits[id]);
+  // 맵 설계 서명: 건물 · 기본 장식이 바뀌면 예전 편집은 새 구조와 안 맞는다
+  const sigOf = (id) => { const d = PX.MAPS[id] || {}; return U.hash(JSON.stringify([(d.buildings || []).map(b => [b.id, b.x, b.y, b.w, b.d]), d.decor || d.furn || []])); };
+  // 예전 편집이 지금 건물 자리나 문 앞을 덮는지
+  function clashes(id, layout) {
+    const d = PX.MAPS[id] || {}, F = PX.FURN, bl = d.buildings || [], map = W.maps[id];
+    const doors = (map && map.doors || []).map(x => [x.x, x.y]);
+    const base = new Set((map ? map.objs : []).filter(o => o.kind === 'furn').map(o => o.fid + ',' + o.x + ',' + o.y)); // 지금 기본 배치에 원래 있는 건 문제 아님
+    for (const [fid, x, y, r] of layout) {
+      const f = F[fid]; if (!f || f.blocks === false || base.has(fid + ',' + x + ',' + y)) continue;
+      const w = r % 2 ? f.d : f.w, h = r % 2 ? f.w : f.d;
+      if (bl.some(b => x < b.x + b.w && b.x < x + w && y < b.y + b.d && b.y < y + h)) return true;
+      if (doors.some(([dx, dy]) => dx >= x && dx < x + w && dy >= y && dy < y + h)) return true;
+    }
+    return false;
+  }
+  function applyAll() { // 저장된 맵 편집 모두 적용 (지금 맵 구조와 안 맞는 예전 편집은 버린다)
+    const S = St.S, dropped = [];
+    for (const id in (S.mapEdits || {})) {
+      if (!W.maps[id]) continue;
+      let e = S.mapEdits[id];
+      if (Array.isArray(e)) e = S.mapEdits[id] = { sig: clashes(id, e) ? 'old' : sigOf(id), l: e }; // 예전 저장 형식
+      if (e.sig !== sigOf(id)) { delete S.mapEdits[id]; dropped.push(PX.MAPS[id].name); continue; }
+      applyLayout(W.maps[id], e.l);
+    }
+    if (dropped.length) setTimeout(() => PX.UI.toast(`🛠️ ${dropped.join(', ')} — 새로 바뀐 배치와 안 맞는 예전 편집을 정리했어요`, 3800), 1500);
   }
 
   function start() {
@@ -10706,7 +10728,7 @@ PX.Decor = (() => {
     if (!v.ok) { PX.UI.toast('⚠️ ' + v.reason); sel = v.o || null; return; }
     const S = St.S;
     if (homeMode) { S.homeLayout = layoutOf(m); S.homeMap = m.id; }
-    else { S.mapEdits = S.mapEdits || {}; S.mapEdits[m.id] = layoutOf(m); }
+    else { S.mapEdits = S.mapEdits || {}; S.mapEdits[m.id] = { sig: sigOf(m.id), l: layoutOf(m) }; }
     end();
     PX.A.indexSpots();
     St.save();

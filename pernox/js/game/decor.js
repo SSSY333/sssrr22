@@ -57,9 +57,31 @@ PX.Decor = (() => {
     W.rebuildWalk(map);
     if (St.S) W.updateEvents(map, St.S.time, St.S.time.min);
   }
-  function applyAll() { // 저장된 맵 편집 모두 적용
-    const S = St.S;
-    for (const id in (S.mapEdits || {})) if (W.maps[id]) applyLayout(W.maps[id], S.mapEdits[id]);
+  // 맵 설계 서명: 건물 · 기본 장식이 바뀌면 예전 편집은 새 구조와 안 맞는다
+  const sigOf = (id) => { const d = PX.MAPS[id] || {}; return U.hash(JSON.stringify([(d.buildings || []).map(b => [b.id, b.x, b.y, b.w, b.d]), d.decor || d.furn || []])); };
+  // 예전 편집이 지금 건물 자리나 문 앞을 덮는지
+  function clashes(id, layout) {
+    const d = PX.MAPS[id] || {}, F = PX.FURN, bl = d.buildings || [], map = W.maps[id];
+    const doors = (map && map.doors || []).map(x => [x.x, x.y]);
+    const base = new Set((map ? map.objs : []).filter(o => o.kind === 'furn').map(o => o.fid + ',' + o.x + ',' + o.y)); // 지금 기본 배치에 원래 있는 건 문제 아님
+    for (const [fid, x, y, r] of layout) {
+      const f = F[fid]; if (!f || f.blocks === false || base.has(fid + ',' + x + ',' + y)) continue;
+      const w = r % 2 ? f.d : f.w, h = r % 2 ? f.w : f.d;
+      if (bl.some(b => x < b.x + b.w && b.x < x + w && y < b.y + b.d && b.y < y + h)) return true;
+      if (doors.some(([dx, dy]) => dx >= x && dx < x + w && dy >= y && dy < y + h)) return true;
+    }
+    return false;
+  }
+  function applyAll() { // 저장된 맵 편집 모두 적용 (지금 맵 구조와 안 맞는 예전 편집은 버린다)
+    const S = St.S, dropped = [];
+    for (const id in (S.mapEdits || {})) {
+      if (!W.maps[id]) continue;
+      let e = S.mapEdits[id];
+      if (Array.isArray(e)) e = S.mapEdits[id] = { sig: clashes(id, e) ? 'old' : sigOf(id), l: e }; // 예전 저장 형식
+      if (e.sig !== sigOf(id)) { delete S.mapEdits[id]; dropped.push(PX.MAPS[id].name); continue; }
+      applyLayout(W.maps[id], e.l);
+    }
+    if (dropped.length) setTimeout(() => PX.UI.toast(`🛠️ ${dropped.join(', ')} — 새로 바뀐 배치와 안 맞는 예전 편집을 정리했어요`, 3800), 1500);
   }
 
   function start() {
@@ -146,7 +168,7 @@ PX.Decor = (() => {
     if (!v.ok) { PX.UI.toast('⚠️ ' + v.reason); sel = v.o || null; return; }
     const S = St.S;
     if (homeMode) { S.homeLayout = layoutOf(m); S.homeMap = m.id; }
-    else { S.mapEdits = S.mapEdits || {}; S.mapEdits[m.id] = layoutOf(m); }
+    else { S.mapEdits = S.mapEdits || {}; S.mapEdits[m.id] = { sig: sigOf(m.id), l: layoutOf(m) }; }
     end();
     PX.A.indexSpots();
     St.save();
