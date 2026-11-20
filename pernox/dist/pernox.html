@@ -15464,6 +15464,7 @@ PX.Rom = (() => {
   function dayKo(d) { const S = St.S, k = d - S.day; if (k === 0) return '오늘'; if (k === 1) return '내일'; if (k === 2) return '모레'; return Cal.fmtDate(Cal.addDays({ y: 1, m: 1, d: 1 }, d)).replace(/^\d+\./, ''); }
   // 매 분: 약속 2시간 전 알림 → 대위가 먼저 가 있기 → 만나면 데이트 시작 → 끝 · 바람맞으면 순하게
   function tick() {
+    { const S0 = St.S; if (S0.dates && S0.dates.some(x => x.kind === 'come' && x.state !== 'planned')) S0.dates = S0.dates.filter(x => !(x.kind === 'come' && x.state !== 'planned')); } // 메신저로 한 '만나자'는 만나고 나면 일정표에서 지운다
     const S = St.S, g = G(), d = nextDate();
     if (!d) return;
     if (d.kind === 'come' && d.state === 'planned') { // 메시지로 한 '내가 갈게'
