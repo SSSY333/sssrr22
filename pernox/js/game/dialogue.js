@@ -360,7 +360,11 @@ PX.Dlg = (() => {
     let cat = forceCat;
     const duty = PX.Cap.onDuty();
     // 마지막 대화·만남 이후 흐른 시간과 지금 접촉 상태를 먼저 본다 (방금 얘기한 사람한테 '오랜만'이라고 하지 않게)
-    const M = PX.Mind, V = PX.DLG_V2 || {}, gc = M ? M.gapCat() : 'again', ct = M ? M.contact() : 'NONE';
+    const M = PX.Mind, V = PX.DLG_V2 || {}, ct = M ? M.contact() : 'NONE';
+    // 계속 같이 있었으면 '또 봤네' '잠깐 사이에 뭐 했어?' 같은 다시 만난 인사는 하지 않는다
+    const together = ['follow', 'visit', 'stay'].includes(PX.Cap.mode) && PX.Game.cap.map === PX.Game.mapId;
+    let gc = M ? M.gapCat() : 'again';
+    if (together && ['brief', 'recontact', 'again'].includes(gc)) gc = 'cont';
     if (!cat) {
       if (duty && PX.Cap.atPlayerWork()) cat = 'jobVisit';
       else if (duty && !PX.Cap.isMeal()) cat = 'working';

@@ -272,6 +272,7 @@
     const add = (t, fn, sub) => items.push({ t, fn, sub });
     if (withCap) {
       add(bed ? '💬 누워서 이야기하기' : '💬 앉은 채로 대화하기', () => Dlg.capTalk(bed && St.S.time.min >= 21 * 60 ? 'night' : undefined));
+      if (PX.AI && PX.AI.available()) add('✨ 자유롭게 대화하기', () => PX.AI.chat(), '하고 싶은 말을 직접 입력하면 대위가 대답해요');
       add('🤝 스킨십', skinMenu, bed ? '팔베개 · 껴안기 · 머리 쓰다듬기 …' : '어깨에 기대기 · 무릎베개 · 손가락 만지작 …');
       add('😊 표정·행동으로 반응하기', reactMenu);
     }
@@ -351,6 +352,13 @@
     await Cap.beforeSleep();
     if (it.k !== 'nap' && PX.InnNight && Cap.mode === 'stay') await PX.InnNight.homeNight();
     if (it.k === 'nap') { fade(); St.advance(60); S.energy = Math.min(100, S.energy + 15); UI.toast('💤 한숨 잤다 (기력 +15)'); return; }
+    // 대위가 자고 가는 밤: 걷던 자세(손잡기 등)는 풀고, 침대에서 같이 자기로 했으면 옆에 눕는다
+    if (Cap.mode === 'stay' && Game.cap.map === Game.mapId) {
+      Game.cap.holding = false; Game.cap.holdSide = 0; Game.player.holdSide = 0; Game.cap.tempPose = null; Game.player.tempPose = null;
+      if (PX.Mind && PX.Mind.isWalk && PX.Mind.isWalk()) PX.Mind.setContact('NONE');
+      if (S.cap.stay === 'bed') { if (!(Game.cap.seat && Game.cap.seat.obj && Game.player.seat && Game.cap.seat.obj === Game.player.seat.obj)) Cap.bedTogether(); }
+      else { const sofa = W.maps[Game.mapId].objs.find(o => o.kind === 'furn' && /^sofa/.test(o.fid)); if (sofa && !Game.cap.seat) { Game.cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]); Game.cap.pose = 'lie'; } }
+    }
     await sleepUntil(it.k);
   }
   async function sleepUntil(hour, passOut) {

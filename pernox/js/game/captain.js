@@ -655,5 +655,5 @@ PX.Cap = (() => {
     if (Math.random() < 0.25 && spotKind() === 'field') S.cap.giftPending = Math.random() < 0.5 ? 'capStone' : 'capSnack';
   }
 
-  return { saveState, restore, afterTreat, pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
+  return { bedTogether, saveState, restore, afterTreat, pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
 })();

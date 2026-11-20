@@ -70,6 +70,7 @@ PX.LateNight = (() => {
       const hm = homeId();
       await PX.Act.travel(hm, near(g.mapId) ? 45 : 10);
       PX.Cap.mode = 'stay'; S.cap.stay = 'bed'; S.cap.lastStayAskDay = S.day;
+      if (PX.Mind) PX.Mind.setContact('NONE'); g.cap.holding = false; g.cap.holdSide = 0; g.player.holdSide = 0; // 손잡고 온 자세 풀기
       if (!S.done.firstStay) { S.done.firstStay = 1; g.memory('첫 숙박', `${U.josa(S.capName, '이')} 데이트 끝에 내 숙소에서 같이 밤을 보냈다.`, true); }
       PX.UI.toast('🛌 침대에서 같이 뒹굴거리거나, 잠자기를 고를 수 있어요', 3600);
       setTimeout(() => g.trigger(async () => { await PX.Bed.lounge(); }), 900);

@@ -8247,7 +8247,11 @@ PX.Dlg = (() => {
     let cat = forceCat;
     const duty = PX.Cap.onDuty();
     // 마지막 대화·만남 이후 흐른 시간과 지금 접촉 상태를 먼저 본다 (방금 얘기한 사람한테 '오랜만'이라고 하지 않게)
-    const M = PX.Mind, V = PX.DLG_V2 || {}, gc = M ? M.gapCat() : 'again', ct = M ? M.contact() : 'NONE';
+    const M = PX.Mind, V = PX.DLG_V2 || {}, ct = M ? M.contact() : 'NONE';
+    // 계속 같이 있었으면 '또 봤네' '잠깐 사이에 뭐 했어?' 같은 다시 만난 인사는 하지 않는다
+    const together = ['follow', 'visit', 'stay'].includes(PX.Cap.mode) && PX.Game.cap.map === PX.Game.mapId;
+    let gc = M ? M.gapCat() : 'again';
+    if (together && ['brief', 'recontact', 'again'].includes(gc)) gc = 'cont';
     if (!cat) {
       if (duty && PX.Cap.atPlayerWork()) cat = 'jobVisit';
       else if (duty && !PX.Cap.isMeal()) cat = 'working';
@@ -8463,6 +8467,7 @@ PX.Reply = (() => {
     ['know', /알아\?|아세요\?|아시|봤어\?|보셨|들었어\?|들으셨|알지\?|기억나\?|기억나세요|기억해\?|아는/],
     ['meal', /밥|먹었|드셨|먹을래|드실래|배고프|메뉴|국 |간식|커피 마|뭐 먹|저녁 뭔|점심 뭔/],
     ['tired', /안 자\?|잠이 안 와|손 안 떨렸|피곤|힘들|아파|다친 데|잘 잤|잠은|괜찮아\?|괜찮으세요|어디 아|졸려|추워|더워|춥지|덥지/],
+    ['brief', /잠깐 사이에|그새 뭐|금방 왔|할 일은 끝났|어디 갔다 왔|뭐 하다 왔/],
     ['day', /바빴어|끝났어\?|좋은 일 있|할 말 있|빠뜨렸|너는\?|넌\?|너는 어땠|오늘 (어땠|뭐 했|하루)|뭐 했어|그새|하루 어땠|별일 없었|근무 어땠|무슨 일 있었|어떻게 지냈/],
     ['invite', /(할래|갈래|볼래|올래|먹을래|마실래|탈래|출래|걸을래|앉을래|들을래|하실래요|가실래요|보실래요)\?|(하자|가자|보자|먹자)[.?]?$|어때\?$|어떠|한 판|같이 /],
     ['like', /좋아해\?|좋아\?|마음에 들|좋지\?|예쁘지|맛있지|재밌지|괜찮지\?|어울려\?/],
@@ -8490,7 +8495,7 @@ PX.Reply = (() => {
   const WORK = { medic: '환자 몇 명 봤어요', engineer: '드론 두 대 고쳤어요', scout: '정찰 보고서 정리했어요', researcher: '표본 정리했어요' };
   const WORKc = { medic: '환자 몇 명 봤어', engineer: '드론 두 대 고쳤어', scout: '정찰 보고서 정리했어', researcher: '표본 정리했어' };
   const REPLIES = {
-    day: [R('neu', '저는 평범했어요. {work}.', '나는 평범했어요. {work}.', '난 평범했어. {workc}.', '평범했어. {workc}.'), R('pos', '오늘은 꽤 괜찮았어요.', '오늘은 좀 괜찮았어요, 나.', '오늘 괜찮았어.', '괜찮았지.'), R('neg', '저는 좀 지쳤어요.', '나 오늘 좀 지쳤어요.', '나 오늘 좀 지쳤어.', '좀 지치네.'), R('flirt', '대위님 생각하느라 하루가 갔어요.', '대위님 생각하다 하루 다 갔어요.', '너 생각하다 하루 다 갔어.'), R('neu', '다친 데는 없어요? 그게 먼저예요.', '다친 데 없죠? 그것부터.', '다친 데 없지? 그것부터.')],
+    day: [R('neu', '저는 평범했어요. {work}.', '나는 평범했어요. {work}.', '난 평범했어. {workc}.', '평범했어. {workc}.'), R('pos', '오늘은 꽤 괜찮았어요.', '오늘은 좀 괜찮았어요, 나.', '오늘 괜찮았어.', '괜찮았지.'), R('neg', '저는 좀 지쳤어요.', '나 오늘 좀 지쳤어요.', '나 오늘 좀 지쳤어.', '좀 지치네.'), R('flirt', '대위님 생각하느라 하루가 갔어요.', '대위님 생각하다 하루 다 갔어요.', '너 생각하다 하루 다 갔어.'), Object.assign(R('neu', '다친 데는 없어요? 그게 먼저예요.', '다친 데 없죠? 그것부터.', '다친 데 없지? 그것부터.'), { need: 'field' })],
     meal: [R('pos', '먹었어요. 든든해요.', '먹었어요. 배불러.', '먹었어. 배불러.', '먹었지. 든든해.'), R('neu', '아직이요. 같이 먹을래요?', '아직이에요. 같이 먹어요.', '아직. 같이 먹자.', '아직. 같이 먹을래?'), R('neg', '깜빡했어요…', '아, 깜빡했어요.', '아, 깜빡했다.', '아, 까먹었다.'), R('flirt', '대위님이랑 먹으려고 기다렸어요.', '대위님이랑 먹으려고 참았어요.', '너랑 먹으려고 기다렸지.')],
     tired: [R('pos', '괜찮아요. 걱정 마세요.', '괜찮아요, 진짜로.', '괜찮아. 걱정 마.', '괜찮아. 걱정 마.'), R('neg', '조금 피곤해요.', '좀 피곤하긴 해요.', '좀 피곤해.', '좀 피곤하네.'), R('flirt', '대위님 보니까 다 나았어요.', '대위님 보니까 괜찮아졌어요.', '너 보니까 괜찮아졌어.'), R('neu', '대위님은요? 대위님이 더 피곤해 보여요.', '대위님이 더 피곤해 보이는데요.', '너야말로 피곤해 보여.', '너는? 너야말로.')],
     permit: [R('pos', '네, 괜찮아요.', '응, 돼요.', '응, 돼.', '그래.'), R('neg', '지금은 좀 그래요.', '지금은 싫어요.', '지금은 싫어.', '지금은 좀.'), R('neu', '조금만이요.', '조금만이에요.', '조금만.', '조금만.'), R('flirt', '물어보지 않아도 돼요.', '그런 건 안 물어봐도 돼요.', '그런 건 안 물어봐도 돼.')],
@@ -8506,6 +8511,8 @@ PX.Reply = (() => {
     past: [R('pos', '네, 있어요. 좋은 기억이에요.', '있어요. 좋았어요.', '있어. 좋았어.', '있지.'), R('neu', '아뇨, 아직요. 대위님은요?', '아직이요. 대위님은요?', '아직. 너는?', '아직. 너는?'), R('neg', '가끔요. 그럴 땐 좀 쓸쓸해요.', '가끔요. 좀 쓸쓸해요.', '가끔. 좀 쓸쓸해.', '가끔.'), R('neu', '얘기하자면 길어요.', '얘기하면 길어요, 그거.', '얘기하면 길어.', '길어, 그 얘기.'), R('flirt', '지금은 여기가 더 좋아요.', '지금은 여기가 좋아요. 대위님 있으니까.', '지금은 여기가 좋아. 너 있으니까.')],
     fav: [R('pos', '요즘은 일 끝나고 산책하는 거요.', '요즘은 산책이 좋아요.', '요즘은 산책이 좋아.', '산책.'), R('neu', '음, 딱 하나 고르기 어려워요.', '하나만 고르기 어려운데요.', '하나만 고르긴 어려워.', '어렵다, 그거.'), R('pos', '카페 창가 자리요.', '카페 창가 자리요, 저는.', '카페 창가 자리.', '창가 자리.'), R('neg', '요즘은 딱히 없어요.', '요즘은 딱히요.', '요즘은 딱히 없어.', '딱히.'), R('flirt', '대위님이랑 있는 거요.', '대위님이랑 있는 거.', '너랑 있는 거.')],
     choice: [],
+    brief: [R('pos', '잠깐 물 마시고 왔어요.', '물 마시고 왔어요, 잠깐.', '잠깐 물 마시고 왔어.', '물 마시고 왔어.'), R('neu', '별거 안 했어요. 잠깐 둘러봤어요.', '그냥 좀 둘러봤어요.', '별거 안 했어. 잠깐 둘러봤어.', '그냥 둘러봤어.'),
+      R('neg', '잠깐 쉬다 왔어요. 좀 피곤해서요.', '좀 쉬다 왔어요.', '잠깐 쉬다 왔어. 좀 피곤해서.', '좀 쉬다 왔어.'), R('flirt', '대위님 보고 싶어서 금방 왔어요.', '보고 싶어서 빨리 왔어요.', '보고 싶어서 금방 왔어.')],
     gift: [R('pos', '네, 대위님 거예요.', '네, 대위님 거.', '응, 네 거야.', '네 거야.'), R('neu', '마음에 들었으면 좋겠어요.', '마음에 들어요?', '마음에 들어?', '마음에 들어?'), R('flirt', '대위님 생각하면서 골랐어요.', '대위님 생각하면서 골랐어요, 이거.', '너 생각하면서 골랐어.'), R('neg', '그냥… 남아서요.', '그냥 남아서요.', '그냥 남아서.', '남아서.')],
     rival: [R('neu', '그냥 동료예요.', '그냥 동료예요, 진짜.', '그냥 동료야.', '그냥 동료.'), R('pos', '조금 친해요. 좋은 사람이에요.', '좀 친해요. 좋은 사람이고.', '좀 친해. 좋은 사람이야.', '좀 친해.'), R('flirt', '대위님이 훨씬 좋아요.', '대위님이 더 좋은데요.', '네가 훨씬 좋아.'), R('neg', '그건 대위님이 상관할 일 아니에요.', '그건 비밀이에요.', '그건 비밀이야.', '비밀.')],
     miss: [R('pos', '네, 보고 싶어서요.', '응, 보고 싶어서요.', '응, 보고 싶어서.', '보고 싶어서.'), R('neu', '우연이에요, 우연.', '그냥 우연이에요.', '그냥 우연이야.', '우연이야.'), R('neg', '…아닌데요?', '아닌데요?', '아닌데?', '아닌데?'), R('flirt', '들켰네요.', '들켰다, 나.', '들켰네.')],
@@ -8576,7 +8583,7 @@ PX.Reply = (() => {
   function options(who, q) {
     const S = St.S, cat = catOf(q), tn = tone(who), love = who === 'cap' && S.rel.cap.stage >= 2;
     if (cat === 'choice') return choiceOpts(q, tn, love);
-    let list = REPLIES[cat].filter(r => r.mood !== 'flirt' || love);
+    let list = REPLIES[cat].filter(r => (r.mood !== 'flirt' || love) && (!r.need || (r.need === 'field' && PX.CapAct && (PX.CapAct.postField() || PX.CapAct.fieldWin())))); // '다친 데 없지?'는 대위가 수색에서 막 돌아왔을 때만
     // 서로 다른 분위기 3개 (+ 애정 단계면 하나 더)
     const moods = ['pos', 'neu', 'neg', 'flirt'], out = [];
     for (const m of moods) { const c = list.filter(r => r.mood === m); if (c.length) out.push(U.pickFresh('ro_' + cat + m, c)); } // 같은 대답도 돌아가며
@@ -9641,7 +9648,7 @@ PX.Cap = (() => {
     if (Math.random() < 0.25 && spotKind() === 'field') S.cap.giftPending = Math.random() < 0.5 ? 'capStone' : 'capSnack';
   }
 
-  return { saveState, restore, afterTreat, pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
+  return { bedTogether, saveState, restore, afterTreat, pause, forceLeave, sitNear, init, update, status, onDuty, isMeal, atPlayerWork, release, startFollow, startVisit, doSkin, beforeSleep, morningAfter, msgTick, moveTo, get mode() { return mode; }, set mode(v) { mode = v; }, spotKind, homeId, bump };
 })();
 
 </script>
@@ -14210,6 +14217,7 @@ PX.LateNight = (() => {
       const hm = homeId();
       await PX.Act.travel(hm, near(g.mapId) ? 45 : 10);
       PX.Cap.mode = 'stay'; S.cap.stay = 'bed'; S.cap.lastStayAskDay = S.day;
+      if (PX.Mind) PX.Mind.setContact('NONE'); g.cap.holding = false; g.cap.holdSide = 0; g.player.holdSide = 0; // 손잡고 온 자세 풀기
       if (!S.done.firstStay) { S.done.firstStay = 1; g.memory('첫 숙박', `${U.josa(S.capName, '이')} 데이트 끝에 내 숙소에서 같이 밤을 보냈다.`, true); }
       PX.UI.toast('🛌 침대에서 같이 뒹굴거리거나, 잠자기를 고를 수 있어요', 3600);
       setTimeout(() => g.trigger(async () => { await PX.Bed.lounge(); }), 900);
@@ -16404,6 +16412,7 @@ ${memLine(S)}`;
     const add = (t, fn, sub) => items.push({ t, fn, sub });
     if (withCap) {
       add(bed ? '💬 누워서 이야기하기' : '💬 앉은 채로 대화하기', () => Dlg.capTalk(bed && St.S.time.min >= 21 * 60 ? 'night' : undefined));
+      if (PX.AI && PX.AI.available()) add('✨ 자유롭게 대화하기', () => PX.AI.chat(), '하고 싶은 말을 직접 입력하면 대위가 대답해요');
       add('🤝 스킨십', skinMenu, bed ? '팔베개 · 껴안기 · 머리 쓰다듬기 …' : '어깨에 기대기 · 무릎베개 · 손가락 만지작 …');
       add('😊 표정·행동으로 반응하기', reactMenu);
     }
@@ -16483,6 +16492,13 @@ ${memLine(S)}`;
     await Cap.beforeSleep();
     if (it.k !== 'nap' && PX.InnNight && Cap.mode === 'stay') await PX.InnNight.homeNight();
     if (it.k === 'nap') { fade(); St.advance(60); S.energy = Math.min(100, S.energy + 15); UI.toast('💤 한숨 잤다 (기력 +15)'); return; }
+    // 대위가 자고 가는 밤: 걷던 자세(손잡기 등)는 풀고, 침대에서 같이 자기로 했으면 옆에 눕는다
+    if (Cap.mode === 'stay' && Game.cap.map === Game.mapId) {
+      Game.cap.holding = false; Game.cap.holdSide = 0; Game.player.holdSide = 0; Game.cap.tempPose = null; Game.player.tempPose = null;
+      if (PX.Mind && PX.Mind.isWalk && PX.Mind.isWalk()) PX.Mind.setContact('NONE');
+      if (S.cap.stay === 'bed') { if (!(Game.cap.seat && Game.cap.seat.obj && Game.player.seat && Game.cap.seat.obj === Game.player.seat.obj)) Cap.bedTogether(); }
+      else { const sofa = W.maps[Game.mapId].objs.find(o => o.kind === 'furn' && /^sofa/.test(o.fid)); if (sofa && !Game.cap.seat) { Game.cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]); Game.cap.pose = 'lie'; } }
+    }
     await sleepUntil(it.k);
   }
   async function sleepUntil(hour, passOut) {
