@@ -56,7 +56,7 @@ PX.CapFavor = (() => {
     const g = G(); g.modal++; const e = note(f);
     try {
       if (f.kind === 'act') { e.st = 'done'; await scene(f); reward(f, 1); return; }
-      await lines(U.pickFresh('favask_' + f.id, f.ask));
+      await PX.Dlg.runLines(U.pickFresh('favask_' + f.id, f.ask)); // 부탁 질문엔 아래 예/아니오가 대답 (일반 대답 선택지 끼우지 않음)
       const opts = [{ t: f.yes }, { t: f.no }]; if (f.kind === 'deep') opts.splice(1, 0, { t: '지금은 좀… 나중에 해도 돼요?' });
       for (const o of opts) o.t = PX.Dlg.capTone(o.t); // 대위에게 하는 말: 관계에 맞는 말투로
       const i = await PX.Dlg.choose(opts);

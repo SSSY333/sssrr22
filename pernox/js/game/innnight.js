@@ -248,6 +248,8 @@ PX.InnNight = (() => {
     if (S.cap.stay !== 'bed' || S.rel.cap.stage < 4 || S.done['homeNight_' + S.day]) return;
     g.modal++;
     try {
+      g.cap.setDirTo(g.player.x, g.player.y);
+      await lines([pick([['C*:…불 끌까?'], ['C:이리 와. 자리 데워 놨어.'], ['C~:오늘 하루 길었다. 이제 너만 볼래.'], ['C^:좁다. 근데 이게 좋아.'], ['C:눈 감기 전에… 할 말 있으면 지금 해.']])]); // 대위가 먼저 말해야 얼굴이 뜬다
       const i = await PX.Dlg.choose([{ t: '그냥 안고 자자.' }, { t: '…오늘은 그냥 자기 싫어.' }]);
       await PX.Dlg.say('player', i === 0 ? '그냥 안고 자자.' : '…오늘은 그냥 자기 싫어.', i === 0 ? 'normal' : 'blush');
       if (i === 0) { await lines(pick([['C^:응. 이리 와. 팔베개.'], ['C*:좋아. 오늘은 안고만. …약속.']])); return; }

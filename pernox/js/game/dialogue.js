@@ -45,16 +45,20 @@ PX.Dlg = (() => {
   const KEEP = /^(아|어|음|와|헉|흠|앗|오|엥|에이|하하|헤헤|응응|으|흐|휴|읏|쉿|네|예|자기야|호|흥|칫|좀)$/;
   const hasBat = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c <= 11171 && c % 28 !== 0 && c % 28 !== 4 && c % 28 !== 8; }; // ㄴ · ㄹ 받침은 그냥 '요' (하면요 · 뭘요)
   function endPolite(w) {
+    if (/(했|었|았|겠|였)다$/.test(w)) return w.slice(0, -1) + '어요'; // 깜빡했다 → 깜빡했어요
+    if (w === '좋다') return '좋아요'; if (w === '그치') return '그렇죠';
+    if (/였더라$/.test(w)) return w.replace(/였더라$/, '였죠'); if (/더라$/.test(w)) return w + '고요'; // 맛있더라 → 맛있더라고요
     if (/(요|니다|니까|죠|세요|다|님|기)$/.test(w) || KEEP.test(w)) return w;
     if (w === '마') return '마세요';
     if (w === '응') return '네'; if (w === '아니' || w === '아냐') return '아니요'; if (w === '미안') return '죄송해요'; if (w === '고마워') return '고마워요';
     if (/거야$/.test(w)) return w.replace(/거야$/, '거예요');
     if (/이야$/.test(w)) return w.replace(/이야$/, '이에요');
     if (/[냐니]$/.test(w) && w.length > 1) return w.slice(0, -1) + '나요';
-    if (/[^는은인던]지$/.test(w)) return w.slice(0, -1) + '죠';
+    if (/[^는은인던까]지$/.test(w)) return w.slice(0, -1) + '죠'; // 여기까지 → 여기까지요 (여기까죠 X)
     if (/자$/.test(w) && w.length > 1) return w.slice(0, -1) + '죠';
     if (/야$/.test(w) && w.length > 1) { const c = w.charCodeAt(w.length - 2) - 0xac00; return c >= 0 && c % 28 === 0 ? w.slice(0, -1) + '예요' : w; }
     if (hasBat(w) && !/(걸|군|겠|었|았|않|는데|은데|던데|텐데)$/.test(w)) return w + '이요'; // 받침 있는 말: 손이요 · 외곽이요
+    { const c = w.charCodeAt(w.length - 1) - 0xac00; if (c >= 0 && c % 28 === 4 && !/(면|는|은|인|던|런|건|선|친|간|된|한|운|른|든)$/.test(w)) return w + '이요'; } // ㄴ 받침 명사: 칭찬이요 · 세 번이요
     return w + '요';
   }
   function polite(t) {
@@ -62,6 +66,9 @@ PX.Dlg = (() => {
     t = t.replace(/(^|[\s…])나는/g, '$1저는').replace(/(^|[\s…])난 /g, '$1전 ').replace(/(^|[\s…])내가/g, '$1제가').replace(/(^|[\s…])나도/g, '$1저도').replace(/(^|[\s…])나를/g, '$1저를').replace(/(^|[\s…])나한테/g, '$1저한테').replace(/(^|[\s…])나랑/g, '$1저랑').replace(/(^|[\s…])내 (?=[가-힣])/g, '$1제 ');
     const J = { 는: '은', 도: '도', 를: '을', 한테: '한테', 랑: '이랑', 이랑: '이랑', 보다: '보다', 만: '만', 하고: '하고', 의: '의' };
     t = t.replace(/(^|[\s“"'(…])너(이랑|랑|는|도|를|한테|보다|만|하고|의)/g, (m, a, j) => a + '대위님' + J[j]).replace(/(^|[\s“"'(…])네가/g, '$1대위님이').replace(/(^|[\s“"'(…])넌(?=[\s.?!,…~]|$)/g, '$1대위님은').replace(/(^|[\s“"'(…])널(?=[\s.?!,…~]|$)/g, '$1대위님을').replace(/(^|[\s“"'(…])너(?=[\s.?!,…~]|$)/g, '$1대위님');
+    // 맨 앞 맞장구 (쉼표 앞): 응, → 네, · 괜찮아, → 괜찮아요, · 글쎄, → 글쎄요,
+    t = t.replace(/(^|[\s…])(응|그래|괜찮아|글쎄|좋아|아니|알았어)(,)/g, (m, a, w, c) => a + ({ 응: '네', 그래: '그래요', 괜찮아: '괜찮아요', 글쎄: '글쎄요', 좋아: '좋아요', 아니: '아니요', 알았어: '알겠어요' })[w] + c);
+    t = t.replace(/(\S) 와([.!])/g, '$1 와요$2'); // 연락하고 와 → 와요 (감탄사 '와'는 그대로)
     // 문장 끝에서만 (말줄임표는 줄 끝일 때만 문장 끝으로 본다)
     return t.replace(/([가-힣]+)([.?!~]+[…]*|…+(?=\s*$)|$)(?=[\s"”')]|$)/g, (m, w, pun) => endPolite(w) + pun);
   }

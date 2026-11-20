@@ -27,6 +27,54 @@ PX.InnBath = (() => {
     if (on && withCap()) PX.Bath.capRobe(true, ROBE); else if (!on) PX.Bath.capRobe(false);
   }
   const robed = () => !!St.S.player.bath;
+  // 씻는 동안: 옷 대신 수건 (나: 수건을 두른 차림 · 대위: 상의 없이 허리에 수건)
+  function bathLook(on) {
+    const g = G();
+    if (!on) return;
+    St.S.player.bath = true; // 씻는 중 (가운 점검이 원래 옷으로 되돌리지 않게)
+    const pa = Object.assign({}, g.player.app); delete pa._k;
+    g.player.app = Object.assign(pa, { top: '#f4f6f8', bottom: '#f4f6f8', sleeve: 'none', skirt: true, dress: false, robe: null, coat: null, vest: null, jacket: null, hat: null, scarf: null, stripe: null, trim: null, shoe: pa.skin });
+    if (withCap()) { const ca = Object.assign({}, PX.NPC_BY_ID.cap.look); g.cap.app = Object.assign(ca, { top: ca.skin, sleeve: 'none', jacket: null, vest: null, coat: null, badge: null, tag: 0, hat: null, bottom: '#f4f6f8', shoe: ca.skin }); g.capRobe = true; }
+  }
+  const BATH_MENU = (kind) => [
+    { t: '💬 ' + (kind === 'bubble' ? '물에 기대 이야기하기' : '물 맞으며 이야기하기'), k: 'talk' },
+    { t: '🫧 ' + (kind === 'bubble' ? '거품 장난' : '물 장난'), k: 'play' },
+    { t: kind === 'bubble' ? '🧽 등 밀어 주기 · 머리 감겨 주기' : '🧴 서로 씻겨 주기', k: 'care' },
+    ...(St.S.rel.cap.stage >= 4 ? [{ t: '💋 가까이 다가가기', sub: '묘한 분위기', k: 'mood' }] : []),
+    { t: '🚪 다 씻었다 · 나가기', k: 'out' },
+  ];
+  // 같이 씻는 동안: 고르면서 시간을 보낸다 (관계는 암전으로 넘긴다)
+  async function bathLoop(kind) {
+    const g = G(), S = St.S, used = {};
+    for (let n = 0; n < 6; n++) {
+      const items = BATH_MENU(kind).map(it => used[it.k] && it.k !== 'out' ? Object.assign({}, it, { sub: (it.sub ? it.sub + ' · ' : '') + '방금 함' }) : it);
+      const it = await PX.UI.menu(kind === 'bubble' ? '🛁 같이 목욕하는 중' : '🚿 같이 샤워하는 중', items);
+      if (!it || it.k === 'out') return;
+      used[it.k] = 1;
+      if (it.k === 'talk') { await PX.Dlg.runLines(pick('bathTalk'), { reply: true }); PX.Dlg.close(); St.advance(10); St.addAff(1); }
+      else if (it.k === 'play') { await PX.Dlg.runLines(pick('bathPlay')); PX.Dlg.close(); St.advance(8); St.addAff(1); g.cap.showEmote('heart', 1.2); }
+      else if (it.k === 'care') { await PX.Dlg.runLines(pick('bathCare')); PX.Dlg.close(); St.advance(10); St.addAff(2); }
+      else if (it.k === 'mood') { await bathIntimate(); return; }
+    }
+  }
+  async function bathIntimate() {
+    const g = G(), S = St.S, B = D();
+    await PX.Dlg.runLines(pick('bathMood'));
+    const go = U.pickFresh('ibGo', B.bathGo);
+    const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
+    await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
+    if (i !== 0) { await PX.Dlg.runLines(U.pickFresh('ibStop', B.bathStop)); PX.Dlg.close(); return; }
+    PX.Dlg.close();
+    const f = document.getElementById('fade'); f.classList.add('on', 'long'); await U.sleep(600);
+    await PX.Dlg.runLines([U.pickFresh('ibDark', B.bathDark)]);
+    const fresh = B.bathMurmur.filter(m => !PX.Dlg.bundleSeen({ l: m })), rest = B.bathMurmur.filter(m => !fresh.includes(m));
+    const order = [...fresh.sort(() => Math.random() - 0.5), ...rest].slice(0, 2);
+    for (const m of order) { St.advance(25); const r = await PX.Dlg.runLines(m); St.addAff(Math.min(3, (r && r.aff) || 1)); }
+    St.advance(20); PX.Dlg.close(); f.classList.remove('on', 'long'); await U.sleep(300);
+    await PX.Dlg.runLines(U.pickFresh('ibAfter', B.bathAfter)); PX.Dlg.close();
+    S.done['innNight_' + S.day] = S.done['innNight_' + S.day] || 1;
+    if (!S.done.bathLoveMem) { S.done.bathLoveMem = 1; g.memory('김 서린 욕실', '은밀숙소 욕실, 물소리와 김 속에서 그는 몇 번이고 내 이름을 불렀다.', false); }
+  }
 
   // ---------- 욕실 문 ----------
   async function door(o) {
@@ -90,12 +138,11 @@ PX.InnBath = (() => {
         return;
       }
       if (kind === 'bubble') seatIn(o); else standBy(o);
-      const off = await fade(350); off();
-      // 서로 다른 장면 두 개 (같은 말 반복 없이)
+      const off = await fade(350); bathLook(true); off(); // 옷은 벗고 (수건)
+      // 들어가는 장면 하나 → 같이 씻는 동안 고르기
       await PX.Dlg.runLines(pick(kind)); PX.Dlg.close();
-      St.advance(kind === 'bubble' ? 25 : 12);
-      await PX.Dlg.runLines(pick(kind), { reply: true }); PX.Dlg.close();
-      St.advance(kind === 'bubble' ? 20 : 10);
+      St.advance(kind === 'bubble' ? 15 : 8);
+      await bathLoop(kind);
       S.energy = Math.min(100, S.energy + (kind === 'bubble' ? 35 : 15));
       const k = 'ib_' + kind + '_' + S.day; if (!S.done[k]) { S.done[k] = 1; St.addAff(kind === 'bubble' ? 5 : 4); }
       if (!S.done['ibm_' + kind]) { S.done['ibm_' + kind] = 1; g.memory(kind === 'bubble' ? '둘이 한 욕조' : '둘이 한 샤워', kind === 'bubble' ? '은밀숙소 욕실, 거품이 넘치는 욕조에 둘이 들어갔다. 대위가 등을 밀어 줬다.' : '좁은 샤워 부스에서 대위가 내 머리를 감겨 줬다. 물이 비처럼 내렸다.', true); }

@@ -350,15 +350,16 @@
     if (!it) return;
     if (it.k === 'lounge') return PX.Bed.lounge();
     await Cap.beforeSleep();
-    if (it.k !== 'nap' && PX.InnNight && Cap.mode === 'stay') await PX.InnNight.homeNight();
-    if (it.k === 'nap') { fade(); St.advance(60); S.energy = Math.min(100, S.energy + 15); UI.toast('💤 한숨 잤다 (기력 +15)'); return; }
-    // 대위가 자고 가는 밤: 걷던 자세(손잡기 등)는 풀고, 침대에서 같이 자기로 했으면 옆에 눕는다
+    if (it.k !== 'nap') { // 대위가 자고 가는 밤: 걷던 자세(손잡기 등)는 풀고, 침대에서 같이 자기로 했으면 옆에 눕는다
     if (Cap.mode === 'stay' && Game.cap.map === Game.mapId) {
       Game.cap.holding = false; Game.cap.holdSide = 0; Game.player.holdSide = 0; Game.cap.tempPose = null; Game.player.tempPose = null;
       if (PX.Mind && PX.Mind.isWalk && PX.Mind.isWalk()) PX.Mind.setContact('NONE');
       if (S.cap.stay === 'bed') { if (!(Game.cap.seat && Game.cap.seat.obj && Game.player.seat && Game.cap.seat.obj === Game.player.seat.obj)) Cap.bedTogether(); }
       else { const sofa = W.maps[Game.mapId].objs.find(o => o.kind === 'furn' && /^sofa/.test(o.fid)); if (sofa && !Game.cap.seat) { Game.cap.sitOn(sofa.seats.find(s => !s.by) || sofa.seats[0]); Game.cap.pose = 'lie'; } }
     }
+    }
+    if (it.k !== 'nap' && PX.InnNight && Cap.mode === 'stay') await PX.InnNight.homeNight();
+    if (it.k === 'nap') { fade(); St.advance(60); S.energy = Math.min(100, S.energy + 15); UI.toast('💤 한숨 잤다 (기력 +15)'); return; }
     await sleepUntil(it.k);
   }
   async function sleepUntil(hour, passOut) {

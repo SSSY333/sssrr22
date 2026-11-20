@@ -42,6 +42,7 @@ PX.Reply = (() => {
     if (!m) return null;
     const a = m[1].trim(), b = m[2].trim();
     if (!a || !b || a === b) return null;
+    if (/거 아니|는데|줘야|되는|하는|이고/.test(a + b) || a.split(' ').length > 3 || b.split(' ').length > 3) return null; // '줘야 되는 거 아니야?' 같은 건 고르기 질문이 아니다
     const suf = /형이야/.test(x) ? '형' : '';
     return [a + suf, b + suf];
   }
@@ -141,6 +142,9 @@ PX.Reply = (() => {
   }
   function options(who, q) {
     const S = St.S, cat = catOf(q), tn = tone(who), love = who === 'cap' && S.rel.cap.stage >= 2;
+    // 이 질문에 맞춘 대답이 있으면 그걸로 (대위)
+    const qa = who === 'cap' && (PX.REPLY_QA || []).find(([k]) => q.includes(k));
+    if (qa) return qa[1].filter(([m]) => m !== 'flirt' || love).slice(0, 4).map(([mood, t]) => ({ t: U.fmt(t, PX.Dlg.ctx()), mood, cat }));
     if (cat === 'choice') return choiceOpts(q, tn, love);
     let list = REPLIES[cat].filter(r => (r.mood !== 'flirt' || love) && (!r.need || (r.need === 'field' && PX.CapAct && (PX.CapAct.postField() || PX.CapAct.fieldWin())))); // '다친 데 없지?'는 대위가 수색에서 막 돌아왔을 때만
     // 서로 다른 분위기 3개 (+ 애정 단계면 하나 더)

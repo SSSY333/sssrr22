@@ -103,6 +103,7 @@ PX.U = (() => {
       const w = who === 'p' ? givenName(ctx.p) : who === 'pf' ? ctx.p : who === 'cg' ? givenName(ctx.c) : who === 'c' ? ctx.c : (ctx.rival || '그 사람');
       return j ? josa(w, j) : w;
     });
+    t = t.replace(/\{(ob)\}(가|이|는|은|를|을|와|과|랑|이랑)(?=[\s.,?!…~]|$)/g, (_, k, j) => ctx[k] != null ? josa(ctx[k], { 가: '이', 이: '이', 는: '은', 은: '은', 를: '을', 을: '을', 와: '와', 과: '와', 랑: '이랑', 이랑: '이랑' }[j]) : ''); // {ob}가 → 대위님이 · 자기가
     t = t.replace(/\{(days|n|ob|oc|cv)\}/g, (_, k) => ctx[k] != null ? ctx[k] : '');
     return t;
   }
