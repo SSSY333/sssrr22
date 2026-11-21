@@ -1274,7 +1274,7 @@
     if (PX.Bday) PX.Bday.newDay();
     S.rel.cap.talksToday = 0;
     // 계절이 바뀌면 옷 갱신
-    Game.player.app = PX.S.playerApp(S.player, St.season()); Game.capOutfit();
+    Game.player.app = PX.S.playerApp(S.player, St.season()); if (!Game.capRobe) Game.capOutfit(); // 가운·수건 차림이면 그대로 (자정 넘어 은밀숙소)
     if (S.time.d === 1) setTimeout(() => UI.toast(`🗓️ ${S.time.m}월 · ${Cal.SEASON_KO[St.season()]}`), 500);
   });
   window.addEventListener('resize', () => { W.resize(); snapCam(); });

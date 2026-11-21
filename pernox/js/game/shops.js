@@ -168,6 +168,7 @@ PX.Bath = (() => {
     if (S.player.bath && !robeOk(g.mapId)) { S.player.bath = false; refresh(); }
     if (g.cap && g.cap.app && g.cap.app.robe && !(S.player.bath && robeOk(g.cap.map) && g.cap.map === g.mapId)) { g.capRobe = false; g.capOutfit(); }
     if (g.capRobe && !(withCap() && (BATH_MAPS.includes(g.cap.map) || innM(g.cap.map) && St.S.player.bath))) capRobe(false); // 대위가 온천·은밀숙소를 떠나면 원래 옷
+    if (S.player.bath && innM(g.mapId) && !g.capRobe && withCap() && g.cap.map === g.mapId) capRobe(true, '#efe7e1'); // 은밀숙소에서 내가 가운이면 대위도 가운 (자정·불러오기 뒤에도)
     if (g.queue.length || g.transition) return;
     if (S.hairNew == null || S.day - S.hairNew > 3 || g.modal || g.cap.map !== g.mapId || U.dist(g.cap.x, g.cap.y, g.player.x, g.player.y) > 3) return;
     S.hairNew = null;
