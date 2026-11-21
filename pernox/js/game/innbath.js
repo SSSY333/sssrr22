@@ -74,6 +74,7 @@ PX.InnBath = (() => {
     St.advance(20); PX.Dlg.close(); f.classList.remove('on', 'long'); await U.sleep(300);
     await PX.Dlg.runLines(U.pickFresh('ibAfter', B.bathAfter)); PX.Dlg.close();
     S.done['innNight_' + S.day] = S.done['innNight_' + S.day] || 1;
+    if (PX.Recent) PX.Recent.note('은밀숙소 욕실에서 목욕하다 사랑을 나눔');
     if (PX.Love) await PX.Love.encore();
     if (!S.done.bathLoveMem) { S.done.bathLoveMem = 1; g.memory('김 서린 욕실', '은밀숙소 욕실, 물소리와 김 속에서 그는 몇 번이고 내 이름을 불렀다.', false); }
   }

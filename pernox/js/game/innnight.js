@@ -246,6 +246,7 @@ PX.InnNight = (() => {
     if (capR) { if (!S.done.capNightMem) { S.done.capNightMem = 1; g.memory('그의 막사에서', '각 잡힌 이불을 걷어 낸 밤. 그는 자기 방에선 참을 이유가 없다고 했다.', false); } }
     else if (where === 'home') { if (!S.done.homeNightMem) { S.done.homeNightMem = 1; g.memory('좁은 침대의 밤', '1인용 침대에서, 그는 몇 번이고 괜찮냐고 물었다.', false); } }
     else if (!S.done.innNightMem) { S.done.innNightMem = 1; g.memory('은밀숙소의 밤', '불이 꺼진 뒤에도 그는 몇 번이고 괜찮냐고 물었다. 그리고 몇 번이고 사랑한다고 했다.', false); }
+    if (PX.Recent) PX.Recent.note(capR ? '대위 막사에서 함께 밤을 보냄 (사랑을 나눔)' : bathy ? '욕조에서 함께 밤을 보냄 (사랑을 나눔)' : where === 'home' ? '플레이어 숙소 침대에서 함께 밤을 보냄 (사랑을 나눔)' : '은밀숙소 객실에서 함께 밤을 보냄 (사랑을 나눔)');
     if (PX.Love) await PX.Love.encore(); // 가끔: 조금만 더
     return true;
   }
@@ -403,6 +404,7 @@ PX.InnNight = (() => {
       St.advance(total - used); PX.Dlg.close(); fade(false); await U.sleep(300);
       await lines(pick(DAY_AFTER.any.concat(where === 'inn' ? DAY_AFTER.inn : base ? DAY_AFTER.base : [])));
       St.addAff(6); S.energy = Math.max(10, (S.energy || 50) - 15); S.hunger = Math.max(0, (S.hunger || 50) - 20);
+      if (PX.Recent) PX.Recent.note('쉬는 날 낮, 커튼을 치고 둘만의 깊은 시간을 보냄');
       if (PX.Love) await PX.Love.encore();
       if (!S.done.dayLoveMem) { S.done.dayLoveMem = 1; g.memory('햇빛 아래', '쉬는 날 낮, 커튼 틈 햇빛 속에서 그는 하나도 놓치지 않겠다고 했다.', false); }
       return true;

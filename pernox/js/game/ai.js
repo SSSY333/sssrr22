@@ -106,6 +106,7 @@ ${p}(${PX.JOBS[S.player.job].ko})에게 첫눈에 반했고, 처음 만난 지 1
     if (m.reunion) out.push('장기작전에서 막 돌아와 처음 만나는 중');
     const d = R && R.nextDate(); if (d) out.push(`데이트 약속: ${R.dayKo(d.day)} ${Cal.fmtTime(d.min)} ${d.name}${d.state === 'on' ? ' (지금 데이트 중)' : ''}`);
     if (S.rel.cap.stage === 6) out.push('플레이어와 약혼한 사이'); if (S.rel.cap.stage === 7) out.push(`플레이어와 결혼한 부부${S.cap.cohab ? ', 플레이어 숙소에서 같이 산다' : ''}`);
+    if (PX.Recent) { const rl = PX.Recent.lines(4); if (rl.length) out.push(`[방금까지 함께 한 일 (오래된 것 → 최근) — 이 흐름을 이어서 자연스럽게 말할 것. 방금 한 일을 모르는 척하거나 처음 하는 것처럼 제안하지 말 것]\n${rl.join('\n')}`); }
     return out.join('\n');
   }
   function situation(S, mode) {
@@ -122,7 +123,7 @@ ${S.capName} 위치: ${(PX.MAPS[G.cap.map] || {}).name || '이동 중'} — 둘�
 대화 방식: 개인 단말 메시지(문자). 메시지답게 짧게 1~2문장. 괄호 행동 묘사 "(…)"는 절대 쓰지 않는다. 플레이어가 방금 한 말에 바로 답한다.
 [최근 메시지 (오래된 것 → 최근)]
 ${S.messages.slice(0, 8).reverse().map(x => x.out ? `나: ${x.mine}` : `${S.capName}: ${x.t}`).join('\n') || '-'}` : `장소: ${m.name}${PX.Cap.mode === 'visit' || PX.Cap.mode === 'stay' ? ' (플레이어 숙소에 손님으로 와 있음)' : ''}
-대화 방식: 마주 보고 대화 중.`}
+대화 방식: 마주 보고 대화 중.${PX.Recent && PX.Recent.place() ? `\n장소 묘사: ${PX.Recent.place()} (이 공간에 맞게 말하고 행동할 것)` : ''}`}
 ${S.capName} 지금 하는 일: ${PX.Cap.status()}${PX.Cap.onDuty() ? ' (근무 중)' : ''}
 관계 단계: ${St.stageName(r.stage)} (호감도 ${r.aff}/1000)${r.loverSince != null ? `, 연인 ${S.day - r.loverSince + 1}일째` : ''}
 호칭·말투: 플레이어는 대위보다 어리다(연하). ${r.stage >= 4 ? `연인이라 서로 반말. 플레이어는 대위를 '${S.player.callCap || '오빠'}'라고 부르고, 대위는 플레이어를 '자기' 또는 이름으로 부른다.` : '플레이어는 대위에게 존댓말(대위님)을 쓴다.'}
@@ -310,5 +311,5 @@ ${memLine(S)}`;
     if (res.action === 'backoff') { S.rel.cap.backoffUntil = St.absMin() + 12 * 60; G.cap.showEmote('sweat', 2); return { aff: 0, hurt: false }; }
     return { aff: U.clamp(res.aff, -3, 5) };
   }
-  return { answer, available, chat, replyMsg, npcBible, bible, clean, get ready() { return ready; } };
+  return { answer, available, chat, replyMsg, npcBible, bible, clean, situation, get ready() { return ready; } };
 })();

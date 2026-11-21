@@ -75,6 +75,7 @@ PX.Act = (() => {
     if (following && PX.Cap.mode === 'follow') { PX.Cap.moveTo(to); g.cap.x = a[0] + 1; g.cap.y = a[1] - 0.5; PX.Cap.mode = 'follow'; }
     await U.sleep(300);
     f.classList.remove('on', 'long');
+    if (PX.Recent && following && to !== 'jeep_in') PX.Recent.note(`같이 ${PX.MAPS[to].name}(으)로 이동`);
     PX.UI.toast(`📍 ${PX.MAPS[to].name}${mins >= 60 ? ` · ${Math.round(mins / 60)}시간 이동` : ''}`);
     const lore = PX.MAPS[to].lore && PX.LORE_BY_ID[PX.MAPS[to].lore];
     if (lore && once('visit_' + to)) setTimeout(() => PX.UI.toast(`📚 ${lore.originalTitle}: ${lore.description.slice(0, 48)}…`, 5000), 1200);
@@ -577,6 +578,7 @@ PX.Act = (() => {
   }
 
   async function use(o) {
+    if (PX.Recent && LABEL[o.use] && withCap()) PX.Recent.note('같이 한 일: ' + LABEL[o.use].replace(/^\S+\s/, ''));
     if (o.use === 'shuttle') return travelMenu();
     if (o.use === 'event') return eventBooth();
     if (o.use === 'shop' && G().mapId === 'inn') return innDesk();

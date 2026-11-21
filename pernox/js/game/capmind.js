@@ -199,6 +199,7 @@ PX.Mind = (() => {
     const a = BY[id], g = G(), cap = g.cap, p = g.player, S = St.S, m = mem();
     if (!a) return false;
     const c = check(a); if (!c.ok) { if (c.why) PX.UI.toast(c.why); return false; }
+    if (PX.Recent) PX.Recent.note(`스킨십: ${a.name || id}${capAsked ? ' (대위가 먼저)' : ''}`);
     if (a.to && WALK[a.to] && PX.Cap.mode !== 'follow' && PX.Cap.mode !== 'visit' && PX.Cap.mode !== 'stay') PX.Cap.startFollow();
     // 포옹·서서 하는 행동은 가까이 붙는다 (손잡기 상태는 유지)
     const w = where();

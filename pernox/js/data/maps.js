@@ -86,6 +86,10 @@
   room('cafe', { name: '향열매 카페', w: 16, h: 12, floor: 'cafe', wall: '#f4e4c8', exit: 8, furn: cafe, date: true,
     walls: [['B', 9.6, 'window', 1.0], ['L', 5.6, 'window', 1.0], ['L', 7.6, 'poster', 0.7], ['B', 0.6, 'menu', 1.2]] });
 
+  // 지프 안 (드라이브 도착지에서 탄다 · 앞 = 왼쪽 벽 유리창)
+  room('jeep_in', { name: '부대 지프 안', w: 4, h: 4, floor: 'darktile', wall: '#55603f', exit: 1, amb: 0.55, car: true,
+    furn: [['cardash', 0, 0, 0], ['carseat', 1, 0, 0], ['carseat', 1, 1, 0], ['carback', 3, 0, 0]],
+    walls: [['L', 0.1, 'window', 1.8], ['B', 1.2, 'window', 0.8], ['B', 2.6, 'window', 0.8]] });
   // 부대 지하 창고 (좁다 · 오른쪽 구석 입구로 드나든다)
   room('storage', { name: '부대 지하 창고 C-7', w: 6, h: 6, floor: 'darktile', wall: '#5a5a4c', exit: 2, amb: 0.45, backTo: ['base', 58.5, 59.6],
     furn: [['crates', 0, 0, 0], ['crate', 2, 0, 0], ['locker', 4, 0, 0], ['locker', 5, 0, 0], ['crates', 0, 2, 1], ['crate', 5, 3, 0], ['storenook', 3, 2, 0]],

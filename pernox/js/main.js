@@ -143,6 +143,7 @@
     const m = W.maps[Game.mapId];
     if (Game.mapId === 'inn_bathroom') return PX.InnBath.leave(); // 객실 욕실 → 들어왔던 객실
     if (PX.MAPS[Game.mapId].changeRoom) return PX.Bath.leaveChange(); // 온천 탈의실 → 온천
+    if (Game.mapId === 'jeep_in' && PX.Love) return PX.Love.carExit(); // 지프에서 내리기
     if (m.def.backTo) { const [to, bx, by] = m.def.backTo; enterMap(to, bx, by); Game.player.dir = 0; Game.doorCool = performance.now() + 1200; Game.doorArmed = false; return; } // 건물 없는 입구 (부대 지하 창고)
     if (m.def.exitTo) { // 은밀숙소 객실 → 로비
       const lb = W.maps[m.def.exitTo];
@@ -727,7 +728,7 @@
         if (a) list.push({ type: 'obj', o, x: a.x + 0.5, y: a.y + 0.5, cx: o.x + o.fw / 2, cy: o.y + o.fd / 2, label: objLabel(o), fn: () => useObj(o) });
       }
     }
-    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: PX.MAPS[Game.mapId].changeRoom ? '🚪 온천으로 나가기' : Game.mapId === 'inn_bathroom' ? '🚪 객실로 나가기' : m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
+    if (m.kind === 'in') list.push({ type: 'exit', x: m.exit.x + 0.5, y: m.exit.y + 0.5, label: PX.MAPS[Game.mapId].changeRoom ? '🚪 온천으로 나가기' : Game.mapId === 'jeep_in' ? '🚪 차에서 내리기' : Game.mapId === 'inn_bathroom' ? '🚪 객실로 나가기' : m.def.exitTo ? '🚪 로비로 내려가기' : '🚪 밖으로 나가기', fn: leaveRoom });
     for (const l of m.links || []) { const lx = Math.floor((l.x0 + l.x1) / 2); list.push({ type: 'link', l, x: lx + 0.5, y: l.y0 + 0.5, label: l.label, fn: () => goLink(l) }); }
     for (const c of Game.critters || []) if (!c.hidden) list.push(c.extra ? { type: 'extra', a: c, x: c.x, y: c.y, label: `💬 ${c.name}`, fn: () => PX.Ruby.talk(c) } : { type: 'critter', a: c, x: c.x, y: c.y, label: '🔍 관찰하기', fn: () => PX.Act.observe(c) });
     for (const n of Game.npcs) if (n.map === Game.mapId && !n.hidden) list.push({ type: 'npc', a: n, x: n.x, y: n.y, label: `💬 ${n.def.name}`, fn: () => Dlg.npcTalk(n) });
