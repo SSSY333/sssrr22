@@ -97,6 +97,7 @@
     const p = Game.player;
     p.leaveSeat(); p.stop(); p.map = id; p.x = x; p.y = y;
     if (PX.Bath) PX.Bath.onMap(id);
+    if (PX.Love) PX.Love.onMap(id); // 드라이브 장소에 세워 둔 지프
     const m = W.maps[id];
     const t = PX.Path.nearestWalkable(m, x, y); if (t && !W.walkable(m, Math.floor(x), Math.floor(y))) { p.x = t[0] + 0.5; p.y = t[1] + 0.5; }
     // 이 맵에 있어야 할 NPC 즉시 배치 (보이지 않던 사이 위치 동기화)
