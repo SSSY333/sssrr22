@@ -267,6 +267,7 @@
     const S = St.S, p = Game.player, cap = Game.cap, seat = p.seat, o = seat && seat.obj;
     if (!o) return;
     const m = W.maps[Game.mapId], bed = o.use === 'bed', md = PX.MAPS[Game.mapId];
+    if (Game.mapId === 'jeep_in' && PX.Love) return PX.Love.carMenu(); // 지프 좌석: 차 안 메뉴
     const near = capNear(), withCap = near && (Cap.mode === 'follow' || Cap.mode === 'visit' || Cap.mode === 'stay' || cap.seat);
     const table = m.objs.some(x => x.kind === 'furn' && /table|grill|bar/.test(x.fid) && U.dist(x.x + x.fw / 2, x.y + x.fd / 2, p.x, p.y) < 2);
     const foods = Object.entries(S.inv || {}).filter(([id, n]) => n > 0 && PX.ITEMS[id] && PX.ITEMS[id].cat === 'food');
