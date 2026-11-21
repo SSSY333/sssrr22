@@ -61,8 +61,8 @@ PX.InnBath = (() => {
     const g = G(), S = St.S, B = D();
     await PX.Dlg.runLines(pick('bathMood'));
     const go = U.pickFresh('ibGo', B.bathGo);
-    const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
-    await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
+    const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: U.fmt(go[1], PX.Dlg.ctx()) }]);
+    await PX.Dlg.say('player', U.fmt(go[i === 0 ? 0 : 1], PX.Dlg.ctx()), 'blush');
     if (i !== 0) { await PX.Dlg.runLines(U.pickFresh('ibStop', B.bathStop)); PX.Dlg.close(); return; }
     PX.Dlg.close();
     const f = document.getElementById('fade'); f.classList.add('on', 'long'); await U.sleep(600);
@@ -76,6 +76,7 @@ PX.InnBath = (() => {
     S.done['innNight_' + S.day] = S.done['innNight_' + S.day] || 1;
     if (PX.Recent) PX.Recent.note('은밀숙소 욕실에서 목욕하다 사랑을 나눔');
     if (PX.Love) await PX.Love.encore();
+    if (PX.Love) await PX.Love.careAfter();
     if (!S.done.bathLoveMem) { S.done.bathLoveMem = 1; g.memory('김 서린 욕실', '은밀숙소 욕실, 물소리와 김 속에서 그는 몇 번이고 내 이름을 불렀다.', false); }
   }
 

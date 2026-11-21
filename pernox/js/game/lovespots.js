@@ -39,6 +39,16 @@ PX.Love = (() => {
     PX.Dlg.close(); await fadeOff();
     return res;
   }
+  // ---------- 하루에 여러 번: 대위가 챙겨 준다 ----------
+  const loveKey = () => 'loveCount_' + St.S.day;
+  async function careAfter() { // 장면 하나가 끝날 때마다 (한 번 더 포함) 부른다
+    const S = St.S, k = loveKey(); S.done[k] = (S.done[k] || 0) + 1;
+    const n = S.done[k], C = L().care;
+    if (n < 2 || !C) return;
+    if (PX.Recent) PX.Recent.note(`오늘만 ${n}번째로 사랑을 나눔 (대위가 무리하지 않았는지 챙기는 중)`);
+    face(); await talk(fresh('care' + (n >= 3 ? 'More' : 'Two'), n >= 3 ? C.more : C.two));
+    if (PX.Mind) PX.Mind.setContact(G().player.seat && G().player.seat.obj && (G().player.seat.obj.use === 'bed' || (G().player.seat.obj.f && G().player.seat.obj.f.use === 'bed')) ? 'CUDDLE' : 'NONE');
+  }
   // ---------- 한 번 더 (가끔 · 대위가 먼저 또는 내가) ----------
   async function encore(force) {
     const E = L().encore, S = St.S;
@@ -50,6 +60,7 @@ PX.Love = (() => {
     await dark(E, 'enc', { n: 2, mins: 50 });
     await talk(fresh('encAfter', E.after));
     St.addAff(3); S.energy = Math.max(5, (S.energy || 50) - 10);
+    S.done[loveKey()] = (S.done[loveKey()] || 0) + 1; // 한 번 더도 센다
     if (PX.Recent) PX.Recent.note('조금만 더 하자고 해서 한 번 더 (방금 끝남)');
     return true;
   }
@@ -67,6 +78,7 @@ PX.Love = (() => {
     St.addAff(5); St.S.energy = Math.max(5, (St.S.energy || 50) - 12);
     if (PX.Recent && key !== 'car') PX.Recent.note(({ st: '부대 지하 창고에서 몰래 사랑을 나눔', fam: '온천 가족탕에서 사랑을 나눔' })[key] || '둘만의 시간을 보냄'); // 차는 carMenu 에서 기록
     if (o.encore) await PX.Love.encore();
+    await careAfter();
     return true;
   }
 
@@ -140,6 +152,7 @@ PX.Love = (() => {
     await lines(fresh('urgAfter', U2.after)); PX.Dlg.close();
     St.addAff(8); S.energy = Math.max(5, (S.energy || 50) - 15);
     await PX.Love.encore();
+    await careAfter();
     if (!S.done.urgentMem) { S.done.urgentMem = 1; g.memory(why === 'op' ? '다녀왔어' : '참고 참다가', why === 'op' ? '장기 수색에서 돌아온 그는 인사보다 먼저 나를 안았다.' : '최악의 하루 끝에, 그는 문을 열자마자 나를 찾았다.', false); }
     if (PX.Recent) PX.Recent.note(why === 'op' ? '장기 수색에서 돌아온 대위가 방에 들이닥쳐 바로 사랑을 나눔' : '힘든 하루 끝에 대위가 방에 들이닥쳐 바로 사랑을 나눔');
     PX.UI.toast('🛌 침대에서 잠자기를 고르면 같이 잠들어요', 3200);
@@ -286,6 +299,7 @@ PX.Love = (() => {
     if (PX.Recent) PX.Recent.note('차를 세운 채 지프 뒷좌석에서 사랑을 나눔 (방금 끝남)');
     if (!S.done.carMem) { S.done.carMem = 1; g.memory('김 서린 창문', '달리던 차를 그가 세웠다. 좁은 뒷좌석, 그는 머리를 세 번 부딪히고도 웃었다.', false); }
     await PX.Love.encore();
+    await careAfter();
     seatUs('front');
     return 'love';
   }
@@ -297,7 +311,7 @@ PX.Love = (() => {
     // 달리는 중 (세 구간): 신호를 줄 수 있다 · '그냥 가기'면 바로 도착
     const legs = 3, per = parked() ? 12 : 7;
     S.car.dest = 'road'; S.car.to = id;
-    await talk([fresh('carRoad', C.road)[0]]);
+    await talk(fresh('carRoad', C.road));
     let stopped = false;
     for (let n = 0; n < legs; n++) {
       const M = D.menu;
@@ -398,5 +412,5 @@ PX.Love = (() => {
   const H = { storego: storeGo, nook, drive, carmenu: carMenu };
   const H2 = { encore: hold(encore), urgentNight: hold(urgentNight), nook: hold(nook), drive: hold(drive), familyBath: hold(familyBath) };
   H2.carMenu = hold(carMenu); H.nook = H2.nook; H.drive = H2.drive; H.carmenu = H2.carMenu;
-  return { onMap, unpark, encore: H2.encore, scene, dark, urgentNight: H2.urgentNight, markUrgent, newDay, minute, storeGo, nook: H2.nook, drive: H2.drive, familyBath: H2.familyBath, carMenu: H2.carMenu, carExit: () => hold(carExit)(), H };
+  return { careAfter: hold(careAfter), onMap, unpark, encore: H2.encore, scene, dark, urgentNight: H2.urgentNight, markUrgent, newDay, minute, storeGo, nook: H2.nook, drive: H2.drive, familyBath: H2.familyBath, carMenu: H2.carMenu, carExit: () => hold(carExit)(), H };
 })();

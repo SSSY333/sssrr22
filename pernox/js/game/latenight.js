@@ -39,14 +39,14 @@ PX.LateNight = (() => {
       const opts = [];
       if (lov && near(here)) opts.push({ t: '🗝️ 은밀숙소에서 같이 있자', k: 'inn' });
       if (lov) opts[here === 'q_captain' ? 'unshift' : 'push']({ t: here === 'q_captain' ? '🪖 여기서 자고 갈래' : '🪖 {ob} 막사에서 자고 갈래', k: 'capRoom' });
-      if (lov) opts.push({ t: '🏠 내 숙소로 같이 가자', k: 'home' });
-      if (st >= 3) opts.push({ t: '🪖 숙소 앞까지 데려다줘', k: 'escort' });
+      { const outer = (id) => { const md = PX.MAPS[id] || {}; return md.kind === 'out' ? id : md.parent; }, far = outer(here) !== PX.MAPS[homeId()].parent; if (lov) opts.push({ t: far ? `🏠 내 숙소로 같이 가자 (${PX.MAPS[PX.MAPS[homeId()].parent].name.split(' ')[0]} · 이동)` : '🏠 내 숙소로 같이 가자', k: 'home' }); }
+      if (st >= 3) { const outer = (id) => { const md = PX.MAPS[id] || {}; return md.kind === 'out' ? id : md.parent; }, far = outer(here) !== PX.MAPS[homeId()].parent; opts.push({ t: far ? '🚌 셔틀 정류장까지 데려다줘' : '🪖 숙소 앞까지 데려다줘', k: 'escort' }); }
       if ((S.done['late_' + S.day] || 0) < 3) opts.push({ t: '🌙 조금만 더 있다 가자', k: 'more' });
       opts.push({ t: '오늘은 여기까지 하자', k: 'bye' });
       opts.forEach(o => { o.t = U.fmt(o.t, PX.Dlg.ctx()); });
       const i = await PX.Dlg.choose(opts);
       pick = opts[i].k;
-      await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, ''), pick === 'bye' ? 'normal' : 'blush');
+      await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, '').replace(/ \(.*\)$/, ''), pick === 'bye' ? 'normal' : 'blush');
       if (pick === 'more') { await run(pickL(LINES.more)); S.done.lateMore = St.absMin() + 40; }
       else if (pick === 'bye') { await run(pickL(LINES.bye[lov ? 'lov' : 'mid'])); }
       else if (pick === 'escort') { /* 아래에서 */ }
@@ -58,9 +58,17 @@ PX.LateNight = (() => {
     if (pick === 'bye') { PX.Cap.release(null, 30); if (PX.Mind) PX.Mind.notePart(30); return; }
     if (pick === 'more') return;
     if (pick === 'escort') {
-      const hm = homeId(), out = PX.MAPS[hm].parent;
-      if (g.mapId !== out) await PX.Act.travel(out, near(g.mapId) ? 40 : 10);
-      g.modal++; try { await run(pickL(LINES.escort)); } finally { PX.Dlg.close(); g.modal--; }
+      // 지금 둘이 있는 곳 기준: 숙소가 같은 구역이면 숙소 건물 문 앞까지 걸어서 · 다른 구역(돔시티)이면 이 구역 셔틀 정류장까지
+      const hm = homeId(), out = PX.MAPS[hm].parent, outer = (id) => { const md = PX.MAPS[id] || {}; return md.kind === 'out' ? id : md.parent; }, here2 = outer(g.mapId);
+      const same = here2 === out;
+      const goOut = same ? out : here2;
+      if (g.mapId !== goOut) await PX.Act.travel(goOut, 5);
+      const m = PX.W.maps[goOut];
+      let spot = null;
+      if (same) { const d = m.doors.find(d => d.to === hm); if (d) spot = d.bld.b.door.f === 'L' ? [d.x + 0.5, d.y + 1.5] : [d.x + 1.5, d.y + 0.5]; }
+      else { const st = m.objs.find(o => o.fid === 'shuttlestop'); if (st) { const a2 = PX.W.accessTile(m, st); if (a2) spot = [a2.x + 0.5, a2.y + 0.5]; } }
+      if (spot) { await U.sleep(200); g.player.x = spot[0]; g.player.y = spot[1]; if (g.cap.map === g.mapId) { g.cap.x = spot[0] + 1; g.cap.y = spot[1]; } }
+      g.modal++; try { await run(same ? pickL(LINES.escort) : [['C:여기서 셔틀 타면 돼. 도착하면 꼭 연락해.', 'C~:…같이 가 주고 싶은데, 아침 점호라. 미안.'], ['C:셔틀 올 때까지 같이 있을게.', 'C^:타는 것까지 보고 갈 거야.']][Math.random() < 0.5 ? 0 : 1]); } finally { PX.Dlg.close(); g.modal--; }
       PX.Cap.release(null, 30); return;
     }
     if (pick === 'inn') {

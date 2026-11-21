@@ -226,8 +226,8 @@ PX.InnNight = (() => {
     const bathy = /목욕|욕조|거품|샤워/.test(JSON.stringify(dl)) && B.bathGo; // 욕조에서 분위기가 오르면: 불 끄는 말 없이 욕실 대사로
     await lines(dl);
     const go = capR ? U.pickFresh('capGo', CN.go) : bathy ? U.pickFresh('ibGo', B.bathGo) : U.pickFresh('innGo', GO);
-    const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
-    await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
+    const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: U.fmt(go[1], PX.Dlg.ctx()) }]);
+    await PX.Dlg.say('player', U.fmt(go[i === 0 ? 0 : 1], PX.Dlg.ctx()), 'blush');
     if (i !== 0) { await lines(pick(capR ? CN.stop : bathy ? B.bathStop : STOP)); return false; }
     // 챙기기: 불 끄기 전에 (욕실에선 불 얘기 없는 것만)
     { const pp = capR ? PREP_CAP : PREP[where === 'home' ? 'home' : 'inn'], np = pp.filter(b => !/불/.test(JSON.stringify(b))); await lines(pick(bathy && np.length ? np : pp)); }    // 3) 암전: 사이사이 들리는 말
@@ -248,6 +248,7 @@ PX.InnNight = (() => {
     else if (!S.done.innNightMem) { S.done.innNightMem = 1; g.memory('은밀숙소의 밤', '불이 꺼진 뒤에도 그는 몇 번이고 괜찮냐고 물었다. 그리고 몇 번이고 사랑한다고 했다.', false); }
     if (PX.Recent) PX.Recent.note(capR ? '대위 막사에서 함께 밤을 보냄 (사랑을 나눔)' : bathy ? '욕조에서 함께 밤을 보냄 (사랑을 나눔)' : where === 'home' ? '플레이어 숙소 침대에서 함께 밤을 보냄 (사랑을 나눔)' : '은밀숙소 객실에서 함께 밤을 보냄 (사랑을 나눔)');
     if (PX.Love) await PX.Love.encore(); // 가끔: 조금만 더
+    if (PX.Love) await PX.Love.careAfter(); // 오늘 여러 번이면 챙겨 준다
     return true;
   }
   // 내 숙소: 대위가 침대에서 같이 자기로 한 밤, 잠들기 전에 (내가 고를 때만)
@@ -389,8 +390,8 @@ PX.InnNight = (() => {
       await lines(pick(DAY_START[where].filter(b => base || !/배식|막사|연병장/.test(JSON.stringify(b)))));
       await lines(pick(DAY_DURING));
       const go = U.pickFresh('innDayGo', DAY_GO);
-      const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
-      await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
+      const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: U.fmt(go[1], PX.Dlg.ctx()) }]);
+      await PX.Dlg.say('player', U.fmt(go[i === 0 ? 0 : 1], PX.Dlg.ctx()), 'blush');
       if (i !== 0) { await lines(pick(DAY_STOP)); return false; }
       S.done['dayLove_' + S.day] = 1;
       await lines(pick(where === 'cap' ? PREP_CAP : PREP[where]));
@@ -406,6 +407,7 @@ PX.InnNight = (() => {
       St.addAff(6); S.energy = Math.max(10, (S.energy || 50) - 15); S.hunger = Math.max(0, (S.hunger || 50) - 20);
       if (PX.Recent) PX.Recent.note('쉬는 날 낮, 커튼을 치고 둘만의 깊은 시간을 보냄');
       if (PX.Love) await PX.Love.encore();
+      if (PX.Love) await PX.Love.careAfter();
       if (!S.done.dayLoveMem) { S.done.dayLoveMem = 1; g.memory('햇빛 아래', '쉬는 날 낮, 커튼 틈 햇빛 속에서 그는 하나도 놓치지 않겠다고 했다.', false); }
       return true;
     } finally { PX.Dlg.close(); g.modal--; }
