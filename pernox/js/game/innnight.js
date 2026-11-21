@@ -215,32 +215,35 @@ PX.InnNight = (() => {
   async function intimate(where) {
     const g = G(), S = St.S, room = g.mapId;
     // 1) 시작 (은밀숙소: 입장 직후 · 내 숙소: 침대에서)
-    if (where === 'home') await lines(pick(HOME_ENTER));
+    const CN = PX.CAP_NIGHT || {}, capR = where === 'cap' && CN.enter; // 대위 막사: 대위의 구역 (편하고 조금 더 거침없이)
+    if (capR) await lines(pick(CN.enter));
+    else if (where === 'home') await lines(pick(HOME_ENTER));
     else if (S.done.innEnter !== S.day) { S.done.innEnter = S.day; await lines(pick(ENTER)); }
     // 2) 분위기가 오르는 장면 (방 전용이 있으면 반반)
-    const pool = DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
+    const pool = capR ? CN.during : DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
     const dl = pick(pool), B = PX.INN_BATH || {};
     const bathy = /목욕|욕조|거품|샤워/.test(JSON.stringify(dl)) && B.bathGo; // 욕조에서 분위기가 오르면: 불 끄는 말 없이 욕실 대사로
     await lines(dl);
-    const go = bathy ? U.pickFresh('ibGo', B.bathGo) : U.pickFresh('innGo', GO);
+    const go = capR ? U.pickFresh('capGo', CN.go) : bathy ? U.pickFresh('ibGo', B.bathGo) : U.pickFresh('innGo', GO);
     const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
     await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
-    if (i !== 0) { await lines(pick(bathy ? B.bathStop : STOP)); return false; }
+    if (i !== 0) { await lines(pick(capR ? CN.stop : bathy ? B.bathStop : STOP)); return false; }
     // 챙기기: 불 끄기 전에 (욕실에선 불 얘기 없는 것만)
-    { const pp = PREP[where === 'home' ? 'home' : 'inn'], np = pp.filter(b => !/불/.test(JSON.stringify(b))); await lines(pick(bathy && np.length ? np : pp)); }    // 3) 암전: 사이사이 들리는 말
+    { const pp = capR ? PREP_CAP : PREP[where === 'home' ? 'home' : 'inn'], np = pp.filter(b => !/불/.test(JSON.stringify(b))); await lines(pick(bathy && np.length ? np : pp)); }    // 3) 암전: 사이사이 들리는 말
     PX.Dlg.close(); fade(true); await U.sleep(700);
-    { const X2 = PX.INN_MORE || {}, pool = bathy ? B.bathDark : where === 'home' ? X2.dark_home : X2.dark_inn; await lines([U.pickFresh(bathy ? 'ibDark' : 'innDark_' + where, pool)]); } // 암전 (안 본 것부터)
+    { const X2 = PX.INN_MORE || {}, pool = capR ? CN.dark : bathy ? B.bathDark : where === 'home' ? X2.dark_home : X2.dark_inn; await lines([U.pickFresh(capR ? 'capDark' : bathy ? 'ibDark' : 'innDark_' + where, pool)]); } // 암전 (안 본 것부터)
     const n = 2 + Math.floor(Math.random() * 2);
     // 이번 밤에 들릴 말: 서로 다른 것으로, 아직 안 들은 것부터
-    const MUR = bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
+    const MUR = capR ? CN.murmur : bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
     const fresh = MUR.filter(m => !PX.Dlg.bundleSeen({ l: m })), rest = MUR.filter(m => !fresh.includes(m));
     const order = [...fresh.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(0, n);
     for (const m of order) { St.advance(40 + Math.floor(Math.random() * 50)); const r = await PX.Dlg.runLines(m); St.addAff(Math.min(3, r.aff || 1)); }
     St.advance(60); PX.Dlg.close(); fade(false); await U.sleep(300);
     // 4) 그 후
-    await lines(pick(bathy ? B.bathAfter : AFTER.concat(where === 'home' ? AFTER_HOME : AFTER_INN)));
+    await lines(pick(capR ? CN.after : bathy ? B.bathAfter : AFTER.concat(where === 'home' ? AFTER_HOME : AFTER_INN)));
     if (!S.done['innNight_' + S.day]) { S.done['innNight_' + S.day] = 1; St.addAff(8); }
-    if (where === 'home') { if (!S.done.homeNightMem) { S.done.homeNightMem = 1; g.memory('좁은 침대의 밤', '1인용 침대에서, 그는 몇 번이고 괜찮냐고 물었다.', false); } }
+    if (capR) { if (!S.done.capNightMem) { S.done.capNightMem = 1; g.memory('그의 막사에서', '각 잡힌 이불을 걷어 낸 밤. 그는 자기 방에선 참을 이유가 없다고 했다.', false); } }
+    else if (where === 'home') { if (!S.done.homeNightMem) { S.done.homeNightMem = 1; g.memory('좁은 침대의 밤', '1인용 침대에서, 그는 몇 번이고 괜찮냐고 물었다.', false); } }
     else if (!S.done.innNightMem) { S.done.innNightMem = 1; g.memory('은밀숙소의 밤', '불이 꺼진 뒤에도 그는 몇 번이고 괜찮냐고 물었다. 그리고 몇 번이고 사랑한다고 했다.', false); }
     return true;
   }
@@ -260,7 +263,7 @@ PX.InnNight = (() => {
     } finally { PX.Dlg.close(); g.modal--; }
   }
   // 같이 잠들고 아침 (대위는 곁에 남는다)
-  async function sleepTogether(after) {
+  async function sleepTogether(after, morning) {
     const g = G(), S = St.S;
     const j = await PX.Dlg.choose([{ t: '이대로 같이 자자.' }, { t: after ? '조금만 더 얘기하다 자자.' : '조금만 더 얘기하자.' }]);
     if (j === 1) { await lines([pick([['C:무슨 얘기?', 'C^:…아무 얘기나 해. 네 목소리 들으면서 잠들고 싶어.'], ['C*:좋아. 근데 나 먼저 잠들면 깨우지 마. 너 목소리가 자장가라.']])]); }
@@ -268,7 +271,36 @@ PX.InnNight = (() => {
     const mins = ((8 * 60 - S.time.min) + 1440) % 1440 || 1440; St.advance(Math.min(mins, 11 * 60));
     S.energy = Math.min(100, (S.energy || 50) + 40);
     g.cap.map = g.mapId; await U.sleep(400); fade(false);
-    await lines(pick(MORNING)); PX.Dlg.close();
+    await lines(pick(morning || MORNING)); PX.Dlg.close();
+  }
+  // 대위 막사에서 자고 가기 (연인 · 밤): 같이 눕고 → (원하면) 대위의 방에서 보내는 밤 → 아침
+  async function capNight(decided) { // decided: 이미 자고 가기로 정했으면 다시 묻지 않는다
+    const g = G(), S = St.S, CN = PX.CAP_NIGHT;
+    g.modal++;
+    try {
+      g.cap.setDirTo(g.player.x, g.player.y);
+      let a = 0;
+      if (!decided) {
+        await lines(pick(CN.ask));
+        a = await PX.Dlg.choose([{ t: '응. 자고 갈래.' }, { t: '오늘은 돌아갈게.' }]);
+        await PX.Dlg.say('player', a === 0 ? '응. 자고 갈래.' : '오늘은 돌아갈게.', a === 0 ? 'blush' : 'normal');
+      }
+      if (a !== 0) { await lines(pick([['C^:…알았어. 문 앞까지 데려다줄게.'], ['C:응. 대신 도착하면 연락해.']])); return false; }
+      g.cap.holding = false; g.cap.holdSide = 0; g.player.holdSide = 0; g.cap.tempPose = null; g.player.tempPose = null;
+      PX.Dlg.close(); PX.Cap.bedTogether(); await U.sleep(400);
+      let ok = false;
+      if (!S.done['capNight_' + S.day]) {
+        await lines([pick([['C~:…이리 와. 내 침대야. 네 자리 비워 뒀어.'], ['C*:좁다. 근데 여기선 이게 좋아.'], ['C:눈 감기 전에… 할 말 있으면 지금 해.']])]);
+        const i = await PX.Dlg.choose([{ t: '그냥 안고 자자.' }, { t: '…오늘은 그냥 자기 싫어.' }]);
+        await PX.Dlg.say('player', i === 0 ? '그냥 안고 자자.' : '…오늘은 그냥 자기 싫어.', i === 0 ? 'normal' : 'blush');
+        if (i === 0) await lines(pick([['C^:응. 팔베개. 이건 내 방 규칙이야.'], ['C*:좋아. 안고만. …약속은 못 하겠지만.']]));
+        else { S.done['capNight_' + S.day] = 1; ok = await intimate('cap'); }
+      }
+      await sleepTogether(ok, CN.morning);
+      S.done['capNight_' + S.day] = 1;
+      PX.Cap.release(); St.save();
+      return true;
+    } finally { PX.Dlg.close(); g.modal--; }
   }
   // ===================== 낮의 깊은 시간 (주말 · 휴가 낮) =====================
   // 밤보다 짧게(4~5시간) · 조금 더 급하고 진하게 · 직접적인 묘사 없이 암전으로. 장소(객실 · 내 숙소 · 대위 막사)와 낮이라는 상황에 맞는 말만.
@@ -381,5 +413,5 @@ PX.InnNight = (() => {
     MURMUR.push(...(X2.murmur || [])); AFTER.push(...(X2.after || [])); AFTER_INN.push(...(X2.after_inn || [])); MORNING.push(...(X2.morning || []));
   }
   const counts = () => ({ street: STREET.length, lobby: LOBBY.length, enter: ENTER.length, during: Object.values(DURING).reduce((a, b) => a + b.length, 0), murmur: MURMUR.length, after: AFTER.length, afterInn: AFTER_INN.length, go: GO.length, prepInn: PREP.inn.length, duringAny: DURING.any.length, morning: MORNING.length, stop: STOP.length, prep: PREP.inn.length + PREP.home.length, home: HOME_ENTER.length });
-  return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime };
+  return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime, capNight };
 })();

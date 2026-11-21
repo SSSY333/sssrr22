@@ -285,6 +285,7 @@
     else if (!bed && md.kind === 'out') add('👀 주변 구경하기', () => look(withCap));
     if (!bed && m.objs.some(x => x.f && x.f.use === 'tv')) add('📺 TV 보기', tv);
     if (!bed && /sofa/.test(o.fid)) add('😪 소파에서 낮잠 (30분)', () => nap(30, withCap));
+    if (bed && Game.mapId === 'q_captain' && near && cap.map === Game.mapId && S.rel.cap.stage >= 4 && (S.time.min >= 21 * 60 || S.time.min < 5 * 60) && !Cap.onDuty()) add('🌙 대위 방에서 자고 가기', () => PX.InnNight.capNight(), '대위 침대에서 같이 · 아침까지');
     if (bed && withCap && PX.InnNight.canDay()) add('☀️ 커튼 치기', () => PX.InnNight.daytime(), '쉬는 날 낮 · 둘만의 깊은 시간 (4~5시간)');
     if (bed) {
       if (md.home) add('😴 잠자기', sleepMenu); else add('😪 잠깐 눕기 (1시간)', () => nap(60, withCap));

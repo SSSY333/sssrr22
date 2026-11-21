@@ -38,10 +38,12 @@ PX.LateNight = (() => {
       await PX.Dlg.runLines(pickL(LINES.ask[lov ? 'lov' : 'mid'])); // 바로 선택지로 (따로 대답 주고받기 없이)
       const opts = [];
       if (lov && near(here)) opts.push({ t: '🗝️ 은밀숙소에서 같이 있자', k: 'inn' });
+      if (lov) opts[here === 'q_captain' ? 'unshift' : 'push']({ t: here === 'q_captain' ? '🪖 여기서 자고 갈래' : '🪖 {ob} 막사에서 자고 갈래', k: 'capRoom' });
       if (lov) opts.push({ t: '🏠 내 숙소로 같이 가자', k: 'home' });
       if (st >= 3) opts.push({ t: '🪖 숙소 앞까지 데려다줘', k: 'escort' });
       if ((S.done['late_' + S.day] || 0) < 3) opts.push({ t: '🌙 조금만 더 있다 가자', k: 'more' });
       opts.push({ t: '오늘은 여기까지 하자', k: 'bye' });
+      opts.forEach(o => { o.t = U.fmt(o.t, PX.Dlg.ctx()); });
       const i = await PX.Dlg.choose(opts);
       pick = opts[i].k;
       await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, ''), pick === 'bye' ? 'normal' : 'blush');
@@ -49,9 +51,10 @@ PX.LateNight = (() => {
       else if (pick === 'bye') { await run(pickL(LINES.bye[lov ? 'lov' : 'mid'])); }
       else if (pick === 'escort') { /* 아래에서 */ }
       else if (pick === 'home') await run(pickL(LINES.home));
+      else if (pick === 'capRoom') await run(pickL([['C*:…내 방? 좋아. 냉각기는 꺼 둘게.'], ['C^:내 침대 좁은데. …그래서 좋다.'], ['C~:응. 오늘은 내 구역에서 재울게.']]));
       else if (pick === 'inn') await run(pickL([['C!:…', 'C~:…응. 가자. 지금.'], ['C*:엘리베이터에서 손 놓지 마.'], ['C^:카드키는 내가 받을게.']]));
     } finally { PX.Dlg.close(); g.modal--; }
-    if (pick === 'inn' || pick === 'home' || pick === 'escort') { S.done['late_' + S.day] = 99; S.done.lateMore = (S.time.min < 6 * 60 ? S.day : S.day + 1) * 1440 + 7 * 60; } // 정했으면 오늘 밤은 다시 안 묻고 같이 있는다
+    if (pick === 'inn' || pick === 'home' || pick === 'escort' || pick === 'capRoom') { S.done['late_' + S.day] = 99; S.done.lateMore = (S.time.min < 6 * 60 ? S.day : S.day + 1) * 1440 + 7 * 60; } // 정했으면 오늘 밤은 다시 안 묻고 같이 있는다
     if (pick === 'bye') { PX.Cap.release(null, 30); if (PX.Mind) PX.Mind.notePart(30); return; }
     if (pick === 'more') return;
     if (pick === 'escort') {
@@ -64,6 +67,12 @@ PX.LateNight = (() => {
       if (g.mapId !== 'rubyway' && g.mapId !== 'inn') await PX.Act.travel('rubyway', 15);
       if (g.mapId !== 'inn') { await PX.Act.travel('inn', 2); }
       await U.sleep(400); g.trigger(() => PX.Act.innDesk(true)); // 로비 프런트에서 바로 방 고르기
+      return;
+    }
+    if (pick === 'capRoom') { // 대위 막사에서 자고 가기
+      if (g.mapId !== 'q_captain') { await PX.Act.travel('q_captain', near(g.mapId) ? 45 : 10); const m = PX.W.maps.q_captain; g.player.x = m.exit.x + 0.5; g.player.y = m.exit.y - 1.5; g.cap.x = g.player.x + 1; g.cap.y = g.player.y; }
+      if (PX.Mind) PX.Mind.setContact('NONE'); g.cap.holding = false; g.cap.holdSide = 0; g.player.holdSide = 0;
+      await U.sleep(400); g.trigger(() => PX.InnNight.capNight(true));
       return;
     }
     if (pick === 'home') {

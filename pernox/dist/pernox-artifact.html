@@ -3177,6 +3177,84 @@ PX.S = (() => {
 
 </script>
 <script>
+/* js/data/cap_night.js */
+// 대위 막사에서 보내는 밤 (연인 · 대위의 구역이라 대위가 편하고, 조금 더 거침없이 · 직접적인 묘사 없이 암전)
+// 막사 디테일: 냉각기 · 군용 담요 · 각 잡힌 이불 · 사물함 · 인식표 · 얇은 벽 · 작업대 · 광물 · 기상나팔
+'use strict';
+PX.CAP_NIGHT = {
+  // 침대에 앉았을 때 대위가 먼저 묻는다
+  ask: [
+    ['C*:…시간 봐라. 이제 못 보내.', 'C:자고 가. 내 방이야. 아무도 안 와.'],
+    ['C~:여기까지 와 놓고 그냥 가려고?', 'C^:문 잠갔어. 방금.'],
+    ['N:대위가 군화를 벗어 침대 밑에 가지런히 넣는다. 그리고 내 신발도 벗겨 옆에 둔다.', 'C:…이제 못 도망가.'],
+    ['C:냉각기 꺼 줄게. 오늘은 안 추울 거야.', 'C*:자고 갈 거지?'],
+  ],
+  // 시작 (대위의 방 · 대위가 편하다)
+  enter: [
+    ['N:대위가 전투복 상의를 벗어 의자에 대충 던진다. 평소라면 각 잡아 걸었을 거다.', 'C^:내 방이니까. 오늘은 대충 살래.', 'C*:…너도 대충 해. 여기선 아무도 안 봐.'],
+    ['N:대위가 각 잡힌 이불을 한 손으로 확 걷어 낸다. 아침마다 공들여 접던 이불이다.', 'C;:…내일 다시 접으면 돼.', 'C~:지금은 너 눕힐 자리가 더 급해.'],
+    ['N:대위가 침대에 털썩 앉더니 나를 무릎 위로 끌어 앉힌다. 망설임이 하나도 없다.', 'C:여기선 내가 주인이야. 손님은 내 말 들어야지.', 'C*:…농담이야. 반만.'],
+    ['C:불은 그대로 둬. 여긴 내 방이라 다 익숙해.', 'C~:처음 보는 건 너 하나야. …이 침대 위의 너.'],
+    ['N:대위가 목에 건 인식표를 벗어 내 목에 걸어 준다. 금속이 체온에 데워져 있다.', 'C*:오늘 밤엔 네가 내 거 해. 아니, 내가 네 거.'],
+    ['N:대위가 나를 벽에 기대게 하고 입을 맞춘다. 은밀숙소에서보다 훨씬 거침없다.', 'C;:…여기선 참을 이유가 없잖아.'],
+    ['C^:내 침대 좁지? 일부러 안 바꿨어.', 'C*:…붙어 있을 핑계가 필요할 것 같아서.'],
+    ['N:대위가 사물함 위의 라디오를 켠다. 낮게 흐르는 음악 사이로 대위가 웃는다.', 'C:벽이 얇아. 이건 옆방용이야.', 'C~:…우리 소리 안 들리게.'],
+  ],
+  // 분위기가 오르는 장면 (조금 더 진하게)
+  during: [
+    ['N:군용 담요가 바닥으로 미끄러져 떨어진다. 대위가 그걸 주울 생각도 없이 나를 끌어안는다.', 'C~:…춥다는 핑계, 오늘은 안 통해.'],
+    ['N:대위의 손이 내 허리를 감아 단번에 끌어당긴다. 숨 쉴 틈이 없다.', 'C*:…오늘 하루 종일 이거 하고 싶었어. 브리핑 들으면서도.'],
+    ['N:대위가 내 손목을 베개 옆에 가볍게 누른다. 눈빛이 평소와 다르다.', 'C;:…놓아줄까?', 'P:…아니.', 'C~:그럴 줄 알았어.'],
+    ['C*:너 여기 오면 내 방 냄새 배는 거 알아?', 'N:대위가 내 목덜미에 얼굴을 묻고 깊게 숨을 들이쉰다.', 'C~:…이제 반대로 네 냄새가 내 방에 배겠다. 좋다.'],
+    ['N:작업대 위의 광물이 스탠드 불빛을 받아 반짝인다. 대위가 그 빛 속에서 나를 내려다본다.', 'C:…저 돌들보다 네가 훨씬 예뻐. 매일 보는 방인데 오늘 처음 보는 것 같아.'],
+    ['N:대위가 셔츠 단추를 하나 풀다 말고 웃는다. 손이 급해서 잘 안 풀린다.', 'C^:…전투복은 눈 감고도 벗는데.', 'C*:너 앞에선 손이 말을 안 들어.'],
+    ['N:침대 프레임이 삐걱 소리를 낸다. 대위가 잠깐 멈추고 벽 쪽을 본다.', 'C;:…옆방 박 중사 오늘 야간이야. 확인했어.', 'C~:그러니까 신경 꺼.'],
+    ['N:대위가 이마를 맞대고 낮게 웃는다. 숨이 뜨겁다.', 'C*:…내 방에서 너랑 이러고 있으니까 이상하게 더 못 참겠다.'],
+    ['N:대위가 침대 머리맡 스탠드를 한 칸 낮춘다. 방이 주황빛으로 가라앉는다.', 'C:…네 얼굴은 보여야 돼. 여기선 하나도 안 놓칠 거야.'],
+    ['C~:여기 들어온 사람 너 하나라고 했지.', 'N:대위가 귀에 대고 말한다.', 'C*:…이 침대에 누운 사람도 너 하나야. 앞으로도.'],
+  ],
+  go: [['…응. 여기서.', '오늘은 안고만 자자.'], ['멈추지 마.', '잠깐. 오늘은 여기까지.'], ['{ob} 마음대로 해.', '오늘은 얘기하다 자자.'], ['…더 가까이.', '{ob}, 오늘은 그냥 안아 줘.'], ['{ob} 방이니까, {ob} 맘대로.', '오늘은 조용히 자자.']],
+  stop: [['C:응. 그럼 안고만. 대신 꽉.'], ['C^:알았어. 팔베개는 해 줄게. 이건 못 양보해.'], ['C~:응. 오늘은 네 숨소리 들으면서 잘래.'], ['C*:그래. 내 방에선 네가 하고 싶은 대로.']],
+  // 암전
+  dark: [
+    'N:스탠드 불빛이 흔들린다. 냉각기 소리, 라디오 소리, 그리고 둘의 숨소리.',
+    'N:군용 담요가 바닥에 떨어진 채로 한참이 지난다. 아무도 줍지 않는다.',
+    'N:작업대 위의 광물이 하나 굴러떨어진다. 대위가 웃음 섞인 숨을 내쉰다.',
+    'N:좁은 침대가 둘을 겨우 받아 낸다. 떨어지지 않으려고 서로를 더 꽉 붙잡는다.',
+    'N:인식표가 가슴께에서 짤랑 소리를 낸다. 그 소리가 몇 번이고 이어진다.',
+    'N:라디오의 노래가 몇 곡이나 바뀐다. 아무도 듣고 있지 않다.',
+  ],
+  // 사이사이 들리는 말 (대위의 방이라 대위가 더 솔직하다)
+  murmur: [
+    ['C~:…{cv}.', { q: [['응, 여기 있어.', 3, ['C*:…알아. 내 방에 네가 있어. 아직도 안 믿겨.']], ['…{oc}.', 4, ['C;:…그렇게 부르면 오늘 못 자.']]] }],
+    ['C*:…좋아?', { q: [['응.', 4, ['C~:…나도. 미치겠어.']], ['물어보지 마.', 3, ['C^:…응. 다 보여.']]] }],
+    ['C;:…쉿. 벽 얇다니까.', { q: [['{ob}가 더 시끄러워.', 3, ['C^:…인정. 근데 못 참겠어.']], ['(입을 막는다)', 3, ['C~:…응. 그 손 계속 거기 둬.']]] }],
+    ['N:대위가 낮게 웃는다. 평소엔 들어 본 적 없는 목소리다.', 'C*:…여기선 내가 좀 다르지?', { q: [['응. 좋아.', 4, ['C~:…너한테만 이래.']], ['조금 무서워.', 2, ['C:…천천히 할게. 손 잡아.']]] }],
+    ['C:…사랑해. 이 방에서 이 말 하는 거 처음이야.', { q: [['나도 사랑해.', 4, ['C*:…이제 이 방에서 매일 할 거야.']], ['한 번 더.', 3, ['C~:…사랑해. 사랑해.']]] }],
+    ['N:침대에서 떨어질 뻔한다. 대위의 팔이 단단하게 받친다.', 'C^:…침대 바꿔야겠다. 내일 당장.', { q: [['이게 좋아.', 3, ['C*:…응. 그럼 안 바꿔.']], ['좁아서 좋잖아.', 4, ['C~:…너 진짜.']]] }],
+    ['C~:…아무 데도 가지 마. 아침까지.', { q: [['안 가.', 4, ['C*:…응. 약속.']], ['{ob}나 가지 마.', 3, ['C:…내 방인데 어딜 가.']]] }],
+    ['N:인식표를 쥔 손을 대위가 감싸 쥔다.', 'C*:…그거 계속 하고 있어. 내 이름 새겨진 거.', { q: [['응. 안 뺄게.', 4, ['C~:…좋다. 진짜 좋다.']], ['무거워.', 2, ['C^:…그게 내 무게야. 익숙해져.']]] }],
+  ],
+  after: [
+    ['N:대위가 바닥에 떨어진 담요를 주워 둘 위로 덮는다. 담요에서 대위 냄새가 난다.', 'C:…이제 춥다는 핑계 대도 돼.', 'C*:안아 줄 테니까.'],
+    ['N:대위가 천장을 보고 누워 숨을 고른다. 한쪽 팔은 여전히 나를 감고 있다.', 'C^:…내일 아침 점호 어떻게 서지.', 'C~:웃음 참느라 죽겠다.'],
+    ['N:각 잡혀 있던 이불이 엉망이 됐다. 대위가 그걸 보고 웃는다.', 'C;:…신병 때도 이렇게 엉망으로 만든 적 없어.', 'C*:네 탓이야. 책임져.'],
+    ['C~:…이제 이 방에서 혼자 못 자겠다.', 'P:왜?', 'C*:네가 없으면 너무 넓을 것 같아서. 이 좁은 침대가.'],
+    ['N:대위가 내 목에 걸린 인식표를 손가락으로 만지작거린다.', 'C:…그거 내일 돌려받을게. 근데 오늘은 하고 자.', 'C^:군번까지 다 네 거야.'],
+    ['N:라디오가 마지막 곡을 틀고 꺼진다. 냉각기 소리만 남는다.', 'C*:…조용하다. 네 숨소리만 들려. 이 방이 이렇게 좋은 줄 몰랐어.'],
+  ],
+  // 아침 (대위의 막사)
+  morning: [
+    ['N:멀리서 기상나팔이 울린다. 대위가 눈도 안 뜨고 나를 더 꽉 안는다.', 'C;:…못 들은 걸로 하자.', 'C*:오 분만. 아니, 십 분.'],
+    ['N:눈을 뜨니 대위가 벌써 전투복을 반쯤 입고 있다. 머리는 엉망이다.', 'C^:좋은 아침. 내 방에서 너 보는 아침, 이상하게 좋다.', 'C:더 자. 나 나가도 문 잠그고 가면 돼.'],
+    ['N:대위가 침대 끝에 앉아 군화 끈을 묶다가 돌아본다.', 'C*:…가기 싫다. 처음으로 출근하기 싫어.'],
+    ['C~:담요 네 거 해. 내 냄새 나는 거.', 'C^:…아, 반대다. 이제 네 냄새 나겠다. 오늘 밤에 덮어야지.'],
+    ['N:대위가 전투식량 커피 두 개를 타 온다. 컵 하나는 손잡이가 깨져 있다.', 'C:멀쩡한 건 네 거.', 'C*:…다음엔 컵부터 새로 사 둘게. 또 올 거잖아.'],
+  ],
+};
+
+</script>
+<script>
 /* js/data/inn_more1.js */
 // 은밀숙소 대사 보강 1: 루비웨이 거리에서 가자고 할 때 · 로비 · 객실 입장 · 나온 길
 // 연인(반말) · 노골적 묘사 없음 · 같은 말 반복 없음
@@ -14709,10 +14787,12 @@ PX.LateNight = (() => {
       await PX.Dlg.runLines(pickL(LINES.ask[lov ? 'lov' : 'mid'])); // 바로 선택지로 (따로 대답 주고받기 없이)
       const opts = [];
       if (lov && near(here)) opts.push({ t: '🗝️ 은밀숙소에서 같이 있자', k: 'inn' });
+      if (lov) opts[here === 'q_captain' ? 'unshift' : 'push']({ t: here === 'q_captain' ? '🪖 여기서 자고 갈래' : '🪖 {ob} 막사에서 자고 갈래', k: 'capRoom' });
       if (lov) opts.push({ t: '🏠 내 숙소로 같이 가자', k: 'home' });
       if (st >= 3) opts.push({ t: '🪖 숙소 앞까지 데려다줘', k: 'escort' });
       if ((S.done['late_' + S.day] || 0) < 3) opts.push({ t: '🌙 조금만 더 있다 가자', k: 'more' });
       opts.push({ t: '오늘은 여기까지 하자', k: 'bye' });
+      opts.forEach(o => { o.t = U.fmt(o.t, PX.Dlg.ctx()); });
       const i = await PX.Dlg.choose(opts);
       pick = opts[i].k;
       await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, ''), pick === 'bye' ? 'normal' : 'blush');
@@ -14720,9 +14800,10 @@ PX.LateNight = (() => {
       else if (pick === 'bye') { await run(pickL(LINES.bye[lov ? 'lov' : 'mid'])); }
       else if (pick === 'escort') { /* 아래에서 */ }
       else if (pick === 'home') await run(pickL(LINES.home));
+      else if (pick === 'capRoom') await run(pickL([['C*:…내 방? 좋아. 냉각기는 꺼 둘게.'], ['C^:내 침대 좁은데. …그래서 좋다.'], ['C~:응. 오늘은 내 구역에서 재울게.']]));
       else if (pick === 'inn') await run(pickL([['C!:…', 'C~:…응. 가자. 지금.'], ['C*:엘리베이터에서 손 놓지 마.'], ['C^:카드키는 내가 받을게.']]));
     } finally { PX.Dlg.close(); g.modal--; }
-    if (pick === 'inn' || pick === 'home' || pick === 'escort') { S.done['late_' + S.day] = 99; S.done.lateMore = (S.time.min < 6 * 60 ? S.day : S.day + 1) * 1440 + 7 * 60; } // 정했으면 오늘 밤은 다시 안 묻고 같이 있는다
+    if (pick === 'inn' || pick === 'home' || pick === 'escort' || pick === 'capRoom') { S.done['late_' + S.day] = 99; S.done.lateMore = (S.time.min < 6 * 60 ? S.day : S.day + 1) * 1440 + 7 * 60; } // 정했으면 오늘 밤은 다시 안 묻고 같이 있는다
     if (pick === 'bye') { PX.Cap.release(null, 30); if (PX.Mind) PX.Mind.notePart(30); return; }
     if (pick === 'more') return;
     if (pick === 'escort') {
@@ -14735,6 +14816,12 @@ PX.LateNight = (() => {
       if (g.mapId !== 'rubyway' && g.mapId !== 'inn') await PX.Act.travel('rubyway', 15);
       if (g.mapId !== 'inn') { await PX.Act.travel('inn', 2); }
       await U.sleep(400); g.trigger(() => PX.Act.innDesk(true)); // 로비 프런트에서 바로 방 고르기
+      return;
+    }
+    if (pick === 'capRoom') { // 대위 막사에서 자고 가기
+      if (g.mapId !== 'q_captain') { await PX.Act.travel('q_captain', near(g.mapId) ? 45 : 10); const m = PX.W.maps.q_captain; g.player.x = m.exit.x + 0.5; g.player.y = m.exit.y - 1.5; g.cap.x = g.player.x + 1; g.cap.y = g.player.y; }
+      if (PX.Mind) PX.Mind.setContact('NONE'); g.cap.holding = false; g.cap.holdSide = 0; g.player.holdSide = 0;
+      await U.sleep(400); g.trigger(() => PX.InnNight.capNight(true));
       return;
     }
     if (pick === 'home') {
@@ -14970,32 +15057,35 @@ PX.InnNight = (() => {
   async function intimate(where) {
     const g = G(), S = St.S, room = g.mapId;
     // 1) 시작 (은밀숙소: 입장 직후 · 내 숙소: 침대에서)
-    if (where === 'home') await lines(pick(HOME_ENTER));
+    const CN = PX.CAP_NIGHT || {}, capR = where === 'cap' && CN.enter; // 대위 막사: 대위의 구역 (편하고 조금 더 거침없이)
+    if (capR) await lines(pick(CN.enter));
+    else if (where === 'home') await lines(pick(HOME_ENTER));
     else if (S.done.innEnter !== S.day) { S.done.innEnter = S.day; await lines(pick(ENTER)); }
     // 2) 분위기가 오르는 장면 (방 전용이 있으면 반반)
-    const pool = DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
+    const pool = capR ? CN.during : DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
     const dl = pick(pool), B = PX.INN_BATH || {};
     const bathy = /목욕|욕조|거품|샤워/.test(JSON.stringify(dl)) && B.bathGo; // 욕조에서 분위기가 오르면: 불 끄는 말 없이 욕실 대사로
     await lines(dl);
-    const go = bathy ? U.pickFresh('ibGo', B.bathGo) : U.pickFresh('innGo', GO);
+    const go = capR ? U.pickFresh('capGo', CN.go) : bathy ? U.pickFresh('ibGo', B.bathGo) : U.pickFresh('innGo', GO);
     const i = await PX.Dlg.choose([{ t: U.fmt(go[0], PX.Dlg.ctx()) }, { t: go[1] }]);
     await PX.Dlg.say('player', i === 0 ? U.fmt(go[0], PX.Dlg.ctx()) : go[1], 'blush');
-    if (i !== 0) { await lines(pick(bathy ? B.bathStop : STOP)); return false; }
+    if (i !== 0) { await lines(pick(capR ? CN.stop : bathy ? B.bathStop : STOP)); return false; }
     // 챙기기: 불 끄기 전에 (욕실에선 불 얘기 없는 것만)
-    { const pp = PREP[where === 'home' ? 'home' : 'inn'], np = pp.filter(b => !/불/.test(JSON.stringify(b))); await lines(pick(bathy && np.length ? np : pp)); }    // 3) 암전: 사이사이 들리는 말
+    { const pp = capR ? PREP_CAP : PREP[where === 'home' ? 'home' : 'inn'], np = pp.filter(b => !/불/.test(JSON.stringify(b))); await lines(pick(bathy && np.length ? np : pp)); }    // 3) 암전: 사이사이 들리는 말
     PX.Dlg.close(); fade(true); await U.sleep(700);
-    { const X2 = PX.INN_MORE || {}, pool = bathy ? B.bathDark : where === 'home' ? X2.dark_home : X2.dark_inn; await lines([U.pickFresh(bathy ? 'ibDark' : 'innDark_' + where, pool)]); } // 암전 (안 본 것부터)
+    { const X2 = PX.INN_MORE || {}, pool = capR ? CN.dark : bathy ? B.bathDark : where === 'home' ? X2.dark_home : X2.dark_inn; await lines([U.pickFresh(capR ? 'capDark' : bathy ? 'ibDark' : 'innDark_' + where, pool)]); } // 암전 (안 본 것부터)
     const n = 2 + Math.floor(Math.random() * 2);
     // 이번 밤에 들릴 말: 서로 다른 것으로, 아직 안 들은 것부터
-    const MUR = bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
+    const MUR = capR ? CN.murmur : bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
     const fresh = MUR.filter(m => !PX.Dlg.bundleSeen({ l: m })), rest = MUR.filter(m => !fresh.includes(m));
     const order = [...fresh.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(0, n);
     for (const m of order) { St.advance(40 + Math.floor(Math.random() * 50)); const r = await PX.Dlg.runLines(m); St.addAff(Math.min(3, r.aff || 1)); }
     St.advance(60); PX.Dlg.close(); fade(false); await U.sleep(300);
     // 4) 그 후
-    await lines(pick(bathy ? B.bathAfter : AFTER.concat(where === 'home' ? AFTER_HOME : AFTER_INN)));
+    await lines(pick(capR ? CN.after : bathy ? B.bathAfter : AFTER.concat(where === 'home' ? AFTER_HOME : AFTER_INN)));
     if (!S.done['innNight_' + S.day]) { S.done['innNight_' + S.day] = 1; St.addAff(8); }
-    if (where === 'home') { if (!S.done.homeNightMem) { S.done.homeNightMem = 1; g.memory('좁은 침대의 밤', '1인용 침대에서, 그는 몇 번이고 괜찮냐고 물었다.', false); } }
+    if (capR) { if (!S.done.capNightMem) { S.done.capNightMem = 1; g.memory('그의 막사에서', '각 잡힌 이불을 걷어 낸 밤. 그는 자기 방에선 참을 이유가 없다고 했다.', false); } }
+    else if (where === 'home') { if (!S.done.homeNightMem) { S.done.homeNightMem = 1; g.memory('좁은 침대의 밤', '1인용 침대에서, 그는 몇 번이고 괜찮냐고 물었다.', false); } }
     else if (!S.done.innNightMem) { S.done.innNightMem = 1; g.memory('은밀숙소의 밤', '불이 꺼진 뒤에도 그는 몇 번이고 괜찮냐고 물었다. 그리고 몇 번이고 사랑한다고 했다.', false); }
     return true;
   }
@@ -15015,7 +15105,7 @@ PX.InnNight = (() => {
     } finally { PX.Dlg.close(); g.modal--; }
   }
   // 같이 잠들고 아침 (대위는 곁에 남는다)
-  async function sleepTogether(after) {
+  async function sleepTogether(after, morning) {
     const g = G(), S = St.S;
     const j = await PX.Dlg.choose([{ t: '이대로 같이 자자.' }, { t: after ? '조금만 더 얘기하다 자자.' : '조금만 더 얘기하자.' }]);
     if (j === 1) { await lines([pick([['C:무슨 얘기?', 'C^:…아무 얘기나 해. 네 목소리 들으면서 잠들고 싶어.'], ['C*:좋아. 근데 나 먼저 잠들면 깨우지 마. 너 목소리가 자장가라.']])]); }
@@ -15023,7 +15113,36 @@ PX.InnNight = (() => {
     const mins = ((8 * 60 - S.time.min) + 1440) % 1440 || 1440; St.advance(Math.min(mins, 11 * 60));
     S.energy = Math.min(100, (S.energy || 50) + 40);
     g.cap.map = g.mapId; await U.sleep(400); fade(false);
-    await lines(pick(MORNING)); PX.Dlg.close();
+    await lines(pick(morning || MORNING)); PX.Dlg.close();
+  }
+  // 대위 막사에서 자고 가기 (연인 · 밤): 같이 눕고 → (원하면) 대위의 방에서 보내는 밤 → 아침
+  async function capNight(decided) { // decided: 이미 자고 가기로 정했으면 다시 묻지 않는다
+    const g = G(), S = St.S, CN = PX.CAP_NIGHT;
+    g.modal++;
+    try {
+      g.cap.setDirTo(g.player.x, g.player.y);
+      let a = 0;
+      if (!decided) {
+        await lines(pick(CN.ask));
+        a = await PX.Dlg.choose([{ t: '응. 자고 갈래.' }, { t: '오늘은 돌아갈게.' }]);
+        await PX.Dlg.say('player', a === 0 ? '응. 자고 갈래.' : '오늘은 돌아갈게.', a === 0 ? 'blush' : 'normal');
+      }
+      if (a !== 0) { await lines(pick([['C^:…알았어. 문 앞까지 데려다줄게.'], ['C:응. 대신 도착하면 연락해.']])); return false; }
+      g.cap.holding = false; g.cap.holdSide = 0; g.player.holdSide = 0; g.cap.tempPose = null; g.player.tempPose = null;
+      PX.Dlg.close(); PX.Cap.bedTogether(); await U.sleep(400);
+      let ok = false;
+      if (!S.done['capNight_' + S.day]) {
+        await lines([pick([['C~:…이리 와. 내 침대야. 네 자리 비워 뒀어.'], ['C*:좁다. 근데 여기선 이게 좋아.'], ['C:눈 감기 전에… 할 말 있으면 지금 해.']])]);
+        const i = await PX.Dlg.choose([{ t: '그냥 안고 자자.' }, { t: '…오늘은 그냥 자기 싫어.' }]);
+        await PX.Dlg.say('player', i === 0 ? '그냥 안고 자자.' : '…오늘은 그냥 자기 싫어.', i === 0 ? 'normal' : 'blush');
+        if (i === 0) await lines(pick([['C^:응. 팔베개. 이건 내 방 규칙이야.'], ['C*:좋아. 안고만. …약속은 못 하겠지만.']]));
+        else { S.done['capNight_' + S.day] = 1; ok = await intimate('cap'); }
+      }
+      await sleepTogether(ok, CN.morning);
+      S.done['capNight_' + S.day] = 1;
+      PX.Cap.release(); St.save();
+      return true;
+    } finally { PX.Dlg.close(); g.modal--; }
   }
   // ===================== 낮의 깊은 시간 (주말 · 휴가 낮) =====================
   // 밤보다 짧게(4~5시간) · 조금 더 급하고 진하게 · 직접적인 묘사 없이 암전으로. 장소(객실 · 내 숙소 · 대위 막사)와 낮이라는 상황에 맞는 말만.
@@ -15136,7 +15255,7 @@ PX.InnNight = (() => {
     MURMUR.push(...(X2.murmur || [])); AFTER.push(...(X2.after || [])); AFTER_INN.push(...(X2.after_inn || [])); MORNING.push(...(X2.morning || []));
   }
   const counts = () => ({ street: STREET.length, lobby: LOBBY.length, enter: ENTER.length, during: Object.values(DURING).reduce((a, b) => a + b.length, 0), murmur: MURMUR.length, after: AFTER.length, afterInn: AFTER_INN.length, go: GO.length, prepInn: PREP.inn.length, duringAny: DURING.any.length, morning: MORNING.length, stop: STOP.length, prep: PREP.inn.length + PREP.home.length, home: HOME_ENTER.length });
-  return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime };
+  return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime, capNight };
 })();
 
 </script>
@@ -16953,6 +17072,7 @@ ${memLine(S)}`;
     else if (!bed && md.kind === 'out') add('👀 주변 구경하기', () => look(withCap));
     if (!bed && m.objs.some(x => x.f && x.f.use === 'tv')) add('📺 TV 보기', tv);
     if (!bed && /sofa/.test(o.fid)) add('😪 소파에서 낮잠 (30분)', () => nap(30, withCap));
+    if (bed && Game.mapId === 'q_captain' && near && cap.map === Game.mapId && S.rel.cap.stage >= 4 && (S.time.min >= 21 * 60 || S.time.min < 5 * 60) && !Cap.onDuty()) add('🌙 대위 방에서 자고 가기', () => PX.InnNight.capNight(), '대위 침대에서 같이 · 아침까지');
     if (bed && withCap && PX.InnNight.canDay()) add('☀️ 커튼 치기', () => PX.InnNight.daytime(), '쉬는 날 낮 · 둘만의 깊은 시간 (4~5시간)');
     if (bed) {
       if (md.home) add('😴 잠자기', sleepMenu); else add('😪 잠깐 눕기 (1시간)', () => nap(60, withCap));
