@@ -395,7 +395,7 @@ PX.Cap = (() => {
     if (reu && PX.DLG_V2) {
       const bd = PX.Dlg.pick('v_reunion', PX.DLG_V2.reunion);
       await PX.Dlg.runLines(bd ? bd.l : ['C:나 왔어.'], { reply: true });
-      if (S.cap.giftPending) { const gid = S.cap.giftPending; S.cap.giftPending = null; cap.doPose('carry', 1.4, 'smile'); await PX.Dlg.runLines(['C:선물. 작전 중에 찾은 거야. 네 생각나서 챙겼어.']); St.addItem(gid); PX.UI.toast(`🎁 ${PX.U.josa(PX.ITEMS[gid].name, '을')} 받았다`); }
+      if (S.cap.giftPending) { const gid = S.cap.giftPending; S.cap.giftPending = null; cap.doPose('carry', 1.4, 'smile'); await PX.Dlg.runLines([U.pickFresh('reuGift', ['C:선물. 작전 중에 찾은 거야. 네 생각나서 챙겼어.', 'C^:외곽에서 주웠어. 반짝여서 너 생각났어.', 'C;:…주머니에 며칠 넣고 다녔더니 따뜻하지? 그거 내 체온이야.', 'C:작전 구역에서 제일 예쁜 거 골랐어. 너 줄 거니까.', 'C*:이거 찾느라 정시우한테 놀림 엄청 받았어. 그래도 받아.', 'C~:빈손으로 오기 싫었어. 작지만, 받아 줘.'])]); St.addItem(gid); PX.UI.toast(`🎁 ${PX.U.josa(PX.ITEMS[gid].name, '을')} 받았다`); }
       M.mem().reunion = null; M.mem().longing = 20; M.noteMeet(); M.noteTalk('reunion');
       if (r.stage >= 3) { const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('안아 줄게요.') }, { t: PX.Dlg.capTone('수고했어요.') }]); if (i === 0) { PX.Dlg.close(); g.modal--; await M.perform('fronthug', true); g.modal++; } else await PX.Dlg.say('player', PX.Dlg.capTone('수고했어요.')); }
       g.memory('무사 귀환', `${reu.days}일 만에 돌아온 대위가 제일 먼저 나를 찾아왔다.`, true);
