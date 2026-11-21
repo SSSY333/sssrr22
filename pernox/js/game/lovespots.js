@@ -76,6 +76,12 @@ PX.Love = (() => {
     const S = St.S;
     if (S.cap.urgent && St.absMin() > S.cap.urgent.exp) S.cap.urgent = null;
     if (S.rel.cap.stage >= 4 && !S.cap.urgent && !(PX.Op.isAway && PX.Op.isAway('cap')) && Math.random() < 0.08) markUrgent('hard', 22);
+    // 대위 휴가 (가끔): 일과 없이 나랑 논다 · 장기수색과 겹치지 않게
+    { const o = S.cap.op, busy = o && o.phase !== 'done', has = S.capLeave && S.capLeave.to >= S.day;
+      if (S.rel.cap.stage >= 3 && !busy && !has && Math.random() < 0.1) {
+        const from = S.day + 1 + (Math.random() < 0.5 ? 0 : 1), len = Math.random() < 0.7 ? 1 : 2;
+        S.capLeave = { from, to: from + len - 1, self: true }; S.cap.leaveNote = 'ask';
+      } }
     // 다른 부대 커플이 창고에서 들켰다는 소문 (아주 가끔)
     if (S.rel.cap.stage >= 4 && S.done.storeVisit && Math.random() < 0.05) S.cap.rumorNext = 1;
   }
@@ -91,6 +97,17 @@ PX.Love = (() => {
     if (g.mapId === 'jeep_in' && g.cap.map === 'jeep_in' && g.player.seat && !g.cap.seat && !g.modal) { const s = carSeats(); if (!s.drv.by) g.cap.sitOn(s.drv); } // 내가 앉으면 대위는 운전석
     if (g.mapId !== 'jeep_in' && S.car && g.cap.map !== 'jeep_in') S.car = null;
     if (S.cap.rumorNext && t >= 12 * 60 && t < 20 * 60) { S.cap.rumorNext = 0; msg(U.pick(L().storage.rumor), [['헉, 우리 조심하자.', 2, '응. …근데 창고 또 가고 싶다.'], ['우리도 들킬 뻔했잖아.', 3, '쉿. 그건 기밀이야.']]); }
+    // 대위 휴가 메시지: 낸 날 낮에 한 번 · 휴가 당일 아침에 한 번
+    if (S.cap.leaveNote && S.capLeave && t >= 9 * 60 && t < 21 * 60 && !(PX.Op.isAway && PX.Op.isAway('cap'))) {
+      const L2 = S.capLeave, n = L2.to - L2.from + 1, R = PX.Rom;
+      if (S.cap.leaveNote === 'ask' && S.day < L2.from) { S.cap.leaveNote = 'day';
+        msg(U.pick([`${R.dayKo(L2.from)} 휴가 냈어${n > 1 ? `. ${n}일` : ''}. 이유는 너.`, `나 ${R.dayKo(L2.from)} 쉬어. 일과 없음. 너랑 놀려고 낸 거야.`, `휴가 냈다. ${R.dayKo(L2.from)}${n > 1 ? `부터 ${n}일` : ''}. 그날 비워 둘 수 있어?`]),
+          [['진짜? 좋아!', 3, '응. 하루 종일 네 거야.'], ['나 그날 일하는데…', 2, '괜찮아. 끝날 때까지 기다릴게. 데리러 갈게.']]);
+      } else if (S.cap.leaveNote === 'day' && S.day >= L2.from && S.day <= L2.to && t < 12 * 60) { S.cap.leaveNote = null;
+        msg(U.pick(['오늘 휴가. 군복 안 입었어. 어디야? 찾으러 갈게.', '좋은 아침. 오늘은 근무 없음. 너만 있음.', '휴가 첫날. 뭐 할지 아무것도 안 정했어. 너랑 정하려고.']),
+          [['나 지금 숙소야.', 3, '알았어. 금방 갈게.'], ['일 끝나고 보자.', 2, '응. 끝나는 시간에 앞에 있을게.']]);
+      }
+    }
     if (!u) return;
     if (St.absMin() > u.exp) { S.cap.urgent = null; return; }
     if (u.why === 'hard' && !u.msg && t >= 17 * 60 && t < 21 * 60) { u.msg = true; msg(U.pick(['오늘 진짜 힘들었다. 이따 너한테 가도 돼?', '하루 종일 최악이었어. 너 보고 싶어. 지금 당장.', '오늘 버틴 거, 다 너 때문이야. 퇴근하면 갈게.']), [['응, 와.', 3, '…달려갈게.'], ['기다리고 있을게.', 3, '문 잠그지 마. 노크 안 하고 들어갈지도.']]); }

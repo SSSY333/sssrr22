@@ -17,12 +17,13 @@ PX.Op = (() => {
     if (o && o.phase !== 'done') return;
     if (S.rel.cap.stage < 1) return;
     const last = o ? o.end : -1e9;
-    if (now() - last < 9 * DAY || Math.random() > 0.14) return;
+    if (S.capLeave && S.capLeave.to >= S.day) return; // 대위 휴가가 잡혀 있으면 그 뒤로
+    if (now() - last < 3 * DAY || Math.random() > 0.3) return; // 돌아온 뒤 사흘은 쉬고 · 대략 열흘에 한 번꼴
     plan();
   }
   function plan(opts = {}) {
     const S = St.S, job = S.player.job;
-    const days = opts.days || U.pick([3, 4, 5, 5, 6, 7, 7, 10]);
+    const days = opts.days || (r => r < 0.38 ? 2 : r < 0.74 ? 3 : r < 0.88 ? 4 : r < 0.96 ? 5 : 7)(Math.random()); // 대부분 2~3일 · 일주일은 아주 가끔
     const startDay = S.day + (opts.inDays != null ? opts.inDays : 2);
     // 직업별 동행: 수색팀은 함께 · 군의관·정비는 가끔 · 민간 연구원은 승인된 공동 조사일 때만
     const p = { scout: 1, medic: 0.25, engineer: 0.25, researcher: 0.12 }[job] || 0;

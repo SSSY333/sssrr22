@@ -16099,6 +16099,12 @@ PX.Love = (() => {
     const S = St.S;
     if (S.cap.urgent && St.absMin() > S.cap.urgent.exp) S.cap.urgent = null;
     if (S.rel.cap.stage >= 4 && !S.cap.urgent && !(PX.Op.isAway && PX.Op.isAway('cap')) && Math.random() < 0.08) markUrgent('hard', 22);
+    // 대위 휴가 (가끔): 일과 없이 나랑 논다 · 장기수색과 겹치지 않게
+    { const o = S.cap.op, busy = o && o.phase !== 'done', has = S.capLeave && S.capLeave.to >= S.day;
+      if (S.rel.cap.stage >= 3 && !busy && !has && Math.random() < 0.1) {
+        const from = S.day + 1 + (Math.random() < 0.5 ? 0 : 1), len = Math.random() < 0.7 ? 1 : 2;
+        S.capLeave = { from, to: from + len - 1, self: true }; S.cap.leaveNote = 'ask';
+      } }
     // 다른 부대 커플이 창고에서 들켰다는 소문 (아주 가끔)
     if (S.rel.cap.stage >= 4 && S.done.storeVisit && Math.random() < 0.05) S.cap.rumorNext = 1;
   }
@@ -16114,6 +16120,17 @@ PX.Love = (() => {
     if (g.mapId === 'jeep_in' && g.cap.map === 'jeep_in' && g.player.seat && !g.cap.seat && !g.modal) { const s = carSeats(); if (!s.drv.by) g.cap.sitOn(s.drv); } // 내가 앉으면 대위는 운전석
     if (g.mapId !== 'jeep_in' && S.car && g.cap.map !== 'jeep_in') S.car = null;
     if (S.cap.rumorNext && t >= 12 * 60 && t < 20 * 60) { S.cap.rumorNext = 0; msg(U.pick(L().storage.rumor), [['헉, 우리 조심하자.', 2, '응. …근데 창고 또 가고 싶다.'], ['우리도 들킬 뻔했잖아.', 3, '쉿. 그건 기밀이야.']]); }
+    // 대위 휴가 메시지: 낸 날 낮에 한 번 · 휴가 당일 아침에 한 번
+    if (S.cap.leaveNote && S.capLeave && t >= 9 * 60 && t < 21 * 60 && !(PX.Op.isAway && PX.Op.isAway('cap'))) {
+      const L2 = S.capLeave, n = L2.to - L2.from + 1, R = PX.Rom;
+      if (S.cap.leaveNote === 'ask' && S.day < L2.from) { S.cap.leaveNote = 'day';
+        msg(U.pick([`${R.dayKo(L2.from)} 휴가 냈어${n > 1 ? `. ${n}일` : ''}. 이유는 너.`, `나 ${R.dayKo(L2.from)} 쉬어. 일과 없음. 너랑 놀려고 낸 거야.`, `휴가 냈다. ${R.dayKo(L2.from)}${n > 1 ? `부터 ${n}일` : ''}. 그날 비워 둘 수 있어?`]),
+          [['진짜? 좋아!', 3, '응. 하루 종일 네 거야.'], ['나 그날 일하는데…', 2, '괜찮아. 끝날 때까지 기다릴게. 데리러 갈게.']]);
+      } else if (S.cap.leaveNote === 'day' && S.day >= L2.from && S.day <= L2.to && t < 12 * 60) { S.cap.leaveNote = null;
+        msg(U.pick(['오늘 휴가. 군복 안 입었어. 어디야? 찾으러 갈게.', '좋은 아침. 오늘은 근무 없음. 너만 있음.', '휴가 첫날. 뭐 할지 아무것도 안 정했어. 너랑 정하려고.']),
+          [['나 지금 숙소야.', 3, '알았어. 금방 갈게.'], ['일 끝나고 보자.', 2, '응. 끝나는 시간에 앞에 있을게.']]);
+      }
+    }
     if (!u) return;
     if (St.absMin() > u.exp) { S.cap.urgent = null; return; }
     if (u.why === 'hard' && !u.msg && t >= 17 * 60 && t < 21 * 60) { u.msg = true; msg(U.pick(['오늘 진짜 힘들었다. 이따 너한테 가도 돼?', '하루 종일 최악이었어. 너 보고 싶어. 지금 당장.', '오늘 버틴 거, 다 너 때문이야. 퇴근하면 갈게.']), [['응, 와.', 3, '…달려갈게.'], ['기다리고 있을게.', 3, '문 잠그지 마. 노크 안 하고 들어갈지도.']]); }
@@ -16796,12 +16813,13 @@ PX.Op = (() => {
     if (o && o.phase !== 'done') return;
     if (S.rel.cap.stage < 1) return;
     const last = o ? o.end : -1e9;
-    if (now() - last < 9 * DAY || Math.random() > 0.14) return;
+    if (S.capLeave && S.capLeave.to >= S.day) return; // 대위 휴가가 잡혀 있으면 그 뒤로
+    if (now() - last < 3 * DAY || Math.random() > 0.3) return; // 돌아온 뒤 사흘은 쉬고 · 대략 열흘에 한 번꼴
     plan();
   }
   function plan(opts = {}) {
     const S = St.S, job = S.player.job;
-    const days = opts.days || U.pick([3, 4, 5, 5, 6, 7, 7, 10]);
+    const days = opts.days || (r => r < 0.38 ? 2 : r < 0.74 ? 3 : r < 0.88 ? 4 : r < 0.96 ? 5 : 7)(Math.random()); // 대부분 2~3일 · 일주일은 아주 가끔
     const startDay = S.day + (opts.inDays != null ? opts.inDays : 2);
     // 직업별 동행: 수색팀은 함께 · 군의관·정비는 가끔 · 민간 연구원은 승인된 공동 조사일 때만
     const p = { scout: 1, medic: 0.25, engineer: 0.25, researcher: 0.12 }[job] || 0;
