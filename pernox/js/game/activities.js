@@ -225,11 +225,13 @@ PX.Act = (() => {
         { t: '🌌 김 너머로 별 보기', sub: wc && st >= 4 ? '어깨에 기대서' : '고개 젖히고', k: 'stars' },
         { t: '💦 물장난', sub: wc ? '살짝만' : '손바닥으로 물 튕기기', k: 'splash' },
         wc && st >= 3 ? { t: '💆 어깨 주물러 주기', sub: '뭉친 데 풀어 주기', k: 'massage' } : null,
+        wc && st >= 4 && PX.Love ? { t: '🔒 가족탕 빌리기', sub: '₢30 · 둘만 쓰는 작은 탕', k: 'family' } : null,
         { t: '🥛 나와서 차가운 우유', sub: '₢4 · 온천 끝 마무리', k: 'milk' },
         { t: '🚪 그만 나가기', k: 'out' },
       ].filter(Boolean).map(it => used[it.k] ? Object.assign({}, it, { sub: (it.sub ? it.sub + ' · ' : '') + '방금 함' }) : it);
       const it = await PX.UI.menu('♨️ 온천에서', items);
       if (!it || it.k === 'out') break;
+      if (it.k === 'family') { await PX.Love.familyBath(); break; }
       const a = ONSEN[it.k], pool = wc ? a.cap : a.solo;
       if (it.k === 'milk' && !St.spend(4)) { PX.UI.toast('💸 ₢4이 필요해요'); continue; }
       used[it.k] = 1;
@@ -579,6 +581,7 @@ PX.Act = (() => {
     if (o.use === 'event') return eventBooth();
     if (o.use === 'shop' && G().mapId === 'inn') return innDesk();
     if (PX.Ruby && PX.Ruby.H[o.use]) { await PX.Ruby.H[o.use](o); return true; }
+    if (PX.Love && PX.Love.H[o.use]) { await PX.Love.H[o.use](o); return true; }
     if (H[o.use]) { await H[o.use](o); return true; }
     return false;
   }

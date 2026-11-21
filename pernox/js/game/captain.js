@@ -399,6 +399,7 @@ PX.Cap = (() => {
       M.mem().reunion = null; M.mem().longing = 20; M.noteMeet(); M.noteTalk('reunion');
       if (r.stage >= 3) { const i = await PX.Dlg.choose([{ t: PX.Dlg.capTone('안아 줄게요.') }, { t: PX.Dlg.capTone('수고했어요.') }]); if (i === 0) { PX.Dlg.close(); g.modal--; await M.perform('fronthug', true); g.modal++; } else await PX.Dlg.say('player', PX.Dlg.capTone('수고했어요.')); }
       g.memory('무사 귀환', `${reu.days}일 만에 돌아온 대위가 제일 먼저 나를 찾아왔다.`, true);
+      if (PX.Love) PX.Love.markUrgent('op', 30); // 오늘 밤, 참고 참은 만큼
     } else
     // 선물 들고 오기
     if (S.cap.giftPending) {

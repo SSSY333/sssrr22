@@ -235,7 +235,7 @@ PX.InnNight = (() => {
     { const X2 = PX.INN_MORE || {}, pool = capR ? CN.dark : bathy ? B.bathDark : where === 'home' ? X2.dark_home : X2.dark_inn; await lines([U.pickFresh(capR ? 'capDark' : bathy ? 'ibDark' : 'innDark_' + where, pool)]); } // 암전 (안 본 것부터)
     const n = 2 + Math.floor(Math.random() * 2);
     // 이번 밤에 들릴 말: 서로 다른 것으로, 아직 안 들은 것부터
-    const MUR = capR ? tame(CN.murmur.concat(N2.n_murmur || [])) : bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
+    const MUR = capR ? tame(CN.murmur.concat(N2.n_murmur || [], (PX.LOVE && PX.LOVE.breath) || [])) : bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
     const fresh = MUR.filter(m => !PX.Dlg.bundleSeen({ l: m })), rest = MUR.filter(m => !fresh.includes(m));
     const order = [...fresh.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(0, n);
     for (const m of order) { St.advance(40 + Math.floor(Math.random() * 50)); const r = await PX.Dlg.runLines(m); St.addAff(Math.min(3, r.aff || 1)); }
@@ -246,6 +246,7 @@ PX.InnNight = (() => {
     if (capR) { if (!S.done.capNightMem) { S.done.capNightMem = 1; g.memory('그의 막사에서', '각 잡힌 이불을 걷어 낸 밤. 그는 자기 방에선 참을 이유가 없다고 했다.', false); } }
     else if (where === 'home') { if (!S.done.homeNightMem) { S.done.homeNightMem = 1; g.memory('좁은 침대의 밤', '1인용 침대에서, 그는 몇 번이고 괜찮냐고 물었다.', false); } }
     else if (!S.done.innNightMem) { S.done.innNightMem = 1; g.memory('은밀숙소의 밤', '불이 꺼진 뒤에도 그는 몇 번이고 괜찮냐고 물었다. 그리고 몇 번이고 사랑한다고 했다.', false); }
+    if (PX.Love) await PX.Love.encore(); // 가끔: 조금만 더
     return true;
   }
   // 내 숙소: 대위가 침대에서 같이 자기로 한 밤, 잠들기 전에 (내가 고를 때만)
@@ -402,6 +403,7 @@ PX.InnNight = (() => {
       St.advance(total - used); PX.Dlg.close(); fade(false); await U.sleep(300);
       await lines(pick(DAY_AFTER.any.concat(where === 'inn' ? DAY_AFTER.inn : base ? DAY_AFTER.base : [])));
       St.addAff(6); S.energy = Math.max(10, (S.energy || 50) - 15); S.hunger = Math.max(0, (S.hunger || 50) - 20);
+      if (PX.Love) await PX.Love.encore();
       if (!S.done.dayLoveMem) { S.done.dayLoveMem = 1; g.memory('햇빛 아래', '쉬는 날 낮, 커튼 틈 햇빛 속에서 그는 하나도 놓치지 않겠다고 했다.', false); }
       return true;
     } finally { PX.Dlg.close(); g.modal--; }
@@ -411,7 +413,7 @@ PX.InnNight = (() => {
     STREET.push(...(X2.street || [])); LOBBY.push(...(X2.lobby || [])); ENTER.push(...(X2.enter || []));
     DURING.any.push(...(X2.during || [])); for (const id in (X2.roomDuring || {})) DURING[id] = (DURING[id] || []).concat(X2.roomDuring[id]);
     GO.push(...(X2.go || [])); STOP.push(...(X2.stop || [])); PREP.inn.push(...(X2.prep_inn || []));
-    MURMUR.push(...(X2.murmur || [])); AFTER.push(...(X2.after || [])); AFTER_INN.push(...(X2.after_inn || [])); MORNING.push(...(X2.morning || []));
+    MURMUR.push(...(X2.murmur || []), ...((PX.LOVE && PX.LOVE.breath) || [])); AFTER.push(...(X2.after || [])); AFTER_INN.push(...(X2.after_inn || [])); MORNING.push(...(X2.morning || []));
   }
   const counts = () => ({ street: STREET.length, lobby: LOBBY.length, enter: ENTER.length, during: Object.values(DURING).reduce((a, b) => a + b.length, 0), murmur: MURMUR.length, after: AFTER.length, afterInn: AFTER_INN.length, go: GO.length, prepInn: PREP.inn.length, duringAny: DURING.any.length, morning: MORNING.length, stop: STOP.length, prep: PREP.inn.length + PREP.home.length, home: HOME_ENTER.length });
   return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime, capNight };

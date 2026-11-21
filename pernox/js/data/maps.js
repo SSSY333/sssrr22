@@ -86,6 +86,10 @@
   room('cafe', { name: '향열매 카페', w: 16, h: 12, floor: 'cafe', wall: '#f4e4c8', exit: 8, furn: cafe, date: true,
     walls: [['B', 9.6, 'window', 1.0], ['L', 5.6, 'window', 1.0], ['L', 7.6, 'poster', 0.7], ['B', 0.6, 'menu', 1.2]] });
 
+  // 부대 지하 창고 (좁다 · 오른쪽 구석 입구로 드나든다)
+  room('storage', { name: '부대 지하 창고 C-7', w: 6, h: 6, floor: 'darktile', wall: '#5a5a4c', exit: 2, amb: 0.45, backTo: ['base', 58.5, 59.6],
+    furn: [['crates', 0, 0, 0], ['crate', 2, 0, 0], ['locker', 4, 0, 0], ['locker', 5, 0, 0], ['crates', 0, 2, 1], ['crate', 5, 3, 0], ['storenook', 3, 2, 0]],
+    walls: [] });
   // ---------------- 606부대 야외 ----------------
   const base = { id: 'base', name: '606부대 생활구역', kind: 'out', w: 64, h: 64, buildings: [], decor: [], zones: [] };
   // 건물: door {f: 'L'(y+d면) | 'R'(x+w면), u: 면 위치}
@@ -135,6 +139,7 @@
   base.walls = [ // 외곽 방벽 (정문 x 30~32 비움)
     { x: 2, y: 2, w: 60, d: 1 }, { x: 2, y: 3, w: 1, d: 58 }, { x: 61, y: 3, w: 1, d: 58 }, { x: 2, y: 61, w: 28, d: 1 }, { x: 33, y: 61, w: 29, d: 1 },
   ];
+  base.decor.push(['storedoor', 58, 58, 0], ['jeep', 56, 47, 0]); // 오른쪽 구석: 지하 창고 입구 · 격납고 옆: 같이 타는 지프
   base.decor.push(['eventbooth', 34, 33, 0, ['LB38', 'LB46', 'LB49', 'LB47', 'LB44', 'LB48', 'LB42', 'LB45', 'LB43', 'LB40', 'LB41', 'LB52', 'LB55', 'LB56', 'LB39']], ['pullup', 46, 54, 0], ['target', 55, 56, 0], ['target', 57, 56, 0], ['coursestart', 38, 53, 1]);
   base.desert = true;
   base.spots = { // 야외 스폿
