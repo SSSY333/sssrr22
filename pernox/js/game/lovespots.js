@@ -87,6 +87,9 @@ PX.Love = (() => {
   function minute() {
     const S = St.S, g = G(), t = S.time.min, u = S.cap.urgent;
     if (!g || !g.cap) return;
+    // 지프 안: 대위가 서 있으면 운전석에 앉는다 (불러오기 뒤 등) · 차에서 이미 내렸는데 차 정보가 남았으면 정리
+    if (g.mapId === 'jeep_in' && g.cap.map === 'jeep_in' && g.player.seat && !g.cap.seat && !g.modal) { const s = carSeats(); if (!s.drv.by) g.cap.sitOn(s.drv); } // 내가 앉으면 대위는 운전석
+    if (g.mapId !== 'jeep_in' && S.car && g.cap.map !== 'jeep_in') S.car = null;
     if (S.cap.rumorNext && t >= 12 * 60 && t < 20 * 60) { S.cap.rumorNext = 0; msg(U.pick(L().storage.rumor), [['헉, 우리 조심하자.', 2, '응. …근데 창고 또 가고 싶다.'], ['우리도 들킬 뻔했잖아.', 3, '쉿. 그건 기밀이야.']]); }
     if (!u) return;
     if (St.absMin() > u.exp) { S.cap.urgent = null; return; }
