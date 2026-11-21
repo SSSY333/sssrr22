@@ -220,7 +220,8 @@ PX.InnNight = (() => {
     else if (where === 'home') await lines(pick(HOME_ENTER));
     else if (S.done.innEnter !== S.day) { S.done.innEnter = S.day; await lines(pick(ENTER)); }
     // 2) 분위기가 오르는 장면 (방 전용이 있으면 반반)
-    const pool = capR ? CN.during : DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
+    const N2 = PX.INN_MORE || {};
+    const pool = capR ? CN.during.concat(N2.n_during || []) : DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
     const dl = pick(pool), B = PX.INN_BATH || {};
     const bathy = /목욕|욕조|거품|샤워/.test(JSON.stringify(dl)) && B.bathGo; // 욕조에서 분위기가 오르면: 불 끄는 말 없이 욕실 대사로
     await lines(dl);
@@ -234,13 +235,13 @@ PX.InnNight = (() => {
     { const X2 = PX.INN_MORE || {}, pool = capR ? CN.dark : bathy ? B.bathDark : where === 'home' ? X2.dark_home : X2.dark_inn; await lines([U.pickFresh(capR ? 'capDark' : bathy ? 'ibDark' : 'innDark_' + where, pool)]); } // 암전 (안 본 것부터)
     const n = 2 + Math.floor(Math.random() * 2);
     // 이번 밤에 들릴 말: 서로 다른 것으로, 아직 안 들은 것부터
-    const MUR = capR ? CN.murmur : bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
+    const MUR = capR ? tame(CN.murmur.concat(N2.n_murmur || [])) : bathy ? B.bathMurmur : tame(MURMUR.filter(m => where !== 'home' || !/네온|커튼|객실/.test(JSON.stringify(m)))); // 내 숙소엔 루비웨이 네온이 없다 · 첫 밤 이후엔 조심스러운 말 거의 없이
     const fresh = MUR.filter(m => !PX.Dlg.bundleSeen({ l: m })), rest = MUR.filter(m => !fresh.includes(m));
     const order = [...fresh.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)].slice(0, n);
     for (const m of order) { St.advance(40 + Math.floor(Math.random() * 50)); const r = await PX.Dlg.runLines(m); St.addAff(Math.min(3, r.aff || 1)); }
     St.advance(60); PX.Dlg.close(); fade(false); await U.sleep(300);
     // 4) 그 후
-    await lines(pick(capR ? CN.after : bathy ? B.bathAfter : AFTER.concat(where === 'home' ? AFTER_HOME : AFTER_INN)));
+    await lines(pick(capR ? CN.after.concat(N2.n_after || []) : bathy ? B.bathAfter : AFTER.concat(where === 'home' ? AFTER_HOME : AFTER_INN)));
     if (!S.done['innNight_' + S.day]) { S.done['innNight_' + S.day] = 1; St.addAff(8); }
     if (capR) { if (!S.done.capNightMem) { S.done.capNightMem = 1; g.memory('그의 막사에서', '각 잡힌 이불을 걷어 낸 밤. 그는 자기 방에선 참을 이유가 없다고 했다.', false); } }
     else if (where === 'home') { if (!S.done.homeNightMem) { S.done.homeNightMem = 1; g.memory('좁은 침대의 밤', '1인용 침대에서, 그는 몇 번이고 괜찮냐고 물었다.', false); } }
