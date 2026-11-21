@@ -201,6 +201,7 @@ ${memLine(S)}`;
       const pm = /^([^:：(]{1,10})\s*[:：]\s*(.+)$/.exec(t); // "이름: 대사"
       if (pm) { if (pm[1].includes(me) || who.includes(pm[1].trim())) t = pm[2].trim(); else return null; }
       t = t.replace(/^["“](.*)["”]$/, '$1');
+      t = t.replace(/\uFFFD+/g, '').replace(/([가-힣])\?{3}\s?([가-힣]{1,3}[어아요다지네까]\b|[가-힣]{1,3}[어아요다지네까][?.!…~])/g, '$1$2').replace(/\?{2,}/g, '?'); // 전송 중 깨진 글자 (예: '설??? 렜어' → '설렜어')
       return Object.assign({}, l, { text: t });
     }).filter(Boolean);
     const spoken = ls.filter(l => !/^\(.*\)$/.test(l.text)).map(l => norm(l.text));
