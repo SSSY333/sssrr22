@@ -40,7 +40,8 @@ PX.Reply = (() => {
     let m = /([가-힣A-Za-z0-9 ]{1,12}?)\s*(?:이야|야|좋아해|형이야|파야)[,?]?\s*(?:아니면\s*)?([가-힣A-Za-z0-9 ]{1,12}?)\s*(?:이야|야|좋아해|형이야|파야)\?$/.exec(x)
       || /([가-힣A-Za-z0-9 ]{1,12}?)\?\s*아니면\s*([가-힣A-Za-z0-9 ]{1,12}?)\?$/.exec(x);
     if (!m) return null;
-    const a = m[1].trim(), b = m[2].trim();
+    const fix = (w) => /^(고양|오|종|놀)$/.test(w) && /이야/.test(x) ? w + '이' : w; // '고양이야' → 고양이
+    const a = fix(m[1].trim()), b = fix(m[2].trim());
     if (!a || !b || a === b) return null;
     if (/거 아니|는데|줘야|되는|하는|이고/.test(a + b) || a.split(' ').length > 3 || b.split(' ').length > 3) return null; // '줘야 되는 거 아니야?' 같은 건 고르기 질문이 아니다
     const suf = /형이야/.test(x) ? '형' : '';

@@ -46,6 +46,10 @@ PX.Dlg = (() => {
   const hasBat = (w) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c <= 11171 && c % 28 !== 0 && c % 28 !== 4 && c % 28 !== 8; }; // ㄴ · ㄹ 받침은 그냥 '요' (하면요 · 뭘요)
   function endPolite(w) {
     if (/(했|었|았|겠|였)다$/.test(w)) return w.slice(0, -1) + '어요'; // 깜빡했다 → 깜빡했어요
+    if (/(바다|얘기|이야기|거기|여기|저기|강아지|돼지|바지|휴지|편지|과자|의자|모자|피자|상자|숫자)$/.test(w)) return w + '요'; // 명사: 바다요 · 강아지요 (강아죠 X)
+    if (/(겨울|신발|말|일|날|하늘|물|술|팔|길|별|달|불|얼굴|이불|가을)$/.test(w)) return w + '이요'; // ㄹ 받침 명사: 겨울이요 · 신발이요
+    if (/아니야$/.test(w)) return w.replace(/아니야$/, '아니에요');
+    if (/이다$/.test(w)) return w.replace(/이다$/, '이에요'); // 다행이다 → 다행이에요
     if (w === '좋다') return '좋아요'; if (w === '그치') return '그렇죠';
     if (/였더라$/.test(w)) return w.replace(/였더라$/, '였죠'); if (/더라$/.test(w)) return w + '고요'; // 맛있더라 → 맛있더라고요
     if (/(요|니다|니까|죠|세요|다|님|기)$/.test(w) || KEEP.test(w)) return w;

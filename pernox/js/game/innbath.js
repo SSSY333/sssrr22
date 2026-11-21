@@ -34,7 +34,7 @@ PX.InnBath = (() => {
     St.S.player.bath = true; // 씻는 중 (가운 점검이 원래 옷으로 되돌리지 않게)
     const pa = Object.assign({}, g.player.app); delete pa._k;
     g.player.app = Object.assign(pa, { top: '#f4f6f8', bottom: '#f4f6f8', sleeve: 'none', skirt: true, dress: false, robe: null, coat: null, vest: null, jacket: null, hat: null, scarf: null, stripe: null, trim: null, shoe: pa.skin });
-    if (withCap()) { const ca = Object.assign({}, PX.NPC_BY_ID.cap.look); g.cap.app = Object.assign(ca, { top: ca.skin, sleeve: 'none', jacket: null, vest: null, coat: null, badge: null, tag: 0, hat: null, bottom: '#f4f6f8', shoe: ca.skin }); g.capRobe = true; }
+    if (withCap()) { const ca = Object.assign({}, PX.NPC_BY_ID.cap.look); delete ca._k; /* _k: 그림 캐시 키 — 남기면 원래 옷이 그려진다 */ g.cap.app = Object.assign(ca, { top: ca.skin, sleeve: 'none', jacket: null, vest: null, coat: null, badge: null, tag: 0, hat: null, bottom: '#f4f6f8', shoe: ca.skin }); g.capRobe = true; }
   }
   const BATH_MENU = (kind) => [
     { t: '💬 ' + (kind === 'bubble' ? '물에 기대 이야기하기' : '물 맞으며 이야기하기'), k: 'talk' },
