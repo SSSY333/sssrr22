@@ -114,7 +114,7 @@ PX.Rom = (() => {
       await PX.Dlg.runLines(PX.Dlg.capPick([['C:어, 벌써 약속 시간이다.', `C*:${d.name}. 같이 갈래? 아니면 여기서 그냥 데이트할까.`], ['C^:이미 같이 있는데 약속 시간 됐네.', `C:${d.name} 갈까? 너 하고 싶은 대로.`]]));
       const opts = [{ t: `🚶 ${d.name} 같이 가기`, k: 'go' }, { t: '💕 여기서 데이트하기', k: 'here' }, { t: '🌙 오늘은 다음에 하자', k: 'later' }];
       const i = await PX.Dlg.choose(opts); k = opts[i].k;
-      await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, ''));
+      await PX.Dlg.say('player', ({ go: `${d.name} 같이 가자.`, here: '여기서 데이트하자.', later: '오늘은 다음에 하자.' })[k]);
       if (k === 'later') await PX.Dlg.runLines(PX.Dlg.capPick([['C:응. 오늘은 이렇게 같이 있는 걸로 충분해.'], ['C^:좋아. 약속은 다음에 다시 잡자. 대신 지금 손은 내 거.']]));
     } finally { PX.Dlg.close(); g.modal--; }
     if (k === 'later') { d.state = 'skipped'; return; }

@@ -3307,7 +3307,7 @@ PX.LOVE = (() => {
           ['N:문을 열자마자 대위가 쓰러지듯 안겨 온다. 품이 무겁고 뜨겁다.', 'C:…다섯 시간 내내 서 있었어. 다리 아파.', 'C*:근데 지금 아픈 건 다리가 아니야.', 'N:입술이 귓가를 지나 입술에 닿는다.'],
         ],
       },
-      go: [['…나도 보고 싶었어.', '잠깐, 숨 좀 쉬고.'], ['(대위 목에 팔을 감는다)', '{ob}, 일단 씻고…'], ['…빨리 와.', '오늘은 안고만 있자.'], ['…참지 마.', '천천히. 나 안 도망가.']],
+      go: [['…나도 보고 싶었어.', '잠깐, 숨 좀 쉬고.'], ['(대위 목에 팔을 감는다)', '{ob}, 일단 씻고 오자.'], ['…빨리 와.', '오늘은 안고만 있자.'], ['…참지 마.', '천천히. 나 안 도망가.']],
       slow: [['C;:…응. 미안. 숨 쉬어.', 'N:대위가 이마를 맞대고 숨을 고른다. 그래도 팔은 풀지 않는다.', 'C~:…그럼 천천히. 대신 오래.'], ['C:…응. 천천히 할게. 너무 보고 싶어서 그랬어.', 'C*:…근데 천천히 하는 게 더 힘들다.']],
       stop: [['C~:…응. 안고만. 이것만으로도 살 것 같아.'], ['C^:알았어. 씻고 올게. 일 분. 아니, 삼십 초.'], ['C:…그래. 오늘은 네 품에서 자게 해 줘. 그거면 돼.']],
       dark: [
@@ -15612,7 +15612,7 @@ PX.LateNight = (() => {
       opts.forEach(o => { o.t = U.fmt(o.t, PX.Dlg.ctx()); });
       const i = await PX.Dlg.choose(opts);
       pick = opts[i].k;
-      await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, '').replace(/ \(.*\)$/, ''), pick === 'bye' ? 'normal' : 'blush');
+      await PX.Dlg.say('player', opts[i].t.replace(/^[^가-힣A-Za-z0-9…'"({]+\s+/, '').replace(/ \(.*\)$/, ''), pick === 'bye' ? 'normal' : 'blush');
       if (pick === 'more') { await run(pickL(LINES.more)); S.done.lateMore = St.absMin() + 40; }
       else if (pick === 'bye') { await run(pickL(LINES.bye[lov ? 'lov' : 'mid'])); }
       else if (pick === 'escort') { /* 아래에서 */ }
@@ -17425,7 +17425,7 @@ PX.Rom = (() => {
       await PX.Dlg.runLines(PX.Dlg.capPick([['C:어, 벌써 약속 시간이다.', `C*:${d.name}. 같이 갈래? 아니면 여기서 그냥 데이트할까.`], ['C^:이미 같이 있는데 약속 시간 됐네.', `C:${d.name} 갈까? 너 하고 싶은 대로.`]]));
       const opts = [{ t: `🚶 ${d.name} 같이 가기`, k: 'go' }, { t: '💕 여기서 데이트하기', k: 'here' }, { t: '🌙 오늘은 다음에 하자', k: 'later' }];
       const i = await PX.Dlg.choose(opts); k = opts[i].k;
-      await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, ''));
+      await PX.Dlg.say('player', ({ go: `${d.name} 같이 가자.`, here: '여기서 데이트하자.', later: '오늘은 다음에 하자.' })[k]);
       if (k === 'later') await PX.Dlg.runLines(PX.Dlg.capPick([['C:응. 오늘은 이렇게 같이 있는 걸로 충분해.'], ['C^:좋아. 약속은 다음에 다시 잡자. 대신 지금 손은 내 거.']]));
     } finally { PX.Dlg.close(); g.modal--; }
     if (k === 'later') { d.state = 'skipped'; return; }

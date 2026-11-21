@@ -46,7 +46,7 @@ PX.LateNight = (() => {
       opts.forEach(o => { o.t = U.fmt(o.t, PX.Dlg.ctx()); });
       const i = await PX.Dlg.choose(opts);
       pick = opts[i].k;
-      await PX.Dlg.say('player', opts[i].t.replace(/^\S+ /, '').replace(/ \(.*\)$/, ''), pick === 'bye' ? 'normal' : 'blush');
+      await PX.Dlg.say('player', opts[i].t.replace(/^[^가-힣A-Za-z0-9…'"({]+\s+/, '').replace(/ \(.*\)$/, ''), pick === 'bye' ? 'normal' : 'blush');
       if (pick === 'more') { await run(pickL(LINES.more)); S.done.lateMore = St.absMin() + 40; }
       else if (pick === 'bye') { await run(pickL(LINES.bye[lov ? 'lov' : 'mid'])); }
       else if (pick === 'escort') { /* 아래에서 */ }
