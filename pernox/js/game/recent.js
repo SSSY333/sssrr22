@@ -31,7 +31,7 @@ PX.Recent = (() => {
   function place() {
     const g = PX.Game, id = g && g.mapId, md = PX.MAPS[id] || {}, S = St.S;
     let d = DESC[id] || (md.innRoom ? '은밀숙소 객실. 둘만 있는 방.' : md.home ? '플레이어 숙소.' : '');
-    if (id === 'jeep_in' && S.car) { const dm = PX.MAPS[S.car.dest]; if (dm) d += ` 지금 차를 세운 곳: ${dm.name}.`; const s = g.player.seat, bk = g.mapId === 'jeep_in' && s && s.obj && s.obj.fid === 'carback'; d += bk ? ' 지금 둘은 뒷좌석에 붙어 앉아 있다.' : ' 지금 둘은 앞좌석에 나란히 앉아 있다.'; }
+    if (id === 'jeep_in' && S.car) { const dm = PX.MAPS[S.car.dest]; if (dm) d += ` 지금 차를 세운 곳: ${dm.name}.`; const s = g.player.seat, bk = g.mapId === 'jeep_in' && s && s.obj && s.obj.x + s.obj.y < 3; d += bk ? ' 지금 둘은 뒷좌석에 붙어 앉아 있다.' : ' 지금 둘은 앞좌석에 나란히 앉아 있다.'; }
     if (g && g.player && g.player.seat && id !== 'jeep_in') { const o = g.player.seat.obj; d += o && o.f ? ` 플레이어는 ${o.f.name}에 ${o.use === 'bed' || (o.f && o.f.use === 'bed') ? '누워' : '앉아'} 있다.` : ''; }
     if (S.player.bath) d += ' 둘 다 목욕 가운 차림.';
     return d;

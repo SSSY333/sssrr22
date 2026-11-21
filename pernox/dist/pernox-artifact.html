@@ -1166,10 +1166,11 @@ PX.G = (() => {
     det: [{ p: 2, f: 'S', u: [0.08, 0.82], v: [1, 11], c: '#5d6a73' }, { p: 2, f: 'S', u: [0.62, 0.72], v: [5, 7], c: '#e8c56a' }, { p: 0, f: 'S', u: [0.05, 0.5], v: [11, 13], c: '#e8c56a' }, { p: 0, f: 'S', u: [1.5, 1.95], v: [11, 13], c: '#e8c56a' }, { p: 1, f: 'T', r: [0.2, 0.3, 1.6, 0.5], c: '#5a5a4c' }] });
   def('storenook', { name: '상자 더미 뒤', w: 2, d: 2, cat: 'base', use: 'nook', blocks: true, parts: [P(0.1, 0.1, 0, 1.8, 0.9, 14, '#7d8a5a'), P(0.1, 1.0, 0, 0.9, 0.9, 10, '#8a7a4f'), P(0.15, 0.15, 14, 1.7, 0.8, 2, '#5f6b4a')] });
   // 지프 내부: 대시보드(핸들·라디오) · 앞좌석 · 뒷좌석
-  def('cardash', { name: '대시보드', w: 1, d: 2, cat: 'base', use: 'carmenu', parts: [P(0, 0, 0, 0.55, 2, 15, '#3a3f38'), P(0, 0, 15, 0.7, 2, 3, '#2f332d'), P(0.55, 0.3, 12, 0.12, 0.5, 9, '#1f1f1f'), P(0.3, 1.2, 15, 0.3, 0.45, 3, '#55606b')],
-    det: [{ p: 0, f: 'E', u: [1.15, 1.75], v: [8, 13], c: '#2a2f2a' }, { p: 0, f: 'E', u: [1.25, 1.65], v: [10, 12], c: '#7fe3a8' }, { p: 0, f: 'E', u: [0.25, 0.75], v: [6, 11], c: '#2a2f2a' }] });
-  def('carseat', { name: '앞좌석', w: 1, d: 1, cat: 'base', use: 'sit', seats: [[0.45, 0.5, 3, 9]], parts: [P(0.15, 0.12, 0, 0.7, 0.76, 6, '#2f332d'), P(0.12, 0.1, 6, 0.72, 0.8, 4, '#4f5a46'), P(0.74, 0.1, 8, 0.18, 0.8, 9, '#46503e')] });
-  def('carback', { name: '뒷좌석', w: 1, d: 2, cat: 'base', use: 'sit', seats: [[0.45, 0.5, 3, 9], [0.45, 1.5, 3, 9]], parts: [P(0.1, 0.05, 0, 0.8, 1.9, 6, '#2f332d'), P(0.08, 0.05, 6, 0.8, 1.9, 4, '#4f5a46'), P(0.76, 0.05, 8, 0.16, 1.9, 8, '#46503e')] });
+  // 지프 내부 (앞유리 = 화면 쪽). 좌석을 대각선으로 놓아 화면에서 나란히 (조수석 왼쪽 · 운전석 오른쪽), 둘 다 앞을 본다
+  def('cardash', { name: '대시보드', w: 1, d: 1, cat: 'base', use: 'carmenu', parts: [P(0.1, 0.1, 0, 0.9, 0.9, 9, '#3a3f38'), P(0.05, 0.05, 9, 0.95, 0.95, 2, '#2f332d'), P(0.45, 0.05, 9, 0.5, 0.12, 8, '#1f1f1f'), P(0.05, 0.4, 11, 0.12, 0.4, 2, '#7fe3a8')],
+    det: [{ p: 0, f: 'S', u: [0.2, 0.8], v: [3, 7], c: '#2a2f2a' }, { p: 0, f: 'E', u: [0.2, 0.8], v: [3, 7], c: '#2a2f2a' }] });
+  def('carseat', { name: '운전석', w: 1, d: 1, cat: 'base', use: 'sit', seats: [[0.5, 0.55, 0, 9]], parts: [P(0.12, 0.15, 0, 0.76, 0.75, 6, '#2f332d'), P(0.1, 0.15, 6, 0.8, 0.75, 4, '#4f5a46'), P(0.1, 0.04, 8, 0.8, 0.16, 11, '#46503e')] });
+  def('carseatE', { name: '조수석', w: 1, d: 1, cat: 'base', use: 'sit', seats: [[0.55, 0.5, 1, 9]], parts: [P(0.15, 0.12, 0, 0.75, 0.76, 6, '#2f332d'), P(0.15, 0.1, 6, 0.75, 0.8, 4, '#4f5a46'), P(0.04, 0.1, 8, 0.16, 0.8, 11, '#46503e')] });
   F.jeep = Object.assign({}, F.rover, { id: 'jeep', name: '부대 지프', use: 'drive' });
 
   PX.FURN = F;
@@ -2259,10 +2260,10 @@ PX.S = (() => {
   room('cafe', { name: '향열매 카페', w: 16, h: 12, floor: 'cafe', wall: '#f4e4c8', exit: 8, furn: cafe, date: true,
     walls: [['B', 9.6, 'window', 1.0], ['L', 5.6, 'window', 1.0], ['L', 7.6, 'poster', 0.7], ['B', 0.6, 'menu', 1.2]] });
 
-  // 지프 안 (드라이브 도착지에서 탄다 · 앞 = 왼쪽 벽 유리창)
-  room('jeep_in', { name: '부대 지프 안', w: 4, h: 4, floor: 'darktile', wall: '#55603f', exit: 1, amb: 0.55, car: true,
-    furn: [['cardash', 0, 0, 0], ['carseat', 1, 0, 0], ['carseat', 1, 1, 0], ['carback', 3, 0, 0]],
-    walls: [['L', 0.1, 'window', 1.8], ['B', 1.2, 'window', 0.8], ['B', 2.6, 'window', 0.8]] });
+  // 지프 안 (앞유리 = 화면 쪽 · 조수석 왼쪽 · 운전석 오른쪽 · 둘 다 정면을 본다)
+  room('jeep_in', { name: '부대 지프 안', w: 4, h: 4, floor: 'darktile', wall: '#55603f', exit: 0, amb: 0.55, car: true,
+    furn: [['carseatE', 0, 1, 0], ['carseat', 1, 0, 0], ['carseatE', 1, 2, 0], ['carseat', 2, 1, 0], ['cardash', 2, 2, 0]],
+    walls: [['B', 0.8, 'window', 2.4], ['L', 0.6, 'window', 2.4]] });
   // 부대 지하 창고 (좁다 · 오른쪽 구석 입구로 드나든다)
   room('storage', { name: '부대 지하 창고 C-7', w: 6, h: 6, floor: 'darktile', wall: '#5a5a4c', exit: 2, amb: 0.45, backTo: ['base', 58.5, 59.6],
     furn: [['crates', 0, 0, 0], ['crate', 2, 0, 0], ['locker', 4, 0, 0], ['locker', 5, 0, 0], ['crates', 0, 2, 1], ['crate', 5, 3, 0], ['storenook', 3, 2, 0]],
@@ -3756,6 +3757,53 @@ PX.LOVE = (() => {
 
 </script>
 <script>
+/* js/data/love_spots3.js */
+// 달리는 차 안의 신호: 대위를 바라보기 · 미소 · 손등 건드리기 · 속삭이기 → 쌓이면 대위가 차를 세우고 깊은 접촉으로
+// 대사는 짧게 (한두 줄) · 직접적인 묘사 없이
+'use strict';
+(() => {
+  const C = PX.LOVE.car;
+  C.drive = {
+    menu: { look: '👀 대위 바라보기', smile: '😊 대위 보고 미소 짓기', touch: '🤏 손등 살짝 건드리기', whisper: '🗣️ 귓가에 속삭이기', lip: '🫦 입술 살짝 깨물기', go: '🌄 창밖 보며 그냥 가기' },
+    // 내가 하는 모습
+    do: {
+      look: ['N:운전하는 대위의 옆얼굴을 가만히 바라본다.', 'N:핸들을 쥔 대위의 손, 턱선, 속눈썹을 차례로 본다.', 'N:창밖 대신 대위만 본다. 오래.'],
+      smile: ['N:눈이 마주치자 천천히 웃어 보인다.', 'N:대위가 곁눈질할 때 일부러 입꼬리를 올린다.', 'N:아무 말 없이 대위를 보며 웃는다.'],
+      touch: ['N:기어봉 위 대위의 손등을 손가락으로 톡 건드린다.', 'N:손가락 끝으로 대위 손등을 천천히 그린다.', 'N:대위의 새끼손가락에 내 새끼손가락을 슬쩍 건다.'],
+      whisper: ['N:몸을 기울여 대위 귓가에 이름을 부른다. 아주 작게.', 'N:"운전 잘하네." 귓가에 속삭인다.', 'N:대위 귀에 대고 숨만 짧게 내쉰다.'],
+      lip: ['N:대위를 보며 아랫입술을 살짝 깨문다.', 'N:눈이 마주친 채로 입술을 깨물었다 놓는다.'],
+    },
+    // 대위의 반응: 쌓인 정도에 따라 (1: 눈치챔 · 2: 흔들림 · 3: 못 참음)
+    re: {
+      1: [['C:…왜. 얼굴에 뭐 묻었어?'], ['C^:…앞 봐야 되는데 자꾸 옆이 보인다.'], ['N:대위가 헛기침을 한다. 귀끝이 붉다.'], ['C;:…그렇게 보면 운전 못 해.']],
+      2: [['N:핸들을 쥔 대위의 손에 힘이 들어간다.', 'C*:…너 지금 일부러 그러지.'], ['C;:…하. 신호 없는 길이라 다행이다.'], ['N:대위가 침을 삼키는 소리가 들린다.', 'C:…조금만 참아. 아니, 내가 참아야지.'], ['C~:…계속 그러면 나 차 세운다. 경고했어.']],
+    },
+    // 3: 차를 세운다
+    pull: [
+      ['N:대위가 깜빡이를 켜고 갓길에 차를 세운다. 시동은 끄지 않는다.', 'C;:…더는 못 해. 운전이.', 'N:대위가 벨트를 풀고 몸을 돌린다.'],
+      ['N:끼익. 차가 길가에 멈춘다. 대위가 핸들에 이마를 댄다.', 'C*:…하. 너 진짜 반칙이야.', 'N:고개를 든 대위의 눈빛이 달라져 있다.'],
+      ['N:대위가 말없이 차를 세운다. 엔진 소리만 남는다.', 'C~:…이리 와.'],
+    ],
+    pullGo: [['…응.', '{ob}, 운전해.'], ['(벨트를 푼다)', '…가던 길 가자.'], ['…기다렸어.', '참아. 도착하면.']],
+    pullStop: [['C^:…응. 참는다. 대신 도착하면 각오해.'], ['C;:…알았어. 근데 도착할 때까지 손은 잡고 가.']],
+    // 깊은 접촉 (암전 전까지)
+    deep: [
+      ['N:대위가 한 손으로 뒷목을 감싸 끌어당긴다. 입술이 닿는다. 길고, 깊게.', 'C*:…하… 운전하는 내내 이것만 생각했어.'],
+      ['N:벨트가 풀리는 소리. 대위가 팔걸이 너머로 나를 품에 끌어안는다.', 'C~:…흣. 좁다. 근데 놓기 싫어.'],
+      ['N:대위가 이마를 맞대고 숨을 고른다. 그리고 다시, 더 깊이 입을 맞춘다.', 'C;:…하아. 너 때문에 미치겠다.'],
+      ['N:김이 앞유리에 번진다. 대위의 손이 내 볼에서 목선으로 천천히 내려온다.', 'C*:…아무도 없어. 우리만.'],
+    ],
+    // 밤: 뒷좌석으로 넘어갈지
+    backAsk: [['N:대위가 뒷좌석 쪽을 힐끗 본다. 그리고 나를 본다.', 'C*:…뒤로 갈래?']],
+    backGo: [['…응. 뒤로.', '여기까지. 이제 가자.']],
+    // 낮: 키스까지만
+    day: [['C^:…해가 너무 밝다. 나머지는 밤에.'], ['C;:…여기까지. 아직 대낮이야. 밤에 마저.']],
+    resume: [['N:대위가 다시 벨트를 맨다. 시동이 걸린다. 귀가 아직 빨갛다.', 'C:…출발. 이번엔 진짜 앞만 볼게.'], ['N:차가 다시 달린다. 잡은 손은 놓지 않는다.', 'C~:…이 길 끝까지 이렇게 가자.']],
+  };
+})();
+
+</script>
+<script>
 /* js/data/inn_more1.js */
 // 은밀숙소 대사 보강 1: 루비웨이 거리에서 가자고 할 때 · 로비 · 객실 입장 · 나온 길
 // 연인(반말) · 노골적 묘사 없음 · 같은 말 반복 없음
@@ -4737,7 +4785,7 @@ PX.LOVE = (() => {
   const size = (e) => { const f = F[e[0]]; if (!f) return null; return e[3] % 2 ? [f.d, f.w] : [f.w, f.d]; };
   const hit = (ax, ay, aw, ad, bx, by, bw, bd) => ax < bx + bw && bx < ax + aw && ay < by + bd && by < ay + ad;
   for (const id in M) {
-    const m = M[id]; if (m.kind !== 'in' || !Array.isArray(m.furn) || m.exit == null) continue;
+    const m = M[id]; if (m.kind !== 'in' || !Array.isArray(m.furn) || m.exit == null || m.car) continue; // 지프 안은 좌석 배치 그대로
     const W = m.w, H = m.h, ex = m.exit, ey = H - 1;
     const zone = [[ex - 1, ey - 2, 3, 3], [ex, ey - 3, 1, 1]]; // [x, y, w, d]
     const inZone = (x, y, w, d) => zone.some(z => hit(x, y, w, d, z[0], z[1], z[2], z[3]));
@@ -8812,7 +8860,7 @@ PX.Recent = (() => {
   function place() {
     const g = PX.Game, id = g && g.mapId, md = PX.MAPS[id] || {}, S = St.S;
     let d = DESC[id] || (md.innRoom ? '은밀숙소 객실. 둘만 있는 방.' : md.home ? '플레이어 숙소.' : '');
-    if (id === 'jeep_in' && S.car) { const dm = PX.MAPS[S.car.dest]; if (dm) d += ` 지금 차를 세운 곳: ${dm.name}.`; const s = g.player.seat, bk = g.mapId === 'jeep_in' && s && s.obj && s.obj.fid === 'carback'; d += bk ? ' 지금 둘은 뒷좌석에 붙어 앉아 있다.' : ' 지금 둘은 앞좌석에 나란히 앉아 있다.'; }
+    if (id === 'jeep_in' && S.car) { const dm = PX.MAPS[S.car.dest]; if (dm) d += ` 지금 차를 세운 곳: ${dm.name}.`; const s = g.player.seat, bk = g.mapId === 'jeep_in' && s && s.obj && s.obj.x + s.obj.y < 3; d += bk ? ' 지금 둘은 뒷좌석에 붙어 앉아 있다.' : ' 지금 둘은 앞좌석에 나란히 앉아 있다.'; }
     if (g && g.player && g.player.seat && id !== 'jeep_in') { const o = g.player.seat.obj; d += o && o.f ? ` 플레이어는 ${o.f.name}에 ${o.use === 'bed' || (o.f && o.f.use === 'bed') ? '누워' : '앉아'} 있다.` : ''; }
     if (S.player.bath) d += ' 둘 다 목욕 가운 차림.';
     return d;
@@ -16142,22 +16190,22 @@ PX.Love = (() => {
   // ================= 지프 드라이브 (차 안 맵: 앞 = 왼쪽 유리창) =================
   // 흐름: 부대 지프를 누르면 → 차 안(부대에 세워 둔 채) → 🚗 출발 → 드라이브 장소 → 돌아오기 → 내리기
   // 차 안 메뉴는 한 번에 하나만 하고 닫힌다 (대시보드 · '앉아서 할 일'로 다시 연다)
-  const carSeats = () => { const m = PX.W.maps.jeep_in, fr = m.objs.filter(o => o.fid === 'carseat').sort((a, b) => a.y - b.y), bk = m.objs.find(o => o.fid === 'carback'); return { drv: fr[0].seats[0], pas: fr[1].seats[0], back: bk.seats }; };
+  const carSeats = () => { const m = PX.W.maps.jeep_in, ss = m.objs.filter(o => /^carseat/.test(o.fid)), fr = ss.filter(o => o.x + o.y >= 3), bk = ss.filter(o => o.x + o.y < 3), E = (arr) => arr.find(o => o.fid === 'carseatE').seats[0], Sx = (arr) => arr.find(o => o.fid === 'carseat').seats[0]; return { drv: Sx(fr), pas: E(fr), back: [E(bk), Sx(bk)] }; }; // 앞(대각선 앞줄): 조수석(왼쪽) · 운전석(오른쪽) · 뒷좌석도 같은 배치
   function seatUs(where) {
     const g = G(), s = carSeats();
     for (const st of [s.drv, s.pas, ...s.back]) if (st.by && st.by !== g.player && st.by !== g.cap) st.by = null;
     if (g.player.seat) g.player.leaveSeat(); if (g.cap.seat) g.cap.leaveSeat();
-    if (where === 'back') { g.cap.sitOn(s.back[0]); g.player.sitOn(s.back[1]); }
+    if (where === 'back') { g.cap.sitOn(s.back[1]); g.player.sitOn(s.back[0]); }
     else { g.cap.sitOn(s.drv); g.player.sitOn(s.pas); }
   }
   function enterCar() {
     const g = G(), m = PX.W.maps.jeep_in;
     g.enterMap('jeep_in', m.exit.x + 0.5, m.exit.y - 0.5);
-    PX.Cap.moveTo('jeep_in'); g.cap.x = 1.5; g.cap.y = 0.5; g.cap.hidden = false; PX.Cap.mode = 'follow';
+    PX.Cap.moveTo('jeep_in'); g.cap.x = 2.5; g.cap.y = 1.5; /* 운전석 */ g.cap.hidden = false; PX.Cap.mode = 'follow';
     if (PX.Mind) PX.Mind.setContact('NONE');
     seatUs('front');
   }
-  const destOf = () => L().car.dest.find(d => d.id === (St.S.car || {}).dest);
+  const destOf = () => { const c = St.S.car || {}; return L().car.dest.find(d => d.id === (c.to || c.dest)); };
   const parked = () => !St.S.car || St.S.car.dest === 'base';
   async function drive() {
     const g = G(), S = St.S, C = L().car;
@@ -16170,12 +16218,62 @@ PX.Love = (() => {
     await carMenu();
   }
   // 출발 · 다른 곳으로 · 돌아오기: 실제로 달린다 (시간이 흐르고 창밖이 바뀐다)
+  // ---------- 달리는 동안: 신호(바라보기 · 미소 · 손등 · 속삭임)가 쌓이면 대위가 차를 세운다 ----------
+  async function signal(k) {
+    const S = St.S, D = L().car.drive, car = S.car;
+    await talk([U.pick(D.do[k])]);
+    car.heat = (car.heat || 0) + (k === 'look' ? 1 : k === 'whisper' || k === 'lip' ? 2 : 1.5);
+    if (PX.Recent) PX.Recent.note('차 안에서 대위에게 신호: ' + D.menu[k].replace(/^\S+\s/, ''));
+    if (car.heat >= 3 && lov()) return deepTouch();
+    await talk(fresh('drvRe' + (car.heat >= 2 ? 2 : 1), D.re[car.heat >= 2 ? 2 : 1]));
+    return false;
+  }
+  // 깊은 접촉: 차를 세우고 → 입맞춤 → (밤이면) 뒷좌석으로 → 암전 · 낮이면 키스까지
+  async function deepTouch() {
+    const g = G(), S = St.S, C = L().car, D = C.drive, t = S.time.min, night = t >= 18 * 60 || t < 5 * 60;
+    S.car.heat = 0;
+    await lines(fresh('drvPull', D.pull));
+    const i = await choose2(fresh('drvPullGo', D.pullGo));
+    if (i !== 0) { await talk(fresh('drvPullStop', D.pullStop)); if (PX.Mind) PX.Mind.setContact('SIT_HAND'); return false; }
+    if (PX.Mind) PX.Mind.setContact('SIT_LEAN'); if (g.cap.showEmote) g.cap.showEmote('heart', 1.4);
+    await lines(fresh('drvDeep', D.deep)); St.advance(10); affOnce('drvDeep', 4);
+    if (PX.Recent) PX.Recent.note('신호를 주고받다 대위가 차를 세우고 깊게 입맞춤');
+    if (!night) { await talk(fresh('drvDay', D.day)); return 'kiss'; }
+    await lines(D.backAsk[0]);
+    const j = await choose2(D.backGo[0]);
+    if (j !== 0) { await talk(fresh('drvPullStop', D.pullStop)); return 'kiss'; }
+    seatUs('back');
+    if (C.prep) await lines(fresh('carPrep', C.prep));
+    await dark(C, 'car', { n: 3, mins: 60 });
+    await lines(fresh('carAfter', C.after)); PX.Dlg.close();
+    St.addAff(5); S.energy = Math.max(5, (S.energy || 50) - 12);
+    if (PX.Recent) PX.Recent.note('차를 세운 채 지프 뒷좌석에서 사랑을 나눔 (방금 끝남)');
+    if (!S.done.carMem) { S.done.carMem = 1; g.memory('김 서린 창문', '달리던 차를 그가 세웠다. 좁은 뒷좌석, 그는 머리를 세 번 부딪히고도 웃었다.', false); }
+    await PX.Love.encore();
+    seatUs('front');
+    return 'love';
+  }
   async function goTo(id) {
-    const g = G(), S = St.S, C = L().car, d = C.dest.find(x => x.id === id);
+    const g = G(), S = St.S, C = L().car, D = C.drive, d = C.dest.find(x => x.id === id);
     seatUs('front'); if (PX.Mind) PX.Mind.setContact('NONE');
-    await fadeOn(); St.advance(id === 'base' || parked() ? 40 : 20); S.car.dest = id; await fadeOff();
-    if (id === 'base') { await talk(fresh('carHome', C.home)); if (PX.Recent) PX.Recent.note('지프 드라이브를 마치고 부대로 돌아옴 (아직 차 안)'); PX.UI.toast('🚪 차에서 내리려면 문을 누르세요', 2600); return; }
-    await talk([fresh('carRoad', C.road)[0], ...d.line]); // 가는 길 한 줄 + 도착
+    S.car.heat = 0;
+    if (id === 'base') { await fadeOn(); St.advance(40); S.car.dest = id; await fadeOff(); await talk(fresh('carHome', C.home)); if (PX.Recent) PX.Recent.note('지프 드라이브를 마치고 부대로 돌아옴 (아직 차 안)'); PX.UI.toast('🚪 차에서 내리려면 문을 누르세요', 2600); return; }
+    // 달리는 중 (세 구간): 신호를 줄 수 있다 · '그냥 가기'면 바로 도착
+    const legs = 3, per = parked() ? 12 : 7;
+    S.car.dest = 'road'; S.car.to = id;
+    await talk([fresh('carRoad', C.road)[0]]);
+    let stopped = false;
+    for (let n = 0; n < legs; n++) {
+      const M = D.menu;
+      const items = [{ t: M.look, k: 'look' }, { t: M.smile, k: 'smile' }, S.rel.cap.stage >= 3 ? { t: M.touch, k: 'touch' } : null, lov() ? { t: M.whisper, k: 'whisper' } : null, lov() ? { t: M.lip, k: 'lip' } : null, { t: M.go, k: 'go', sub: '도착까지 그대로' }].filter(Boolean);
+      const it = await PX.UI.menu(`🚗 달리는 중 · ${d.t.replace(/^\S+\s/, '')}까지 ${legs - n}구간`, items);
+      St.advance(per);
+      if (!it || it.k === 'go') break;
+      const r = await signal(it.k);
+      if (r) { stopped = true; if (r) await talk(fresh('drvResume', D.resume)); break; }
+    }
+    await fadeOn(); S.car.dest = id; delete S.car.to; await fadeOff();
+    await talk(d.line); // 도착
     if (PX.Recent) PX.Recent.note(`지프를 타고 ${PX.MAPS[id].name}에 도착 (차 안)`);
     if (!S.done.driveMem) { S.done.driveMem = 1; g.memory('둘만의 드라이브', `${U.josa(S.capName, '이')} 무릎이 핸들에 닿는 지프로 ${PX.MAPS[id].name}까지 데려갔다.`, true); }
   }
@@ -16193,6 +16291,7 @@ PX.Love = (() => {
     const items = [
       parked() ? { t: '🚗 출발하기', k: 'go', sub: '드라이브 장소 고르기' } : { t: M.move, k: 'move', sub: '다른 드라이브 장소로' },
       !parked() ? { t: M.home, k: 'home', sub: '부대로 40분' } : null,
+      !parked() ? { t: '👀 대위 바라보기', k: 'sig_look' } : null, !parked() ? { t: '😊 대위 보고 미소 짓기', k: 'sig_smile' } : null, !parked() && lov() ? { t: '🫦 입술 살짝 깨물기', k: 'sig_lip' } : null,
       { t: M.talk, k: 'talk' }, d ? { t: M.view, k: 'view', sub: d.t.replace(/^\S+\s/, '') } : null,
       PX.AI && PX.AI.available() ? { t: '✨ 자유롭게 대화하기', k: 'ai', sub: '지금 차 안 · 방금 한 일을 기억해요' } : null,
       S.rel.cap.stage >= 3 ? { t: M.hand, k: 'hand' } : null, S.rel.cap.stage >= 3 ? { t: M.lean, k: 'lean' } : null,
@@ -16206,6 +16305,7 @@ PX.Love = (() => {
     if (it.k === 'go' || it.k === 'move') { const id = await pickDest(it.k === 'go' ? '🚗 어디로 갈까요?' : '🧭 어디로 갈까요?'); if (id) await goTo(id); return; }
     if (it.k === 'home') return goTo('base');
     if (it.k === 'ai') return PX.AI.chat();
+    if (/^sig_/.test(it.k)) { const r = await signal(it.k.slice(4)); if (r === 'love' || r === 'kiss') { /* 세워 둔 차라 그대로 */ } return; }
     if (it.k === 'front') { seatUs('front'); if (PX.Mind) PX.Mind.setContact('NONE'); await talk(fresh('carFront', C.front)); return; }
     if (it.k === 'back') {
       seatUs('back'); if (PX.Mind) PX.Mind.setContact('SIT_LEAN');

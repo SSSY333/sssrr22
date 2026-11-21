@@ -6,7 +6,7 @@
   const size = (e) => { const f = F[e[0]]; if (!f) return null; return e[3] % 2 ? [f.d, f.w] : [f.w, f.d]; };
   const hit = (ax, ay, aw, ad, bx, by, bw, bd) => ax < bx + bw && bx < ax + aw && ay < by + bd && by < ay + ad;
   for (const id in M) {
-    const m = M[id]; if (m.kind !== 'in' || !Array.isArray(m.furn) || m.exit == null) continue;
+    const m = M[id]; if (m.kind !== 'in' || !Array.isArray(m.furn) || m.exit == null || m.car) continue; // 지프 안은 좌석 배치 그대로
     const W = m.w, H = m.h, ex = m.exit, ey = H - 1;
     const zone = [[ex - 1, ey - 2, 3, 3], [ex, ey - 3, 1, 1]]; // [x, y, w, d]
     const inZone = (x, y, w, d) => zone.some(z => hit(x, y, w, d, z[0], z[1], z[2], z[3]));
