@@ -176,7 +176,14 @@ PX.Rom = (() => {
     S.leave = { from: S.day + 1, to: S.day + it.k }; S.leaveUsed = (S.leaveUsed || []).concat(Array.from({ length: it.k }, (_, i) => S.day + 1 + i));
     PX.UI.toast(`🏖️ 휴가 승인: ${dayKo(S.leave.from)}부터 ${it.k}일 · 배수아 하사가 근무표를 고쳐 줬어요`, 4000);
     // 대위도 같이 휴가를 맞춰 볼 수 있다 (연인 이상, 작전 없을 때)
-    if (st() >= 4 && !(o && o.phase !== 'done') && Math.random() < 0.6) { S.capLeave = { from: S.leave.from, to: S.leave.to }; sendMsg('휴가 냈다며. 나도 냈어. 같은 날로.', [['진짜요?', 3, '진짜. 강 중령님이 웃으시더라. 어디 갈래?'], ['여행 가요!', 4, '좋아. 짐은 내가 들게.']]); }
+    const L = S.leave, CL = S.capLeave, overlap = CL && CL.to >= L.from && CL.from <= L.to; // 대위 휴가와 겹치나
+    const opBusy = o && o.phase !== 'done' && (o.startDay <= L.to && (o.startDay + o.days) >= L.from); // 그때 작전 나가 있나
+    if (overlap) { // 이미 대위도 그날 쉰다
+      if (st() >= 4) { S.capLeave = { from: Math.min(CL.from, L.from), to: Math.max(CL.to, L.to), self: CL.self }; } // 연인이면 내 휴가에 맞춰 더 늘린다
+      sendMsg(st() >= 4 ? '어? 나도 그날 휴가 냈는데. 말 안 해도 통했네.' : '휴가 냈다며. 마침 나도 그날 쉬어.', [['진짜요?', 3, '진짜. 그날은 하루 종일 비워 둘게.'], ['같이 놀아요!', 4, '좋아. 어디든 가자.']]);
+    } else if (opBusy) {
+      if (st() >= 2) sendMsg('휴가 냈다며. 그때 나 작전 나가 있을 거야. 미안. 돌아오면 다 갚을게.', [['다녀와서 놀아요.', 3, '응. 약속.'], ['아쉬워요.', 2, '나도. 엄청.']]);
+    } else if (st() >= 4 && Math.random() < 0.6) { S.capLeave = { from: L.from, to: L.to }; sendMsg('휴가 냈다며. 나도 냈어. 같은 날로.', [['진짜요?', 3, '진짜. 강 중령님이 웃으시더라. 어디 갈래?'], ['여행 가요!', 4, '좋아. 짐은 내가 들게.']]); }
     else if (st() >= 2) sendMsg('휴가 냈다며. 잘 쉬어. 나는 그날 근무라 아쉽다.', [['아쉬워요.', 2, '저녁엔 비워 둘게.']]);
   }
 

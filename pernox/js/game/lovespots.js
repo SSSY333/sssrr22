@@ -113,6 +113,8 @@ PX.Love = (() => {
     if (S.cap.leaveNote && S.capLeave && t >= 9 * 60 && t < 21 * 60 && !(PX.Op.isAway && PX.Op.isAway('cap'))) {
       const L2 = S.capLeave, n = L2.to - L2.from + 1, R = PX.Rom;
       if (S.cap.leaveNote === 'ask' && S.day < L2.from) { S.cap.leaveNote = 'day';
+        const mine = S.leave && S.leave.to >= L2.from && S.leave.from <= L2.to; // 내 휴가와 겹치면
+        if (mine) msg(`${R.dayKo(L2.from)} 휴가 냈어. 너 쉬는 날이라며. 맞춰서 냈지.`, [['역시!', 4, '응. 하루 종일 네 거야.'], ['어떻게 알았어요?', 3, '근무표 봤어. 비밀이야.']]); else
         msg(U.pick([`${R.dayKo(L2.from)} 휴가 냈어${n > 1 ? `. ${n}일` : ''}. 이유는 너.`, `나 ${R.dayKo(L2.from)} 쉬어. 일과 없음. 너랑 놀려고 낸 거야.`, `휴가 냈다. ${R.dayKo(L2.from)}${n > 1 ? `부터 ${n}일` : ''}. 그날 비워 둘 수 있어?`]),
           [['진짜? 좋아!', 3, '응. 하루 종일 네 거야.'], ['나 그날 일하는데…', 2, '괜찮아. 끝날 때까지 기다릴게. 데리러 갈게.']]);
       } else if (S.cap.leaveNote === 'day' && S.day >= L2.from && S.day <= L2.to && t < 12 * 60) { S.cap.leaveNote = null;
