@@ -15684,6 +15684,11 @@ PX.InnNight = (() => {
   const X = (...bs) => bs.map(b => Object.assign(b, { exp: 1 })); // 첫 밤 이후에만 나오는 대사
   const tame = (arr) => { const fam = familiar(); const a = arr.filter(b => fam || !b.exp); if (!fam) return a; const f = a.filter(b => !CAUTIOUS.test(JSON.stringify(b))); return f.length ? f : a; };
   const pick = (arr) => PX.Dlg.capPick(tame(arr));
+  // 지금 자세에 맞는 장면만: 누워 있으면 현관·문·벽·신발(서서 하는) 장면 빼고, 서 있으면 베개·이불·누운(침대) 장면 빼고
+  const STAND_RE = /현관|문이 닫히자마자|신발|등이 벽에|벽에 기대게|벽 쪽으로|문에 등을|한 걸음에|군화를 벗어|들어오자마자|문을 등지|나를 무릎 위로 끌어 앉힌다|끌어 앉힌다/;
+  const LIE_RE = /베개|이불 속|누운 |누워|팔베개|천장을 보|침대가 .*출렁/;
+  const lying = () => { const g = G(), st = g.player.seat, o = st && st.obj; return g.player.pose === 'lie' || !!(o && (o.use === 'bed' || (o.f && o.f.use === 'bed'))); };
+  const fit = (arr) => { if (!Array.isArray(arr)) return arr; const re = lying() ? STAND_RE : LIE_RE; const f = arr.filter(b => !re.test(JSON.stringify(b))); return f.length ? f : arr; };
 
   // ===== 입장 전: 루비웨이 거리 (밤) =====
   const STREET = [
@@ -15888,13 +15893,13 @@ PX.InnNight = (() => {
     const g = G(), S = St.S, room = g.mapId;
     // 1) 시작 (은밀숙소: 입장 직후 · 내 숙소: 침대에서)
     const CN = PX.CAP_NIGHT || {}, capR = where === 'cap' && CN.enter; // 대위 막사: 대위의 구역 (편하고 조금 더 거침없이)
-    if (capR) await lines(pick(CN.enter));
-    else if (where === 'home') await lines(pick(HOME_ENTER));
+    if (capR) await lines(pick(fit(CN.enter)));
+    else if (where === 'home') await lines(pick(fit(HOME_ENTER)));
     else if (S.done.innEnter !== S.day) { S.done.innEnter = S.day; await lines(pick(ENTER)); }
     // 2) 분위기가 오르는 장면 (방 전용이 있으면 반반)
     const N2 = PX.INN_MORE || {};
     const pool = capR ? CN.during.concat(N2.n_during || []) : DURING[room] && Math.random() < 0.5 ? DURING[room] : DURING.any;
-    const dl = pick(pool), B = PX.INN_BATH || {};
+    const dl = pick(fit(pool)), B = PX.INN_BATH || {};
     const bathy = /목욕|욕조|거품|샤워/.test(JSON.stringify(dl)) && B.bathGo; // 욕조에서 분위기가 오르면: 불 끄는 말 없이 욕실 대사로
     await lines(dl);
     const go = capR ? U.pickFresh('capGo', CN.go) : bathy ? U.pickFresh('ibGo', B.bathGo) : U.pickFresh('innGo', GO);
@@ -16092,7 +16097,7 @@ PX.InnNight = (() => {
     MURMUR.push(...(X2.murmur || []), ...((PX.LOVE && PX.LOVE.breath) || [])); AFTER.push(...(X2.after || [])); AFTER_INN.push(...(X2.after_inn || [])); MORNING.push(...(X2.morning || []));
   }
   const counts = () => ({ street: STREET.length, lobby: LOBBY.length, enter: ENTER.length, during: Object.values(DURING).reduce((a, b) => a + b.length, 0), murmur: MURMUR.length, after: AFTER.length, afterInn: AFTER_INN.length, go: GO.length, prepInn: PREP.inn.length, duringAny: DURING.any.length, morning: MORNING.length, stop: STOP.length, prep: PREP.inn.length + PREP.home.length, home: HOME_ENTER.length });
-  return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime, capNight };
+  return { night, suggest, counts, homeNight, intimate, PREP, canDay, daytime, capNight, _fit: fit, _during: () => DURING };
 })();
 
 </script>
