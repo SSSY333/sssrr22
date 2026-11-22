@@ -14116,7 +14116,12 @@ PX.Home = (() => {
     if (!s.by || s.by === a) a.sitOn(s);
   }
   async function sitPair(o) {
-    const g = G(), s = seatsNear(o);
+    const g = G();
+    // 이미 둘 다 앉아 있으면 그 자리 그대로 (의자를 다시 찾지 않는다)
+    if (g.player.seat && g.cap.seat && g.cap.map === g.mapId && U.dist(g.player.x, g.player.y, g.cap.x, g.cap.y) < 4.5) { g.cap.setDirTo(g.player.x, g.player.y); return true; }
+    const s = seatsNear(o, 3.2);
+    // 나만 앉아 있으면 대위만 가까운 빈자리로
+    if (g.player.seat && useOf(g.player.seat.obj) !== 'bed') { const rest = s.filter(x => x !== g.player.seat && !x.by).sort((a, b) => U.dist(a.x, a.y, g.player.x, g.player.y) - U.dist(b.x, b.y, g.player.x, g.player.y)); if (rest.length) { await sitOn(g.cap, rest[0]); g.cap.setDirTo(g.player.x, g.player.y); return true; } }
     if (s.length < 2) return false;
     // 식탁은 마주 보게: 서로 가장 먼 두 자리 · 소파는 나란히
     let a = s[0], b = s[1];
