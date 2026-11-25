@@ -101,7 +101,7 @@
 
 <script type="module">
   const BROKERS = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt'];
-  const LOBBY = 'bojangwon-gwanghwamun/v1/lobby/';
+  const LOBBY = 'bojangwon-gwanghwamun/v2-pixel/lobby/';
   const PHRASES = ['안녕하세요! 👋', '반가워요!', '산책하기 딱 좋네', '점심 먹으러 가자', '오늘도 화이팅! 💪', '헤헤 😊'];
   const $ = (s) => document.querySelector(s);
   let mqtt = null, running = false, base = '', bots = [], observers = [], phaseStats = null, lagSamples = [];
@@ -118,7 +118,7 @@
   function makeBot(i) {
     const id = 'bot' + rid();
     const topic = base + id;
-    const bot = { id, topic, seq: 0, ps: 0, clients: [], timers: [], x: -12 + Math.random() * 24, z: 1.2 + Math.random() * 2.4, dir: Math.random() < 0.5 ? 1 : -1, sayN: 0, say: null, design: i % 5 };
+    const bot = { id, topic, seq: 0, ps: 0, clients: [], timers: [], x: 1300 + Math.random() * 440, y: 760 + Math.random() * 48, dir: Math.random() < 0.5 ? 1 : -1, sayN: 0, say: null, design: i % 5 };
     const pub = (a, d) => { const msg = JSON.stringify({ a, s: ++bot.seq, d }); for (const c of bot.clients) if (c.connected) c.publish(topic, msg, { qos: 0 }); };
     bot.pub = pub;
     for (const url of BROKERS) {
@@ -130,10 +130,10 @@
     let last = performance.now();
     const step = () => {
       const now = performance.now(), dt = Math.min(0.5, (now - last) / 1000); last = now;
-      bot.x += bot.dir * 1.6 * dt;
-      if (bot.x > 13 || bot.x < -13) bot.dir *= -1;
+      bot.x += bot.dir * 50 * dt;
+      if (bot.x > 1760 || bot.x < 1290) bot.dir *= -1;
       if (Math.random() < 0.02) { bot.sayN++; bot.say = { t: PHRASES[(i + bot.sayN) % PHRASES.length], n: bot.sayN }; }
-      const d = { v: 1, n: '봇' + (i + 1), d: bot.design, x: +bot.x.toFixed(2), z: +bot.z.toFixed(2), r: bot.dir > 0 ? 1.57 : -1.57, k: null, h: 0, vx: bot.dir * 1.6, vz: 0, lt: Date.now(), ps: ++bot.ps };
+      const d = { v: 2, n: '봇' + (i + 1), d: bot.design, x: Math.round(bot.x), y: Math.round(bot.y), f: bot.dir > 0 ? 3 : 2, vx: bot.dir * 50, vy: 0, s: null, lt: Date.now(), ps: ++bot.ps };
       if (bot.say) d.say = bot.say;
       pub('pres', d);
     };
@@ -187,7 +187,7 @@
     $('#start').disabled = true; $('#stop').disabled = false; $('#rows').replaceChildren(); $('#warn').style.display = 'none';
     $('#summary').textContent = '테스트 중…';
     const real = $('#real').checked;
-    base = real ? LOBBY : `bojangwon-gwanghwamun/v1/loadtest-${rid()}/`;
+    base = real ? LOBBY : `bojangwon-gwanghwamun/v2-pixel/loadtest-${rid()}/`;
     $('#status').textContent = '중계소 연결 중…';
     try { await loadMqtt(); } catch (e) { $('#status').textContent = '중계소 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.'; return finish(); }
     makeObservers();

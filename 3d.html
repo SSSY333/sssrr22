@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2b2340" />
+  <title>보장원</title>
+  <meta name="description" content="광화문 거리의 유리 빌딩 보장원 — 내 캐릭터로 돌아다니는 3D 멀티플레이 오피스 (three.js)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- 입장 화면: 닉네임 + 캐릭터 고르기 -->
+  <section id="intro">
+    <div class="card">
+      <p class="eyebrow">서울 종로구 · 세종대로 광화문 거리</p>
+      <h1>보장원</h1>
+      <label class="field" for="nick">
+        <span>닉네임</span>
+        <input id="nick" type="text" maxlength="10" placeholder="닉네임을 입력하세요" autocomplete="off" enterkeyhint="go" />
+      </label>
+      <div class="field">
+        <span>캐릭터</span>
+        <div id="designs" class="designs" role="radiogroup" aria-label="캐릭터 선택"></div>
+      </div>
+      <button id="enter" type="button" disabled>불러오는 중…</button>
+    </div>
+  </section>
+
+  <!-- 게임 HUD -->
+  <header id="brand" class="hud hidden" role="button" tabindex="0" aria-label="네트워크 상태 보기">
+    <span class="dot"></span> 보장원 <small id="online">👥 1명</small> <small id="clock"></small>
+  </header>
+  <div id="topbtns" class="hud hidden">
+    <button id="char" type="button" aria-label="캐릭터 바꾸기">👕</button>
+    <button id="tp" type="button" aria-label="장소 이동">🧭</button>
+    <button id="shot" type="button" aria-label="사진 찍기">📷</button>
+    <button id="music" type="button" aria-label="배경음악 켜기/끄기" aria-pressed="true">🎵</button>
+  </div>
+  <div id="tpPanel" class="hidden" role="menu" aria-label="장소 이동"></div>
+  <div id="joy" class="hud hidden" aria-label="이동 핸들"><div id="knob"></div></div>
+  <div id="actions" class="hud hidden">
+    <div id="phrases" aria-label="말하기" hidden></div>
+    <button id="talk" type="button" aria-expanded="false" aria-controls="phrases">💬 대화하기</button>
+    <button id="act2" type="button" hidden></button>
+    <button id="act" type="button" hidden></button>
+  </div>
+  <p id="hint" class="hud hidden"></p>
+
+  <!-- 불만창고: 저장되지 않고 아무에게도 보이지 않는 입력 -->
+  <div id="vent" class="sheet-wrap" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ventTitle">
+      <h2 id="ventTitle">스트레스 적기</h2>
+      <p class="sheet-note">🔒 여기 쓴 내용은 저장되지 않고, 누구에게도 보이지 않아요.</p>
+      <textarea class="vent-text" maxlength="300" rows="5" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="내용"></textarea>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel">취소</button>
+        <button type="button" class="sheet-go">🔥 벽난로에 던지기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 캐릭터 바꾸기 -->
+  <div id="charSheet" class="sheet-wrap" hidden>
+    <div class="sheet note-sheet" role="dialog" aria-modal="true" aria-labelledby="charTitle">
+      <h2 id="charTitle">👕 캐릭터 바꾸기</h2>
+      <div id="charPick" class="designs" role="radiogroup" aria-label="캐릭터 선택"></div>
+      <div class="sheet-btns"><button type="button" class="sheet-cancel char-cancel">닫기</button></div>
+    </div>
+  </div>
+
+  <!-- 사진 찍기 -->
+  <div id="flash" aria-hidden="true"></div>
+  <div id="shotSheet" class="sheet-wrap" hidden>
+    <div class="sheet note-sheet" role="dialog" aria-modal="true" aria-labelledby="shotTitle">
+      <h2 id="shotTitle">📷 찰칵!</h2>
+      <img id="shotImg" class="shot-img" alt="방금 찍은 사진" />
+      <p class="sheet-note" id="shotInfo" aria-live="polite"></p>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel shot-close">닫기</button>
+        <button type="button" class="sheet-go" id="shotSave">💾 사진 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 네트워크 상태 -->
+  <div id="netSheet" class="sheet-wrap" hidden>
+    <div class="sheet note-sheet" role="dialog" aria-modal="true" aria-labelledby="netTitle">
+      <h2 id="netTitle">📶 네트워크 상태</h2>
+      <p class="net-sum" id="netSum" aria-live="polite"></p>
+      <div id="netBody" class="net-body"></div>
+      <p class="sheet-note">왕복 지연: 내 신호가 상대에게 갔다가 돌아오는 시간이에요 (이 창을 열어 둔 동안 2초마다 재요). 300 ms 아래면 끊김 없이 느껴져요.</p>
+      <p class="sheet-note"><a href="loadtest.html" target="_blank" rel="noopener">접속 인원 테스트 페이지 열기 →</a></p>
+      <div class="sheet-btns"><button type="button" class="sheet-cancel net-close">닫기</button></div>
+    </div>
+  </div>
+
+  <div id="error" class="hidden">이 기기에서는 3D(WebGL)를 표시할 수 없어요 😢</div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
