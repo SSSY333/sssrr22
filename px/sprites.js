@@ -325,32 +325,84 @@ export function gateSprite() {
   });
 }
 // 맛집 가게 (정면이 아래쪽)
+// 맞은편 맛집 거리 (3D와 같은 가게 · 같은 자리: x는 미터)
 export const SHOPS = [
-  { name: '광화문 빵집', item: 'bread', wall: '#f0e2cf', awn: ['#c0503a', '#fbf3e6'], sign: '#8a3b2a', phr: 'food' },
-  { name: '세종 떡볶이', item: 'tteok', wall: '#f2cf5b', awn: ['#d6452f', '#ffffff'], sign: '#d6452f', phr: 'food' },
-  { name: '은행나무 커피', item: 'latte', wall: '#7a4e3a', awn: ['#3b2a22', '#e9c46a'], sign: '#3b2a22', phr: 'cafe' },
-  { name: '달콤 디저트', item: 'cake', wall: '#f6d5d8', awn: ['#e889a0', '#fff6f8'], sign: '#c95c78', phr: 'cafe' },
-  { name: '광장 피자', item: 'pizza', wall: '#e9d2b4', awn: ['#2e7d32', '#f5f1e8'], sign: '#2e7d32', phr: 'food' },
+  { name: '세종 떡볶이', item: 'tteok', x0: -40.6, w: 11, wall: '#f2cf5b', awn: ['#d6452f', '#ffffff'], sign: '#d6452f', phr: 'food' },
+  { name: '은행나무 커피', item: 'latte', x0: -28.4, w: 14, wall: '#7a4e3a', awn: ['#3b2a22', '#e9c46a'], sign: '#3b2a22', phr: 'cafe' },
+  { name: '달콤 디저트', item: 'cake', x0: -13.2, w: 12, wall: '#f6d5d8', awn: ['#e889a0', '#fff6f8'], sign: '#c95c78', phr: 'cafe' },
+  { name: '불판 고깃집', item: 'meat', x0: 0, w: 13, wall: '#3a3030', awn: ['#8a1f2a', '#2a1f1f'], sign: '#8a1f2a', phr: 'food' },
+  { name: '브런치 하우스', item: 'pancake', x0: 14.2, w: 12, wall: '#e6efe8', awn: ['#6aa7a0', '#ffffff'], sign: '#3e7c74', phr: 'cafe' },
+  { name: '광장 피자', item: 'pizza', x0: 27.4, w: 13, wall: '#e9d2b4', awn: ['#2e7d32', '#f5f1e8'], sign: '#2e7d32', phr: 'food' },
 ];
-export function shopSprite(shop, w, font) {
-  const h = 150;
+// 길 건너편 가게: 정면(차양 · 진열창)이 길 쪽(위)을 봐요. 아래쪽은 지붕
+export function shopSprite(shop, w, h, font) {
   return sprite(w, h, (P, g) => {
-    P(0, 0, w, 40, '#6a5a52'); P(0, 36, w, 4, '#4a3e38'); for (let x = 2; x < w; x += 10) P(x, 4, 6, 30, '#7a6a62'); // 지붕
-    P(0, 40, w, 110, shop.wall); P(0, 40, w, 3, shade(shop.wall, 0.2));
-    // 2층 창문
-    for (let x = 12; x < w - 30; x += 40) { P(x, 50, 26, 20, '#3a4a5a'); P(x + 2, 52, 22, 16, '#9fc3d8'); P(x + 12, 52, 2, 16, '#3a4a5a'); }
-    // 간판
-    P(8, 76, w - 16, 18, shop.sign); P(10, 78, w - 20, 14, shade(shop.sign, 0.12));
-    g.fillStyle = '#fffaf0'; g.font = `11px ${font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(shop.name, w / 2 + 1, 86);
-    // 차양
-    for (let x = 0, k = 0; x < w; x += 10, k++) P(x, 96, 10, 10, shop.awn[k % 2]);
-    for (let x = 0, k = 0; x < w; x += 10, k++) P(x + 2, 106, 6, 3, shop.awn[k % 2]);
-    // 진열창 · 문
-    P(8, 112, w - 50, 34, '#2a3440'); P(10, 114, w - 54, 30, '#f3e3c4');
-    for (let x = 14; x < w - 50; x += 10) { P(x, 132, 7, 5, ['#d9954a', '#d6452f', '#f6d5d8', '#e9c46a'][(x / 10) % 4 | 0]); P(x, 122, 7, 4, '#c8925a'); }
-    P(w - 36, 110, 26, 40, '#3a2a20'); P(w - 33, 113, 20, 34, '#b8d4e0'); P(w - 16, 128, 2, 4, '#f2b33d');
+    const roof = shade(shop.wall, -0.28), roof2 = shade(shop.wall, -0.18);
+    P(0, 0, w, h, roof); for (let y = 30; y < h; y += 8) P(0, y, w, 1, roof2);
+    P(0, 26, w, 4, shade(shop.wall, -0.4));
+    // 차양 (인도 쪽으로 나와요)
+    for (let x = 0, k = 0; x < w; x += 8, k++) { P(x, 0, 8, 10, shop.awn[k % 2]); P(x + 1, 10, 6, 3, shop.awn[k % 2]); }
+    P(0, 0, w, 1, shade(shop.awn[0], 0.3));
+    // 진열창 · 문 (따뜻한 불빛)
+    P(0, 13, w, 13, shop.wall);
+    for (let x = 6; x < w - 24; x += 22) { P(x, 15, 18, 9, '#2a3440'); P(x + 1, 16, 16, 7, '#f6dcae'); }
+    P(w - 18, 14, 12, 12, '#3a2a20'); P(w - 16, 16, 8, 10, '#b8d4e0');
+    // 지붕 위 간판
+    P(8, 40, w - 16, 22, shop.sign); P(10, 42, w - 20, 18, shade(shop.sign, 0.12));
+    g.fillStyle = '#fffaf0'; g.font = `11px ${font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(shop.name, w / 2 + 1, 52);
+    // 실외기 · 환기구
+    P(12, h - 30, 16, 12, '#c8c2b8'); P(14, h - 28, 12, 8, '#9aa3aa'); P(w - 34, h - 26, 20, 10, '#9aa3aa');
   });
 }
+// 이웃 빌딩 (정면이 아래 길 쪽)
+export function neighborSprite(w, h, base, frame) {
+  return sprite(w, h, (P) => {
+    P(0, 0, w, h - 40, shade(base, -0.35)); for (let y = 6; y < h - 40; y += 10) P(0, y, w, 1, shade(base, -0.42));
+    P(4, 8, 20, 14, '#8a949c'); P(w - 30, 14, 22, 12, '#8a949c');
+    P(0, h - 40, w, 40, base); P(0, h - 40, w, 2, shade(base, 0.25));
+    for (let x = 6; x < w - 12; x += 16) { P(x, h - 34, 12, 14, frame); P(x + 1, h - 33, 10, 12, '#9fc3d8'); P(x + 1, h - 33, 10, 3, '#cfe3ec'); }
+    P(0, h - 14, w, 14, shade(base, -0.15));
+  });
+}
+// 방 이름표
+export function plaqueSprite(text, font, bg = '#2a1f2d', fg = '#fff1e2') {
+  const w = Math.max(30, text.length * 11 + 10), h = 13;
+  return sprite(w, h, (P, g) => { P(0, 0, w, h, bg); P(1, 1, w - 2, 1, shade(bg, 0.3)); g.fillStyle = fg; g.font = `11px ${font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2 + 1, h / 2 + 1.5); }, { ax: 0, ay: 0 });
+}
+item('meat', (P) => { P(0, 4, 9, 4, '#3a3d42'); P(1, 2, 3, 3, '#c0503a'); P(5, 2, 3, 3, '#d9735a'); P(2, 3, 1, 1, '#f4efe6'); });
+item('pancake', (P) => { P(1, 5, 7, 2, '#d9954a'); P(1, 3, 7, 2, '#e8b06a'); P(3, 1, 3, 2, '#f6e6a8'); });
+// 3D 배치에 맞춘 가구
+S('vcounter', 12, 92, (P) => { P(0, 0, 12, 92, '#f4efe6'); P(0, 0, 4, 92, '#c8a070'); P(4, 0, 1, 92, '#a8803e'); for (let y = 6; y < 92; y += 16) P(10, y, 2, 10, '#e0dad0'); });
+S('coffeeTop', 10, 12, (P) => { P(0, 0, 10, 12, '#3a3d42'); P(2, 2, 6, 3, '#5a5f66'); P(3, 6, 4, 4, '#f4efe6'); P(3, 2, 2, 1, '#e0703c'); });
+S('fruit', 10, 8, (P) => { P(0, 3, 10, 5, '#c8925a'); P(1, 1, 3, 3, '#e74c3c'); P(5, 0, 3, 3, '#f2b33d'); P(3, 2, 3, 3, '#6aa04a'); });
+S('snackBox', 10, 8, (P) => { P(0, 1, 10, 7, '#f2b33d'); P(1, 2, 3, 4, '#d6452f'); P(5, 2, 4, 4, '#2f6fd6'); });
+S('vshelf', 12, 106, (P) => {
+  P(0, 0, 12, 106, '#a8723e'); P(2, 2, 8, 102, '#7a4e2a');
+  const c = ['#e8774a', '#f2b84b', '#6aa7a0', '#f4efe6', '#8f6fb5', '#d65d6c', '#2c3e66'];
+  for (let y = 3, k = 0; y < 102; y += 3, k++) P(3, y, 6, 2, c[k % c.length]);
+  for (const y of [8, 50, 92]) { P(2, y - 6, 8, 8, '#5aa04a'); P(4, y - 8, 4, 4, '#3e7c3a'); P(3, y + 2, 6, 4, '#d0784a'); }
+});
+S('printerS', 20, 18, (P) => { P(0, 3, 20, 12, '#e6e2da'); P(0, 3, 20, 2, '#ffffff'); P(2, 0, 16, 4, '#d0cbc2'); P(2, 7, 16, 2, '#3a3d42'); P(15, 4, 3, 2, '#3a3d42'); P(16, 4, 1, 1, '#4caf50'); P(0, 15, 20, 3, '#b8b2a8'); });
+S('shredS', 14, 18, (P) => { P(0, 0, 14, 5, '#3a3d42'); P(2, 2, 10, 1, '#111111'); P(0, 5, 14, 13, '#5a5f66'); P(10, 1, 2, 2, '#4caf50'); });
+const BLANKETS = ['#9bbf6a', '#f2b84b', '#e8907a', '#b9a6d9'];
+BLANKETS.forEach((bl, i) => S('bedS' + i, 22, 36, (P) => {
+  P(0, 0, 22, 5, '#8a6a4a'); P(1, 5, 20, 29, '#fbf6ee'); P(3, 6, 16, 7, '#ffffff'); P(3, 12, 16, 1, '#e6e2da');
+  P(1, 15, 20, 19, bl); P(1, 15, 20, 2, shade(bl, 0.25)); for (let y = 21; y < 34; y += 5) P(1, y, 20, 1, shade(bl, -0.15));
+  P(0, 33, 22, 3, '#8a6a4a');
+}));
+S('curtainS', 4, 34, (P) => { P(0, 0, 4, 34, '#efe6da'); for (let y = 2; y < 34; y += 5) P(1, y, 1, 3, '#d6c8b0'); });
+for (const [n, col] of [['reclinerA', '#e8907a'], ['reclinerB', '#6aa7a0']]) S(n, 16, 22, (P) => { P(0, 0, 16, 8, shade(col, -0.2)); P(0, 7, 16, 11, col); P(0, 0, 3, 18, shade(col, -0.25)); P(13, 0, 3, 18, shade(col, -0.25)); P(3, 9, 10, 7, shade(col, 0.15)); P(1, 18, 14, 4, '#5a4232'); });
+S('ottoman', 14, 10, (P) => { P(0, 0, 14, 7, '#c8925a'); P(1, 1, 12, 2, '#e0b07a'); P(1, 7, 12, 3, '#8a5a3a'); });
+// U자 소파 (원형 소파를 둘러앉기 좋게)
+const SOFA = '#e0703c', SOFA2 = shade(SOFA, -0.22), SOFA3 = shade(SOFA, 0.18);
+S('sofaTop', 76, 20, (P) => { P(0, 0, 76, 8, SOFA2); P(0, 7, 76, 10, SOFA); for (let x = 4; x < 72; x += 17) P(x, 8, 15, 8, SOFA3); P(0, 17, 76, 3, SOFA2); P(8, 1, 8, 5, '#f2c14e'); P(56, 1, 8, 5, '#7cc6b4'); });
+S('sofaLeft', 18, 44, (P) => { P(0, 0, 7, 44, SOFA2); P(6, 0, 10, 41, SOFA); for (let y = 2; y < 40; y += 13) P(7, y, 8, 11, SOFA3); P(0, 41, 18, 3, SOFA2); });
+S('sofaRight', 18, 44, (P) => { P(11, 0, 7, 44, SOFA2); P(2, 0, 10, 41, SOFA); for (let y = 2; y < 40; y += 13) P(3, y, 8, 11, SOFA3); P(0, 41, 18, 3, SOFA2); });
+S('rtable', 30, 22, (P) => { P(3, 0, 24, 2, '#a8723e'); P(0, 2, 30, 12, '#c8925a'); P(3, 14, 24, 2, '#a8723e'); P(13, 16, 4, 6, '#8a5a3a');
+  P(4, 4, 10, 8, '#f2c14e'); P(5, 5, 8, 6, '#e0703c'); P(7, 6, 1, 1, '#c62828'); P(10, 8, 1, 1, '#c62828'); P(18, 4, 4, 5, '#f4efe6'); P(23, 6, 4, 4, '#d6452f'); });
+S('menuBoard', 12, 18, (P) => { P(0, 0, 12, 14, '#2a2a30'); P(1, 1, 10, 12, '#3a3a40'); P(2, 3, 7, 1, '#f4efe6'); P(2, 6, 5, 1, '#f2c14e'); P(2, 9, 6, 1, '#f4efe6'); P(1, 14, 2, 4, '#8a5a3a'); P(9, 14, 2, 4, '#8a5a3a'); });
+S('roadSign', 30, 40, (P) => { P(14, 12, 2, 28, '#6e767c'); P(0, 0, 30, 13, '#1e6b3a'); P(1, 1, 28, 11, '#2a8a4a'); P(4, 5, 22, 1, '#ffffff'); P(4, 8, 14, 1, '#ffffff'); });
+S('flowerBed', 30, 12, (P) => { P(0, 4, 30, 8, '#8a6a4a'); P(1, 0, 28, 6, '#5aa04a'); for (let x = 2; x < 28; x += 4) P(x, 1 + (x % 3), 2, 2, ['#f6d5d8', '#fff1c4', '#e889a0', '#f2b33d'][(x / 4) % 4 | 0]); });
 // 큰 포스터 (가까이서 보기용 고해상도) — 오늘도 수고했어요 · 점심 · 체육대회 · 공지
 export function drawPoster(kind, c, W, H, FONT) {
   const T = (txt, x, y, size, color, weight = 800, align = 'center') => { c.fillStyle = color; c.font = `${weight} ${size}px ${FONT}`; c.textAlign = align; c.textBaseline = 'middle'; c.fillText(txt, x, y); };

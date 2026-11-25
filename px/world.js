@@ -1,47 +1,50 @@
 /* =========================================================================
-   보장원 도트 — 지도 (광화문 거리 · 유리 빌딩 보장원 · 맛집 거리)
-   단위: 픽셀 (1칸 = 16px). 동선은 3칸(48px) 이상 넓게, 가구는 서로 겹치지 않게
+   보장원 도트 — 지도
+   3D 버전과 같은 배치 · 같은 색 (1 m = 16 px)
+   x: 왼쪽(-) ~ 오른쪽(+), z: 건물 안쪽(-30) ~ 정문(0) ~ 길 건너 맛집(+32)
    ========================================================================= */
-import { T, mk, R, shade, sprite, SPR, hash, gateSprite, shopSprite, SHOPS, posterPixel } from './sprites.js';
+import { T, mk, R, shade, sprite, SPR, hash, shopSprite, SHOPS, posterPixel, neighborSprite, plaqueSprite } from './sprites.js';
 
-export const MW = 150 * T, MH = 78 * T;
+const M = 16;
+export const X = (x) => Math.round((x + 40.5) * M);
+export const Y = (z) => Math.round((z + 33) * M);
+export const MW = X(40.5), MH = Y(43);
 export const FACE = 32; // 벽 높이 (화면에서)
-const t = (n) => n * T;
 
-export const OFFICE = { x0: t(30), x1: t(114), y0: t(4), y1: t(46) };
-export const DOOR = { x0: t(69), x1: t(75), y: t(46) };
+export const OFFICE = { x0: X(-20), x1: X(20), y0: Y(-30), y1: Y(0) };
+export const DOOR = { x0: X(-1.6), x1: X(1.6), y: Y(0) };
 export const LANES = [
-  { y: t(53.5), dir: -1 }, { y: t(56.5), dir: -1 },
-  { y: t(63.5), dir: 1 }, { y: t(66.5), dir: 1 },
+  { y: Y(6.7), dir: -1 }, { y: Y(9.8), dir: -1 },
+  { y: Y(20.2), dir: 1 }, { y: Y(23.3), dir: 1 },
 ];
-export const CROSSWALKS = [{ x0: t(69), x1: t(75) }, { x0: t(128), x1: t(134) }];
-export const ROAD = [{ y0: t(52), y1: t(58) }, { y0: t(62), y1: t(68) }];
+export const CROSSWALKS = [{ x0: X(-4.5), x1: X(4.5) }];
+export const ROAD = [{ y0: Y(5), y1: Y(11.5) }, { y0: Y(18.5), y1: Y(25) }];
 
 export function buildWorld(FONT) {
   const W = {
     objects: [], solids: [], walls: [], seats: [], stations: [], zones: [], spots: [], glows: [], dims: [],
-    posters: [], clocks: [], furniture: [],
+    posters: [], clocks: [], furniture: [], catRoutes: [],
   };
   const solid = (x, y, w, h, tag = 'wall') => { const r = { x, y, w, h, tag }; W.solids.push(r); if (tag !== 'wall') W.furniture.push(r); return r; };
-  // 사물 하나 놓기: (x = 가운데, y = 바닥선) · fp = 바닥 차지 영역 [왼쪽, 위, 폭, 높이] (기준점 기준)
+  // 사물 놓기: (x = 가운데, y = 바닥선) · fp = 바닥 차지 영역 [왼쪽, 위, 폭, 높이] (기준점 기준)
   const put = (name, x, y, fp, o = {}) => {
     const s = typeof name === 'string' ? SPR[name] : name;
-    const obj = { img: s.c, x: Math.round(x - s.ax), y: Math.round(y - s.ay), sort: y + (o.sortAdd || 0), name: o.label || name, ...o };
+    const obj = { img: s.c, x: Math.round(x - s.ax), y: Math.round(y - s.ay), sort: y + (o.sortAdd || 0), name: o.label || (typeof name === 'string' ? name : 'obj'), ...o };
     W.objects.push(obj);
-    if (fp) obj.fp = solid(x + fp[0], y + fp[1], fp[2], fp[3], o.tag || (typeof name === 'string' ? name : 'obj'));
+    if (fp) obj.fp = solid(x + fp[0], y + fp[1], fp[2], fp[3], o.tag || obj.name);
     return obj;
   };
   const seat = (kind, x, y, dir, o = {}) => { const s = { id: kind + W.seats.length, kind, x, y, dir, ...o }; W.seats.push(s); return s; };
   const station = (kind, x, y, o = {}) => { const s = { id: kind + W.stations.length, kind, x, y, ...o }; W.stations.push(s); return s; };
+  const mount = (img, x, y, wallY) => W.objects.push({ img, x, y, sort: wallY + 1, mount: true, name: 'mount' });
 
   /* ---------- 벽 ---------- */
   const STY = {
-    brick: { cap: '#8a5a4a', face: (P, w) => { P(0, 0, w, FACE, '#b5634a'); for (let y = 0; y < FACE; y += 6) for (let x = (y / 6) % 2 ? -6 : 0; x < w; x += 12) P(x + 1, y + 1, 10, 4, '#c8735a'); P(0, FACE - 3, w, 3, '#7a4a3a'); } },
-    plaster: { cap: '#cfc4b4', face: (P, w) => { P(0, 0, w, FACE, '#f1e8da'); P(0, 0, w, 2, '#ffffff'); P(0, FACE - 5, w, 5, '#b89a7a'); P(0, FACE - 5, w, 1, '#d0b494'); } },
-    warm: { cap: '#9a6a4a', face: (P, w) => { P(0, 0, w, FACE, '#c8946a'); for (let x = 0; x < w; x += 8) P(x, 0, 1, FACE, '#b07a52'); P(0, FACE - 5, w, 5, '#7a4e2a'); } },
-    frost: { cap: '#bfc4cc', face: (P, w) => { P(0, 0, w, FACE, '#e6e3ee'); for (let x = 12; x < w; x += 24) P(x, 2, 1, FACE - 6, '#cfcad8'); P(0, FACE - 4, w, 4, '#9aa3aa'); } },
-    side: { cap: '#9aa3aa', face: (P, w) => { P(0, 0, w, FACE, '#d6dce2'); P(0, FACE - 4, w, 4, '#8a949c'); } },
-    glass: { cap: '#7a848c', alpha: true, face: (P, w) => { P(0, 0, w, FACE, 'rgba(170,215,235,0.34)'); for (let x = 0; x < w; x += 32) P(x, 0, 2, FACE, '#5a646c'); P(0, 0, w, 2, '#5a646c'); P(0, FACE - 3, w, 3, '#4a545c'); P(0, 12, w, 1, 'rgba(255,255,255,0.35)'); } },
+    brick: { cap: '#8a5a4a', face: (P, w) => { P(0, 0, w, FACE, '#c27a62'); for (let y = 0; y < FACE; y += 6) for (let x = (y / 6) % 2 ? -6 : 0; x < w; x += 12) P(x + 1, y + 1, 10, 4, '#d08a70'); P(0, FACE - 3, w, 3, '#7a4a3a'); } },
+    side: { cap: '#8a8f96', face: (P, w) => { P(0, 0, w, FACE, '#d8cfc4'); P(0, FACE - 4, w, 4, '#9a8a78'); } },
+    glass: { cap: '#2b2d33', face: (P, w) => { P(0, 0, w, FACE, 'rgba(169,203,216,0.32)'); for (let x = 0; x < w; x += 24) P(x, 0, 2, FACE, '#2b2d33'); P(0, 0, w, 2, '#2b2d33'); P(0, FACE - 3, w, 3, '#2b2d33'); P(0, 11, w, 1, 'rgba(255,255,255,0.4)'); } },
+    frost: { cap: '#9aa3aa', face: (P, w) => { P(0, 0, w, FACE, 'rgba(244,246,246,0.82)'); for (let x = 12; x < w; x += 24) P(x, 3, 1, FACE - 8, '#dfe2e2'); P(0, 0, w, 2, '#9aa3aa'); P(0, FACE - 3, w, 3, '#9aa3aa'); } },
+    pink: { cap: '#8a5a4a', face: (P, w) => { P(0, 0, w, FACE, '#f7dcd2'); for (let x = 0; x < w; x += 8) P(x, 0, 3, FACE, 'rgba(255,255,255,0.35)'); for (let x = 4; x < w; x += 16) { P(x, 8, 3, 2, '#f08c94'); P(x - 1, 9, 5, 2, '#f08c94'); P(x, 11, 3, 1, '#f08c94'); P(x + 8, 20, 2, 2, '#f6c453'); } P(0, FACE - 4, w, 4, '#7b4a2c'); } },
   };
   function hwall(x0, x1, y, style) {
     const st = STY[style], w = x1 - x0;
@@ -53,7 +56,7 @@ export function buildWorld(FONT) {
     W.walls.push(solid(x0, y - 8, w, 8));
   }
   function vwall(x, y0, y1, style) {
-    const st = STY[style === 'glass' ? 'glass' : style];
+    const st = STY[style];
     for (let a = y0; a < y1; a += T) {
       const h = Math.min(T, y1 - a), last = a + h >= y1;
       const [c, g] = mk(8, h + (last ? FACE : 0));
@@ -63,162 +66,78 @@ export function buildWorld(FONT) {
     }
     W.walls.push(solid(x - 4, y0, 8, y1 - y0));
   }
-  // 바깥 경계 (걸을 수 없는 곳)
+  // 바깥 경계 · 걸을 수 없는 곳 (이웃 빌딩 · 건물 뒤 · 차도 · 맛집 건물)
   solid(-T, -T, MW + 2 * T, T); solid(-T, MH, MW + 2 * T, T); solid(-T, 0, T, MH); solid(MW, 0, T, MH);
-  solid(0, 0, t(30), t(45.5)); solid(t(114), 0, MW - t(114), t(45.5)); solid(t(30), 0, t(84), t(3.5));
+  solid(0, 0, X(-20) - 4, Y(0)); solid(X(20) + 4, 0, MW - X(20) - 4, Y(0)); solid(X(-20), 0, X(20) - X(-20), Y(-30) - 8);
+  for (const r of ROAD) { solid(0, r.y0, X(-4.5), r.y1 - r.y0); solid(X(4.5), r.y0, MW - X(4.5), r.y1 - r.y0); }
+  solid(0, Y(32.25) + 4, MW, MH - Y(32.25) - 4);
 
-  // 건물 외벽
-  hwall(t(30), t(114), t(4), 'brick');
-  vwall(t(30), t(4), t(46), 'side'); vwall(t(114), t(4), t(46), 'side');
-  hwall(t(30) + 4, DOOR.x0, t(46), 'glass'); hwall(DOOR.x1, t(114) - 4, t(46), 'glass');
-  // 위층 방들 (아래쪽 벽에 문틈)
-  hwall(t(30) + 4, t(41), t(17), 'plaster'); hwall(t(44), t(47), t(17), 'plaster'); // 회의실
-  vwall(t(47), t(4), t(17), 'plaster');
-  hwall(t(47), t(50), t(17), 'plaster'); hwall(t(56), t(59), t(17), 'plaster'); // 프린터실
-  vwall(t(59), t(4), t(17), 'warm');
-  hwall(t(59), t(65), t(17), 'warm'); hwall(t(69), t(75), t(17), 'warm'); // 불만창고
-  vwall(t(75), t(4), t(17), 'warm');
-  vwall(t(89), t(4), t(24), 'frost'); // 수면실
-  hwall(t(89), t(92), t(24), 'frost'); hwall(t(96), t(114) - 4, t(24), 'frost');
+  // 건물 벽 (3D와 같은 자리)
+  hwall(X(-20), X(20), Y(-30), 'brick');
+  vwall(X(-20), Y(-30), Y(0), 'side'); vwall(X(20), Y(-30), Y(0), 'side');
+  hwall(X(-20) + 4, X(-13.2), Y(0), 'side'); // 불만창고 쪽은 평범한 벽 (밖에서 안 보여요)
+  hwall(X(-13.2), DOOR.x0, Y(0), 'glass'); hwall(DOOR.x1, X(20) - 4, Y(0), 'glass');
+  // 회의실 (안쪽 왼쪽 구석): 유리벽, 문은 오른쪽 끝
+  hwall(X(-20) + 4, X(-13.3), Y(-23.6), 'glass');
+  vwall(X(-11.5), Y(-30), Y(-23.6), 'glass');
+  // 수면실 (안쪽 오른쪽): 반투명 벽, 문은 왼쪽 위 모서리
+  hwall(X(4.6), X(20) - 4, Y(-16), 'frost');
+  vwall(X(2.5), Y(-30), Y(-16), 'frost');
+  // 불만창고 (로비 왼쪽 구석): 하트·별 벽지, 입구는 로비 쪽 커튼
+  hwall(X(-20) + 4, X(-13.2) + 4, Y(-5.8), 'pink');
+  vwall(X(-13.2), Y(-3.9), Y(0), 'pink');
 
   /* ---------- 바닥 ---------- */
   const [floor, fg] = mk(MW, MH);
   const F = (x, y, w, h, c) => R(fg, x, y, w, h, c);
   const pattern = (x0, y0, w, h, step, fn) => { for (let y = y0; y < y0 + h; y += step) for (let x = x0; x < x0 + w; x += step) fn(x, y, ((x - x0) / step + (y - y0) / step) | 0); };
-  // 잔디 · 북악산 쪽
-  F(0, 0, MW, MH, '#6a9a4a');
-  pattern(0, 0, MW, MH, 8, (x, y) => { const r = hash(x, y); if (r < 0.12) F(x + 2, y + 3, 2, 2, '#5a8a3e'); else if (r > 0.93) F(x + 4, y + 1, 1, 2, '#88b85e'); });
-  // 인도 (건물 앞)
-  const sidewalk = (x, y, w, h) => { F(x, y, w, h, '#c9b8a6'); pattern(x, y, w, h, 16, (xx, yy, k) => { F(xx, yy, 16, 16, (k % 3) ? '#d2c2b0' : '#c4b2a0'); F(xx, yy, 16, 1, '#b8a694'); F(xx, yy, 1, 16, '#b8a694'); }); };
-  sidewalk(0, t(44), MW, t(8));
-  // 광화문 앞 돌바닥
-  F(0, t(30), t(30), t(14), '#b8ae9c'); pattern(0, t(30), t(30), t(14), 32, (x, y, k) => { F(x, y, 32, 32, k % 2 ? '#c2b8a6' : '#b8ae9c'); F(x, y, 32, 1, '#a49a88'); F(x, y, 1, 32, '#a49a88'); });
+  F(0, 0, MW, MH, '#4e7a3e'); // 건물 뒤 · 골목 화단
+  pattern(0, 0, MW, Y(0), 8, (x, y) => { const r = hash(x, y); if (r < 0.14) F(x + 2, y + 3, 2, 2, '#406a32'); else if (r > 0.94) F(x + 4, y + 1, 1, 2, '#6a9a4a'); });
+  // 인도 (pavement: 회갈색 보도블록)
+  const pave = (x, y, w, h) => { F(x, y, w, h, '#b9b0a4'); pattern(x, y, w, h, 16, (xx, yy, k) => { F(xx, yy, 16, 8, (k % 3) ? '#c2b9ad' : '#b4aa9e'); F(xx, yy + 8, 16, 8, (k % 2) ? '#bdb4a8' : '#c6bdb1'); F(xx, yy, 16, 1, '#a69c90'); F(xx + ((yy / 8) % 2 ? 8 : 0), yy, 1, 16, '#a69c90'); }); };
+  pave(0, Y(0), MW, Y(5) - Y(0));
+  pave(0, Y(25), MW, Y(32.25) - Y(25));
+  F(0, Y(5) - 3, MW, 3, '#b7afa4'); F(0, Y(25), MW, 3, '#b7afa4'); // 연석
+  // 중앙 광장 (밝은 큰 타일)
+  F(0, Y(11.5), MW, Y(18.5) - Y(11.5), '#f2e6d6');
+  pattern(0, Y(11.5), MW, Y(18.5) - Y(11.5), 32, (x, y, k) => { F(x, y, 32, 32, k % 2 ? '#efe2d0' : '#f5ebdd'); F(x, y, 32, 1, '#ddcfba'); F(x, y, 1, 32, '#ddcfba'); });
+  F(0, Y(11.5), MW, 3, '#b7afa4'); F(0, Y(18.5) - 3, MW, 3, '#b7afa4');
   // 차도
   for (const r of ROAD) {
-    F(0, r.y0, MW, r.y1 - r.y0, '#4a4a52');
-    pattern(0, r.y0, MW, r.y1 - r.y0, 4, (x, y) => { if (hash(x, y) < 0.08) F(x, y, 1, 1, '#56565e'); });
-    F(0, r.y0, MW, 2, '#8a8a90'); F(0, r.y1 - 2, MW, 2, '#8a8a90');
-    for (let x = 0; x < MW; x += 48) F(x, (r.y0 + r.y1) / 2 - 1, 24, 2, '#e8e4dc'); // 차선
+    F(0, r.y0, MW, r.y1 - r.y0, '#45444c');
+    pattern(0, r.y0, MW, r.y1 - r.y0, 4, (x, y) => { if (hash(x, y) < 0.08) F(x, y, 1, 1, '#53525a'); });
   }
-  F(0, t(58), MW, 2, '#f2c14e'); F(0, t(62) - 2, MW, 2, '#f2c14e'); // 중앙선
-  // 중앙 화단 (가운데)
-  F(0, t(58) + 2, MW, t(4) - 4, '#7aa85a');
-  // 건너편 인도 · 공원
-  sidewalk(0, t(68), MW, t(4));
-  F(0, t(72), MW, t(6), '#78a85a');
-  pattern(0, t(72), MW, t(6), 8, (x, y) => { const r = hash(x + 7, y); if (r < 0.1) F(x + 1, y + 2, 2, 2, '#6a9a4a'); else if (r > 0.96) { F(x + 3, y + 3, 2, 2, ['#f6d5d8', '#fff1c4', '#ffffff'][(r * 300 | 0) % 3]); } });
-  F(0, t(75), MW, t(1), '#d2c2b0'); // 공원 산책길
+  for (let x = 0; x < MW; x += 7 * M) { F(x, Y(8.25) - 1, 3 * M, 2, '#e9e5dd'); F(x, Y(21.75) - 1, 3 * M, 2, '#e9e5dd'); } // 차선
   // 횡단보도: 흰 막대가 차가 다니는 방향(가로)으로 길게, 건너는 방향(세로)으로 줄지어
-  for (const cw of CROSSWALKS) {
-    F(cw.x0, t(58), cw.x1 - cw.x0, t(4), '#c9b8a6'); // 중앙 화단 틈 (보행로)
-    for (const r of ROAD) for (let y = r.y0 + 4; y < r.y1 - 4; y += 12) F(cw.x0 + 4, y, cw.x1 - cw.x0 - 8, 6, '#f4f1ea');
-  }
-  // 건물 안 바닥
-  const inside = (x, y, w, h, base, alt, step, line) => { F(x, y, w, h, base); pattern(x, y, w, h, step, (xx, yy, k) => { if (alt && k % 2) F(xx, yy, step, step, alt); if (line) { F(xx, yy, step, 1, line); F(xx, yy, 1, step, line); } }); };
-  inside(t(30), t(2), t(84), t(44), '#e9e2d6', null, 16, '#ddd4c6'); // 기본 (로비 · 홀: 대리석)
-  pattern(t(56), t(17), t(33), t(29), 32, (x, y, k) => { F(x, y, 32, 32, k % 2 ? '#efe9de' : '#e4dccd'); F(x, y, 32, 1, '#d6ccbc'); });
-  inside(t(30), t(17), t(26), t(29), '#9fb0c0', '#a8b8c6', 16, null); // 업무공간 카펫
-  inside(t(30), t(2), t(17), t(15), '#8a9aa8', '#92a2b0', 16, null); // 회의실
-  inside(t(47), t(2), t(12), t(15), '#c8c4bc', null, 16, '#bab6ae'); // 프린터실
-  inside(t(59), t(2), t(16), t(15), '#b07a52', null, 8, null); // 불만창고 (원목)
-  pattern(t(59), t(2), t(16), t(15), 8, (x, y) => F(x, y + 7, 8, 1, '#9a6a44'));
-  inside(t(75), t(2), t(14), t(15), '#f4f1ea', '#e6e2da', 16, null); // 탕비실 타일
-  inside(t(89), t(2), t(25), t(22), '#6a6a8a', '#707092', 16, null); // 수면실 카펫
-  inside(t(89), t(24), t(25), t(22), '#c8925a', null, 8, null); // 라운지 원목
-  pattern(t(89), t(24), t(25), t(22), 8, (x, y, k) => { F(x, y, 8, 1, '#b07a48'); if (k % 2) F(x, y, 1, 8, '#b07a48'); });
-  // 러그
-  const rug = (x, y, w, h, c1, c2) => { F(x, y, w, h, c1); F(x + 4, y + 4, w - 8, h - 8, c2); F(x + 8, y + 8, w - 16, h - 16, c1); };
-  rug(t(99), t(30), t(12), t(9), '#e9c46a', '#f4efe6');
-  rug(t(63), t(8), t(8), t(6), '#c0503a', '#e9a07a');
-  rug(t(68), t(43), t(8), t(3), '#8a4a3a', '#a85a4a'); // 현관 매트
-  rug(t(34), t(7.5), t(11), t(6), '#6a7a8a', '#7a8a9a');
-  // 문턱
-  F(DOOR.x0, t(46) - 8, DOOR.x1 - DOOR.x0, 8, '#9aa3aa');
+  for (const cw of CROSSWALKS) for (const r of ROAD) for (let y = r.y0 + 4; y < r.y1 - 4; y += 12) F(cw.x0 + 4, y, cw.x1 - cw.x0 - 8, 6, '#f0ece4');
+  // 맛집 건물 사이 골목
+  F(0, Y(32.25), MW, MH - Y(32.25), '#3a3438');
+  // 건물 안 바닥 (3D와 같은 재질 · 색)
+  const lobbyTile = (x, y, w, h) => { F(x, y, w, h, '#f3ece2'); pattern(x, y, w, h, 38, (xx, yy, k) => { F(xx, yy, 38, 38, k % 2 ? '#efe6da' : '#f5efe6'); F(xx, yy, 38, 1, '#e0d6c6'); F(xx, yy, 1, 38, '#e0d6c6'); }); };
+  const concrete = (x, y, w, h) => { F(x, y, w, h, '#e9ebee'); pattern(x, y, w, h, 4, (xx, yy) => { const r = hash(xx + 3, yy); if (r < 0.06) F(xx, yy, 2, 2, '#dfe2e6'); else if (r > 0.97) F(xx, yy, 2, 1, '#f4f5f7'); }); pattern(x, y, w, h, 64, (xx, yy) => { F(xx, yy, 64, 1, '#dcdfe3'); F(xx, yy, 1, 64, '#dcdfe3'); }); };
+  const herring = (x, y, w, h, c1, c2, c3) => { F(x, y, w, h, c1); pattern(x, y, w, h, 8, (xx, yy, k) => { if (((xx / 8) + (yy / 8)) % 2) { F(xx, yy, 8, 4, c2); F(xx, yy + 4, 8, 1, c3); } else { F(xx, yy, 4, 8, c2); F(xx + 4, yy, 1, 8, c3); } }); };
+  F(X(-20), Y(-31), X(20) - X(-20), Y(0) - Y(-31), '#e9ebee');
+  concrete(X(-20), Y(-30), X(2.5) - X(-20), Y(-6) - Y(-30));
+  lobbyTile(X(-20), Y(-6), X(2.5) - X(-20), Y(0) - Y(-6));
+  herring(X(2.5), Y(-16), X(20) - X(2.5), Y(0) - Y(-16), '#e2b98a', '#d9ad7c', '#c89a68'); // 휴게실 원목
+  herring(X(2.5), Y(-30), X(20) - X(2.5), Y(-16) - Y(-30), '#a8907e', '#9e8674', '#8a7462'); // 수면실 (어두운 원목)
+  // 러그 · 매트
+  const rug = (x, y, w, h, c1, c2) => { F(x, y, w, h, c1); F(x + 3, y + 3, w - 6, h - 6, c2); F(x + 6, y + 6, w - 12, h - 12, c1); };
+  rug(X(-19.2), Y(-28.6), X(-12.2) - X(-19.2), Y(-24.6) - Y(-28.6), '#5a6a7a', '#6e7e8e'); // 회의실
+  rug(X(-18.8), Y(-3.6), X(-14) - X(-18.8), Y(-0.9) - Y(-3.6), '#e889a0', '#f6c8d4'); // 불만창고
+  rug(X(-2.2), Y(-1.3), X(2.2) - X(-2.2), Y(0) - Y(-1.3) - 2, '#5a4a40', '#6a5a50'); // 현관 매트
+  // 수면실 라벤더 원형 러그
+  { const cx = X(14.2), cy = Y(-22.2), r = 2.6 * M; for (let y = -r; y <= r; y += 1) { const w = Math.round(Math.sqrt(r * r - y * y)); F(cx - w, cy + y, w * 2, 1, Math.abs(y) > r - 3 || false ? '#a894c8' : '#b9a6d9'); } }
   W.floor = floor;
 
-  /* ---------- 회의실 (x 30~47, y 4~17) ---------- */
-  put('tv', t(38.5), t(4) + 2, null, { sortAdd: 2, mount: true });
-  put('whiteb', t(32.8), t(4) + 2, null, { sortAdd: 2, mount: true });
-  put('meetTable', t(38.5), t(11), [-56, -28, 112, 22], { label: 'meetTable' });
-  for (const x of [-36, 0, 36]) { put('chair1', t(38.5) + x, t(8.4), null); seat('meeting', t(38.5) + x, t(8.4) - 2, 0, { chair: true }); }
-  for (const x of [-36, 0, 36]) { put('chairB1', t(38.5) + x, t(12.6), null, { sortAdd: 3 }); seat('meeting', t(38.5) + x, t(12.6) - 3, 1, { chair: true }); }
-  put('plant', t(45.6), t(15.6), [-6, -6, 12, 6]);
-  put('plant', t(31.4), t(15.6), [-6, -6, 12, 6]);
+  /* ---------- 로비 ---------- */
+  put('bigplant', X(-2.4), Y(-1), [-8, -6, 16, 6]);
+  put('bigplant', X(2.4), Y(-1), [-8, -6, 16, 6]);
 
-  /* ---------- 프린터실 (x 47~59) ---------- */
-  [t(48.8), t(51.4), t(54)].forEach((x, i) => {
-    put('printer', x, t(4) + 24, [-13, -14, 26, 14], { printer: i });
-    station('printer', x, t(4) + 38, { label: '🖨️ 출력하기', printer: i });
-  });
-  put('shredder', t(57.2), t(4) + 22, [-8, -12, 16, 12]);
-  station('shredder', t(57.2), t(4) + 36, { label: '🗑️ 문서 파쇄하기' });
-  put('paperShelf', t(52), t(13) + 4, [-15, -10, 30, 10]);
-
-  /* ---------- 불만창고 (x 59~75) — 벽난로 · 곰 인형 ---------- */
-  const fire = put('fireplace', t(67), t(4) + 44, [-28, -16, 56, 16]);
-  W.fire = { x: t(67), y: t(4) + 24 };
-  station('fire', t(67), t(4) + 58, { label: '🔥 스트레스 태우기' });
-  put('teddy', t(61.2), t(4) + 32, [-13, -12, 26, 12]);
-  station('teddy', t(61.2), t(4) + 46, { label: '🧸 꼭 안아주기' });
-  put('beanbag', t(64), t(14), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', t(64), t(14) - 5, 1);
-  put('beanbag2', t(70), t(14), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', t(70), t(14) - 5, 1);
-  put('plant', t(73.6), t(4) + 24, [-6, -6, 12, 6]);
-  W.dims.push({ x: t(59), y: t(2), w: t(16), h: t(15), a: 0.28, col: '#2a1630' });
-  W.glows.push({ x: t(67), y: t(4) + 30, r: 70, col: '255,150,60', a: 0.45, always: true, flicker: true });
-
-  /* ---------- 탕비실 (x 75~89) ---------- */
-  put('counter', t(79.6), t(4) + 30, [-56, -14, 112, 14]);
-  put('coffeeM', t(77.4), t(4) + 22, null, { sortAdd: 9, mount: true });
-  station('coffee', t(77.4), t(4) + 44, { label: '☕ 커피 내리기' });
-  station('sink', t(80.4) + 6, t(4) + 44, { label: '🚰 물 마시기' });
-  put('snackShelf', t(86.3), t(4) + 36, [-15, -12, 30, 12]);
-  station('snack', t(86.3), t(4) + 50, { label: '🍪 간식 꺼내기' });
-  put('hiTable', t(82), t(11.5), [-15, -12, 30, 12]);
-  put('stool', t(79.6), t(11.6), null); seat('stool', t(79.6), t(11.6) - 2, 3);
-  put('stool', t(84.4), t(11.6), null); seat('stool', t(84.4), t(11.6) - 2, 2);
-  put('fridge', t(76.3), t(11), [-13, -12, 26, 12]);
-  put('bins', t(87.9), t(15.4), [-13, -8, 26, 8]);
-
-  /* ---------- 수면실 (x 89~114, y 4~24) ---------- */
-  const bedXs = [t(95), t(100), t(105), t(110)];
-  for (const [row, by] of [[0, t(4) + 54], [1, t(14) + 54]]) {
-    bedXs.forEach((x, i) => {
-      put('bed', x, by, [-17, -48, 34, 48]);
-      station('bed', x, by + 12, { label: '😴 침대에 눕기', bed: { x, y: by - 30 }, id: 'bed' + row + i });
-      W.glows.push({ x, y: by - 50, r: 26, col: ['255,190,120', '200,170,255', '255,170,200', '170,220,255'][(i + row) % 4], a: 0.5, always: true });
-      if (i < 3) put('curtain', x + 40, by, [-3, -12, 6, 12]);
-    });
-  }
-  put('moonlamp', t(91), t(4) + 30, [-6, -6, 12, 6]);
-  W.dims.push({ x: t(89), y: t(2), w: t(25), h: t(22), a: 0.32, col: '#14143a' });
-
-  /* ---------- 라운지 (x 89~114, y 24~46) ---------- */
-  [t(101), t(105), t(109)].forEach((x, i) => { put('shelf', x, t(24) + 6, [-24, -4, 48, 4], { mount: true }); station('book', x, t(24) + 22, { label: '📖 책 꺼내 읽기' }); });
-  put('sofaL', t(105), t(32.5), [-32, -20, 64, 18]);
-  [-20, 0, 20].forEach((dx) => seat('sofa', t(105) + dx, t(32.5) - 8, 0));
-  put('ctable', t(105), t(35.4), [-18, -14, 36, 12]);
-  put('beanbag', t(101.5), t(38.6), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', t(101.5), t(38.6) - 5, 1);
-  put('beanbag2', t(108.5), t(38.6), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', t(108.5), t(38.6) - 5, 1);
-  put('pingpong', t(95), t(42.5), [-30, -32, 60, 30]);
-  station('pp', t(95) - 42, t(42.5) - 14, { label: '🏓 탁구 치기', side: 0 });
-  station('pp', t(95) + 42, t(42.5) - 14, { label: '🏓 탁구 치기', side: 1 });
-  W.pingpong = { x: t(95), y: t(42.5) - 20 };
-  put('bigplant', t(112.4), t(30), [-8, -6, 16, 6]);
-  put('plant', t(90.6), t(27), [-6, -6, 12, 6]);
-
-  /* ---------- 업무공간 (x 30~56, y 17~46) ---------- */
-  // 포스터 벽 (회의실 아래쪽 벽에 반듯하게)
-  ['cheer', 'lunch', 'sports', 'notice'].forEach((k, i) => {
-    const s = posterPixel(k), x = t(31) + 6 + i * 34;
-    W.objects.push({ img: s.c, x, y: t(17) - FACE + 2, sort: t(17) + 1, mount: true, name: 'poster' });
-    W.posters.push({ kind: k, x: x + 12, y: t(17) });
-  });
-  station('poster', t(34.3), t(17) + 18, { label: '🔍 포스터 보기' });
-  W.clocks.push({ x: t(40.3), y: t(17) - FACE + 14, sort: t(17) + 1 });
-  // 책상 섬 (4자리) — 통로 3칸 이상
+  /* ---------- 업무공간: 책상 섬 5개 (3D와 같은 자리) ---------- */
   let chairN = 0;
-  function pod(cx, top) {
-    const L = cx - 15, Rr = cx + 15;
+  function pod(cx, cy) {
+    const top = cy - 38, L = cx - 15, Rr = cx + 15;
     put('chair' + (chairN++ % 6), L, top + 14, null); seat('desk', L, top + 12, 0, { chair: true });
     put('chair' + (chairN++ % 6), Rr, top + 14, null); seat('desk', Rr, top + 12, 0, { chair: true });
     put('deskB', L, top + 38, null); put('deskB', Rr, top + 38, null);
@@ -227,97 +146,177 @@ export function buildWorld(FONT) {
     put('chairB' + (chairN++ % 6), L, top + 72, null, { sortAdd: 3 }); seat('desk', L, top + 69, 1, { chair: true });
     put('chairB' + (chairN++ % 6), Rr, top + 72, null, { sortAdd: 3 }); seat('desk', Rr, top + 69, 1, { chair: true });
   }
-  for (const cx of [t(34.5), t(41.5), t(48.5)]) for (const top of [t(20.5), t(31)]) pod(cx, top);
-  put('water', t(32), t(44.4), [-7, -8, 14, 8]); station('water', t(32), t(44.4) + 4, { label: '💧 물 받기' });
-  put('bigplant', t(54.6), t(19), [-8, -6, 16, 6]);
-  put('plant', t(54.6), t(44.6), [-6, -6, 12, 6]);
-  put('bins', t(36), t(45.2), [-13, -8, 26, 8]);
+  for (const [px, pz] of [[-14.5, -10], [-14.5, -17], [-6.5, -10], [-6.5, -17], [-6.5, -24]]) pod(X(px), Y(pz));
+  // 포스터 벽 (뒷벽, 반듯하게) + 벽시계
+  [['cheer', -8.09], ['lunch', -6.5], ['sports', -4.86], ['notice', -3.3]].forEach(([k, x]) => {
+    const s = posterPixel(k);
+    mount(s.c, X(x), Y(-30) - FACE + 3, Y(-30));
+    W.posters.push({ kind: k, x: X(x) + 11, y: Y(-30) });
+  });
+  station('poster', X(-5.6), Y(-30) + 16, { label: '🔍 포스터 보기', face: 1 });
+  W.clocks.push({ x: X(-2.5) + 6, y: Y(-30) - FACE + 10, sort: Y(-30) + 1 });
+  // 복합기 3대 · 파쇄기 · 정수기 (수면실 벽 앞)
+  [-28.4, -26.8, -25.2].forEach((z, i) => {
+    put('printerS', X(1.85), Y(z) + 9, [-10, -9, 20, 9], { printer: i, label: 'printer' });
+    station('printer', X(0.75), Y(z) + 8, { label: `🖨️ 프린터 ${i + 1}로 출력하기`, printer: i, face: 3 });
+  });
+  put('shredS', X(1.9), Y(-23.4) + 9, [-7, -9, 14, 9]);
+  station('shredder', X(0.75), Y(-23.4) + 8, { label: '✂️ 문서 파쇄하기', face: 3 });
+  put('water', X(1.6), Y(-20.5) + 8, [-7, -8, 14, 8]);
+  station('water', X(1.6), Y(-20.5) + 20, { label: '💧 물 받기', face: 1 });
+  // 업무/휴게 구분 책장 (화분 3개)
+  put('vshelf', X(2.5), Y(-6.5), [-6, -106, 12, 106]);
 
-  /* ---------- 홀 · 로비 (x 56~89) ---------- */
-  put('bigplant', t(72), t(25), [-8, -6, 16, 6]);
-  put('bench', t(68), t(26.4), [-20, -8, 40, 8]); seat('bench', t(68) - 10, t(26.4) - 6, 0); seat('bench', t(68) + 10, t(26.4) - 6, 0);
-  put('bench', t(76), t(26.4), [-20, -8, 40, 8]); seat('bench', t(76) - 10, t(26.4) - 6, 0); seat('bench', t(76) + 10, t(26.4) - 6, 0);
-  put('plant', t(66.2), t(45.4), [-6, -6, 12, 6]); put('plant', t(77.8), t(45.4), [-6, -6, 12, 6]);
-  put('bigplant', t(57.6), t(19), [-8, -6, 16, 6]); put('bigplant', t(87.4), t(19.6), [-8, -6, 16, 6]);
+  /* ---------- 회의실 ---------- */
+  put('tv', X(-15.7), Y(-30) + 2, null, { sortAdd: 2, mount: true });
+  const mtable = sprite(80, 30, (P) => { P(0, 0, 80, 22, '#f2efe8'); P(0, 20, 80, 2, '#d8d2c6'); P(4, 22, 3, 8, '#6e767c'); P(73, 22, 3, 8, '#6e767c'); for (const x of [8, 30, 52]) P(x, 5, 8, 6, '#ffffff'); P(36, 8, 9, 6, '#3a3d42'); });
+  const MT = Y(-26.75) + 15;
+  put(mtable, X(-15.7), MT, [-40, -26, 80, 20], { tag: 'meetTable' });
+  for (const dx of [-24, 0, 24]) { put('chair1', X(-15.7) + dx, MT - 30, null); seat('meeting', X(-15.7) + dx, MT - 32, 0, { chair: true }); }
+  for (const dx of [-24, 0, 24]) { put('chairB1', X(-15.7) + dx, MT + 12, null, { sortAdd: 3 }); seat('meeting', X(-15.7) + dx, MT + 9, 1, { chair: true }); }
+  mount(plaqueSprite('회의실', FONT, '#1f2738', '#e6eef6').c, X(-18.6), Y(-23.6) - FACE + 6, Y(-23.6));
 
-  /* ---------- 바깥: 광화문 · 거리 · 맛집 ---------- */
-  const gate = gateSprite();
-  W.objects.push({ img: gate.c, x: t(14) - gate.ax, y: t(44) - gate.ay, sort: t(44), name: 'gate' });
-  solid(t(14) - 190, t(44) - 40, 380, 40, 'gate');
-  // 동상 (중앙 화단)
+  /* ---------- 탕비 코너 (왼쪽 창가) ---------- */
+  put('vcounter', X(-19.35), Y(-7.6), [-6, -92, 12, 92]);
+  put('coffeeTop', X(-19.35), Y(-8.5) + 6, null, { sortAdd: 1, mount: true });
+  put('snackBox', X(-19.35), Y(-10.4) + 4, null, { sortAdd: 1, mount: true });
+  put('fruit', X(-19.35), Y(-11.45) + 4, null, { sortAdd: 1, mount: true });
+  station('coffee', X(-18.35) + 4, Y(-8.5) + 4, { label: '☕ 커피 뽑기', face: 2 });
+  station('snack', X(-18.35) + 4, Y(-10.4) + 4, { label: '🍪 간식 먹기', face: 2 });
+  station('snack', X(-18.35) + 4, Y(-11.45) + 6, { label: '🍎 사과 먹기', face: 2 });
+  put('bins', X(-18.6), Y(-13.8), [-13, -8, 26, 8]);
+  W.objects.push({ img: plaqueSprite('탕비실', FONT, '#4a2c1a', '#ffe2bd').c, x: X(-19.9) + 6, y: Y(-13.3) - 24, sort: Y(-13.3) + 2, mount: true, name: 'mount' });
+
+  /* ---------- 불만창고 ---------- */
+  put('fireplace', X(-16.4), Y(-5.8) + 44, [-28, -16, 56, 16]);
+  W.fire = { x: X(-16.4), y: Y(-5.8) + 24 };
+  station('fire', X(-16.4), Y(-5.8) + 58, { label: '🔥 스트레스 태우기', face: 1 });
+  put('teddy', X(-18.7), Y(-0.6), [-13, -10, 26, 10]);
+  station('teddy', X(-18.7) + 22, Y(-0.6) - 4, { label: '🧸 꼭 안아주기', face: 2 });
+  put('beanbag2', X(-14.4), Y(-0.9), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', X(-14.4), Y(-0.9) - 5, 1);
+  const neon = sprite(50, 24, (P, g) => { P(24, 12, 2, 12, '#6e767c'); P(0, 0, 50, 13, '#2a1f2d'); P(1, 1, 48, 11, '#3a2430'); g.fillStyle = '#ff8ab0'; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('불만창고', 26, 8); });
+  put(neon, X(-11.6), Y(-3.8), [-2, -3, 4, 3], { label: 'neon' });
+  W.dims.push({ x: X(-20), y: Y(-5.8), w: X(-13.2) - X(-20), h: Y(0) - Y(-5.8), a: 0.18, col: '#3a1630' });
+  W.glows.push({ x: X(-16.4), y: Y(-5.8) + 30, r: 60, col: '255,150,60', a: 0.45, always: true, flicker: true });
+  for (let i = 0; i < 6; i++) W.glows.push({ x: X(-19.4) + i * 18, y: Y(-5.8) - 20, r: 10, col: ['255,200,120', '255,160,200', '200,220,255'][i % 3], a: 0.8, always: true });
+
+  /* ---------- 휴게실 (오른쪽 앞) ---------- */
+  const LX = X(11), LY = Y(-8.5);
+  put('sofaTop', LX, LY - 28, [-38, -14, 76, 12]);
+  put('sofaLeft', LX - 47, LY + 16, [-9, -44, 18, 42]);
+  put('sofaRight', LX + 47, LY + 16, [-9, -44, 18, 42]);
+  for (const dx of [-27, -9, 9, 27]) seat('lounge', LX + dx, LY - 34, 0);
+  for (const dy of [-16, 4]) { seat('lounge', LX - 45, LY + dy, 3); seat('lounge', LX + 45, LY + dy, 2); }
+  put('rtable', LX, LY + 8, [-15, -12, 30, 10]);
+  put('beanbag', X(15.9), Y(-8.1), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', X(15.9), Y(-8.1) - 5, 1);
+  put('ottoman', X(15.4), Y(-6.0), [-7, -6, 14, 6]);
+  // 주방 카운터 (오른쪽 벽)
+  put('vcounter', X(19.2), Y(-4.2), [-6, -92, 12, 92]);
+  put('coffeeTop', X(19.2), Y(-5) + 6, null, { sortAdd: 1, mount: true });
+  put('fruit', X(19.2), Y(-6.8) + 4, null, { sortAdd: 1, mount: true });
+  station('coffee', X(18.3) - 4, Y(-5) + 4, { label: '☕ 커피 뽑기', face: 3 });
+  station('snack', X(18.3) - 4, Y(-6.8) + 6, { label: '🍎 사과 먹기', face: 3 });
+  // 탁구대
+  put('pingpong', X(9.5), Y(-2.8) + 17, [-30, -30, 60, 28]);
+  station('pp', X(9.5) - 42, Y(-2.8) + 4, { label: '🏓 탁구 치기', side: 0 });
+  station('pp', X(9.5) + 42, Y(-2.8) + 4, { label: '🏓 탁구 치기', side: 1 });
+  W.pingpong = { x: X(9.5), y: Y(-2.8) - 2 };
+  // 줄조명 · 링 펜던트
+  for (let i = 0; i < 9; i++) W.glows.push({ x: X(4) + i * 28, y: Y(-14.5) + Math.sin(i) * 4, r: 9, col: '255,210,140', a: 0.7, always: true });
+  W.glows.push({ x: LX, y: LY - 4, r: 46, col: '255,200,140', a: 0.3, always: true });
+  mount(plaqueSprite('휴게실', FONT, '#6a3a20', '#ffe2bd').c, X(12), Y(-16) - FACE + 6, Y(-16));
+
+  /* ---------- 수면실 ---------- */
+  [6.2, 9.6, 13.0, 16.4].forEach((x, i) => {
+    const bx = X(x), base = Y(-28.5) + 18;
+    put('bedS' + i, bx, base, [-11, -36, 22, 36]);
+    station('bed', bx, base + 12, { label: '😴 침대에 눕기', bed: { x: bx, top: base - 37, col: ['#9bbf6a', '#f2b84b', '#e8907a', '#b9a6d9'][i] }, face: 1 });
+    if (i < 3) put('curtainS', X(x + 1.7), base - 2, [-2, -6, 4, 6]);
+    W.glows.push({ x: bx, y: base - 8, r: 26, col: '255,190,120', a: 0.4, always: true });
+  });
+  put('reclinerA', X(12.8), Y(-21.8) + 10, [-8, -12, 16, 12]); seat('recline', X(12.8), Y(-21.8) + 2, 0);
+  put('reclinerB', X(16.4), Y(-21.6) + 10, [-8, -12, 16, 12]); seat('recline', X(16.4), Y(-21.6) + 2, 0);
+  put('beanbag2', X(4.9), Y(-24.6), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', X(4.9), Y(-24.6) - 5, 1);
+  put('moonlamp', X(19.1), Y(-16.8), [-6, -6, 12, 6]);
+  mount(plaqueSprite('수면실', FONT, '#3a3a5a', '#e6e3ee').c, X(6.4), Y(-16) - FACE + 6, Y(-16));
+  W.dims.push({ x: X(2.5), y: Y(-30) - 40, w: X(20) - X(2.5), h: Y(-16) - Y(-30) + 40, a: 0.3, col: '#1a1840' });
+  for (let i = 0; i < 14; i++) W.glows.push({ x: X(3.5) + hash(i, 1) * (X(19.5) - X(3.5)), y: Y(-29.5) + hash(i, 2) * (Y(-16.5) - Y(-29.5)), r: 5, col: '255,250,220', a: 0.9, always: true, twinkle: i });
+
+  /* ---------- 바깥: 이웃 빌딩 · 거리 · 맛집 ---------- */
+  const nb1 = neighborSprite(X(-24) - 2, Y(0) - 20, '#46505c', '#b9ab98');
+  W.objects.push({ img: nb1.c, x: -1, y: 20 - 1, sort: Y(0) - 1, name: 'neighbor' });
+  const nb2 = neighborSprite(MW - X(24), Y(0) - 20, '#3d3836', '#8e5a46');
+  W.objects.push({ img: nb2.c, x: X(24) - 1, y: 20 - 1, sort: Y(0) - 1, name: 'neighbor' });
+  // 골목 화단 (건물과 이웃 빌딩 사이)
+  for (const x0 of [X(-24), X(20) + 4]) {
+    const w = X(-20) - 4 - X(-24);
+    const s = sprite(w, 16, (P) => { P(0, 4, w, 12, '#8a8f96'); P(1, 0, w - 2, 7, '#5aa04a'); for (let x = 2; x < w - 2; x += 5) P(x, 1, 2, 2, '#7cc05a'); });
+    W.objects.push({ img: s.c, x: x0 - 1, y: Y(0) - 17, sort: Y(0) - 1, name: 'planter' });
+  }
+  // 은행나무 · 가로등 (3D와 같은 간격)
+  const treeAt = (x, z) => put('ginkgo', X(x), Y(z), [-4, -5, 8, 5], { tree: true });
+  const lampAt = (x, z) => { put('lamp', X(x), Y(z), [-3, -4, 6, 4]); W.glows.push({ x: X(x), y: Y(z) - 50, r: 56, col: '255,210,140', a: 0.55, lamp: true }); };
+  for (const x of [-37, -28, -19, -10, 8, 17, 26, 35]) treeAt(x, 4.3);
+  for (const x of [-32.5, -14.5, 12.5, 30.5]) lampAt(x, 4.6);
+  for (const x of [-36, -26, -16, 14, 24, 34]) treeAt(x, 27);
+  for (const x of [-31, -21, 19, 29]) lampAt(x, 25.6);
+  for (const x of [-28, -16, 8, 20, 32]) treeAt(x, 12.8);
+  for (const x of [-22, -10, 14, 26, 38]) treeAt(x, 17.8);
+  for (const x of [-28, -16, 8, 20, 32]) put('flowerBed', X(x), Y(15.3), [-15, -8, 30, 8], { label: 'flowerBed' });
+  // 금빛 동상 (중앙 광장)
   const statue = sprite(36, 56, (P) => {
     P(2, 36, 32, 20, '#a59b8d'); P(0, 34, 36, 4, '#8f8578'); P(4, 52, 28, 4, '#8f8578');
     const gd = '#d9a84a', gd2 = '#b8862e';
     P(8, 22, 20, 14, gd); P(10, 10, 16, 14, gd); P(13, 2, 10, 10, gd); P(14, 0, 8, 3, gd2); P(10, 26, 16, 2, gd2); P(6, 18, 6, 10, gd2); P(24, 16, 6, 12, gd2);
   });
-  W.objects.push({ img: statue.c, x: t(14) - statue.ax, y: t(61) - statue.ay, sort: t(61), name: 'statue' });
-  solid(t(14) - 18, t(61) - 14, 36, 14, 'statue');
-  // 중앙 화단 울타리 (횡단보도 틈만 열려 있어요)
-  let hx = 0;
-  const gaps = [...CROSSWALKS.map((c) => [c.x0, c.x1]), [t(14) - 20, t(14) + 20]].sort((a, b) => a[0] - b[0]);
-  for (const [g0, g1] of gaps) { hedge(hx, g0); hx = g1; }
-  hedge(hx, MW);
-  function hedge(x0, x1) {
-    if (x1 - x0 < 8) return;
-    for (let a = x0; a < x1; a += 64) {
-      const w = Math.min(64, x1 - a);
-      const s = sprite(w, 14, (P) => { P(0, 0, w, 14, '#4e8a3e'); P(0, 0, w, 3, '#6aa84a'); for (let x = 2; x < w; x += 6) P(x, 4 + (x % 4), 2, 2, '#3e7a30'); for (let x = 4; x < w; x += 16) P(x, 2, 3, 3, ['#f6d5d8', '#fff1c4', '#e889a0'][(x / 16 | 0) % 3]); });
-      W.objects.push({ img: s.c, x: a - 1, y: t(60.5) - 14, sort: t(60.5), name: 'hedge', low: true });
-    }
-    solid(x0, t(58.5), x1 - x0, t(3), 'hedge');
-  }
-  // 은행나무 · 가로등 (건물 앞 인도: y 46~52)
-  const treeAt = (x, y) => { put('ginkgo', x, y, [-4, -5, 8, 5], { tree: true }); };
-  const lampAt = (x, y) => { put('lamp', x, y, [-3, -4, 6, 4]); W.glows.push({ x, y: y - 50, r: 56, col: '255,210,140', a: 0.55, lamp: true }); };
-  for (let x = t(36); x < t(146); x += t(10)) {
-    if (CROSSWALKS.some((c) => x > c.x0 - 30 && x < c.x1 + 30) || (x > DOOR.x0 - 40 && x < DOOR.x1 + 40)) continue;
-    if (x > t(115) && x < t(149)) continue; // 맛집 앞은 테라스 자리
-    treeAt(x, t(51.4));
-  }
-  for (const x of [t(41), t(61), t(83), t(103), t(121.75), t(140.5)]) lampAt(x, t(51.6));
-  for (let x = t(4); x < t(148); x += t(12)) { if (CROSSWALKS.some((c) => x > c.x0 - 30 && x < c.x1 + 30)) continue; treeAt(x, t(71.6)); }
-  for (const x of [t(10), t(34), t(58), t(86), t(110), t(140)]) lampAt(x, t(71.8));
-  put('busstop', t(96), t(71.2), [-23, -8, 46, 8]); seat('bench', t(96) - 10, t(71.2) - 6, 0, { busstop: true }); seat('bench', t(96) + 10, t(71.2) - 6, 0, { busstop: true });
-  put('hydrant', t(62), t(51.2), [-4, -4, 8, 4]);
-  put('bench', t(55), t(47.2), [-20, -8, 40, 8]); seat('bench', t(55) - 10, t(47.2) - 6, 0); seat('bench', t(55) + 10, t(47.2) - 6, 0);
-  // 공원 벤치
-  for (const x of [t(20), t(48), t(84), t(118)]) { put('bench', x, t(74.6), [-20, -8, 40, 8]); seat('bench', x - 10, t(74.6) - 6, 0); seat('bench', x + 10, t(74.6) - 6, 0); }
-  // 맛집 거리 (x 116~148): 가게 정면이 길 쪽
+  put(statue, X(-36), Y(15.6), [-18, -14, 36, 14], { label: 'statue' });
+  put('roadSign', X(-6.2), Y(4.6), [-2, -3, 4, 3], { label: 'roadSign' });
+  put('bench', X(-23.5), Y(2.2), [-20, -8, 40, 8]); seat('bench', X(-23.5) - 10, Y(2.2) - 6, 0); seat('bench', X(-23.5) + 10, Y(2.2) - 6, 0);
+  put('bench', X(-4), Y(16.6), [-20, -8, 40, 8], { label: 'bench2' }); // 중앙 광장 쉼터 (횡단보도 옆)
+  W.seats.push({ id: 'bench_m0', kind: 'bench', x: X(-4) - 10, y: Y(16.6) - 6, dir: 0 }, { id: 'bench_m1', kind: 'bench', x: X(-4) + 10, y: Y(16.6) - 6, dir: 0 });
+  // 맞은편 맛집 거리 (정면이 길 쪽)
   SHOPS.forEach((shop, i) => {
-    const w = 96, x0 = t(116.5) + i * (w + 4);
-    const s = shopSprite(shop, w, FONT);
-    W.objects.push({ img: s.c, x: x0 - 1, y: t(46) - 152, sort: t(46) - 1, name: 'shop' });
-    solid(x0, t(46) - 44, w, 44 - 2, 'shop');
-    station('shop', x0 + w - 23, t(46) + 10, { label: `🛍️ ${shop.name} 주문`, shop: i });
-    W.glows.push({ x: x0 + w / 2 - 10, y: t(46) - 22, r: 46, col: '255,210,150', a: 0.5, window: true });
+    const x0 = X(Math.max(-40.5, shop.x0)), x1 = X(Math.min(40.5, shop.x0 + shop.w)), w = x1 - x0;
+    const s = shopSprite(shop, w, MH - Y(32.25), FONT);
+    W.objects.push({ img: s.c, x: x0 - 1, y: Y(32.25) - 1, sort: Y(32.25), name: 'shop' });
+    const door = x1 - 12;
+    station('shop', door, Y(32.25) - 6, { label: `🛍️ ${shop.name} 주문`, shop: i, face: 0 });
+    W.glows.push({ x: (x0 + x1) / 2, y: Y(32.25) + 18, r: 40, col: '255,210,150', a: 0.55, window: true });
     // 테라스: 둥근 탁자 + 의자 2개
-    const tx = x0 + 34, ty = t(49.2);
-    put(ttable(), tx, ty, [-9, -6, 18, 6], { tag: 'ttable' });
-    put('stool', tx - 20, ty, null); seat('terrace', tx - 20, ty - 2, 3, { shop: i });
-    put('stool', tx + 20, ty, null); seat('terrace', tx + 20, ty - 2, 2, { shop: i });
+    const tx = x0 + Math.min(w * 0.42, w - 40), ty = Y(29.8);
+    if (tx - 26 > 6 && tx + 26 < MW - 6) {
+      put(ttable(), tx, ty, [-9, -6, 18, 6], { tag: 'ttable', label: 'ttable' });
+      put('stool', tx - 20, ty, null); seat('terrace', tx - 20, ty - 2, 3, { shop: i });
+      put('stool', tx + 20, ty, null); seat('terrace', tx + 20, ty - 2, 2, { shop: i });
+    }
+    if (door - 30 > 6) put('menuBoard', door - 26, Y(31.6), [-5, -3, 10, 3]);
   });
   function ttable() { return (W._tt ||= sprite(20, 20, (P) => { P(0, 0, 20, 8, '#f4f1ea'); P(0, 6, 20, 2, '#c8c2b8'); P(9, 8, 2, 10, '#3a3d42'); P(5, 18, 10, 2, '#3a3d42'); P(7, 2, 4, 3, '#e889a0'); })); }
+  // 맛집 거리 줄조명
+  for (let x = 12; x < MW; x += 26) W.glows.push({ x, y: Y(31.8) + Math.sin(x) * 2, r: 8, col: '255,200,130', a: 0.8, lamp: true });
+
+  /* ---------- 고양이 길 (미터) ---------- */
+  const cr = (pts) => W.catRoutes.push(pts.map(([x, z]) => [X(x), Y(z)]));
+  cr([[-30, 2.2], [-12, 2.2], [-12, 3.6], [-30, 3.6]]);
+  cr([[8, 13.6], [30, 13.6], [30, 16.6], [8, 16.6]]);
+  cr([[-34, 26], [-12, 26], [-12, 28.4], [-34, 28.4]]);
+  cr([[10, 26.2], [34, 26.2], [34, 28.2], [10, 28.2]]);
 
   /* ---------- 구역 (말하기 문구 · 음악) ---------- */
-  const Z = (id, name, x, y, w, h, phr, music) => W.zones.push({ id, name, x, y, w, h, phr, music });
-  Z('meeting', '회의실', t(30), t(2), t(17), t(15), 'meeting', 'office');
-  Z('print', '프린터실', t(47), t(2), t(12), t(15), 'work', 'office');
-  Z('vent', '불만창고', t(59), t(2), t(16), t(15), 'vent', 'vent');
-  Z('tangbi', '탕비실', t(75), t(2), t(14), t(15), 'lounge', 'office');
-  Z('nap', '수면실', t(89), t(2), t(25), t(22), 'nap', 'nap');
-  Z('lounge', '라운지', t(89), t(24), t(25), t(22), 'lounge', 'lounge');
-  Z('work', '업무공간', t(30), t(17), t(26), t(29), 'work', 'office');
-  Z('lobby', '로비', t(56), t(17), t(33), t(29), 'lobby', 'office');
-  Z('food', '맛집 거리', t(115), t(44), t(35), t(8), 'food', 'food');
-  Z('gate', '광화문', 0, t(30), t(30), t(22), 'street', 'street');
-  Z('park', '공원', 0, t(72), MW, t(6), 'street', 'street');
-  Z('street', '광화문 거리', 0, 0, MW, MH, 'street', 'street');
+  const Z = (id, name, x0, z0, x1, z1, phr, music) => W.zones.push({ id, name, x: X(x0), y: Y(z0), w: X(x1) - X(x0), h: Y(z1) - Y(z0), phr, music });
+  Z('vent', '불만창고', -20, -5.8, -13.2, 0, 'vent', 'vent');
+  Z('meeting', '회의실', -20, -30, -11.5, -23.6, 'meeting', 'work');
+  Z('nap', '수면실', 2.5, -30, 20, -16, 'nap', 'nap');
+  Z('lounge', '휴게실', 2.5, -16, 20, 0, 'lounge', 'lounge');
+  Z('lobby', '로비', -13.2, -6, 2.5, 0, 'lobby', 'lobby');
+  Z('work', '업무공간', -20, -30, 2.5, -6, 'work', 'work');
+  Z('food', '맛집 거리', -40.5, 25, 40.5, 43, 'food', 'food');
+  Z('street', '광화문 거리', -40.5, -33, 40.5, 43, 'street', 'street');
 
-  /* ---------- 순간이동 ---------- */
+  /* ---------- 순간이동 (3D와 같은 곳) ---------- */
   W.spots = [
-    ['🚪 로비', t(72), t(42)], ['💻 업무공간', t(38), t(28.6)], ['💼 회의실', t(38.5), t(15)], ['🖨️ 프린터실', t(53), t(9.6)],
-    ['🔥 불만창고', t(67), t(11.2)], ['☕ 탕비실', t(82), t(14.6)], ['😴 수면실', t(91.4), t(12)], ['🛋️ 라운지', t(97), t(34)],
-    ['🌳 광화문 거리', t(72), t(48.6)], ['🍜 맛집 거리', t(132), t(51)], ['🏯 광화문', t(14), t(48)], ['🌷 공원', t(66), t(76.4)],
+    ['🏙️ 광화문 거리', X(0), Y(3.4)], ['🚪 로비', X(0), Y(-4.2)], ['💻 업무공간', X(-2.2), Y(-13.5)], ['🛋️ 휴게실', X(6.4), Y(-5.6)],
+    ['🛏️ 수면실', X(5.4), Y(-18.6)], ['🍰 맛집 거리', X(-9), Y(28.6)], ['🔥 불만창고', X(-15.6), Y(-1.9)],
   ];
   return W;
 }

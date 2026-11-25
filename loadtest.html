@@ -118,7 +118,7 @@
   function makeBot(i) {
     const id = 'bot' + rid();
     const topic = base + id;
-    const bot = { id, topic, seq: 0, ps: 0, clients: [], timers: [], x: 1300 + Math.random() * 440, y: 760 + Math.random() * 48, dir: Math.random() < 0.5 ? 1 : -1, sayN: 0, say: null, design: i % 5 };
+    const bot = { id, topic, seq: 0, ps: 0, clients: [], timers: [], x: 340 + Math.random() * 600, y: 548 + Math.random() * 40, dir: Math.random() < 0.5 ? 1 : -1, sayN: 0, say: null, design: i % 5 };
     const pub = (a, d) => { const msg = JSON.stringify({ a, s: ++bot.seq, d }); for (const c of bot.clients) if (c.connected) c.publish(topic, msg, { qos: 0 }); };
     bot.pub = pub;
     for (const url of BROKERS) {
@@ -131,7 +131,7 @@
     const step = () => {
       const now = performance.now(), dt = Math.min(0.5, (now - last) / 1000); last = now;
       bot.x += bot.dir * 50 * dt;
-      if (bot.x > 1760 || bot.x < 1290) bot.dir *= -1;
+      if (bot.x > 950 || bot.x < 330) bot.dir *= -1;
       if (Math.random() < 0.02) { bot.sayN++; bot.say = { t: PHRASES[(i + bot.sayN) % PHRASES.length], n: bot.sayN }; }
       const d = { v: 2, n: '봇' + (i + 1), d: bot.design, x: Math.round(bot.x), y: Math.round(bot.y), f: bot.dir > 0 ? 3 : 2, vx: bot.dir * 50, vy: 0, s: null, lt: Date.now(), ps: ++bot.ps };
       if (bot.say) d.say = bot.say;

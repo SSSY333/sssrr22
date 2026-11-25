@@ -30,8 +30,8 @@ const PHRASES = {
 };
 const POKE_FROM = ['콕! 👉', '안녕~ 콕콕!', '나 여기 있어요!', '뭐 해~?', '톡톡!'];
 const POKE_TO = ['앗, 깜짝이야! 😳', '누구야~?', '간지러워 ㅋㅋㅋ', '반가워요! 👋', '헉!', '왜 불러~?', '히힛 😆'];
-const SEAT_LABEL = { desk: '💻 앉아서 일하기', meeting: '💼 회의 자리에 앉기', sofa: '🛋️ 소파에 앉기', beanbag: '☁️ 빈백에 기대기', bench: '🪑 벤치에 앉기', terrace: '☕ 테라스에 앉기', stool: '🪑 의자에 앉기' };
-const SEAT_PHR = { desk: 'work', meeting: 'meeting', sofa: 'lounge', beanbag: 'lounge', bench: 'street', terrace: 'cafe', stool: 'lounge' };
+const SEAT_LABEL = { desk: '💻 앉아서 일하기', meeting: '💼 회의 자리에 앉기', sofa: '🛋️ 소파에 앉기', lounge: '🛋️ 원형 소파에 앉기', recline: '💺 리클라이너에 눕듯 앉기', beanbag: '☁️ 빈백에 기대기', bench: '🪑 벤치에 앉기', terrace: '☕ 테라스에 앉기', stool: '🪑 의자에 앉기' };
+const SEAT_PHR = { desk: 'work', meeting: 'meeting', sofa: 'lounge', lounge: 'lounge', recline: 'nap', beanbag: 'lounge', bench: 'street', terrace: 'cafe', stool: 'lounge' };
 
 /* ---------- 화면 ---------- */
 const canvas = document.createElement('canvas');
@@ -138,11 +138,8 @@ function catSprites(body, patch) {
   return { right: r, left: r.map(flipX), sitR: s, sitL: flipX(s) };
 }
 const CATS = [
-  { col: '#f2a65a', patch: '#ffffff', route: [[T * 92, T * 28], [T * 98, T * 28], [T * 98, T * 44], [T * 92, T * 44]] },
-  { col: '#2a2a30', patch: '#f4f1ea', route: [[T * 58, T * 22], [T * 86, T * 22], [T * 86, T * 30], [T * 58, T * 30]] },
-  { col: '#9aa3aa', patch: null, route: [[T * 80, T * 48.4], [T * 112, T * 48.4], [T * 112, T * 50], [T * 80, T * 50]] },
-  { col: '#f4efe6', patch: '#c08a5a', route: [[T * 30, T * 74], [T * 70, T * 74], [T * 70, T * 76.4], [T * 30, T * 76.4]] },
-].map((c, i) => {
+  { col: '#f2a65a', patch: '#ffffff' }, { col: '#2a2a30', patch: '#f4f1ea' }, { col: '#9aa3aa', patch: null }, { col: '#f4efe6', patch: '#c08a5a' },
+].map((c, i) => ({ ...c, route: W.catRoutes[i % W.catRoutes.length] })).map((c, i) => {
   const segs = []; let L = 0;
   for (let k = 0; k < c.route.length; k++) { const a = c.route[k], b = c.route[(k + 1) % c.route.length]; const d = Math.hypot(b[0] - a[0], b[1] - a[1]); segs.push({ a, b, d, t0: L }); L += d / 16 + 3; }
   return { ...c, i, segs, period: L, spr: catSprites(c.col, c.patch), x: c.route[0][0], y: c.route[0][1], face: 1, moving: false, petUntil: 0, hearts: 0 };
@@ -298,7 +295,7 @@ function standUp() {
   if (!me.seat && !me.bed) return;
   const s = me.seat, b = me.bed;
   me.seat = null; me.bed = null;
-  if (s) { me.y = s.y + 12; if (s.dir === 1) me.y = s.y + 10; if (s.dir === 0) me.y = s.y + 12; if (s.dir >= 2) { me.x = s.x + (s.dir === 2 ? 14 : -14); me.y = s.y + 2; } }
+  if (s) { if (s.dir === 0) me.y = s.y + 14; else if (s.dir === 1) me.y = s.y + 10; else { me.x = s.x + (s.dir === 2 ? -16 : 16); me.y = s.y + 4; } }
   if (b) { me.x = b.x; me.y = b.y; }
   unstick();
   sendPresence(true); refreshContext(true);
@@ -338,23 +335,24 @@ function doFx(A, k, a, r) { // 모두에게 똑같이 보이는 효과
 function useStation(st) {
   me.path = null;
   const fxNow = (k, a, r) => { me.fx = { n: ++me.fxN, k, a, r }; doFx(me, k, a, r); sendPresence(true); };
-  if (st.kind === 'coffee') { me.dir = 1; me.act = 'brew'; me.actUntil = performance.now() + 1400; fxNow('coffee', st.id); setTimeout(() => { holdItem('coffee', 40); if (Math.random() < 0.6) sayLine(me, '커피 수혈 필요…☕'); sendPresence(true); }, 1400); }
-  else if (st.kind === 'snack') { me.dir = 1; holdItem('snack', 25); fxNow('snack', st.id); if (Math.random() < 0.6) sayLine(me, '이 과자 맛있다!'); }
-  else if (st.kind === 'water' || st.kind === 'sink') { me.dir = 1; holdItem('water', 25); fxNow('water', st.id); }
+  const face = st.face ?? 1;
+  if (st.kind === 'coffee') { me.dir = face; me.act = 'brew'; me.actUntil = performance.now() + 1400; fxNow('coffee', st.id); setTimeout(() => { holdItem('coffee', 40); if (Math.random() < 0.6) sayLine(me, '커피 수혈 필요…☕'); sendPresence(true); }, 1400); }
+  else if (st.kind === 'snack') { me.dir = face; holdItem('snack', 25); fxNow('snack', st.id); if (Math.random() < 0.6) sayLine(me, '이 과자 맛있다!'); }
+  else if (st.kind === 'water' || st.kind === 'sink') { me.dir = face; holdItem('water', 25); fxNow('water', st.id); }
   else if (st.kind === 'printer') {
-    me.dir = 1; const r = Math.random(), res = r < 0.55 ? 'ok' : r < 0.8 ? 'jam' : 'run';
+    me.dir = face; const r = Math.random(), res = r < 0.55 ? 'ok' : r < 0.8 ? 'jam' : 'run';
     fxNow('print', st.id, { i: st.printer, r: res });
     if (res === 'ok') setTimeout(() => { holdItem('paper', 30); sendPresence(true); }, 1500);
     if (res === 'jam') setTimeout(() => sayLine(me, '앗 종이 걸렸다! 😵'), 900);
     if (res === 'run') setTimeout(() => sayLine(me, '으악 멈춰!! 🖨️💨'), 600);
   }
-  else if (st.kind === 'shredder') { me.dir = 1; if (me.hold === 'paper') me.hold = null; fxNow('shred', st.id); }
-  else if (st.kind === 'fire') { me.dir = 1; openVent(); }
-  else if (st.kind === 'teddy') { me.dir = 1; fxNow('hug', st.id); setTimeout(() => sayLine(me, '곰돌아 고마워 🧸'), 500); }
-  else if (st.kind === 'book') { me.dir = 1; holdItem('book', 60); sfxAt('paper', me); }
+  else if (st.kind === 'shredder') { me.dir = face; if (me.hold === 'paper') me.hold = null; fxNow('shred', st.id); }
+  else if (st.kind === 'fire') { me.dir = face; openVent(); }
+  else if (st.kind === 'teddy') { me.dir = face; fxNow('hug', st.id); setTimeout(() => sayLine(me, '곰돌아 고마워 🧸'), 500); }
+  else if (st.kind === 'book') { me.dir = face; holdItem('book', 60); sfxAt('paper', me); }
   else if (st.kind === 'poster') { openPosters(); }
-  else if (st.kind === 'shop') { me.dir = 1; const sh = SHOPS[st.shop]; holdItem(sh.item, 45); fxNow('shop', st.id); setTimeout(() => sayLine(me, pick(PHRASES[sh.phr])), 600); }
-  else if (st.kind === 'bed') { me.bed = { x: st.x, y: st.y, bx: st.bed.x, by: st.bed.y }; me.seat = null; me.hold = null; sfxAt('pop', me, 0.7); }
+  else if (st.kind === 'shop') { me.dir = face; const sh = SHOPS[st.shop]; holdItem(sh.item, 45); fxNow('shop', st.id); setTimeout(() => sayLine(me, pick(PHRASES[sh.phr])), 600); }
+  else if (st.kind === 'bed') { me.bed = { x: st.x, y: st.y, bx: st.bed.x, top: st.bed.top, col: st.bed.col, st: st.id }; me.seat = null; me.hold = null; sfxAt('pop', me, 0.7); }
   else if (st.kind === 'pp') { me.x = st.x; me.y = st.y; me.dir = st.side ? 2 : 3; me.playing = !me.playing; holdItem(me.playing ? 'paddle' : null, 600); if (me.playing && Math.random() < 0.5) sayLine(me, pick(PHRASES.pingpong)); }
   sendPresence(true); refreshContext(true);
 }
@@ -440,7 +438,7 @@ function applyRemote(p) {
   A.dir = num(pr.f, 0, 3) | 0;
   A.seat = typeof pr.s === 'string' ? seatById.get(pr.s) || null : null;
   const bs = typeof pr.b === 'string' ? stById.get(pr.b) : null;
-  A.bed = bs && bs.bed ? { x: bs.x, y: bs.y, bx: bs.bed.x, by: bs.bed.y, st: bs.id } : null;
+  A.bed = bs && bs.bed ? { x: bs.x, y: bs.y, bx: bs.bed.x, top: bs.bed.top, col: bs.bed.col, st: bs.id } : null;
   A.hold = typeof pr.h === 'string' && ITEMS[pr.h] ? pr.h : null;
   A.playing = !!pr.p;
   if (pr.say && pr.say.n !== R2.sayN) { R2.sayN = pr.say.n; if (typeof pr.say.t === 'string') sayLine(A, pr.say.t); }
@@ -514,7 +512,8 @@ function updateMe(dt) {
   if (now - lastSent > 2000) sendPresence(true);
   // 구역 바뀌면 음악 바꾸기
   const z = zoneAt(me.x, me.y);
-  if (z !== me.zone) { me.zone = z; audio.setZone(z.music); if (!$('#phrases').hidden) buildPhrases(); }
+  const mz = z.music === 'street' && TOD.night > 0.5 ? 'streetNight' : z.music;
+  if (z !== me.zone || mz !== me.mz) { me.zone = z; me.mz = mz; audio.setZone(mz); if (!$('#phrases').hidden) buildPhrases(); }
 }
 
 /* ---------- 시간 (서울) ---------- */
@@ -541,10 +540,12 @@ function drawChar(A, now) {
   const hop = A.hop > 0 ? -Math.abs(Math.sin(A.hop * 12)) * 4 : 0;
   if (A.bed) {
     img = sh.sleep;
-    ctx.drawImage(img, Math.round(A.bed.bx - CW / 2), Math.round(A.bed.by - 11));
+    const bx = A.bed.bx, tp = A.bed.top;
+    ctx.drawImage(img, Math.round(bx - CW / 2), Math.round(tp + 3));
     // 이불 덮기 (머리만 베개 위로)
-    R(ctx, A.bed.bx - 16, A.bed.by + 3, 32, 23, '#8fb8de'); R(ctx, A.bed.bx - 16, A.bed.by + 3, 32, 3, '#b8d4ee');
-    for (let y = A.bed.by + 9; y < A.bed.by + 26; y += 6) R(ctx, A.bed.bx - 16, y, 32, 1, '#7aa4cc');
+    const bl = A.bed.col || '#8fb8de';
+    R(ctx, bx - 10, tp + 16, 20, 19, bl); R(ctx, bx - 10, tp + 16, 20, 2, '#ffffff55');
+    for (let y = tp + 22; y < tp + 35; y += 5) R(ctx, bx - 10, y, 20, 1, '#00000022');
     return;
   }
   if (A.seat) img = sh.sit[A.dir];
@@ -634,7 +635,7 @@ function render(now) {
   const x0 = cx - 400, x1 = cx + VW + 400, y0 = cy - 40, y1 = cy + VH + 300;
   const list = [];
   for (const o of W.objects) { if (o.sort < y0 || o.y > y1 || o.x > x1 || o.x + o.img.width < x0) continue; list.push(o); }
-  for (const A of everyone()) list.push({ sort: A.seat ? (A.dir === 1 ? A.y : A.y + 12) : A.bed ? A.bed.by + 31 : A.y, A });
+  for (const A of everyone()) list.push({ sort: A.seat ? (A.dir === 1 ? A.y : A.y + 12) : A.bed ? A.bed.top + 38 : A.y, A });
   for (const c of CATS) list.push({ sort: c.y, cat: c });
   for (const c of cars) if (c.x > x0 && c.x < x1) list.push({ sort: c.lane.y + 4, car: c });
   list.push({ sort: DOOR.y + 0.5, doors: true });
@@ -676,7 +677,7 @@ function render(now) {
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'lighter';
   for (const gl of W.glows) {
-    const a = gl.always ? gl.a * (0.6 + 0.4 * n) * (gl.flicker ? 0.85 + 0.15 * Math.sin(now / 90) : 1) : gl.a * n;
+    const a = (gl.always ? gl.a * (0.6 + 0.4 * n) * (gl.flicker ? 0.85 + 0.15 * Math.sin(now / 90) : 1) : gl.a * n) * (gl.twinkle !== undefined ? 0.45 + 0.55 * Math.abs(Math.sin(now / 700 + gl.twinkle * 1.7)) : 1);
     if (a < 0.02 || gl.x + gl.r < cx || gl.x - gl.r > cx + VW || gl.y + gl.r < cy || gl.y - gl.r > cy + VH) continue;
     ctx.globalAlpha = a; ctx.drawImage(glowSprite(gl.r, gl.col), gl.x - gl.r, gl.y - gl.r);
   }
@@ -687,7 +688,7 @@ function render(now) {
   const lw = Math.max(2, Math.round(fontPx / 4));
   const placed = []; // 말풍선끼리 겹치면 위로 비켜요
   for (const A of everyone()) {
-    const bx = A.bed ? A.bed.bx : A.x, byw = A.bed ? A.bed.by - 14 : A.y - (A.seat ? 24 : 26) + (A.hop > 0 ? -4 : 0);
+    const bx = A.bed ? A.bed.bx : A.x, byw = A.bed ? A.bed.top + 2 : A.y - (A.seat ? 24 : 26) + (A.hop > 0 ? -4 : 0);
     const sx = Math.round((bx - cx) * S), sy = Math.round((byw - cy) * S);
     if (sx < -200 || sx > canvas.width + 200 || sy < -100 || sy > canvas.height + 100) continue;
     ctx.lineWidth = lw; ctx.strokeStyle = 'rgba(30,20,35,0.85)'; ctx.strokeText(A.name, sx, sy - fontPx * 0.2);
@@ -709,8 +710,7 @@ function render(now) {
       ctx.globalAlpha = 1;
     }
   }
-  for (const A of everyone()) if (A.bed && Math.random() < 0.012) particle({ type: 'zzz', x: A.bed.bx + 8, y: A.bed.by - 14, vy: -10, vx: 6, life: 1.6 });
-  if (false) particle({ type: 'zzz', x: me.bed.bx + 8, y: me.bed.by - 14, vy: -10, vx: 6, life: 1.6 });
+  for (const A of everyone()) if (A.bed && Math.random() < 0.012) particle({ type: 'zzz', x: A.bed.bx + 8, y: A.bed.top + 4, vy: -10, vx: 6, life: 1.6 });
 }
 function wrap(text, maxW) {
   const out = []; let line = '';

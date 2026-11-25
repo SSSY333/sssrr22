@@ -7,6 +7,9 @@ const SCALES = { maj: [0, 2, 4, 5, 7, 9, 11], min: [0, 2, 3, 5, 7, 8, 10] };
 // 곡: 으뜸음 · 음계 · 빠르기 · 화음 진행(음계 도수) · 드럼 · 리드 소리
 const SONGS = {
   office: { root: 60, scale: 'maj', bpm: 108, prog: [0, 5, 3, 4], drums: 1, lead: 'square', vol: 0.9 },
+  lobby: { root: 64, scale: 'maj', bpm: 100, prog: [0, 3, 4, 0], drums: 0.6, lead: 'triangle', vol: 0.85 }, // 밝은 마림바 느낌
+  work: { root: 60, scale: 'maj', bpm: 92, prog: [0, 5, 3, 4], drums: 0.4, lead: 'triangle', vol: 0.8 }, // 집중용 잔잔한 곡
+  streetNight: { root: 57, scale: 'min', bpm: 78, prog: [0, 5, 2, 6], drums: 0.5, lead: 'triangle', vol: 0.8 }, // 밤의 광화문 로파이
   lounge: { root: 65, scale: 'maj', bpm: 96, prog: [0, 2, 3, 4], drums: 1, lead: 'square', vol: 0.85, swing: 0.12 },
   nap: { root: 57, scale: 'min', bpm: 64, prog: [0, 5, 2, 6], drums: 0, lead: 'triangle', vol: 0.75 },
   vent: { root: 62, scale: 'min', bpm: 84, prog: [0, 5, 2, 6], drums: 0.5, lead: 'triangle', vol: 0.85 },
