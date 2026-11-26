@@ -3,7 +3,7 @@
    3D 버전과 같은 배치 · 같은 색 (1 m = 16 px)
    x: 왼쪽(-) ~ 오른쪽(+), z: 건물 안쪽(-30) ~ 정문(0) ~ 길 건너 맛집(+32)
    ========================================================================= */
-import { T, mk, R, shade, sprite, SPR, hash, shopSprite, SHOPS, posterPixel, neighborSprite, plaqueSprite } from './sprites.js';
+import { T, mk, R, shade, sprite, SPR, hash, SHOPS, posterPixel, neighborSprite, plaqueSprite, parasolSprite, shopCounterSprite, shopDecor } from './sprites.js';
 
 const M = 16;
 export const X = (x) => Math.round((x + 40.5) * M);
@@ -23,7 +23,7 @@ export const ROAD = [{ y0: Y(5), y1: Y(11.5) }, { y0: Y(18.5), y1: Y(25) }];
 export function buildWorld(FONT) {
   const W = {
     objects: [], solids: [], walls: [], seats: [], stations: [], zones: [], spots: [], glows: [], dims: [],
-    posters: [], clocks: [], furniture: [], catRoutes: [],
+    posters: [], clocks: [], furniture: [], catRoutes: [], npcs: [],
   };
   const solid = (x, y, w, h, tag = 'wall') => { const r = { x, y, w, h, tag }; W.solids.push(r); if (tag !== 'wall') W.furniture.push(r); return r; };
   // 사물 놓기: (x = 가운데, y = 바닥선) · fp = 바닥 차지 영역 [왼쪽, 위, 폭, 높이] (기준점 기준)
@@ -55,6 +55,12 @@ export function buildWorld(FONT) {
     W.objects.push({ img: c, x: x0, y: y - FACE - 8, sort: y, wall: true, name: 'wall' });
     W.walls.push(solid(x0, y - 8, w, 8));
   }
+  function capwall(x0, x1, y) { // 앞쪽(카메라 쪽) 벽은 윗면만 그려 안이 보이게
+    const w = x1 - x0, [c, g] = mk(w, 8);
+    R(g, 0, 0, w, 8, '#6a5a52'); R(g, 0, 0, w, 1, '#8a7a72'); R(g, 0, 7, w, 1, '#4a3e38');
+    W.objects.push({ img: c, x: x0, y: y - 8, sort: y, wall: true, name: 'wall' });
+    W.walls.push(solid(x0, y - 8, w, 8));
+  }
   function vwall(x, y0, y1, style) {
     const st = STY[style];
     for (let a = y0; a < y1; a += T) {
@@ -70,12 +76,11 @@ export function buildWorld(FONT) {
   solid(-T, -T, MW + 2 * T, T); solid(-T, MH, MW + 2 * T, T); solid(-T, 0, T, MH); solid(MW, 0, T, MH);
   solid(0, 0, X(-20) - 4, Y(0)); solid(X(20) + 4, 0, MW - X(20) - 4, Y(0)); solid(X(-20), 0, X(20) - X(-20), Y(-30) - 8);
   for (const r of ROAD) { solid(0, r.y0, X(-4.5), r.y1 - r.y0); solid(X(4.5), r.y0, MW - X(4.5), r.y1 - r.y0); }
-  solid(0, Y(32.25) + 4, MW, MH - Y(32.25) - 4);
 
   // 건물 벽 (3D와 같은 자리)
   hwall(X(-20), X(20), Y(-30), 'brick');
   vwall(X(-20), Y(-30), Y(0), 'side'); vwall(X(20), Y(-30), Y(0), 'side');
-  hwall(X(-20) + 4, X(-13.2), Y(0), 'side'); // 불만창고 쪽은 평범한 벽 (밖에서 안 보여요)
+  capwall(X(-20) + 4, X(-13.2), Y(0)); // 불만창고 앞벽은 윗면만 (안이 잘 보이게)
   hwall(X(-13.2), DOOR.x0, Y(0), 'glass'); hwall(DOOR.x1, X(20) - 4, Y(0), 'glass');
   // 회의실 (안쪽 왼쪽 구석): 유리벽, 문은 오른쪽 끝
   hwall(X(-20) + 4, X(-13.3), Y(-23.6), 'glass');
@@ -136,17 +141,17 @@ export function buildWorld(FONT) {
 
   /* ---------- 업무공간: 책상 섬 5개 (3D와 같은 자리) ---------- */
   let chairN = 0;
-  function pod(cx, cy) {
-    const top = cy - 38, L = cx - 15, Rr = cx + 15;
-    put('chair' + (chairN++ % 6), L, top + 14, null); seat('desk', L, top + 12, 0, { chair: true });
-    put('chair' + (chairN++ % 6), Rr, top + 14, null); seat('desk', Rr, top + 12, 0, { chair: true });
-    put('deskB', L, top + 38, null); put('deskB', Rr, top + 38, null);
-    put('desk', L, top + 60, null); put('desk', Rr, top + 60, null);
-    solid(cx - 30, top + 18, 60, 40, 'desk');
-    put('chairB' + (chairN++ % 6), L, top + 72, null, { sortAdd: 3 }); seat('desk', L, top + 69, 1, { chair: true });
-    put('chairB' + (chairN++ % 6), Rr, top + 72, null, { sortAdd: 3 }); seat('desk', Rr, top + 69, 1, { chair: true });
+  function pod(cx, cy) { // 4인 책상 섬 (60 × 64 px)
+    const top = cy - 32, L = cx - 15, Rr = cx + 15;
+    put('chair' + (chairN++ % 6), L, top + 12, null); seat('desk', L, top + 10, 0, { chair: true });
+    put('chair' + (chairN++ % 6), Rr, top + 12, null); seat('desk', Rr, top + 10, 0, { chair: true });
+    put('deskB', L, top + 34, null); put('deskB', Rr, top + 34, null);
+    put('desk', L, top + 54, null); put('desk', Rr, top + 54, null);
+    solid(cx - 30, top + 15, 60, 37, 'desk');
+    put('chairB' + (chairN++ % 6), L, top + 64, null, { sortAdd: 3 }); seat('desk', L, top + 61, 1, { chair: true });
+    put('chairB' + (chairN++ % 6), Rr, top + 64, null, { sortAdd: 3 }); seat('desk', Rr, top + 61, 1, { chair: true });
   }
-  for (const [px, pz] of [[-14.5, -10], [-14.5, -17], [-6.5, -10], [-6.5, -17], [-6.5, -24]]) pod(X(px), Y(pz));
+  for (const [px, pz] of [[-14.5, -10.6], [-14.5, -17.4], [-6.5, -10.6], [-6.5, -17.4], [-6.5, -24.2]]) pod(X(px), Y(pz));
   // 포스터 벽 (뒷벽, 반듯하게) + 벽시계
   [['cheer', -8.09], ['lunch', -6.5], ['sports', -4.86], ['notice', -3.3]].forEach(([k, x]) => {
     const s = posterPixel(k);
@@ -176,29 +181,49 @@ export function buildWorld(FONT) {
   for (const dx of [-24, 0, 24]) { put('chairB1', X(-15.7) + dx, MT + 12, null, { sortAdd: 3 }); seat('meeting', X(-15.7) + dx, MT + 9, 1, { chair: true }); }
   mount(plaqueSprite('회의실', FONT, '#1f2738', '#e6eef6').c, X(-18.6), Y(-23.6) - FACE + 6, Y(-23.6));
 
-  /* ---------- 탕비 코너 (왼쪽 창가) ---------- */
-  put('vcounter', X(-19.35), Y(-7.6), [-6, -92, 12, 92]);
-  put('coffeeTop', X(-19.35), Y(-8.5) + 6, null, { sortAdd: 1, mount: true });
-  put('snackBox', X(-19.35), Y(-10.4) + 4, null, { sortAdd: 1, mount: true });
-  put('fruit', X(-19.35), Y(-11.45) + 4, null, { sortAdd: 1, mount: true });
-  station('coffee', X(-18.35) + 4, Y(-8.5) + 4, { label: '☕ 커피 뽑기', face: 2 });
-  station('snack', X(-18.35) + 4, Y(-10.4) + 4, { label: '🍪 간식 먹기', face: 2 });
-  station('snack', X(-18.35) + 4, Y(-11.45) + 6, { label: '🍎 사과 먹기', face: 2 });
-  put('bins', X(-18.6), Y(-13.8), [-13, -8, 26, 8]);
-  W.objects.push({ img: plaqueSprite('탕비실', FONT, '#4a2c1a', '#ffe2bd').c, x: X(-19.9) + 6, y: Y(-13.3) - 24, sort: Y(-13.3) + 2, mount: true, name: 'mount' });
+  /* ---------- 탕비 코너 (왼쪽 창가): 냉장고 · 싱크대 · 커피 머신 · 과일 · 간식이 한 줄로 ---------- */
+  {
+    const top = Y(-14.3);
+    put('pantry', X(-19.25), top + 92, [-8, -92, 16, 92]);
+    const sx = X(-17.9);
+    station('sink', sx, top + 34, { label: '🚰 물 마시기', face: 2 });
+    station('coffee', sx, top + 52, { label: '☕ 커피 뽑기', face: 2 });
+    station('snack', sx, top + 67, { label: '🍎 사과 먹기', face: 2, item: 'apple' });
+    station('snack', sx, top + 84, { label: '🍪 간식 먹기', face: 2, item: 'snack' });
+    put('bins', X(-17.6), Y(-14.8), [-13, -8, 26, 8]);
+    W.objects.push({ img: plaqueSprite('탕비실', FONT, '#4a2c1a', '#ffe2bd').c, x: X(-19.7), y: top - 14, sort: top + 1, mount: true, name: 'mount' });
+    W.glows.push({ x: X(-18.6), y: top + 40, r: 30, col: '255,220,170', a: 0.3, always: true });
+  }
 
-  /* ---------- 불만창고 ---------- */
-  put('fireplace', X(-16.4), Y(-5.8) + 44, [-28, -16, 56, 16]);
-  W.fire = { x: X(-16.4), y: Y(-5.8) + 24 };
-  station('fire', X(-16.4), Y(-5.8) + 58, { label: '🔥 스트레스 태우기', face: 1 });
-  put('teddy', X(-18.7), Y(-0.6), [-13, -10, 26, 10]);
-  station('teddy', X(-18.7) + 22, Y(-0.6) - 4, { label: '🧸 꼭 안아주기', face: 2 });
-  put('beanbag2', X(-14.4), Y(-0.9), [-10, -8, 20, 8], { sortAdd: 3 }); seat('beanbag', X(-14.4), Y(-0.9) - 5, 1);
+  /* ---------- 불만창고 (3D와 같은 구성) ---------- */
+  // 왼쪽 벽 벽난로 · 큰 곰인형 · 대나무숲 구멍(임금님 귀는 당나귀 귀) · 스트레스 적는 책상 · 방석 · 꼬마전구 · 별빛 천장 · 구슬 커튼
+  put('fireSide', X(-19.15), Y(-1.7), [-8, -44, 16, 44]);
+  W.fire = { x: X(-18.6), y: Y(-3.05), box: { x: X(-19.15) - 8 + 7, y: Y(-1.7) - 44 + 11, w: 9, h: 23 } };
+  station('fire', X(-17.7), Y(-2.7), { label: '🔥 종이 던지기', face: 2 });
+  put('teddy', X(-17.7), Y(-0.45), [-13, -10, 26, 10]);
+  station('teddy', X(-16.7), Y(-0.55), { label: '🧸 꼭 안아주기', face: 2 });
+  put('bearS', X(-19.2), Y(-4.95), [-6, -5, 12, 5]);
+  put('bamboo', X(-16.2), Y(-5.15), [-30, -6, 60, 6], { mount: true });
+  const king = sprite(66, 26, (P, g) => { P(0, 0, 66, 26, '#7b4a2c'); P(1, 1, 64, 24, '#9a6a44'); g.fillStyle = '#fff1d6'; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('임금님 귀는', 34, 8); g.fillText('당나귀 귀', 34, 19); });
+  W.objects.push({ img: king.c, x: X(-16.2) - 33, y: Y(-5.15) - 44, sort: Y(-5.15) + 1, mount: true, name: 'mount' });
+  put('hole', X(-16.2), Y(-4.35), null, { low: true, sortAdd: -40 });
+  station('rant', X(-16.2), Y(-3.55), { label: '🎋 구멍에 마구 외치기', face: 1 });
+  put('cushionY', X(-17.0), Y(-1.65), null, { low: true }); seat('cushion', X(-17.0), Y(-1.65) - 2, 2);
+  put('cushionM', X(-15.4), Y(-2.2), null, { low: true }); seat('cushion', X(-15.4), Y(-2.2) - 2, 2);
+  put('writeDesk', X(-14.3), Y(-0.45), [-10, -7, 20, 7]);
+  put('pinkChair', X(-14.3), Y(-1.35), null); seat('write', X(-14.3), Y(-1.35) - 2, 0, { chair: true });
+  put('paperBin', X(-13.65), Y(-2.1), null, { low: true });
+  for (let k = 0; k < 2; k++) W.objects.push({ img: SPR.beadCurtain.c, x: X(-13.2) - 3 + k * 2, y: Y(-3.95) - 27, sort: Y(-3.95), mount: true, name: 'mount' });
   const neon = sprite(50, 24, (P, g) => { P(24, 12, 2, 12, '#6e767c'); P(0, 0, 50, 13, '#2a1f2d'); P(1, 1, 48, 11, '#3a2430'); g.fillStyle = '#ff8ab0'; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('불만창고', 26, 8); });
   put(neon, X(-11.6), Y(-3.8), [-2, -3, 4, 3], { label: 'neon' });
-  W.dims.push({ x: X(-20), y: Y(-5.8), w: X(-13.2) - X(-20), h: Y(0) - Y(-5.8), a: 0.18, col: '#3a1630' });
-  W.glows.push({ x: X(-16.4), y: Y(-5.8) + 30, r: 60, col: '255,150,60', a: 0.45, always: true, flicker: true });
-  for (let i = 0; i < 6; i++) W.glows.push({ x: X(-19.4) + i * 18, y: Y(-5.8) - 20, r: 10, col: ['255,200,120', '255,160,200', '200,220,255'][i % 3], a: 0.8, always: true });
+  W.dims.push({ x: X(-20), y: Y(-5.8) - 8, w: X(-13.2) - X(-20), h: Y(0) - Y(-5.8) + 8, a: 0.16, col: '#3a1640' });
+  W.glows.push({ x: X(-18.3), y: Y(-3.1), r: 52, col: '255,140,60', a: 0.5, always: true, flicker: true });
+  // 꼬마전구 (방 가장자리를 따라)
+  const bulbCols = ['255,213,154', '255,159,196', '255,240,200', '184,224,255'];
+  let bi = 0;
+  for (let x = X(-19.5); x < X(-13.4); x += 9) W.glows.push({ x, y: Y(-5.8) - 42 + (bi % 2) * 3, r: 5, col: bulbCols[bi++ % 4], a: 0.8, always: true });
+  for (let y = Y(-5.4); y < Y(-0.4); y += 10) { W.glows.push({ x: X(-19.6), y: y - 26, r: 6, col: bulbCols[bi++ % 4], a: 0.9, always: true }); W.glows.push({ x: X(-13.4), y: y - 26, r: 6, col: bulbCols[bi++ % 4], a: 0.9, always: true }); }
+  for (let i = 0; i < 12; i++) W.glows.push({ x: X(-19.4) + hash(i, 7) * (X(-13.6) - X(-19.4)), y: Y(-5.6) + hash(i, 8) * (Y(-0.6) - Y(-5.6)) - 24, r: 4, col: '255,240,200', a: 0.9, always: true, twinkle: i + 20 });
 
   /* ---------- 휴게실 (오른쪽 앞) ---------- */
   const LX = X(11), LY = Y(-8.5);
@@ -258,8 +283,8 @@ export function buildWorld(FONT) {
   const lampAt = (x, z) => { put('lamp', X(x), Y(z), [-3, -4, 6, 4]); W.glows.push({ x: X(x), y: Y(z) - 50, r: 56, col: '255,210,140', a: 0.55, lamp: true }); };
   for (const x of [-37, -28, -19, -10, 8, 17, 26, 35]) treeAt(x, 4.3);
   for (const x of [-32.5, -14.5, 12.5, 30.5]) lampAt(x, 4.6);
-  for (const x of [-36, -26, -16, 14, 24, 34]) treeAt(x, 27);
-  for (const x of [-31, -21, 19, 29]) lampAt(x, 25.6);
+  for (const x of [-36, -26, -16, 14, 24, 34]) treeAt(x, 25.9);
+  for (const x of [-31, -21, 19, 29]) lampAt(x, 25.8);
   for (const x of [-28, -16, 8, 20, 32]) treeAt(x, 12.8);
   for (const x of [-22, -10, 14, 26, 38]) treeAt(x, 17.8);
   for (const x of [-28, -16, 8, 20, 32]) put('flowerBed', X(x), Y(15.3), [-15, -8, 30, 8], { label: 'flowerBed' });
@@ -274,22 +299,61 @@ export function buildWorld(FONT) {
   put('bench', X(-23.5), Y(2.2), [-20, -8, 40, 8]); seat('bench', X(-23.5) - 10, Y(2.2) - 6, 0); seat('bench', X(-23.5) + 10, Y(2.2) - 6, 0);
   put('bench', X(-4), Y(16.6), [-20, -8, 40, 8], { label: 'bench2' }); // 중앙 광장 쉼터 (횡단보도 옆)
   W.seats.push({ id: 'bench_m0', kind: 'bench', x: X(-4) - 10, y: Y(16.6) - 6, dir: 0 }, { id: 'bench_m1', kind: 'bench', x: X(-4) + 10, y: Y(16.6) - 6, dir: 0 });
-  // 맞은편 맛집 거리 (정면이 길 쪽)
+  // 맞은편 맛집 거리: 가게 안(계산대 · 사장님 · 식탁)과 가게 앞 파라솔 테라스
+  const FLOORS = { tteok: ['#f6e3a0', '#efd88a'], latte: ['#8a5a3e', '#7e5036'], cake: ['#fbe4ea', '#ffffff'], meat: ['#5a4a46', '#504240'], pancake: ['#e8efe6', '#dbe6d8'], pizza: ['#d98a5a', '#cc7e50'] };
+  const ZF = 32.25, ZB = 42.8;
+  let prevX1 = null;
   SHOPS.forEach((shop, i) => {
-    const x0 = X(Math.max(-40.5, shop.x0)), x1 = X(Math.min(40.5, shop.x0 + shop.w)), w = x1 - x0;
-    const s = shopSprite(shop, w, MH - Y(32.25), FONT);
-    W.objects.push({ img: s.c, x: x0 - 1, y: Y(32.25) - 1, sort: Y(32.25), name: 'shop' });
-    const door = x1 - 12;
-    station('shop', door, Y(32.25) - 6, { label: `🛍️ ${shop.name} 주문`, shop: i, face: 0 });
-    W.glows.push({ x: (x0 + x1) / 2, y: Y(32.25) + 18, r: 40, col: '255,210,150', a: 0.55, window: true });
-    // 테라스: 둥근 탁자 + 의자 2개
-    const tx = x0 + Math.min(w * 0.42, w - 40), ty = Y(29.8);
-    if (tx - 26 > 6 && tx + 26 < MW - 6) {
-      put(ttable(), tx, ty, [-9, -6, 18, 6], { tag: 'ttable', label: 'ttable' });
-      put('stool', tx - 20, ty, null); seat('terrace', tx - 20, ty - 2, 3, { shop: i });
-      put('stool', tx + 20, ty, null); seat('terrace', tx + 20, ty - 2, 2, { shop: i });
+    const x0m = Math.max(-40.5, shop.x0), x1m = Math.min(40.5, shop.x0 + shop.w), wm = x1m - x0m;
+    const xa = X(x0m), xb = X(x1m), yf = Y(ZF), yb = Y(ZB);
+    // 바닥
+    const [c1, c2] = FLOORS[shop.item] || ['#e9e2d6', '#ddd4c6'];
+    F(xa, yf, xb - xa, yb - yf, c1); pattern(xa, yf, xb - xa, yb - yf, 16, (x, y, k) => { if (k % 2) F(x, y, 16, 16, c2); });
+    // 벽: 앞은 유리 진열창 + 문, 옆은 벽, 뒤(카메라 쪽)는 윗면만
+    const dL = X(x1m - 2.9), dR = X(x1m - 1.2);
+    hwall(xa + 4, dL, yf, 'glass'); hwall(dR, xb - 4, yf, 'glass');
+    vwall(xa, yf, yb, 'side'); vwall(xb, yf, yb, 'side');
+    capwall(xa, xb, yb);
+    if (prevX1 !== null && xa - prevX1 > 8) solid(prevX1 + 4, yf - 8, xa - prevX1 - 8, MH - yf + 8, 'alley');
+    prevX1 = xb;
+    // 차양 + 간판 (길 쪽으로 나와요)
+    const aw = sprite(xb - xa, 20, (P, g) => {
+      for (let x = 0, k = 0; x < xb - xa; x += 8, k++) { P(x, 6, 8, 11, shop.awn[k % 2]); P(x + 1, 17, 6, 3, shop.awn[k % 2]); }
+      const sw = Math.min(xb - xa - 20, shop.name.length * 11 + 14);
+      P((xb - xa - sw) / 2, 0, sw, 13, shop.sign); P((xb - xa - sw) / 2 + 1, 1, sw - 2, 1, shade(shop.sign, 0.3));
+      g.fillStyle = '#fffaf0'; g.font = `11px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(shop.name, (xb - xa) / 2 + 1, 7.5);
+    });
+    W.objects.push({ img: aw.c, x: xa - 1, y: yf - FACE - 8 - 14, sort: yf + 0.5, mount: true, name: 'mount' });
+    // 계산대 · 사장님 · 주문
+    put(shopCounterSprite(shop), X(x0m + 1.6), Y(ZF + 1.3) + 68, [-8, -68, 16, 68], { label: 'counter' });
+    W.npcs.push({ x: X(x0m + 0.75), y: Y(ZF + 3.6), dir: 3, design: (i + 2) % 5, name: '', shop: i, apron: shop.sign });
+    station('shop', X(x0m + 2.75), Y(ZF + 3.6), { label: `🛍️ ${shop.name} 주문하기`, shop: i, face: 2 });
+    // 가게마다 다른 소품
+    const dec = shopDecor(shop.item);
+    if (shop.item === 'pizza') put(dec, X(x1m - 1.3), Y(ZB - 0.9), [-15, -10, 30, 10], { label: 'oven' });
+    else if (shop.item !== 'meat') put(dec, X(x0m + 1.6), Y(ZF + 7.6), [-dec.c.width / 2 + 1, -8, dec.c.width - 2, 8], { label: 'decor' });
+    put('plant', X(x0m + 0.9), Y(ZB - 0.7), [-6, -6, 12, 6]);
+    // 식탁 (안)
+    for (const fx of [0.46, 0.76]) for (const fz of [ZF + 3.6, ZF + 7.3]) {
+      const tx = X(x0m + wm * fx), ty = Y(fz);
+      if (shop.item === 'meat') put(shopDecor('meat'), tx, ty, [-10, -8, 20, 8], { label: 'grill' });
+      else put(ttable(), tx, ty, [-9, -6, 18, 6], { label: 'ttable' });
+      put('stool', tx - 20, ty, null); seat('cafe', tx - 20, ty - 2, 3, { shop: i });
+      put('stool', tx + 20, ty, null); seat('cafe', tx + 20, ty - 2, 2, { shop: i });
     }
-    if (door - 30 > 6) put('menuBoard', door - 26, Y(31.6), [-5, -3, 10, 3]);
+    W.glows.push({ x: X(x0m + wm * 0.5), y: Y(ZF + 3), r: 46, col: '255,210,150', a: 0.35, always: true });
+    W.glows.push({ x: X(x0m + wm * 0.5), y: Y(ZF + 7), r: 46, col: '255,210,150', a: 0.3, always: true });
+    // 가게 앞 테라스: 파라솔 식탁 2개 + 입간판
+    for (const fx of [0.24, 0.55]) {
+      const tx = X(x0m + wm * fx), ty = Y(28.7), gid = 'terrace' + i + fx;
+      if (tx - 28 < 4) continue;
+      put(ttable(), tx, ty, [-9, -6, 18, 6], { label: 'ttable', group: gid });
+      put(parasolSprite(shop.awn), tx, ty + 1, null, { label: 'parasol', group: gid });
+      put('stool', tx - 20, ty, null, { group: gid }); seat('terrace', tx - 20, ty - 2, 3, { shop: i });
+      put('stool', tx + 20, ty, null, { group: gid }); seat('terrace', tx + 20, ty - 2, 2, { shop: i });
+    }
+    put('menuBoard', X(x1m - 3.5), Y(31.6), [-5, -3, 10, 3]);
+    W.zones.push({ id: 'shop' + i, name: shop.name, x: xa, y: yf, w: xb - xa, h: yb - yf, phr: shop.phr, music: 'food' });
   });
   function ttable() { return (W._tt ||= sprite(20, 20, (P) => { P(0, 0, 20, 8, '#f4f1ea'); P(0, 6, 20, 2, '#c8c2b8'); P(9, 8, 2, 10, '#3a3d42'); P(5, 18, 10, 2, '#3a3d42'); P(7, 2, 4, 3, '#e889a0'); })); }
   // 맛집 거리 줄조명
@@ -299,8 +363,8 @@ export function buildWorld(FONT) {
   const cr = (pts) => W.catRoutes.push(pts.map(([x, z]) => [X(x), Y(z)]));
   cr([[-30, 2.2], [-12, 2.2], [-12, 3.6], [-30, 3.6]]);
   cr([[8, 13.6], [30, 13.6], [30, 16.6], [8, 16.6]]);
-  cr([[-34, 26], [-12, 26], [-12, 28.4], [-34, 28.4]]);
-  cr([[10, 26.2], [34, 26.2], [34, 28.2], [10, 28.2]]);
+  cr([[-34, 27.2], [-12, 27.2], [-12, 28.0], [-34, 28.0]]);
+  cr([[10, 27.2], [34, 27.2], [34, 28.0], [10, 28.0]]);
 
   /* ---------- 구역 (말하기 문구 · 음악) ---------- */
   const Z = (id, name, x0, z0, x1, z1, phr, music) => W.zones.push({ id, name, x: X(x0), y: Y(z0), w: X(x1) - X(x0), h: Y(z1) - Y(z0), phr, music });

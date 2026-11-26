@@ -30,8 +30,8 @@ const PHRASES = {
 };
 const POKE_FROM = ['콕! 👉', '안녕~ 콕콕!', '나 여기 있어요!', '뭐 해~?', '톡톡!'];
 const POKE_TO = ['앗, 깜짝이야! 😳', '누구야~?', '간지러워 ㅋㅋㅋ', '반가워요! 👋', '헉!', '왜 불러~?', '히힛 😆'];
-const SEAT_LABEL = { desk: '💻 앉아서 일하기', meeting: '💼 회의 자리에 앉기', sofa: '🛋️ 소파에 앉기', lounge: '🛋️ 원형 소파에 앉기', recline: '💺 리클라이너에 눕듯 앉기', beanbag: '☁️ 빈백에 기대기', bench: '🪑 벤치에 앉기', terrace: '☕ 테라스에 앉기', stool: '🪑 의자에 앉기' };
-const SEAT_PHR = { desk: 'work', meeting: 'meeting', sofa: 'lounge', lounge: 'lounge', recline: 'nap', beanbag: 'lounge', bench: 'street', terrace: 'cafe', stool: 'lounge' };
+const SEAT_LABEL = { desk: '💻 앉아서 일하기', meeting: '💼 회의 자리에 앉기', sofa: '🛋️ 소파에 앉기', lounge: '🛋️ 원형 소파에 앉기', recline: '💺 리클라이너에 눕듯 앉기', beanbag: '☁️ 빈백에 기대기', bench: '🪑 벤치에 앉기', terrace: '☕ 테라스에 앉기', stool: '🪑 의자에 앉기', cafe: '🍽️ 식탁에 앉기', cushion: '🟡 방석에 앉기', write: '✍️ 책상에 앉기' };
+const SEAT_PHR = { desk: 'work', meeting: 'meeting', sofa: 'lounge', lounge: 'lounge', recline: 'nap', beanbag: 'lounge', bench: 'street', terrace: 'cafe', stool: 'lounge', cafe: 'food', cushion: 'vent', write: 'vent' };
 
 /* ---------- 화면 ---------- */
 const canvas = document.createElement('canvas');
@@ -219,6 +219,24 @@ function updateParts(dt) {
   }
 }
 
+/* ---------- 마구 외치기 (임금님 귀는 당나귀 귀) ---------- */
+const GRAWLIX = ['#@$%&!!', '%$#@!!', '@#$%^&*!', '!@#$%!!', '&%#@!?', '$#@%&*!!', '#$%!!!', '@!#$%&'];
+function startRant(A, dur) {
+  A.rantUntil = performance.now() + dur * 1000; A.rantNext = 0;
+  sfxAt('bubble', A);
+}
+function updateRants(now) {
+  for (const A of everyone()) {
+    if (!A.rantUntil || A.rantUntil < now) { if (A.rantUntil && A === me) { A.rantUntil = 0; setTimeout(() => sayLine(me, pick(['후련하다~', '아 시원해! 😮‍💨', '오늘도 버텼다 💪'])), 300); } A.rantUntil = 0; continue; }
+    if (now > (A.rantNext || 0)) {
+      A.rantNext = now + 480;
+      A.say = { t: pick(GRAWLIX), until: now + 620, angry: true };
+      if (nearMe(A) > 0.05) audio.sfx('bubble', nearMe(A) * 0.7);
+      particle({ type: 'smoke', x: A.x + rand(-6, 6), y: A.y - 26, vy: -16, vx: rand(-8, 8), life: 0.9 });
+    }
+  }
+}
+
 /* ---------- 프린터 · 탁구 · 불꽃 ---------- */
 const printerObjs = W.objects.filter((o) => o.printer !== undefined);
 const printers = [0, 1, 2].map((i) => ({ shakeUntil: 0, blinkUntil: 0, obj: printerObjs.find((o) => o.printer === i) }));
@@ -330,14 +348,15 @@ function doFx(A, k, a, r) { // 모두에게 똑같이 보이는 효과
   }
   else if (k === 'hug') { sfxAt('hug', A); for (let i = 0; i < 5; i++) particle({ type: 'heart', x: A.x + rand(-10, 10), y: A.y - 26, vy: -16, vx: rand(-6, 6), life: 1.6, delay: i * 0.2 }); }
   else if (k === 'pet') { const c = CATS[a]; if (c) petCat(c, A); }
-  else if (k === 'shop') sfxAt('ding', A);
+  else if (k === 'shop') { sfxAt('ding', A); const np = W.npcs.find((n) => n.shop === r); if (np) sayLine(np, pick(['어서오세요! 😊', '맛있게 드세요~', '감사합니다! 🙏', '금방 나와요!'])); }
+  else if (k === 'rant') startRant(A, clamp(Number(r) || 3, 1.5, 12));
 }
 function useStation(st) {
   me.path = null;
   const fxNow = (k, a, r) => { me.fx = { n: ++me.fxN, k, a, r }; doFx(me, k, a, r); sendPresence(true); };
   const face = st.face ?? 1;
   if (st.kind === 'coffee') { me.dir = face; me.act = 'brew'; me.actUntil = performance.now() + 1400; fxNow('coffee', st.id); setTimeout(() => { holdItem('coffee', 40); if (Math.random() < 0.6) sayLine(me, '커피 수혈 필요…☕'); sendPresence(true); }, 1400); }
-  else if (st.kind === 'snack') { me.dir = face; holdItem('snack', 25); fxNow('snack', st.id); if (Math.random() < 0.6) sayLine(me, '이 과자 맛있다!'); }
+  else if (st.kind === 'snack') { me.dir = face; holdItem(st.item || 'snack', 25); fxNow('snack', st.id); if (Math.random() < 0.6) sayLine(me, st.item === 'apple' ? '사과 아삭아삭 🍎' : '이 과자 맛있다!'); }
   else if (st.kind === 'water' || st.kind === 'sink') { me.dir = face; holdItem('water', 25); fxNow('water', st.id); }
   else if (st.kind === 'printer') {
     me.dir = face; const r = Math.random(), res = r < 0.55 ? 'ok' : r < 0.8 ? 'jam' : 'run';
@@ -347,11 +366,12 @@ function useStation(st) {
     if (res === 'run') setTimeout(() => sayLine(me, '으악 멈춰!! 🖨️💨'), 600);
   }
   else if (st.kind === 'shredder') { me.dir = face; if (me.hold === 'paper') me.hold = null; fxNow('shred', st.id); }
-  else if (st.kind === 'fire') { me.dir = face; openVent(); }
+  else if (st.kind === 'fire') { me.dir = face; openVent('burn'); }
+  else if (st.kind === 'rant') { me.dir = face; openVent('rant'); }
   else if (st.kind === 'teddy') { me.dir = face; fxNow('hug', st.id); setTimeout(() => sayLine(me, '곰돌아 고마워 🧸'), 500); }
   else if (st.kind === 'book') { me.dir = face; holdItem('book', 60); sfxAt('paper', me); }
   else if (st.kind === 'poster') { openPosters(); }
-  else if (st.kind === 'shop') { me.dir = face; const sh = SHOPS[st.shop]; holdItem(sh.item, 45); fxNow('shop', st.id); setTimeout(() => sayLine(me, pick(PHRASES[sh.phr])), 600); }
+  else if (st.kind === 'shop') { me.dir = face; const sh = SHOPS[st.shop]; holdItem(sh.item, 45); fxNow('shop', st.id, st.shop); setTimeout(() => sayLine(me, pick(PHRASES[sh.phr])), 1400); }
   else if (st.kind === 'bed') { me.bed = { x: st.x, y: st.y, bx: st.bed.x, top: st.bed.top, col: st.bed.col, st: st.id }; me.seat = null; me.hold = null; sfxAt('pop', me, 0.7); }
   else if (st.kind === 'pp') { me.x = st.x; me.y = st.y; me.dir = st.side ? 2 : 3; me.playing = !me.playing; holdItem(me.playing ? 'paddle' : null, 600); if (me.playing && Math.random() < 0.5) sayLine(me, pick(PHRASES.pingpong)); }
   sendPresence(true); refreshContext(true);
@@ -383,13 +403,14 @@ function refreshContext(force) {
   const tg = findTarget(), bu = (me.seat || me.bed) ? null : findBuddy();
   const act = $('#act'), act2 = $('#act2');
   const l1 = tg ? tg.label : bu ? `👉 ${bu.A.name} 콕 찌르기` : '';
-  const l2 = tg && bu ? `👉 ${bu.A.name} 콕` : '';
-  ctxTarget = tg || (bu ? { fn: () => poke(bu) } : null); ctxBuddy = tg && bu ? bu : null;
+  const writing = me.seat && me.seat.kind === 'write';
+  const l2 = writing ? '✍️ 스트레스 적기' : tg && bu ? `👉 ${bu.A.name} 콕` : '';
+  ctxTarget = tg || (bu ? { fn: () => poke(bu) } : null); ctxBuddy = writing ? 'write' : tg && bu ? bu : null;
   if (force || act.textContent !== l1) { act.textContent = l1; act.hidden = !l1; }
   if (force || act2.textContent !== l2) { act2.textContent = l2; act2.hidden = !l2; }
 }
 function doAction() { audio.start(); if (ctxTarget) ctxTarget.fn(); }
-function doAction2() { if (ctxBuddy) poke(ctxBuddy); }
+function doAction2() { if (ctxBuddy === 'write') openVent('burn'); else if (ctxBuddy) poke(ctxBuddy); }
 $('#act').addEventListener('click', doAction);
 $('#act2').addEventListener('click', doAction2);
 
@@ -552,7 +573,13 @@ function drawChar(A, now) {
   else img = sh.walk[A.dir][A.moving ? 1 + (Math.floor(A.walkT * 8) % 2) : 0];
   // 그림자
   ctx.globalAlpha = 0.22; R(ctx, A.x - 6, A.y - 1, 12, 3, '#000000'); ctx.globalAlpha = 1;
-  ctx.drawImage(img, Math.round(dx), Math.round(dy + hop));
+  const shake = A.rantUntil && A.rantUntil > now ? Math.round(Math.sin(now / 30) * 1) : 0;
+  ctx.drawImage(img, Math.round(dx) + shake, Math.round(dy + hop));
+  if (shake || (A.rantUntil && A.rantUntil > now)) { // 빨개진 얼굴 + 💢
+    const hx = Math.round(A.x) + shake, hy = Math.round(dy + hop) + (A.seat ? 3 : 1);
+    ctx.globalAlpha = 0.45; R(ctx, hx - 6, hy + 2, 11, 8, '#ff2a1a'); ctx.globalAlpha = 1;
+    const ax = hx + 6, ay = hy - 3; R(ctx, ax, ay, 2, 1, '#e53935'); R(ctx, ax + 3, ay, 2, 1, '#e53935'); R(ctx, ax, ay + 3, 2, 1, '#e53935'); R(ctx, ax + 3, ay + 3, 2, 1, '#e53935'); R(ctx, ax + 2, ay + 1, 1, 2, '#e53935');
+  }
   if (A.hold && ITEMS[A.hold]) {
     const it = ITEMS[A.hold];
     const hx = A.dir === 2 ? A.x - 12 : A.dir === 3 ? A.x + 4 : A.x + 3, hy = A.y - (A.seat ? 9 : 11) + hop;
@@ -575,14 +602,17 @@ function drawDoors() {
   R(ctx, DOOR.x0 - 12, y - 22, DOOR.x1 - DOOR.x0 + 24, 16, '#26324a'); R(ctx, DOOR.x0 - 10, y - 20, DOOR.x1 - DOOR.x0 + 20, 12, '#2f3f5a');
   ctx.fillStyle = '#ffe2bd'; ctx.font = `11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('보장원', (DOOR.x0 + DOOR.x1) / 2, y - 14);
 }
-function drawFire(now) {
-  const big = now < fireFx.burstUntil, x = W.fire.x, y = W.fire.y + 14;
-  for (let i = 0; i < (big ? 9 : 5); i++) {
-    const ph = now / 120 + i * 1.7, hgt = (big ? 18 : 10) + Math.sin(ph) * 3 + (i % 3) * 2;
-    const fx = x - 12 + i * (24 / (big ? 8 : 4));
-    R(ctx, fx - 2, y - hgt, 4, hgt, '#e0703c'); R(ctx, fx - 1, y - hgt * 0.7, 2, hgt * 0.7, '#f2c14e');
+const Y_FIRE_SORT = () => W.fire.box.y + 34;
+function drawFire(now) { // 벽난로 입구 안에서 일렁이는 불꽃
+  const big = now < fireFx.burstUntil, B = W.fire.box;
+  R(ctx, B.x, B.y, B.w, B.h, '#1d120d');
+  for (let i = 0; i < B.w; i++) {
+    const hgt = Math.max(2, Math.min(B.h, (big ? 18 : 9) + Math.sin(now / 110 + i * 1.9) * 3 + Math.sin(now / 47 + i) * 2));
+    R(ctx, B.x + i, B.y + B.h - hgt, 1, hgt, '#e0703c');
+    R(ctx, B.x + i, B.y + B.h - hgt * 0.6, 1, hgt * 0.6, '#f2a03a');
+    if (i % 2) R(ctx, B.x + i, B.y + B.h - hgt * 0.3, 1, hgt * 0.3, '#ffe08a');
   }
-  R(ctx, x - 12, y, 24, 3, '#6a3a20');
+  R(ctx, B.x, B.y + B.h - 3, B.w, 3, '#5a3a20');
 }
 function drawClock(c) {
   const { h } = TOD;
@@ -638,13 +668,15 @@ function render(now) {
   for (const A of everyone()) list.push({ sort: A.seat ? (A.dir === 1 ? A.y : A.y + 12) : A.bed ? A.bed.top + 38 : A.y, A });
   for (const c of CATS) list.push({ sort: c.y, cat: c });
   for (const c of cars) if (c.x > x0 && c.x < x1) list.push({ sort: c.lane.y + 4, car: c });
+  for (const np of W.npcs) list.push({ sort: np.y, npc: np });
   list.push({ sort: DOOR.y + 0.5, doors: true });
-  list.push({ sort: W.fire.y + 21, fire: true });
+  list.push({ sort: Y_FIRE_SORT(), fire: true });
   for (const c of W.clocks) list.push({ sort: c.sort, clock: c });
   list.push({ sort: W.pingpong.y + 1, pp: true });
   list.sort((a, b) => a.sort - b.sort);
   for (const o of list) {
     if (o.A) drawChar(o.A, now);
+    else if (o.npc) { drawChar(o.npc, now); R(ctx, o.npc.x - 4, o.npc.y - 11, 8, 6, o.npc.apron); R(ctx, o.npc.x - 4, o.npc.y - 11, 8, 1, '#ffffff66'); }
     else if (o.cat) drawCat(o.cat);
     else if (o.car) drawCar(o.car);
     else if (o.doors) drawDoors();
@@ -687,7 +719,7 @@ function render(now) {
   ctx.font = `${fontPx}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const lw = Math.max(2, Math.round(fontPx / 4));
   const placed = []; // 말풍선끼리 겹치면 위로 비켜요
-  for (const A of everyone()) {
+  for (const A of [...everyone(), ...W.npcs]) {
     const bx = A.bed ? A.bed.bx : A.x, byw = A.bed ? A.bed.top + 2 : A.y - (A.seat ? 24 : 26) + (A.hop > 0 ? -4 : 0);
     const sx = Math.round((bx - cx) * S), sy = Math.round((byw - cy) * S);
     if (sx < -200 || sx > canvas.width + 200 || sy < -100 || sy > canvas.height + 100) continue;
@@ -703,9 +735,10 @@ function render(now) {
       ctx.globalAlpha = fade;
       const px = Math.max(2, Math.round(fontPx / 8));
       ctx.fillStyle = '#2a1f2d'; ctx.fillRect(sx - bw / 2 - px, by - px, bw + px * 2, bh + px * 2);
-      ctx.fillStyle = '#fffaf0'; ctx.fillRect(sx - bw / 2, by, bw, bh);
-      ctx.fillStyle = '#2a1f2d'; ctx.fillRect(sx - px * 2, by + bh, px * 4, px * 2); ctx.fillStyle = '#fffaf0'; ctx.fillRect(sx - px, by + bh, px * 2, px);
-      ctx.fillStyle = '#2a1f2d';
+      const bg = A.say.angry ? '#ffe1dc' : '#fffaf0';
+      ctx.fillStyle = bg; ctx.fillRect(sx - bw / 2, by, bw, bh);
+      ctx.fillStyle = '#2a1f2d'; ctx.fillRect(sx - px * 2, by + bh, px * 4, px * 2); ctx.fillStyle = bg; ctx.fillRect(sx - px, by + bh, px * 2, px);
+      ctx.fillStyle = A.say.angry ? '#d01f1f' : '#2a1f2d';
       lines.forEach((l, i) => ctx.fillText(l, sx, by + fontPx * 0.4 + fontPx * 1.3 * (i + 0.5) + 1));
       ctx.globalAlpha = 1;
     }
@@ -724,7 +757,7 @@ let last = performance.now(), photoReq = null, ctxTick = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (mode.playing) { updateMe(dt); updateRemotes(dt); }
-  updateCats(dt, now); updateCars(dt); updateParts(dt);
+  updateCats(dt, now); updateCars(dt); updateParts(dt); updateRants(now);
   for (const A of everyone()) if (A.hop > 0) A.hop = Math.max(0, A.hop - dt);
   render(now);
   if (photoReq) { const f = photoReq; photoReq = null; canvas.toBlob(f, 'image/png'); }
@@ -823,16 +856,33 @@ function openPosters() {
 }
 document.querySelector('.poster-close').addEventListener('click', () => closeSheet('#posterSheet'));
 // 불만창고: 쓴 내용은 저장하지 않고, 아무에게도 보내지 않아요 (태우는 모습만 보여요)
-function openVent() { const ta = $('#vent .vent-text'); ta.value = ''; openSheet('#vent'); setTimeout(() => ta.focus(), 30); }
+// 불만창고: 쓴 내용은 저장하지 않고, 아무에게도 보내지 않아요 (태우거나 외치는 모습만 보여요)
+const VENT_UI = {
+  burn: { title: '✍️ 스트레스 적기', ph: '오늘 나를 힘들게 한 일을 적어 보세요', go: '🔥 벽난로에 던지기' },
+  rant: { title: '🎋 임금님 귀는 당나귀 귀', ph: '하고 싶은 말을 마구 쏟아내세요', go: '📢 구멍에 마구 외치기' },
+};
+let ventKind = 'burn';
+function openVent(kind = 'burn') {
+  ventKind = kind;
+  const ta = $('#vent .vent-text'), U = VENT_UI[kind];
+  $('#ventTitle').textContent = U.title; ta.placeholder = U.ph; $('#vent .sheet-go').textContent = U.go;
+  ta.value = ''; openSheet('#vent'); setTimeout(() => ta.focus(), 30);
+}
 function closeVent() { const ta = $('#vent .vent-text'); ta.value = ''; ta.blur(); closeSheet('#vent'); }
 document.querySelector('#vent .sheet-cancel').addEventListener('click', closeVent);
 document.querySelector('#vent .sheet-go').addEventListener('click', () => {
   const ta = $('#vent .vent-text');
-  if (!ta.value.trim()) { const sh = document.querySelector('#vent .sheet'); sh.classList.remove('shake'); void sh.offsetWidth; sh.classList.add('shake'); return; }
-  ta.value = '';
+  const len = ta.value.trim().length;
+  if (!len) { const sh = document.querySelector('#vent .sheet'); sh.classList.remove('shake'); void sh.offsetWidth; sh.classList.add('shake'); return; }
+  ta.value = ''; // 내용 즉시 삭제 — 어디에도 저장 · 전송하지 않아요
   closeVent();
-  me.fx = { n: ++me.fxN, k: 'burn' }; doFx(me, 'burn'); sendPresence(true);
-  setTimeout(() => sayLine(me, pick(PHRASES.vent)), 1600);
+  if (ventKind === 'burn') {
+    me.fx = { n: ++me.fxN, k: 'burn' }; doFx(me, 'burn'); sendPresence(true);
+    setTimeout(() => sayLine(me, '활활 타라~ 🔥'), 1200);
+  } else {
+    const d = Math.round(clamp(len * 0.12, 2.5, 12) * 10) / 10; // 글자 수만큼 오래 외쳐요 (내용은 보내지 않음)
+    me.fx = { n: ++me.fxN, k: 'rant', r: d }; startRant(me, d); sendPresence(true);
+  }
 });
 $('#vent .vent-text').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeVent(); });
 // 네트워크 상태
